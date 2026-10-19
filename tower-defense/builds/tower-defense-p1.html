@@ -1,0 +1,1057 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Tower Defense · Prototype 1</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Instrument+Sans:wght@400;600;700&display=swap">
+<style>
+/* Layout: phone-first single column. Top bar, map canvas, context sheet (build / draft / wave info), coach line.
+   One committed look pulled from the chosen art reference: ink linework over flat painterly color.
+   Teal slate, warm timber, cream plaster, moss, dusty-rose sky. */
+:root {
+  --sky: #D9C9C0; --sky-2: #CDB9B0; --paper: #F1E4CC; --paper-2: #E6D6B8; --ink: #3A2518; --ink-2: #6B4226; --muted: #8A6B52;
+  --teal: #4E8F86; --teal-2: #3A6E67; --moss: #6E9A4C; --moss-2: #4F7A33; --timber: #6B4226; --plaster: #F7EEDC;
+  --gold: #D9A441; --rust: #B8533A; --frost: #8FC8D8; --spark: #4F8FD6; --good: #4F7A33; --bad: #A3382E;
+  --display: 'Bricolage Grotesque', 'Arial Narrow', sans-serif;
+  --body: 'Instrument Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+html, body { background: var(--sky); color: var(--ink); height: 100%; }
+body { margin: 0; font-family: var(--body); font-size: 16px; line-height: 1.4; -webkit-tap-highlight-color: transparent;
+  background: linear-gradient(180deg, #E3D4CB 0%, var(--sky) 40%, var(--sky-2) 100%); }
+button { font: inherit; color: inherit; }
+.app { max-width: 560px; margin: 0 auto; min-height: 100%; padding-left: max(12px, env(safe-area-inset-left, 0px)); padding-right: max(12px, env(safe-area-inset-right, 0px)); padding-block: 8px 72px; display: flex; flex-direction: column; gap: 10px; }
+h1, h2, h3 { font-family: var(--display); font-weight: 800; margin: 0; letter-spacing: -.01em; line-height: 1.05; text-wrap: balance; }
+.btn { border: 2px solid var(--ink); background: var(--paper); border-radius: 12px; min-height: 44px; padding: 8px 16px; cursor: pointer; font-weight: 700; font-size: 15px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 3px 0 var(--ink); }
+.btn:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
+.btn:focus-visible { outline: 3px solid var(--spark); outline-offset: 2px; }
+.btn.primary { background: var(--teal); color: #fff; }
+.btn.gold { background: var(--gold); }
+.btn.ghost { background: transparent; box-shadow: none; border-color: transparent; color: var(--ink-2); }
+.btn.sm { min-height: 36px; padding: 4px 12px; font-size: 14px; }
+.btn.icon { width: 44px; padding: 0; font-size: 20px; }
+.btn[aria-pressed="true"] { background: var(--moss); color: #fff; }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.eyebrow { font-size: 11.5px; letter-spacing: 2px; text-transform: uppercase; font-weight: 700; color: var(--teal-2); }
+.muted { color: var(--muted); }
+.foot { color: var(--muted); font-size: 12px; text-align: center; margin: 6px 0 0; }
+.owner { position: fixed; right: max(10px, env(safe-area-inset-right, 0px)); bottom: max(8px, env(safe-area-inset-bottom, 0px)); z-index: 80; font-size: 10.5px; font-weight: 700; color: rgba(58,37,24,.6); background: rgba(241,228,204,.85); padding: 3px 8px; border-radius: 999px; pointer-events: none; }
+
+/* ---------- top bar ---------- */
+.top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.top .t { display: flex; flex-direction: column; min-width: 0; }
+.top .t h1 { font-size: 20px; }
+.top .t span { font-size: 11px; letter-spacing: 1.6px; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+
+/* ---------- HUD ---------- */
+.hud { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+.stat { background: var(--paper); border: 2px solid var(--ink); border-radius: 12px; padding: 6px 10px; display: flex; flex-direction: column; min-width: 0; box-shadow: 0 3px 0 var(--ink); }
+.stat b { font-family: var(--display); font-size: 24px; line-height: 1; font-variant-numeric: tabular-nums; }
+.stat span { font-size: 10.5px; letter-spacing: 1.4px; text-transform: uppercase; font-weight: 700; color: var(--muted); }
+.stat.hp b { color: var(--rust); } .stat.gold b { color: #9A6A12; } .stat.wave b { color: var(--teal-2); }
+.stat .bar { height: 6px; border-radius: 3px; background: var(--paper-2); overflow: hidden; margin-top: 4px; }
+.stat .bar i { display: block; height: 100%; background: var(--rust); transition: width .3s; }
+
+/* ---------- map ---------- */
+.map-wrap { position: relative; width: 100%; border: 3px solid var(--ink); border-radius: 16px; overflow: hidden; background: var(--moss); box-shadow: 0 6px 0 var(--ink), 0 14px 30px rgba(58,37,24,.25); }
+canvas#map { display: block; width: 100%; height: auto; touch-action: manipulation; }
+.map-wrap.shake { animation: shake .3s; }
+@keyframes shake { 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+.banner { position: absolute; left: 0; right: 0; top: 38%; text-align: center; font-family: var(--display); font-weight: 800; font-size: clamp(26px, 8vw, 40px); color: var(--plaster); -webkit-text-stroke: 1.5px var(--ink); text-shadow: 0 3px 0 var(--ink), 0 6px 18px rgba(0,0,0,.35); pointer-events: none; animation: banner 1.5s ease-out forwards; }
+@keyframes banner { 0% { opacity: 0; transform: scale(.7); } 20% { opacity: 1; transform: scale(1.05); } 75% { opacity: 1; } 100% { opacity: 0; } }
+
+/* ---------- controls row ---------- */
+.ctl { display: flex; gap: 8px; align-items: center; }
+.ctl .grow { flex: 1; min-width: 0; }
+.next { background: var(--paper); border: 2px solid var(--ink); border-radius: 12px; padding: 6px 10px; display: flex; flex-direction: column; gap: 2px; min-width: 0; box-shadow: 0 3px 0 var(--ink); }
+.next .lbl { font-size: 10.5px; letter-spacing: 1.4px; text-transform: uppercase; font-weight: 700; color: var(--muted); }
+.next .row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.pill { display: inline-flex; align-items: center; gap: 4px; font-size: 12.5px; font-weight: 700; padding: 2px 8px; border-radius: 999px; border: 1.5px solid var(--ink); background: var(--plaster); }
+.pill i { width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid var(--ink); display: inline-block; }
+
+/* ---------- coach ---------- */
+.coach { display: flex; gap: 10px; align-items: flex-start; background: var(--plaster); border: 2px solid var(--ink); border-radius: 14px; padding: 10px 12px; min-height: 58px; box-shadow: 0 3px 0 var(--ink); }
+.coach .av { width: 42px; height: 42px; flex: none; border-radius: 50%; background: var(--teal); border: 2px solid var(--ink); display: grid; place-items: center; }
+.coach .av svg { width: 32px; height: 32px; }
+.coach p { margin: 0; font-size: 15px; }
+.coach p b.who { color: var(--teal-2); }
+
+/* ---------- sheets (build / draft / info) ---------- */
+.sheet { background: var(--paper); border: 2px solid var(--ink); border-radius: 16px; padding: 12px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 4px 0 var(--ink); }
+.sheet h2 { font-size: 22px; }
+.sheet h3 { font-size: 17px; }
+.sheet p { margin: 0; }
+.sheet .acts { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+.shop { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.shop button { background: var(--plaster); border: 2px solid var(--ink); border-radius: 12px; padding: 8px 4px 6px; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; min-height: 88px; box-shadow: 0 3px 0 var(--ink); min-width: 0; }
+.shop button svg { width: 40px; height: 40px; }
+.shop button b { font-size: 13px; }
+.shop button small { font-size: 12px; color: #9A6A12; font-weight: 700; }
+.shop button[aria-pressed="true"] { background: var(--teal); color: #fff; }
+.shop button[aria-pressed="true"] small { color: #FFE9A8; }
+.shop button:disabled { opacity: .45; cursor: not-allowed; }
+.shop button.hint { animation: glow 1s ease-in-out infinite; }
+@keyframes glow { 50% { box-shadow: 0 3px 0 var(--ink), 0 0 0 5px rgba(217,164,65,.55); } }
+.twinfo { display: flex; gap: 12px; align-items: center; }
+.twinfo svg { width: 56px; height: 56px; flex: none; }
+.twinfo .txt { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.twinfo .txt small { color: var(--muted); font-size: 13px; }
+.branches { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.branches button { background: var(--plaster); border: 2px solid var(--ink); border-radius: 12px; padding: 10px; text-align: left; display: flex; flex-direction: column; gap: 3px; cursor: pointer; box-shadow: 0 3px 0 var(--ink); min-width: 0; }
+.branches button b { font-size: 15px; }
+.branches button small { font-size: 12.5px; color: var(--ink-2); line-height: 1.3; }
+.branches button:disabled { opacity: .5; cursor: not-allowed; }
+.cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.card { background: var(--plaster); border: 2px solid var(--ink); border-radius: 14px; padding: 10px 8px; text-align: left; display: flex; flex-direction: column; gap: 6px; cursor: pointer; box-shadow: 0 4px 0 var(--ink); min-height: 150px; min-width: 0; position: relative; }
+.card:active { transform: translateY(2px); box-shadow: 0 2px 0 var(--ink); }
+.card .kind { font-size: 10px; letter-spacing: 1.6px; text-transform: uppercase; font-weight: 700; }
+.card.buff .kind { color: var(--rust); } .card.economy .kind { color: #9A6A12; } .card.keep .kind { color: var(--teal-2); }
+.card b { font-family: var(--display); font-size: 16px; line-height: 1.1; }
+.card small { font-size: 12.5px; color: var(--ink-2); line-height: 1.3; }
+.card.hint { animation: glow 1s ease-in-out infinite; }
+.deck { display: flex; gap: 6px; flex-wrap: wrap; }
+.deck .pill { font-size: 12px; }
+.waves { display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 4px; }
+.waves i { height: 8px; border-radius: 4px; background: var(--paper-2); border: 1.5px solid var(--ink); }
+.waves i.done { background: var(--moss); } .waves i.now { background: var(--gold); }
+
+/* ---------- overlays ---------- */
+.veil-bg { position: fixed; inset: 0; background: rgba(58,37,24,.55); display: grid; place-items: end center; z-index: 50; }
+.modal { background: var(--paper); border: 3px solid var(--ink); border-radius: 22px 22px 0 0; padding: 20px max(18px, env(safe-area-inset-right, 0px)) calc(22px + env(safe-area-inset-bottom, 0px)) max(18px, env(safe-area-inset-left, 0px)); width: min(560px, 100%); max-height: 92vh; overflow: auto; display: flex; flex-direction: column; gap: 14px; animation: sheetUp .3s ease-out; }
+@keyframes sheetUp { from { transform: translateY(30px); opacity: 0; } to { transform: none; opacity: 1; } }
+.modal h2 { font-size: 26px; }
+.modal p, .modal ol, .modal ul { margin: 0; }
+.modal ol, .modal ul { padding-left: 1.2em; display: flex; flex-direction: column; gap: 6px; }
+.modal .acts { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+.menu { display: flex; flex-direction: column; gap: 8px; }
+.menu .btn { justify-content: space-between; }
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field label { font-weight: 700; font-size: 15px; }
+.choices { display: flex; flex-wrap: wrap; gap: 6px; }
+.choices .btn { min-height: 38px; padding: 4px 12px; font-size: 14px; font-weight: 600; }
+textarea, input[type=text] { font: inherit; color: var(--ink); background: var(--plaster); border: 2px solid var(--ink); border-radius: 10px; padding: 10px; width: 100%; }
+.copybox { background: var(--plaster); border: 2px solid var(--ink); border-radius: 10px; padding: 10px; font-size: 13px; white-space: pre-wrap; word-break: break-word; max-height: 180px; overflow: auto; }
+.endstats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.endstats div { background: var(--plaster); border: 2px solid var(--ink); border-radius: 12px; padding: 8px; text-align: center; }
+.endstats b { font-family: var(--display); font-size: 24px; display: block; }
+.endstats span { font-size: 11px; letter-spacing: 1.4px; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+
+/* ---------- story / intro ---------- */
+.story { position: fixed; inset: 0; z-index: 40; overflow-y: auto; background: linear-gradient(180deg, #E3D4CB 0%, var(--sky) 50%, #C9B5AB 100%); }
+.story-in { min-height: 100%; max-width: 560px; margin: 0 auto; padding: max(28px, env(safe-area-inset-top, 0px)) max(20px, env(safe-area-inset-right, 0px)) calc(64px + env(safe-area-inset-bottom, 0px)) max(20px, env(safe-area-inset-left, 0px)); display: flex; flex-direction: column; gap: 16px; align-items: center; justify-content: center; text-align: center; }
+.story .hero { width: 100%; max-width: 480px; aspect-ratio: 16 / 9; border: 3px solid var(--ink); border-radius: 18px; overflow: hidden; background: var(--teal-2); box-shadow: 0 6px 0 var(--ink); }
+.story .hero img, .story .hero svg { width: 100%; height: 100%; object-fit: cover; display: block; }
+.title { font-family: var(--display); font-weight: 800; font-size: clamp(44px, 12vw, 72px); line-height: .95; margin: 0; color: var(--ink); letter-spacing: -.02em; }
+.story .lead { font-size: clamp(17px, 4.4vw, 20px); color: var(--ink-2); max-width: 34ch; margin: 0; }
+.story .copy { max-width: 38ch; margin: 0; color: var(--muted); font-size: 15.5px; }
+.story .skip { background: transparent; border: 0; color: var(--muted); text-decoration: underline; cursor: pointer; font-weight: 700; padding: 10px; min-height: 44px; }
+.dots { display: flex; gap: 8px; justify-content: center; }
+.dots span { width: 8px; height: 8px; border-radius: 50%; background: rgba(58,37,24,.25); }
+.dots span.on { background: var(--ink); }
+.rise { animation: rise .7s cubic-bezier(.2,.7,.2,1) both; }
+.rise.d1 { animation-delay: .15s; } .rise.d2 { animation-delay: .35s; } .rise.d3 { animation-delay: .55s; }
+@keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+.legend { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; width: 100%; max-width: 420px; }
+.legend div { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 12.5px; color: var(--ink-2); font-weight: 700; }
+.legend svg { width: 48px; height: 48px; }
+.legend.five { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.doors { display: grid; gap: 10px; width: 100%; max-width: 420px; }
+.door { background: var(--paper); border: 2px solid var(--ink); border-radius: 14px; padding: 12px 14px; text-align: left; display: flex; flex-direction: column; gap: 2px; cursor: pointer; box-shadow: 0 4px 0 var(--ink); }
+.door b { font-family: var(--display); font-size: 19px; }
+.door small { color: var(--muted); font-size: 13px; }
+.door.primary { background: var(--teal); color: #fff; } .door.primary small { color: #D9EEEA; }
+
+@media (min-width: 720px) { .app { max-width: 720px; } .cards { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 340px) { .shop { grid-template-columns: repeat(2, 1fr); } .cards { grid-template-columns: 1fr; } .card { min-height: 0; } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <header class="top">
+    <div class="t"><h1>Tower Defense</h1><span id="modeTag">Prototype 1 · solo run</span></div>
+    <button class="btn icon" id="bMenu" type="button" aria-label="Menu">☰</button>
+  </header>
+  <section class="hud" id="hud" aria-label="Run status"></section>
+  <div class="map-wrap" id="mapWrap"><canvas id="map" width="960" height="640" aria-label="The keep and the road"></canvas><div id="bannerHost"></div></div>
+  <section class="ctl" id="ctl"></section>
+  <section class="coach" id="coach" aria-live="polite"></section>
+  <section class="sheet" id="sheet"></section>
+  <p class="foot">© 2026 F Lane d/b/a One Fifty Labs. All rights reserved. Prototype: placeholder vector art, not final art.</p>
+</div>
+<div class="owner" aria-hidden="true">© 2026 F Lane d/b/a One Fifty Labs</div>
+<div id="overlay"></div>
+<div id="story" class="story" hidden></div>
+<script>
+/* Tower Defense (working title) — Prototype 1 engine.
+   © 2026 F Lane d/b/a One Fifty Labs. All rights reserved.
+   Pure game logic, no DOM. Runs in the browser as window.TD and in node (sim.js).
+   Fixed-step simulation (20 ticks/sec). One map whose path grows twice. */
+(function (root) {
+  'use strict';
+  const TICK = 1 / 20; // seconds per tick
+
+  // ---------- seeded RNG ----------
+  function rng(seed) {
+    let s = (seed >>> 0) || 1;
+    const next = () => { s ^= s << 13; s >>>= 0; s ^= s >>> 17; s ^= s << 5; s >>>= 0; return s / 4294967296; };
+    next.int = (n) => Math.floor(next() * n);
+    next.pick = (a) => a[next.int(a.length)];
+    return next;
+  }
+
+  // ---------- map: 12 cols x 8 rows; the path grows in three stages ----------
+  const COLS = 12, ROWS = 8;
+  // stage 0: enemies walk from the left edge to the keep's old gate at (5,3)
+  // stage 1: the path extends and the keep moves out; stage 2 again. Enemies always walk toward the LAST cell.
+  const PATHS = [
+    [[0, 3], [1, 3], [2, 3], [2, 2], [3, 2], [4, 2], [4, 3], [5, 3]],
+    [[5, 4], [5, 5], [6, 5], [7, 5], [8, 5], [8, 4], [8, 3]],
+    [[9, 3], [9, 2], [10, 2], [11, 2], [11, 3], [11, 4]],
+  ];
+  const SPOTS = [
+    [[1, 2], [3, 3], [3, 1], [5, 2]],
+    [[6, 4], [7, 6], [9, 4]],
+    [[10, 3], [9, 1], [10, 5]],
+  ];
+  function pathUpTo(stage) { return PATHS.slice(0, stage + 1).flat(); }
+  function spotsUpTo(stage) { return SPOTS.slice(0, stage + 1).flat(); }
+  function keepCell(stage) { const p = PATHS[stage]; return p[p.length - 1]; }
+
+  // ---------- towers ----------
+  // Each tower has two upgrade branches (A/B). Upgrading picks one; tier 2 = that branch.
+  const TOWERS = {
+    arrow: { name: 'Arrow', cost: 60, range: 2.8, rate: 1.4, dmg: 13, color: '#B8873A', hit: 'single',
+      desc: 'Steady single-target shots. Cheap and reliable.',
+      up: { A: { name: 'Pierce', cost: 70, desc: 'Arrows pass through, hitting up to 3 enemies in a line.', dmg: 15, pierce: 3 },
+            B: { name: 'Multishot', cost: 70, desc: 'Fires twice as fast.', rate: 2.8, dmg: 11 } } },
+    cannon: { name: 'Cannon', cost: 90, range: 2.4, rate: 0.55, dmg: 30, color: '#6B5B7A', hit: 'splash', splash: 0.9,
+      desc: 'Slow, heavy splash damage. Great against packs. Can\'t hit flyers.', ground: true,
+      up: { A: { name: 'Big Shot', cost: 90, desc: 'Much bigger blast radius.', splash: 1.5, dmg: 34 },
+            B: { name: 'Siege', cost: 90, desc: 'Double damage to armored enemies.', armorMul: 2, dmg: 32 } } },
+    spark: { name: 'Spark', cost: 85, range: 2.6, rate: 1.0, dmg: 16, color: '#4F8FD6', hit: 'chain', chain: 3,
+      desc: 'Chain lightning jumps between enemies. Strong against flyers.', vsFlying: 1.6,
+      up: { A: { name: 'Storm', cost: 80, desc: 'Chains to 5 enemies.', chain: 5 },
+            B: { name: 'Overload', cost: 80, desc: 'Each jump does full damage, not less.', decay: 1 } } },
+    frost: { name: 'Frost', cost: 70, range: 2.4, rate: 0.9, dmg: 6, color: '#8FC8D8', hit: 'splash', splash: 1.0, slow: 0.45, slowT: 1.6,
+      desc: 'Slows everything it touches so other towers get more shots.',
+      up: { A: { name: 'Deep Freeze', cost: 75, desc: 'Slows much harder, for longer.', slow: 0.65, slowT: 2.4 },
+            B: { name: 'Shatter', cost: 75, desc: 'Slowed enemies take 30% more damage from everything.', brittle: 1.3 } } },
+  };
+  const SELL_RATE = 0.7;
+
+  // ---------- enemies ----------
+  const ENEMIES = {
+    grunt:  { name: 'Grunt',  hp: 40,  speed: 1.2, bounty: 6,  leak: 1, color: '#8C6D4F' },
+    runner: { name: 'Runner', hp: 22,  speed: 2.1, bounty: 5,  leak: 1, color: '#D9A441' },
+    flyer:  { name: 'Flyer',  hp: 30,  speed: 1.4, bounty: 7,  leak: 1, color: '#9FB7E8', flying: true },
+    brute:  { name: 'Brute',  hp: 140, speed: 0.85, bounty: 16, leak: 2, color: '#5E6B73', armor: 4 },
+    boss:   { name: 'Warlord', hp: 1100, speed: 0.7, bounty: 80, leak: 5, color: '#A3382E', armor: 6, boss: true },
+  };
+
+  // ---------- waves (10) ----------
+  // each: list of [type, count, gap seconds]; groups run in sequence. stage: which path stage must be unlocked BEFORE the wave.
+  const WAVES = [
+    { stage: 0, groups: [['grunt', 6, 1.4]] },
+    { stage: 0, groups: [['grunt', 8, 1.0], ['runner', 4, 0.8]] },
+    { stage: 0, groups: [['runner', 8, 0.6], ['grunt', 6, 0.9]] },
+    { stage: 1, groups: [['grunt', 10, 0.7], ['flyer', 4, 0.9]] },            // path grows before wave 4
+    { stage: 1, groups: [['brute', 2, 2.0], ['grunt', 10, 0.6]] },
+    { stage: 1, groups: [['flyer', 8, 0.6], ['runner', 10, 0.45]] },
+    { stage: 2, groups: [['grunt', 14, 0.5], ['brute', 3, 1.8]] },            // path grows before wave 7
+    { stage: 2, groups: [['runner', 14, 0.4], ['flyer', 8, 0.6], ['brute', 2, 2]] },
+    { stage: 2, groups: [['brute', 5, 1.4], ['flyer', 10, 0.5], ['grunt', 12, 0.5]] },
+    { stage: 2, groups: [['grunt', 10, 0.5], ['boss', 1, 0], ['runner', 10, 0.4]] },
+  ];
+  let SCALE = 0.5, BOUNTY_MUL = 0.8, BONUS_MUL = 0.8, SPEED = 0.1; // tuned 2026-10-19: smart bot ~63% wins, random ~29%
+  const HP_SCALE = (w) => 1 + w * SCALE; // enemy hp grows per wave index
+
+  // ---------- cards (drafted after each wave; 3 offered, pick 1) ----------
+  const CARDS = [
+    { id: 'sharp', name: 'Sharpened Steel', text: '+15% damage for all Arrow towers.', kind: 'buff', apply: (G) => { G.mods.arrowDmg *= 1.15; } },
+    { id: 'powder', name: 'Black Powder', text: '+20% Cannon damage.', kind: 'buff', apply: (G) => { G.mods.cannonDmg *= 1.2; } },
+    { id: 'rod', name: 'Copper Rods', text: 'Spark chains one extra enemy.', kind: 'buff', apply: (G) => { G.mods.sparkChain += 1; } },
+    { id: 'rime', name: 'Rime', text: 'Frost slows last 50% longer.', kind: 'buff', apply: (G) => { G.mods.frostSlowT *= 1.5; } },
+    { id: 'scope', name: 'Spyglass', text: '+12% range for every tower.', kind: 'buff', apply: (G) => { G.mods.range *= 1.12; } },
+    { id: 'drill', name: 'Drill Sergeant', text: 'All towers fire 10% faster.', kind: 'buff', apply: (G) => { G.mods.rate *= 1.1; } },
+    { id: 'tithe', name: 'Tithe', text: '+2 gold per kill.', kind: 'economy', apply: (G) => { G.mods.bounty += 2; } },
+    { id: 'interest', name: 'Banker', text: 'Earn 5% interest on saved gold at the start of each wave (max 25).', kind: 'economy', apply: (G) => { G.mods.interest += 0.05; } },
+    { id: 'levy', name: 'War Levy', text: '+40 gold now.', kind: 'economy', apply: (G) => { G.gold += 40; } },
+    { id: 'mason', name: 'Guild Masons', text: 'Building and upgrading costs 15% less.', kind: 'economy', apply: (G) => { G.mods.cost *= 0.85; } },
+    { id: 'walls', name: 'Stone Walls', text: 'Restore 3 health to the keep.', kind: 'keep', apply: (G) => { G.health = Math.min(G.maxHealth, G.health + 3); } },
+    { id: 'rally', name: 'Rally Horn', text: 'Towers near the keep (within 2 tiles) do +25% damage.', kind: 'keep', apply: (G) => { G.mods.rally = 1.25; } },
+    { id: 'fletch', name: 'Fletcher\'s Guild', text: 'Arrow towers cost half.', kind: 'economy', apply: (G) => { G.mods.arrowCost = 0.5; } },
+    { id: 'frostbite', name: 'Frostbite', text: 'Slowed enemies take +15% damage.', kind: 'buff', apply: (G) => { G.mods.brittle = Math.max(G.mods.brittle, 1.15); } },
+  ];
+
+  // ---------- game state ----------
+  function newGame(seed) {
+    return {
+      seed, rnd: rng(seed), t: 0, tick: 0,
+      stage: 0, wave: 0, phase: 'build',   // build | wave | draft | won | lost
+      gold: 200, health: 20, maxHealth: 20,
+      towers: [], enemies: [], shots: [], nextId: 1,
+      spawnQueue: [], spawnT: 0, spawnedThisWave: 0,
+      mods: { arrowDmg: 1, cannonDmg: 1, sparkChain: 0, frostSlowT: 1, range: 1, rate: 1, bounty: 0, interest: 0, cost: 1, rally: 1, arrowCost: 1, brittle: 1 },
+      cards: [], offer: null, stats: { kills: 0, leaks: 0, goldEarned: 0, wavesCleared: 0 },
+      log: [],
+    };
+  }
+  const path = (G) => pathUpTo(G.stage);
+  const spots = (G) => spotsUpTo(G.stage);
+  const keep = (G) => keepCell(G.stage);
+  function isSpot(G, c, r) { return spots(G).some(([x, y]) => x === c && y === r); }
+  function towerAt(G, c, r) { return G.towers.find((t) => t.c === c && t.r === r); }
+
+  function cost(G, type) {
+    let k = TOWERS[type].cost * G.mods.cost;
+    if (type === 'arrow') k *= G.mods.arrowCost;
+    return Math.round(k);
+  }
+  function upCost(G, tw) { return Math.round(TOWERS[tw.type].up.A.cost * G.mods.cost); }
+  function canBuild(G, type, c, r) { return G.phase === 'build' && isSpot(G, c, r) && !towerAt(G, c, r) && G.gold >= cost(G, type); }
+  function build(G, type, c, r) {
+    if (!canBuild(G, type, c, r)) return false;
+    G.gold -= cost(G, type);
+    G.towers.push({ id: G.nextId++, type, c, r, tier: 1, branch: null, cd: 0, kills: 0 });
+    return true;
+  }
+  function canUpgrade(G, tw) { return G.phase === 'build' && tw.tier === 1 && G.gold >= upCost(G, tw); }
+  function upgrade(G, tw, branch) {
+    if (!canUpgrade(G, tw)) return false;
+    G.gold -= upCost(G, tw); tw.tier = 2; tw.branch = branch; return true;
+  }
+  function sellValue(G, tw) { const base = TOWERS[tw.type].cost + (tw.tier === 2 ? TOWERS[tw.type].up.A.cost : 0); return Math.round(base * SELL_RATE); }
+  function sell(G, tw) { if (G.phase !== 'build') return false; G.gold += sellValue(G, tw); G.towers = G.towers.filter((t) => t !== tw); return true; }
+
+  function stats(G, tw) {
+    const base = TOWERS[tw.type]; const s = Object.assign({}, base);
+    if (tw.tier === 2) Object.assign(s, base.up[tw.branch]);
+    s.range *= G.mods.range; s.rate *= G.mods.rate;
+    if (tw.type === 'arrow') s.dmg *= G.mods.arrowDmg;
+    if (tw.type === 'cannon') s.dmg *= G.mods.cannonDmg;
+    if (tw.type === 'spark') s.chain += G.mods.sparkChain;
+    if (tw.type === 'frost') s.slowT *= G.mods.frostSlowT;
+    const k = keep(G); if (G.mods.rally > 1 && Math.abs(k[0] - tw.c) + Math.abs(k[1] - tw.r) <= 2) s.dmg *= G.mods.rally;
+    return s;
+  }
+
+  // ---------- waves ----------
+  function startWave(G) {
+    if (G.phase !== 'build' || G.wave >= WAVES.length) return false;
+    const w = WAVES[G.wave];
+    if (G.mods.interest > 0) { const i = Math.min(25, Math.floor(G.gold * G.mods.interest)); G.gold += i; G.stats.goldEarned += i; }
+    G.spawnQueue = [];
+    let t = 0.5;
+    for (const [type, n, gap] of w.groups) { for (let i = 0; i < n; i++) { G.spawnQueue.push({ type, at: t }); t += gap; } t += 1.2; }
+    G.waveT = 0; G.phase = 'wave'; G.spawnedThisWave = 0; G.enemies = []; G.shots = [];
+    return true;
+  }
+  function spawn(G, type) {
+    const e = ENEMIES[type]; const p = path(G);
+    const hp = Math.round(e.hp * HP_SCALE(G.wave)); const spd = e.speed * (1 + G.wave * SPEED);
+    G.enemies.push({ id: G.nextId++, type, hp, maxHp: hp, speed: spd, idx: 0, prog: 0, slow: 0, slowT: 0, flying: !!e.flying, armor: e.armor || 0, dead: false, x: p[0][0], y: p[0][1] });
+  }
+
+  // position along the path as (x, y) in cell units
+  function posOf(G, en) {
+    const p = path(G); const a = p[Math.min(en.idx, p.length - 1)]; const b = p[Math.min(en.idx + 1, p.length - 1)];
+    return [a[0] + (b[0] - a[0]) * en.prog, a[1] + (b[1] - a[1]) * en.prog];
+  }
+  function dist(ax, ay, bx, by) { return Math.hypot(ax - bx, ay - by); }
+
+  function damage(G, en, amount, src) {
+    let d = amount;
+    if (en.armor) d = Math.max(1, d - en.armor * (src.armorMul ? 0 : 1)); // Siege ignores armor (via armorMul) then doubles
+    if (src.armorMul && en.armor) d *= src.armorMul;
+    if (en.slowT > 0 && G.mods.brittle > 1) d *= G.mods.brittle;
+    if (en.slowT > 0 && src.brittle) d *= src.brittle;
+    en.hp -= d;
+    if (en.hp <= 0 && !en.dead) {
+      en.dead = true; G.stats.kills++;
+      const b = Math.round(ENEMIES[en.type].bounty * BOUNTY_MUL) + G.mods.bounty; G.gold += b; G.stats.goldEarned += b;
+      if (src.tower) src.tower.kills++;
+      G.events.push({ k: 'kill', id: en.id, x: en.x, y: en.y, bounty: b });
+    }
+  }
+
+  function step(G) {
+    G.events = [];
+    if (G.phase !== 'wave') return G.events;
+    G.t += TICK; G.tick++; G.waveT += TICK;
+    // spawn
+    while (G.spawnQueue.length && G.spawnQueue[0].at <= G.waveT) { spawn(G, G.spawnQueue.shift().type); G.spawnedThisWave++; }
+    const p = path(G); const last = p.length - 1;
+    // move enemies
+    for (const en of G.enemies) {
+      if (en.dead) continue;
+      if (en.slowT > 0) en.slowT -= TICK;
+      const sp = en.speed * (en.slowT > 0 ? 1 - en.slow : 1);
+      en.prog += sp * TICK;
+      while (en.prog >= 1 && en.idx < last) { en.prog -= 1; en.idx++; }
+      if (en.idx >= last) { // reached the keep
+        en.dead = true; en.leaked = true; const l = ENEMIES[en.type].leak; G.health -= l; G.stats.leaks++;
+        G.events.push({ k: 'leak', id: en.id, leak: l });
+        if (G.health <= 0) { G.health = 0; G.phase = 'lost'; G.events.push({ k: 'lost' }); return G.events; }
+      }
+      [en.x, en.y] = posOf(G, en);
+    }
+    G.enemies = G.enemies.filter((e) => !e.dead || G.tick - (e.deadTick || (e.deadTick = G.tick)) < 6);
+    // towers fire
+    const alive = G.enemies.filter((e) => !e.dead);
+    for (const tw of G.towers) {
+      tw.cd -= TICK; if (tw.cd > 0) continue;
+      const s = stats(G, tw);
+      const inRange = alive.filter((e) => !(s.ground && e.flying) && dist(tw.c, tw.r, e.x, e.y) <= s.range);
+      if (!inRange.length) continue;
+      // target: furthest along the path
+      inRange.sort((a, b) => (b.idx + b.prog) - (a.idx + a.prog));
+      const tgt = inRange[0]; tw.cd = 1 / s.rate;
+      const src = Object.assign({ tower: tw }, s);
+      let dmg = s.dmg * (tgt.flying && s.vsFlying ? s.vsFlying : 1);
+      if (s.hit === 'single') {
+        if (s.pierce) { // line: the next few enemies behind the target along the path
+          const line = inRange.slice(0, s.pierce); line.forEach((e) => damage(G, e, dmg, src));
+          G.events.push({ k: 'shot', tw: tw.id, type: tw.type, from: [tw.c, tw.r], to: [tgt.x, tgt.y], hits: line.map((e) => e.id) });
+        } else { damage(G, tgt, dmg, src); G.events.push({ k: 'shot', tw: tw.id, type: tw.type, from: [tw.c, tw.r], to: [tgt.x, tgt.y], hits: [tgt.id] }); }
+      } else if (s.hit === 'splash') {
+        const hits = alive.filter((e) => !(s.ground && e.flying) && dist(tgt.x, tgt.y, e.x, e.y) <= s.splash);
+        for (const e of hits) { if (s.slow) { e.slow = s.slow; e.slowT = s.slowT; } damage(G, e, dmg, src); }
+        G.events.push({ k: 'shot', tw: tw.id, type: tw.type, from: [tw.c, tw.r], to: [tgt.x, tgt.y], splash: s.splash, hits: hits.map((e) => e.id), frost: !!s.slow });
+      } else if (s.hit === 'chain') {
+        const hits = [tgt]; let cur = tgt; let d = dmg;
+        for (let i = 1; i < s.chain; i++) {
+          const nxt = alive.filter((e) => !hits.includes(e) && dist(cur.x, cur.y, e.x, e.y) <= 1.6).sort((a, b) => dist(cur.x, cur.y, a.x, a.y) - dist(cur.x, cur.y, b.x, b.y))[0];
+          if (!nxt) break; hits.push(nxt); cur = nxt;
+        }
+        hits.forEach((e, i) => damage(G, e, d * (s.decay ? 1 : Math.pow(0.7, i)), src));
+        G.events.push({ k: 'shot', tw: tw.id, type: tw.type, from: [tw.c, tw.r], to: [tgt.x, tgt.y], chain: hits.map((e) => [e.x, e.y]), hits: hits.map((e) => e.id) });
+      }
+    }
+    // wave over?
+    if (!G.spawnQueue.length && !G.enemies.some((e) => !e.dead)) {
+      G.stats.wavesCleared++;
+      const bonus = Math.round((20 + G.wave * 5) * BONUS_MUL); G.gold += bonus; G.stats.goldEarned += bonus;
+      G.events.push({ k: 'waveClear', wave: G.wave, bonus });
+      G.wave++;
+      if (G.wave >= WAVES.length) { G.phase = 'won'; G.events.push({ k: 'won' }); }
+      else { G.phase = 'draft'; G.offer = drawOffer(G); }
+    }
+    return G.events;
+  }
+
+  // ---------- draft ----------
+  function drawOffer(G) {
+    const taken = new Set(G.cards.map((c) => c.id));
+    const pool = CARDS.filter((c) => !taken.has(c.id) || c.id === 'levy' || c.id === 'walls');
+    const out = []; const used = new Set();
+    while (out.length < 3 && pool.length) { const c = G.rnd.pick(pool); if (used.has(c.id)) continue; used.add(c.id); out.push(c); }
+    return out.map((c) => c.id);
+  }
+  function pick(G, cardId) {
+    if (G.phase !== 'draft' || !G.offer.includes(cardId)) return false;
+    const c = CARDS.find((x) => x.id === cardId); c.apply(G); G.cards.push(c); G.offer = null;
+    // the path grows when the next wave needs a higher stage
+    const need = WAVES[G.wave].stage;
+    if (need > G.stage) { G.stage = need; G.events = [{ k: 'grow', stage: G.stage }]; }
+    G.phase = 'build';
+    return true;
+  }
+  function skipDraft(G) { if (G.phase !== 'draft') return false; G.offer = null; const need = WAVES[G.wave].stage; if (need > G.stage) G.stage = need; G.phase = 'build'; return true; }
+
+  // ---------- bot (for the sim and the coach's hints) ----------
+  function nextWaveNeeds(G) {
+    const w = WAVES[G.wave]; if (!w) return {};
+    const n = {}; for (const [t, c] of w.groups) n[t] = (n[t] || 0) + c; return n;
+  }
+  function nextWaveNeeds(G) {
+    const w = WAVES[G.wave]; if (!w) return {};
+    const n = {}; for (const [t, c] of w.groups) n[t] = (n[t] || 0) + c; return n;
+  }
+  function botBuild(G, style) {
+    // style: 'smart' reads the wave preview and builds counters; 'saver' keeps a reserve; 'random' is a sloppy player.
+    let guard = 0;
+    while (guard++ < 14) {
+      const free = spots(G).filter(([c, r]) => !towerAt(G, c, r));
+      const reserve = style === 'saver' && G.towers.length >= 3 ? 50 : 0;
+      const need = nextWaveNeeds(G);
+      const has = (t) => G.towers.filter((x) => x.type === t).length;
+      let type;
+      if (style === 'random') type = G.rnd.pick(Object.keys(TOWERS));
+      else if ((need.brute || need.boss) && has('cannon') < 1 + (need.boss ? 1 : 0)) type = 'cannon';
+      else if (need.flyer && has('spark') < 1 + (need.flyer > 6 ? 1 : 0)) type = 'spark';
+      else if (G.towers.length >= 2 && has('frost') < 1) type = 'frost';
+      else if (G.towers.length >= 5 && has('cannon') < 2) type = 'cannon';
+      else type = 'arrow';
+      const up = G.towers.find((t) => t.tier === 1 && G.gold - reserve >= upCost(G, t));
+      if (up && (!free.length || (G.towers.length >= 4 && G.rnd() < 0.5))) {
+        const br = up.type === 'cannon' && (need.brute || need.boss) ? 'B' : (up.type === 'spark' ? 'A' : (G.rnd() < 0.5 ? 'A' : 'B'));
+        upgrade(G, up, br); continue;
+      }
+      if (!free.length) break;
+      if (G.gold - reserve < cost(G, type)) { if (type !== 'arrow' && G.gold - reserve >= cost(G, 'arrow') && G.towers.length < 2) type = 'arrow'; else break; }
+      const p = path(G);
+      const score = ([c, r]) => p.filter(([x, y]) => dist(c, r, x, y) <= TOWERS[type].range).length + (style === 'random' ? G.rnd() * 5 : 0);
+      free.sort((a, b) => score(b) - score(a));
+      build(G, type, free[0][0], free[0][1]);
+    }
+  }
+  function botPick(G) { const o = G.offer; const prefer = ['scope', 'drill', 'sharp', 'tithe', 'rod', 'rime', 'powder', 'mason', 'frostbite', 'rally', 'interest', 'fletch', 'levy', 'walls']; return o.slice().sort((a, b) => prefer.indexOf(a) - prefer.indexOf(b))[0]; }
+
+  function playOut(G, style) {
+    let guard = 0;
+    while (G.phase !== 'won' && G.phase !== 'lost' && guard++ < 200000) {
+      if (G.phase === 'build') { botBuild(G, style); startWave(G); }
+      else if (G.phase === 'wave') step(G);
+      else if (G.phase === 'draft') pick(G, botPick(G));
+    }
+    return G;
+  }
+  function simulate(n, seed, style) {
+    const res = { n, wins: 0, waves: [], health: [], gold: [], leaks: 0, cards: {} };
+    for (let i = 0; i < n; i++) {
+      const G = playOut(newGame(seed + i * 7919), style);
+      if (G.phase === 'won') res.wins++;
+      res.waves.push(G.stats.wavesCleared); res.health.push(G.health); res.gold.push(G.gold); res.leaks += G.stats.leaks;
+      G.cards.forEach((c) => { res.cards[c.id] = (res.cards[c.id] || 0) + 1; });
+    }
+    return res;
+  }
+
+  const TD = { TICK, COLS, ROWS, PATHS, SPOTS, TOWERS, ENEMIES, WAVES, CARDS, SELL_RATE, rng, newGame, path, spots, keep, isSpot, towerAt, cost, upCost, canBuild, build, canUpgrade, upgrade, sellValue, sell, stats, startWave, step, pick, skipDraft, drawOffer, botBuild, botPick, playOut, simulate, posOf, nextWaveNeeds, _setScale: (v) => { SCALE = v; }, _setEcon: (b, w) => { BOUNTY_MUL = b; BONUS_MUL = w; }, _setSpeed: (v) => { SPEED = v; } };
+  if (typeof module !== 'undefined' && module.exports) module.exports = TD; else root.TD = TD;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+/* Tower Defense Prototype 1 — vector art. Ink linework over flat painterly color.
+   © 2026 F Lane d/b/a One Fifty Labs. All rights reserved.
+   Everything here draws on a canvas 2D context in cell units (the renderer scales).
+   Placeholder art in the chosen direction: teal slate, warm timber, cream plaster, moss. */
+(function () {
+  'use strict';
+  const INK = '#3A2518', TEAL = '#4E8F86', TEAL2 = '#3A6E67', TIMBER = '#6B4226', TIMBER2 = '#4E2F1A', PLASTER = '#F7EEDC', PLASTER2 = '#E6D6B8', MOSS = '#6E9A4C', MOSS2 = '#4F7A33', GOLD = '#D9A441', RUST = '#B8533A', FROST = '#8FC8D8', SPARK = '#4F8FD6', STONE = '#9A9CA3', STONE2 = '#6F7178';
+
+  function ink(ctx, w) { ctx.strokeStyle = INK; ctx.lineWidth = w; ctx.lineJoin = 'round'; ctx.lineCap = 'round'; }
+  function poly(ctx, pts, fill, lw) { ctx.beginPath(); pts.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); ctx.closePath(); if (fill) { ctx.fillStyle = fill; ctx.fill(); } if (lw) { ink(ctx, lw); ctx.stroke(); } }
+  function rect(ctx, x, y, w, h, fill, lw, r) {
+    ctx.beginPath(); if (r) ctx.roundRect(x, y, w, h, r); else ctx.rect(x, y, w, h);
+    if (fill) { ctx.fillStyle = fill; ctx.fill(); } if (lw) { ink(ctx, lw); ctx.stroke(); }
+  }
+  function circ(ctx, x, y, r, fill, lw) { ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); if (fill) { ctx.fillStyle = fill; ctx.fill(); } if (lw) { ink(ctx, lw); ctx.stroke(); } }
+  function shade(ctx, x, y, w, h, a) { ctx.fillStyle = `rgba(58,37,24,${a})`; ctx.fillRect(x, y, w, h); }
+
+  // ---------- ground ----------
+  function grass(ctx, x, y, s, seed) {
+    ctx.fillStyle = (seed % 3 === 0) ? '#75A152' : MOSS; ctx.fillRect(x, y, s, s);
+    // a few blades
+    ctx.strokeStyle = MOSS2; ctx.lineWidth = s * .03;
+    for (let i = 0; i < 3; i++) { const gx = x + ((seed * 37 + i * 53) % 80) / 100 * s + s * .1, gy = y + ((seed * 19 + i * 71) % 80) / 100 * s + s * .1; ctx.beginPath(); ctx.moveTo(gx, gy + s * .08); ctx.lineTo(gx + s * .03, gy - s * .06); ctx.stroke(); }
+  }
+  function road(ctx, x, y, s, seed, future) {
+    if (future) { ctx.fillStyle = 'rgba(241,228,204,.35)'; ctx.fillRect(x, y, s, s); ctx.setLineDash([s * .12, s * .1]); ink(ctx, s * .04); ctx.strokeStyle = 'rgba(58,37,24,.55)'; ctx.strokeRect(x + s * .08, y + s * .08, s * .84, s * .84); ctx.setLineDash([]); return; }
+    ctx.fillStyle = '#C9A77A'; ctx.fillRect(x, y, s, s);
+    ctx.fillStyle = '#B8935F';
+    for (let i = 0; i < 3; i++) { const px = x + ((seed * 31 + i * 47) % 70) / 100 * s + s * .1, py = y + ((seed * 13 + i * 59) % 70) / 100 * s + s * .1; circ(ctx, px, py, s * .05, '#B8935F'); }
+  }
+  function spot(ctx, x, y, s, free, hot) {
+    ctx.save(); ctx.translate(x + s / 2, y + s / 2);
+    // a stone plinth
+    poly(ctx, [[-s * .36, s * .1], [s * .36, s * .1], [s * .3, s * .3], [-s * .3, s * .3]], STONE2, 0);
+    poly(ctx, [[-s * .36, -s * .06], [s * .36, -s * .06], [s * .36, s * .1], [-s * .36, s * .1]], STONE, s * .035);
+    if (free) { ctx.setLineDash([s * .08, s * .07]); ink(ctx, s * .04); ctx.strokeStyle = hot ? GOLD : 'rgba(58,37,24,.6)'; circ(ctx, 0, 0, s * .4, null, s * .04); ctx.setLineDash([]); if (hot) { ctx.fillStyle = GOLD; ctx.font = `bold ${s * .5}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('+', 0, -s * .02); } }
+    ctx.restore();
+  }
+
+  // ---------- the keep ----------
+  function keepArt(ctx, x, y, s, hurt) {
+    ctx.save(); ctx.translate(x + s / 2, y + s / 2);
+    const k = s * 1.15; // slightly bigger than a cell
+    // walls
+    rect(ctx, -k * .42, -k * .12, k * .84, k * .5, PLASTER, k * .045, k * .04);
+    shade(ctx, -k * .42, k * .22, k * .84, k * .16, .12);
+    // timber frame lines
+    ctx.strokeStyle = TIMBER; ctx.lineWidth = k * .035;
+    ctx.beginPath(); ctx.moveTo(-k * .42, k * .12); ctx.lineTo(k * .42, k * .12); ctx.moveTo(-k * .14, -k * .12); ctx.lineTo(-k * .14, k * .38); ctx.moveTo(k * .14, -k * .12); ctx.lineTo(k * .14, k * .38); ctx.stroke();
+    // door
+    rect(ctx, -k * .09, k * .1, k * .18, k * .28, TIMBER2, k * .035, [k * .09, k * .09, 0, 0]);
+    // towers either side
+    rect(ctx, -k * .5, -k * .28, k * .2, k * .66, PLASTER2, k * .045, k * .02);
+    rect(ctx, k * .3, -k * .28, k * .2, k * .66, PLASTER2, k * .045, k * .02);
+    // teal slate roofs
+    poly(ctx, [[-k * .54, -k * .28], [-k * .4, -k * .55], [-k * .26, -k * .28]], TEAL, k * .045);
+    poly(ctx, [[k * .26, -k * .28], [k * .4, -k * .55], [k * .54, -k * .28]], TEAL, k * .045);
+    poly(ctx, [[-k * .34, -k * .12], [0, -k * .44], [k * .34, -k * .12]], TEAL2, k * .045);
+    // slate lines
+    ctx.strokeStyle = 'rgba(58,37,24,.35)'; ctx.lineWidth = k * .02;
+    ctx.beginPath(); ctx.moveTo(-k * .2, -k * .25); ctx.lineTo(k * .2, -k * .25); ctx.moveTo(-k * .1, -k * .34); ctx.lineTo(k * .1, -k * .34); ctx.stroke();
+    // banner
+    ctx.fillStyle = hurt ? RUST : GOLD; ctx.beginPath(); ctx.moveTo(0, -k * .44); ctx.lineTo(0, -k * .62); ctx.lineTo(k * .16, -k * .57); ctx.lineTo(0, -k * .52); ctx.closePath(); ctx.fill(); ink(ctx, k * .03); ctx.stroke();
+    // ivy
+    circ(ctx, -k * .3, k * .3, k * .09, MOSS); circ(ctx, -k * .22, k * .36, k * .07, MOSS2); circ(ctx, k * .36, k * .34, k * .08, MOSS);
+    ctx.restore();
+  }
+
+  // ---------- towers ----------
+  const TOWER_ART = {
+    arrow(ctx, s, tier, branch) {
+      // wooden archer platform with a teal slate cap
+      rect(ctx, -s * .22, -s * .1, s * .44, s * .42, TIMBER, s * .04, s * .03);
+      ctx.strokeStyle = TIMBER2; ctx.lineWidth = s * .025; ctx.beginPath(); ctx.moveTo(-s * .22, -s * .1); ctx.lineTo(s * .22, s * .32); ctx.moveTo(s * .22, -s * .1); ctx.lineTo(-s * .22, s * .32); ctx.stroke();
+      rect(ctx, -s * .28, -s * .22, s * .56, s * .14, PLASTER, s * .04, s * .02);
+      poly(ctx, [[-s * .32, -s * .22], [0, -s * .5], [s * .32, -s * .22]], TEAL, s * .04);
+      // bow
+      ink(ctx, s * .035); ctx.beginPath(); ctx.arc(s * .02, -s * .32, s * .12, -Math.PI * .5, Math.PI * .5); ctx.stroke(); ctx.beginPath(); ctx.moveTo(s * .02, -s * .44); ctx.lineTo(s * .02, -s * .2); ctx.stroke();
+      if (tier === 2) { ctx.fillStyle = branch === 'A' ? RUST : GOLD; circ(ctx, s * .2, -s * .42, s * .07, null, s * .03); circ(ctx, s * .2, -s * .42, s * .07, branch === 'A' ? RUST : GOLD); }
+    },
+    cannon(ctx, s, tier, branch) {
+      rect(ctx, -s * .28, -s * .04, s * .56, s * .38, STONE, s * .04, s * .04);
+      ctx.strokeStyle = STONE2; ctx.lineWidth = s * .02; ctx.beginPath(); ctx.moveTo(-s * .28, s * .15); ctx.lineTo(s * .28, s * .15); ctx.moveTo(0, -s * .04); ctx.lineTo(0, s * .15); ctx.moveTo(-s * .14, s * .15); ctx.lineTo(-s * .14, s * .34); ctx.moveTo(s * .14, s * .15); ctx.lineTo(s * .14, s * .34); ctx.stroke();
+      // barrel
+      ctx.save(); ctx.translate(0, -s * .12); ctx.rotate(-0.5);
+      rect(ctx, -s * .08, -s * .3, s * .16, s * .34, tier === 2 ? '#3F3A44' : '#55505C', s * .04, s * .04);
+      circ(ctx, 0, -s * .3, s * .09, '#2A262E', s * .035);
+      ctx.restore();
+      circ(ctx, 0, s * .02, s * .1, TIMBER, s * .035);
+      if (tier === 2) circ(ctx, s * .2, -s * .18, s * .07, branch === 'A' ? RUST : GOLD, s * .03);
+    },
+    spark(ctx, s, tier, branch) {
+      // tall copper spire
+      poly(ctx, [[-s * .16, s * .34], [s * .16, s * .34], [s * .08, -s * .2], [-s * .08, -s * .2]], '#B07A3C', s * .04);
+      poly(ctx, [[-s * .08, -s * .2], [s * .08, -s * .2], [0, -s * .48]], '#8E5F2C', s * .04);
+      circ(ctx, 0, -s * .5, s * .09, SPARK, s * .035);
+      ctx.strokeStyle = '#DCEFFF'; ctx.lineWidth = s * .03; ctx.beginPath(); ctx.moveTo(-s * .05, -s * .62); ctx.lineTo(s * .02, -s * .54); ctx.lineTo(-s * .02, -s * .5); ctx.lineTo(s * .05, -s * .4); ctx.stroke();
+      if (tier === 2) { ctx.strokeStyle = SPARK; ctx.lineWidth = s * .03; for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.arc(0, -s * .5, s * .16 + i * s * .06, Math.PI * 1.1, Math.PI * 1.9); ctx.stroke(); } }
+    },
+    frost(ctx, s, tier, branch) {
+      rect(ctx, -s * .22, s * .02, s * .44, s * .32, PLASTER2, s * .04, s * .03);
+      ctx.strokeStyle = TIMBER; ctx.lineWidth = s * .03; ctx.beginPath(); ctx.moveTo(-s * .22, s * .18); ctx.lineTo(s * .22, s * .18); ctx.stroke();
+      // crystal
+      poly(ctx, [[-s * .14, s * .02], [0, -s * .5], [s * .14, s * .02]], FROST, s * .04);
+      poly(ctx, [[-s * .14, s * .02], [0, -s * .5], [-s * .02, s * .02]], '#C7E6EE', 0);
+      poly(ctx, [[-s * .24, -s * .1], [-s * .12, -s * .34], [-s * .06, -s * .02]], FROST, s * .035);
+      poly(ctx, [[s * .24, -s * .1], [s * .12, -s * .3], [s * .06, -s * .02]], FROST, s * .035);
+      if (tier === 2) circ(ctx, 0, -s * .58, s * .07, branch === 'A' ? '#DCEFFF' : GOLD, s * .03);
+    },
+  };
+  function towerArt(ctx, type, x, y, s, tier, branch, firing) {
+    ctx.save(); ctx.translate(x + s / 2, y + s / 2 + s * .02);
+    // shadow
+    ctx.fillStyle = 'rgba(58,37,24,.25)'; ctx.beginPath(); ctx.ellipse(0, s * .36, s * .3, s * .09, 0, 0, Math.PI * 2); ctx.fill();
+    if (firing) { ctx.translate(0, -s * .02); }
+    TOWER_ART[type](ctx, s, tier, branch);
+    if (tier === 2) { // tier ribbon
+      ctx.fillStyle = branch === 'A' ? RUST : GOLD; ctx.font = `bold ${s * .18}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      rect(ctx, -s * .12, s * .3, s * .24, s * .16, branch === 'A' ? RUST : GOLD, s * .025, s * .04); ctx.fillStyle = INK; ctx.fillText('II', 0, s * .385);
+    }
+    ctx.restore();
+  }
+  function towerIconSVG(type) {
+    // for buttons: render once to an offscreen canvas and return a data URL
+    const c = document.createElement('canvas'); c.width = c.height = 96; const ctx = c.getContext('2d');
+    towerArt(ctx, type, 0, 6, 84, 1, null, false);
+    return c.toDataURL();
+  }
+
+  // ---------- enemies ----------
+  const ENEMY_ART = {
+    grunt(ctx, s, t) {
+      const bob = Math.sin(t * 9) * s * .02;
+      poly(ctx, [[-s * .16, s * .16], [s * .16, s * .16], [s * .13, -s * .12 + bob], [-s * .13, -s * .12 + bob]], '#8C6D4F', s * .035); // body
+      circ(ctx, 0, -s * .2 + bob, s * .13, '#C9A077', s * .035); // head
+      circ(ctx, -s * .05, -s * .22 + bob, s * .02, INK); circ(ctx, s * .05, -s * .22 + bob, s * .02, INK);
+      rect(ctx, s * .1, -s * .3 + bob, s * .05, s * .34, TIMBER, s * .025); // club
+    },
+    runner(ctx, s, t) {
+      const lean = Math.sin(t * 16) * s * .03;
+      poly(ctx, [[-s * .14, s * .14], [s * .1, s * .14], [s * .16 + lean, -s * .08], [-s * .06 + lean, -s * .12]], '#D9A441', s * .035);
+      circ(ctx, s * .1 + lean, -s * .18, s * .1, '#F0C66A', s * .035);
+      circ(ctx, s * .13 + lean, -s * .19, s * .02, INK);
+      ctx.strokeStyle = INK; ctx.lineWidth = s * .03; ctx.beginPath(); ctx.moveTo(-s * .1, s * .14); ctx.lineTo(-s * .2 - lean, s * .24); ctx.moveTo(s * .06, s * .14); ctx.lineTo(s * .12 + lean, s * .26); ctx.stroke();
+    },
+    flyer(ctx, s, t) {
+      const flap = Math.sin(t * 14) * s * .12;
+      ctx.translate(0, -s * .14 + Math.sin(t * 5) * s * .03);
+      poly(ctx, [[-s * .06, 0], [-s * .34, -s * .1 - flap], [-s * .3, s * .06 - flap * .5]], '#9FB7E8', s * .03);
+      poly(ctx, [[s * .06, 0], [s * .34, -s * .1 - flap], [s * .3, s * .06 - flap * .5]], '#9FB7E8', s * .03);
+      ctx.beginPath(); ctx.ellipse(0, 0, s * .1, s * .14, 0, 0, Math.PI * 2); ctx.fillStyle = '#7A93CC'; ctx.fill(); ink(ctx, s * .035); ctx.stroke();
+      circ(ctx, 0, -s * .1, s * .07, '#B9CBF0', s * .03); circ(ctx, -s * .025, -s * .11, s * .015, INK); circ(ctx, s * .025, -s * .11, s * .015, INK);
+    },
+    brute(ctx, s, t) {
+      const bob = Math.sin(t * 6) * s * .02;
+      poly(ctx, [[-s * .24, s * .2], [s * .24, s * .2], [s * .22, -s * .16 + bob], [-s * .22, -s * .16 + bob]], '#5E6B73', s * .04); // armored body
+      ctx.strokeStyle = '#3F474D'; ctx.lineWidth = s * .025; ctx.beginPath(); ctx.moveTo(-s * .2, 0 + bob); ctx.lineTo(s * .2, 0 + bob); ctx.moveTo(-s * .18, s * .1); ctx.lineTo(s * .18, s * .1); ctx.stroke();
+      rect(ctx, -s * .14, -s * .34 + bob, s * .28, s * .2, '#7E8A91', s * .035, s * .04); // helm
+      rect(ctx, -s * .09, -s * .26 + bob, s * .18, s * .04, INK); // visor
+      rect(ctx, -s * .36, -s * .22 + bob, s * .09, s * .4, '#8C6D4F', s * .03, s * .02); // shield
+    },
+    boss(ctx, s, t) {
+      const bob = Math.sin(t * 4) * s * .03;
+      poly(ctx, [[-s * .34, s * .3], [s * .34, s * .3], [s * .3, -s * .18 + bob], [-s * .3, -s * .18 + bob]], '#A3382E', s * .045);
+      shade(ctx, -s * .3, s * .1, s * .6, s * .2, .15);
+      rect(ctx, -s * .18, -s * .4 + bob, s * .36, s * .26, '#7A2A22', s * .04, s * .05);
+      // horns
+      poly(ctx, [[-s * .18, -s * .36 + bob], [-s * .36, -s * .62 + bob], [-s * .1, -s * .42 + bob]], '#E6D6B8', s * .035);
+      poly(ctx, [[s * .18, -s * .36 + bob], [s * .36, -s * .62 + bob], [s * .1, -s * .42 + bob]], '#E6D6B8', s * .035);
+      circ(ctx, -s * .07, -s * .28 + bob, s * .03, GOLD); circ(ctx, s * .07, -s * .28 + bob, s * .03, GOLD);
+      rect(ctx, s * .3, -s * .5 + bob, s * .06, s * .7, TIMBER2, s * .03); poly(ctx, [[s * .33, -s * .5 + bob], [s * .2, -s * .6 + bob], [s * .46, -s * .6 + bob]], STONE, s * .03); // axe
+    },
+  };
+  function enemyArt(ctx, type, x, y, s, t, hpFrac, slowed) {
+    ctx.save(); ctx.translate(x, y);
+    const sz = type === 'boss' ? s * 1.5 : type === 'brute' ? s * 1.15 : s * .95;
+    if (type !== 'flyer') { ctx.fillStyle = 'rgba(58,37,24,.25)'; ctx.beginPath(); ctx.ellipse(0, sz * .22, sz * .22, sz * .07, 0, 0, Math.PI * 2); ctx.fill(); }
+    else { ctx.fillStyle = 'rgba(58,37,24,.15)'; ctx.beginPath(); ctx.ellipse(0, sz * .3, sz * .16, sz * .05, 0, 0, Math.PI * 2); ctx.fill(); }
+    ctx.save(); ENEMY_ART[type](ctx, sz, t); ctx.restore();
+    if (slowed) { ctx.fillStyle = 'rgba(143,200,216,.45)'; circ(ctx, 0, -sz * .05, sz * .3, 'rgba(143,200,216,.4)'); ctx.strokeStyle = FROST; ctx.lineWidth = sz * .03; ctx.beginPath(); ctx.arc(0, -sz * .05, sz * .3, 0, Math.PI * 2); ctx.stroke(); }
+    if (hpFrac < 1) { // hp bar
+      const w = sz * .5; rect(ctx, -w / 2, -sz * .5, w, sz * .07, '#2A1A12', 0, 2);
+      rect(ctx, -w / 2, -sz * .5, w * hpFrac, sz * .07, hpFrac > .5 ? '#7FC06C' : hpFrac > .25 ? GOLD : RUST, 0, 2);
+      ink(ctx, sz * .018); ctx.strokeRect(-w / 2, -sz * .5, w, sz * .07);
+    }
+    ctx.restore();
+  }
+
+  // ---------- the coach's face ----------
+  const COACH_SVG = `<svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="34" r="20" fill="#F0C66A" stroke="#3A2518" stroke-width="3"/><path d="M12 30 Q32 6 52 30 Q44 22 32 24 Q20 22 12 30z" fill="#4E8F86" stroke="#3A2518" stroke-width="3" stroke-linejoin="round"/><circle cx="25" cy="36" r="2.5" fill="#3A2518"/><circle cx="39" cy="36" r="2.5" fill="#3A2518"/><path d="M24 44 Q32 50 40 44" stroke="#3A2518" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M46 26 l6 -10" stroke="#3A2518" stroke-width="3" stroke-linecap="round"/></svg>`;
+
+  window.TDArt = { towerArt, towerIconSVG, enemyArt, keepArt, grass, road, spot, COACH_SVG, INK, GOLD, RUST, FROST, SPARK, TEAL, MOSS, PLASTER };
+})();
+
+</script>
+<script>
+/* Tower Defense Prototype 1 — UI. © 2026 F Lane d/b/a One Fifty Labs. All rights reserved. */
+(function () {
+  'use strict';
+  const TD = window.TD, A = window.TDArt;
+  const $ = (q) => document.querySelector(q);
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const lsGet = (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } };
+  const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
+
+  let G = null;
+  const ui = { sel: null, pick: 'arrow', speed: 1, coach: true, lesson: 0, over: false, fx: [], flash: null, tplay: 0, lastT: 0, raf: 0, feedbackDone: false, started: false, runs: 0, fast: false };
+  const FB = { q: {}, text: '', nm: '', saved: null };
+  const icons = {};
+
+  // ---------- render: HUD, controls, coach, sheet ----------
+  function hud() {
+    const hpPct = Math.max(0, 100 * G.health / G.maxHealth);
+    $('#hud').innerHTML = `
+      <div class="stat hp"><span>Keep</span><b>${G.health}</b><div class="bar"><i style="width:${hpPct}%"></i></div></div>
+      <div class="stat gold"><span>Gold</span><b>${G.gold}</b></div>
+      <div class="stat wave"><span>Wave</span><b>${Math.min(G.wave + 1, TD.WAVES.length)}<small style="font-size:14px;color:var(--muted)">/${TD.WAVES.length}</small></b></div>`;
+  }
+  function nextRow() {
+    const w = TD.WAVES[G.wave]; if (!w) return '';
+    const need = TD.nextWaveNeeds(G);
+    const grows = w.stage > G.stage;
+    return `<div class="next grow"><span class="lbl">${G.phase === 'wave' ? 'This wave' : 'Next wave'}${grows ? ' · the road grows first' : ''}</span><div class="row">${Object.entries(need).map(([t, n]) => `<span class="pill"><i style="background:${TD.ENEMIES[t].color}"></i>${n} ${esc(TD.ENEMIES[t].name)}${n > 1 ? 's' : ''}</span>`).join('')}</div></div>`;
+  }
+  function ctl() {
+    const inBuild = G.phase === 'build';
+    $('#ctl').innerHTML = nextRow() + (inBuild
+      ? `<button class="btn primary" data-act="start" type="button" id="bStart">Send the wave</button>`
+      : G.phase === 'wave' ? `<button class="btn ${ui.speed > 1 ? 'gold' : ''}" data-act="speed" type="button" aria-pressed="${ui.speed > 1}">${ui.speed > 1 ? '3×' : '1×'}</button>` : '');
+  }
+  function coachLine() {
+    if (!ui.coach) { $('#coach').innerHTML = ''; $('#coach').style.display = 'none'; return; }
+    $('#coach').style.display = '';
+    let t;
+    if (G.phase === 'build') {
+      const free = TD.spots(G).filter(([c, r]) => !TD.towerAt(G, c, r));
+      const need = TD.nextWaveNeeds(G);
+      if (!G.towers.length) t = 'Pick a tower below, then tap a glowing <b>+</b> spot on the map to build it. Arrows are a good start.';
+      else if (need.flyer && !G.towers.some((x) => x.type === 'spark' || x.type === 'arrow')) t = 'Flyers are coming. Cannons can’t hit them; <b>Spark</b> or Arrows can.';
+      else if ((need.brute || need.boss) && !G.towers.some((x) => x.type === 'cannon')) t = 'Armored <b>Brutes</b> shrug off arrows. A <b>Cannon</b> (or Spark) cracks them.';
+      else if (G.towers.some((x) => x.tier === 1 && TD.canUpgrade(G, x)) && (!free.length || G.gold > 150)) t = 'Tap one of your towers to <b>upgrade</b> it. Each has two paths; pick one.';
+      else if (free.length && G.gold >= TD.cost(G, 'arrow')) t = `You can afford another tower. ${free.length} spot${free.length > 1 ? 's' : ''} open.`;
+      else t = 'Ready? Hit <b>Send the wave</b>. You can’t build while it runs, so spend first.';
+    } else if (G.phase === 'wave') t = ui.speed > 1 ? 'Watch the road. Tap <b>1×</b> if it gets hairy.' : 'Watch your build work. Tap <b>3×</b> to speed up.';
+    else if (G.phase === 'draft') t = 'Wave cleared! Pick <b>one card</b>. It stays for the whole run.';
+    else t = '';
+    $('#coach').innerHTML = `<div class="av">${A.COACH_SVG}</div><p><b class="who">Pell:</b> ${t}</p>`;
+  }
+  function towerIcon(type) { if (!icons[type]) icons[type] = A.towerIconSVG(type); return `<img src="${icons[type]}" alt="${esc(TD.TOWERS[type].name)}" width="40" height="40">`; }
+  function sheet() {
+    const el = $('#sheet');
+    if (G.phase === 'draft' && G.offer) {
+      const best = TD.botPick(G);
+      el.innerHTML = `<div><span class="eyebrow">Wave ${G.wave} cleared</span><h2>Draft a card</h2></div>
+        <div class="cards">${G.offer.map((id) => { const c = TD.CARDS.find((x) => x.id === id); return `<button class="card ${c.kind} ${ui.coach && id === best ? 'hint' : ''}" data-pick="${id}" type="button"><span class="kind">${c.kind}</span><b>${esc(c.name)}</b><small>${esc(c.text)}</small></button>`; }).join('')}</div>
+        ${deckHTML()}`;
+      return;
+    }
+    if (G.phase === 'won' || G.phase === 'lost') { el.innerHTML = `<div class="acts"><button class="btn primary" data-act="again" type="button">Play again</button><button class="btn" data-act="feedback" type="button">Give feedback</button></div>`; return; }
+    if (G.phase === 'wave') { el.innerHTML = `<div class="waves">${TD.WAVES.map((w, i) => `<i class="${i < G.wave ? 'done' : i === G.wave ? 'now' : ''}"></i>`).join('')}</div>${deckHTML()}`; return; }
+    // build phase
+    const sel = ui.sel ? TD.towerAt(G, ui.sel[0], ui.sel[1]) : null;
+    if (sel) {
+      const s = TD.stats(G, sel); const base = TD.TOWERS[sel.type];
+      const canUp = TD.canUpgrade(G, sel);
+      el.innerHTML = `<div class="twinfo">${towerIcon(sel.type).replace('width="40" height="40"', 'width="56" height="56"')}<div class="txt"><b>${esc(base.name)}${sel.tier === 2 ? ' · ' + esc(base.up[sel.branch].name) : ''}</b><small>${esc(sel.tier === 2 ? base.up[sel.branch].desc : base.desc)}</small><small>Damage ${s.dmg.toFixed(0)} · ${s.rate.toFixed(1)}/s · range ${s.range.toFixed(1)} · ${sel.kills} kills</small></div></div>
+        ${sel.tier === 1 ? `<h3>Upgrade · ${TD.upCost(G, sel)} gold</h3><div class="branches">${['A', 'B'].map((b) => `<button type="button" data-up="${b}" ${canUp ? '' : 'disabled'}><b>${esc(base.up[b].name)}</b><small>${esc(base.up[b].desc)}</small></button>`).join('')}</div>` : '<p class="muted">Fully upgraded.</p>'}
+        <div class="acts"><button class="btn sm ghost" data-act="sell" type="button">Sell for ${TD.sellValue(G, sel)}</button><button class="btn sm" data-act="unsel" type="button">Done</button></div>`;
+      return;
+    }
+    const free = TD.spots(G).filter(([c, r]) => !TD.towerAt(G, c, r)).length;
+    el.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px"><h3>Build</h3><span class="muted" style="font-size:13px">${free} spot${free === 1 ? '' : 's'} open · tap a tower to upgrade</span></div>
+      <div class="shop">${Object.entries(TD.TOWERS).map(([k, t]) => `<button type="button" data-pick="${k}" aria-pressed="${ui.pick === k}" ${G.gold < TD.cost(G, k) ? 'disabled' : ''} class="${ui.coach && !G.towers.length && k === 'arrow' ? 'hint' : ''}">${towerIcon(k)}<b>${esc(t.name)}</b><small>${TD.cost(G, k)}</small></button>`).join('')}</div>
+      <p class="muted" style="font-size:13.5px">${esc(TD.TOWERS[ui.pick].desc)}</p>
+      ${deckHTML()}`;
+  }
+  function deckHTML() { return G.cards.length ? `<div class="deck">${G.cards.map((c) => `<span class="pill" title="${esc(c.text)}">${esc(c.name)}</span>`).join('')}</div>` : ''; }
+  function renderAll() { hud(); ctl(); coachLine(); sheet(); draw(); }
+
+  // ---------- canvas ----------
+  const cv = $('#map'), cx = cv.getContext('2d');
+  const CELL = 80; // canvas px per cell; canvas is 960x640 = 12x8
+  function cellAt(evX, evY) {
+    const r = cv.getBoundingClientRect(); const x = (evX - r.left) / r.width * TD.COLS, y = (evY - r.top) / r.height * TD.ROWS;
+    return [Math.floor(x), Math.floor(y)];
+  }
+  function draw() {
+    const t = ui.tplay;
+    const path = TD.path(G), pathSet = new Set(path.map(([x, y]) => x + ',' + y));
+    const nextStage = TD.WAVES[G.wave] && TD.WAVES[G.wave].stage > G.stage ? TD.WAVES[G.wave].stage : null;
+    const futureSet = new Set(nextStage !== null ? TD.PATHS[nextStage].map(([x, y]) => x + ',' + y) : []);
+    for (let r = 0; r < TD.ROWS; r++) for (let c = 0; c < TD.COLS; c++) {
+      const k = c + ',' + r;
+      if (pathSet.has(k)) A.road(cx, c * CELL, r * CELL, CELL, c * 7 + r * 13);
+      else { A.grass(cx, c * CELL, r * CELL, CELL, c * 7 + r * 13); if (futureSet.has(k)) A.road(cx, c * CELL, r * CELL, CELL, 0, true); }
+    }
+    // future spots
+    if (nextStage !== null) TD.SPOTS[nextStage].forEach(([c, r]) => { cx.save(); cx.globalAlpha = .35; A.spot(cx, c * CELL, r * CELL, CELL, true, false); cx.restore(); });
+    // spots
+    const inBuild = G.phase === 'build';
+    TD.spots(G).forEach(([c, r]) => { const tw = TD.towerAt(G, c, r); if (!tw) A.spot(cx, c * CELL, r * CELL, CELL, true, inBuild && G.gold >= TD.cost(G, ui.pick)); else A.spot(cx, c * CELL, r * CELL, CELL, false, false); });
+    // entrance marker
+    const [ex, ey] = path[0]; cx.fillStyle = A.RUST; cx.beginPath(); cx.moveTo(ex * CELL + 10, ey * CELL + 20); cx.lineTo(ex * CELL + 34, ey * CELL + 40); cx.lineTo(ex * CELL + 10, ey * CELL + 60); cx.closePath(); cx.fill(); cx.strokeStyle = A.INK; cx.lineWidth = 3; cx.stroke();
+    // keep
+    const [kx, ky] = TD.keep(G); A.keepArt(cx, kx * CELL, ky * CELL - 6, CELL, G.health <= 5);
+    // range ring for selected / picked
+    if (inBuild && ui.sel) { const tw = TD.towerAt(G, ui.sel[0], ui.sel[1]); const rg = tw ? TD.stats(G, tw).range : TD.TOWERS[ui.pick].range * G.mods.range; cx.save(); cx.fillStyle = 'rgba(78,143,134,.18)'; cx.strokeStyle = 'rgba(58,37,24,.6)'; cx.lineWidth = 2; cx.setLineDash([8, 6]); cx.beginPath(); cx.arc((ui.sel[0] + .5) * CELL, (ui.sel[1] + .5) * CELL, rg * CELL, 0, Math.PI * 2); cx.fill(); cx.stroke(); cx.restore(); }
+    // towers
+    const firing = new Set(ui.fx.filter((f) => f.k === 'shot' && t - f.t < .12).map((f) => f.tw));
+    for (const tw of G.towers) A.towerArt(cx, tw.type, tw.c * CELL, tw.r * CELL - 8, CELL, tw.tier, tw.branch, firing.has(tw.id));
+    if (inBuild && ui.sel && TD.towerAt(G, ui.sel[0], ui.sel[1])) { cx.strokeStyle = A.GOLD; cx.lineWidth = 4; cx.strokeRect(ui.sel[0] * CELL + 4, ui.sel[1] * CELL + 4, CELL - 8, CELL - 8); }
+    // enemies (ground first, flyers on top)
+    const ens = G.enemies.filter((e) => !e.dead).sort((a, b) => (a.flying - b.flying) || (a.y - b.y));
+    for (const e of ens) A.enemyArt(cx, e.type, (e.x + .5) * CELL, (e.y + .5) * CELL, CELL, t + e.id, e.hp / e.maxHp, e.slowT > 0);
+    // fx
+    ui.fx = ui.fx.filter((f) => t - f.t < .6);
+    for (const f of ui.fx) {
+      const age = t - f.t;
+      if (f.k === 'shot') {
+        const [fx0, fy0] = [(f.from[0] + .5) * CELL, (f.from[1] + .1) * CELL], [tx, ty] = [(f.to[0] + .5) * CELL, (f.to[1] + .4) * CELL];
+        if (age < .14) {
+          cx.strokeStyle = f.type === 'spark' ? A.SPARK : f.type === 'frost' ? A.FROST : f.type === 'cannon' ? '#3A2518' : '#FFF4D6'; cx.lineWidth = f.type === 'spark' ? 3 : 2.5;
+          if (f.chain) { cx.beginPath(); cx.moveTo(fx0, fy0); f.chain.forEach(([x, y]) => cx.lineTo((x + .5) * CELL + (Math.random() - .5) * 8, (y + .4) * CELL + (Math.random() - .5) * 8)); cx.stroke(); }
+          else { cx.beginPath(); cx.moveTo(fx0, fy0); cx.lineTo(tx, ty); cx.stroke(); }
+        }
+        if (f.splash && age < .3) { cx.strokeStyle = f.frost ? A.FROST : A.RUST; cx.lineWidth = 3; cx.globalAlpha = 1 - age / .3; cx.beginPath(); cx.arc(tx, ty, f.splash * CELL * (age / .3), 0, Math.PI * 2); cx.stroke(); cx.globalAlpha = 1; }
+      } else if (f.k === 'kill') { cx.globalAlpha = 1 - age / .6; cx.fillStyle = '#FFE9A8'; cx.strokeStyle = A.INK; cx.lineWidth = 3; cx.font = 'bold 22px Bricolage Grotesque, sans-serif'; cx.textAlign = 'center'; cx.strokeText('+' + f.bounty, (f.x + .5) * CELL, (f.y + .2) * CELL - age * 60); cx.fillText('+' + f.bounty, (f.x + .5) * CELL, (f.y + .2) * CELL - age * 60); cx.globalAlpha = 1; }
+    }
+  }
+
+  // ---------- game loop ----------
+  let acc = 0;
+  function frame(ts) {
+    ui.raf = requestAnimationFrame(frame);
+    const dt = Math.min(.1, (ts - (ui.lastT || ts)) / 1000); ui.lastT = ts; ui.tplay += dt;
+    if (G.phase === 'wave') {
+      acc += dt * ui.speed;
+      let changed = false;
+      while (acc >= TD.TICK) {
+        acc -= TD.TICK; const evs = TD.step(G); changed = true;
+        for (const e of evs) {
+          if (e.k === 'shot' || e.k === 'kill') ui.fx.push(Object.assign({ t: ui.tplay }, e));
+          if (e.k === 'leak') { $('#mapWrap').classList.remove('shake'); void $('#mapWrap').offsetWidth; $('#mapWrap').classList.add('shake'); hud(); }
+          if (e.k === 'waveClear') { banner('Wave ' + (e.wave + 1) + ' held! +' + e.bonus); }
+          if (e.k === 'won') { setTimeout(() => endScreen(true), 600); }
+          if (e.k === 'lost') { setTimeout(() => endScreen(false), 400); }
+        }
+        if (G.phase !== 'wave') { ui.speed = 1; renderAll(); break; }
+      }
+      if (changed) { hud(); }
+    }
+    draw();
+  }
+  function banner(text) { const h = $('#bannerHost'); h.innerHTML = `<div class="banner">${esc(text)}</div>`; setTimeout(() => { h.innerHTML = ''; }, 1600); }
+
+  // ---------- actions ----------
+  function newRun(seed) {
+    G = TD.newGame(seed || ((Date.now() % 100000) + 1)); ui.sel = null; ui.pick = 'arrow'; ui.speed = 1; ui.fx = []; ui.feedbackDone = false; ui.runs++;
+    $('#modeTag').textContent = `Prototype 1 · solo run${ui.runs > 1 ? ' · run ' + ui.runs : ''} · seed ${G.seed}`;
+    renderAll();
+    if (!ui.raf) ui.raf = requestAnimationFrame(frame);
+  }
+  function tapCell(c, r) {
+    if (G.phase !== 'build') return;
+    const tw = TD.towerAt(G, c, r);
+    if (tw) { ui.sel = [c, r]; renderAll(); return; }
+    if (TD.isSpot(G, c, r)) {
+      if (TD.canBuild(G, ui.pick, c, r)) { TD.build(G, ui.pick, c, r); ui.sel = null; banner(''); renderAll(); }
+      else { ui.sel = [c, r]; $('#mapWrap').classList.remove('shake'); void $('#mapWrap').offsetWidth; $('#mapWrap').classList.add('shake'); renderAll(); }
+      return;
+    }
+    ui.sel = null; renderAll();
+  }
+  cv.addEventListener('click', (e) => { const [c, r] = cellAt(e.clientX, e.clientY); tapCell(c, r); });
+
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.pick && G.phase === 'build') { ui.pick = b.dataset.pick; ui.sel = null; renderAll(); return; }
+    if (b.dataset.pick && G.phase === 'draft') { TD.pick(G, b.dataset.pick); if (G.events && G.events[0] && G.events[0].k === 'grow') banner('The road grows!'); ui.sel = null; renderAll(); return; }
+    if (b.dataset.up) { const tw = TD.towerAt(G, ui.sel[0], ui.sel[1]); if (tw && TD.upgrade(G, tw, b.dataset.up)) renderAll(); return; }
+    const a = b.dataset.act; if (!a) return;
+    if (a === 'start') { if (TD.startWave(G)) { ui.sel = null; acc = 0; renderAll(); } }
+    else if (a === 'speed') { ui.speed = ui.speed > 1 ? 1 : 3; ctl(); coachLine(); }
+    else if (a === 'sell') { const tw = TD.towerAt(G, ui.sel[0], ui.sel[1]); if (tw) { TD.sell(G, tw); ui.sel = null; renderAll(); } }
+    else if (a === 'unsel') { ui.sel = null; renderAll(); }
+    else if (a === 'again') { closeOverlay(); newRun(); }
+    else if (a === 'menu') showOverlay(menuHTML());
+    else if (a === 'close') closeOverlay();
+    else if (a === 'how') showOverlay(howHTML());
+    else if (a === 'feedback') showOverlay(feedbackHTML());
+    else if (a === 'fbsend') sendFeedback();
+    else if (a === 'fbcopy') { const t = feedbackText(); navigator.clipboard && navigator.clipboard.writeText(t).catch(() => {}); const box = $('#fbCopy'); if (box) { const rg = document.createRange(); rg.selectNodeContents(box); const s = getSelection(); s.removeAllRanges(); s.addRange(rg); } }
+    else if (a === 'tCoach') { ui.coach = !ui.coach; lsSet('td-coach', ui.coach ? '1' : '0'); showOverlay(menuHTML()); coachLine(); }
+    else if (a === 'intro') { closeOverlay(); showIntro(0); }
+    else if (a === 'newrun') { closeOverlay(); newRun(); }
+    else if (a === 'sim') showOverlay(simHTML());
+    else if (a === 'runsim') { runSim(); }
+    else if (b.dataset.s === 'next') showIntro(ui.lesson + 1);
+    else if (a === 'skipintro') { hideStory(); if (!ui.started) { ui.started = true; newRun(); } }
+  });
+  for (const k of ['fbText', 'fbName']) document.addEventListener('input', (e) => { if (e.target.id === k) FB[k === 'fbText' ? 'text' : 'nm'] = e.target.value; });
+  document.addEventListener('click', (e) => { const b = e.target.closest('button[data-fq]'); if (!b) return; FB.q[b.dataset.fq] = b.dataset.fv; document.querySelectorAll(`button[data-fq="${b.dataset.fq}"]`).forEach((x) => x.setAttribute('aria-pressed', x === b)); });
+
+  // ---------- overlays ----------
+  function showOverlay(html) { $('#overlay').innerHTML = `<div class="veil-bg"><div class="modal" role="dialog" aria-modal="true">${html}</div></div>`; }
+  function closeOverlay() { $('#overlay').innerHTML = ''; }
+  function menuHTML() {
+    const on = (b) => (b ? 'On' : 'Off');
+    return `<h2>Menu</h2><div class="menu">
+      <button class="btn" data-act="how" type="button">How to play <span>›</span></button>
+      <button class="btn" data-act="tCoach" type="button" aria-pressed="${ui.coach}">Pell coaches you <span>${on(ui.coach)}</span></button>
+      <button class="btn" data-act="newrun" type="button">New run <span>›</span></button>
+      <button class="btn" data-act="intro" type="button">Replay the intro <span>›</span></button>
+      <button class="btn" data-act="sim" type="button">Bot simulation (for testers) <span>›</span></button>
+      <button class="btn" data-act="feedback" type="button">Give feedback <span>›</span></button>
+    </div><div class="acts"><button class="btn primary" data-act="close" type="button">Close</button></div>`;
+  }
+  function howHTML() {
+    return `<h2>How to play</h2>
+      <ol><li><b>Build:</b> pick a tower, tap a <b>+</b> spot. Tap a built tower to upgrade it (two paths, pick one) or sell it.</li>
+      <li><b>Send the wave:</b> enemies walk the road to your keep. Each one that reaches it costs health. At 0 the run is over.</li>
+      <li><b>Draft:</b> after each wave, pick one of three cards. Buffs, gold, or keep repairs. They last the whole run.</li>
+      <li><b>The road grows</b> before wave 4 and wave 7. The keep moves out and new spots open. Old towers stay where they are.</li></ol>
+      <p><b>Counters:</b> Cannons crack armored Brutes but can’t hit Flyers. Spark loves Flyers and packs. Frost slows everything so the rest get more shots. Arrows are cheap and steady.</p>
+      <div class="acts"><button class="btn primary" data-act="close" type="button">Got it</button></div>`;
+  }
+  function endScreen(won) {
+    cancelSpeed();
+    showOverlay(`<span class="eyebrow">${won ? 'The keep stands' : 'The keep has fallen'}</span><h2>${won ? 'You held all 10 waves.' : 'Lost on wave ' + (G.wave + 1) + '.'}</h2>
+      <div class="endstats"><div><b>${G.stats.kills}</b><span>Kills</span></div><div><b>${G.stats.wavesCleared}</b><span>Waves held</span></div><div><b>${G.cards.length}</b><span>Cards</span></div></div>
+      ${G.cards.length ? `<p class="muted" style="font-size:14px">Your deck: ${G.cards.map((c) => esc(c.name)).join(', ')}</p>` : ''}
+      <p>${won ? 'That’s the whole first slice. Want to run it back and try a different deck?' : 'Every run is different: new cards, same road. Try a different build.'}</p>
+      <div class="acts"><button class="btn" data-act="feedback" type="button">Give feedback</button><button class="btn primary" data-act="again" type="button">Play again</button></div>`);
+    renderAll();
+  }
+  function cancelSpeed() { ui.speed = 1; }
+
+  // ---------- feedback ----------
+  const FQ = [
+    { id: 'fun', q: 'Did you want to play a second run?', opts: ['Yes, right away', 'Maybe later', 'No'] },
+    { id: 'draft', q: 'Did the card draft feel like a real choice?', opts: ['Yes', 'Sometimes', 'No'] },
+    { id: 'grow', q: 'The road growing: good surprise or annoying?', opts: ['Loved it', 'Fine', 'Annoying'] },
+    { id: 'hard', q: 'Difficulty?', opts: ['Too easy', 'About right', 'Too hard'] },
+    { id: 'watch', q: 'Watching the wave: tense or boring?', opts: ['Tense', 'OK', 'Boring'] },
+    { id: 'read', q: 'Could you tell towers and enemies apart?', opts: ['Always', 'Mostly', 'No'] },
+  ];
+  function feedbackHTML() {
+    const qs = FQ.map((f) => `<div class="field"><label>${esc(f.q)}</label><div class="choices">${f.opts.map((o) => `<button class="btn" type="button" data-fq="${f.id}" data-fv="${esc(o)}" aria-pressed="${FB.q[f.id] === o}">${esc(o)}</button>`).join('')}</div></div>`).join('');
+    const summary = feedbackText();
+    return `<h2>What did you think?</h2><p class="muted">Six taps plus anything you want to say. Goes to Hunter and Joe.</p>${qs}
+      <div class="field"><label for="fbText">What was confusing, or what would you change?</label><textarea id="fbText" rows="3">${esc(FB.text)}</textarea></div>
+      <div class="field"><label for="fbName">Your name (optional)</label><input id="fbName" type="text" value="${esc(FB.nm)}"></div>
+      ${FB.saved === true ? '<p style="color:var(--good);font-weight:700">Saved. Thank you!</p>' : FB.saved === 'copy' ? `<p class="muted">Couldn’t save from this device, so copy your answers and text them over:</p><div class="copybox" id="fbCopy">${esc(summary)}</div>` : ''}
+      <div class="acts">${FB.saved === 'copy' ? '<button class="btn" data-act="fbcopy" type="button">Copy answers</button>' : ''}<button class="btn" data-act="close" type="button">Close</button>${FB.saved !== true ? '<button class="btn primary" data-act="fbsend" type="button">Send</button>' : ''}</div>`;
+  }
+  function feedbackText() { const lines = FQ.map((f) => `${f.q} ${FB.q[f.id] || '–'}`); lines.push(`Notes: ${FB.text || '–'}`); lines.push(`From: ${FB.nm || 'anonymous'} · seed ${G.seed} · waves held ${G.stats.wavesCleared} · cards ${G.cards.map((c) => c.id).join(',')}`); return 'Tower Defense P1 feedback\n' + lines.join('\n'); }
+  async function sendFeedback() {
+    const ta = $('#fbText'), nm = $('#fbName'); if (ta) FB.text = ta.value; if (nm) FB.nm = nm.value;
+    const body = { answers: Object.assign({}, FB.q), notes: FB.text, name: FB.nm, seed: G.seed, waves: G.stats.wavesCleared, phase: G.phase, cards: G.cards.map((c) => c.id), at: new Date().toISOString() };
+    try {
+      const db = window.claude && window.claude.use ? await window.claude.use('db') : null;
+      if (!db) throw new Error('no db');
+      await db.collection('feedback').add(body); FB.saved = true;
+    } catch (e) {
+      try { const r = await fetch('/forge/api/feedback', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(Object.assign({ game: 'tower-defense' }, body)) }); FB.saved = r.ok ? true : 'copy'; } catch (e2) { FB.saved = 'copy'; }
+    }
+    ui.feedbackDone = true; showOverlay(feedbackHTML());
+  }
+
+  // ---------- bot sim (in-page) ----------
+  const sim = { res: null, running: false };
+  function simHTML() {
+    const r = sim.res;
+    return `<h2>Bot simulation</h2><p class="muted">Three bots play the whole run with no screen on the same engine. Smart reads the wave preview; Random is a sloppy player.</p>
+      ${r ? `<ul>${r.map((x) => `<li><b>${x.style}:</b> wins ${x.wins}%, median waves held ${x.med}, leaks per game ${x.leaks}</li>`).join('')}</ul>` : '<p>Not run yet.</p>'}
+      <div class="acts"><button class="btn" data-act="close" type="button">Close</button><button class="btn primary" data-act="runsim" type="button" ${sim.running ? 'disabled' : ''}>${sim.running ? 'Running…' : 'Run 60 games each'}</button></div>`;
+  }
+  function runSim() {
+    sim.running = true; showOverlay(simHTML());
+    setTimeout(() => {
+      const q = (a, p) => a.slice().sort((x, y) => x - y)[Math.floor(p * (a.length - 1))];
+      sim.res = ['smart', 'saver', 'random'].map((style) => { const r = TD.simulate(60, 4242, style); return { style, wins: Math.round(100 * r.wins / 60), med: q(r.waves, .5), leaks: (r.leaks / 60).toFixed(1) }; });
+      sim.running = false; showOverlay(simHTML());
+    }, 30);
+  }
+
+  // ---------- intro ----------
+  const SCENES = [
+    () => `<div class="hero rise">${HERO_SVG()}</div><h1 class="title rise d1">Tower Defense</h1><p class="lead rise d2">Hold the road. Draft a deck. Build a keep worth holding.</p><p class="copy rise d3">Prototype 1: one road that grows, four towers, ten waves. Solo for now; co-op is next.</p>`,
+    () => `<span class="eyebrow rise">Four towers</span><div class="legend rise d1">${Object.entries(TD.TOWERS).map(([k, t]) => `<div>${towerIcon(k).replace('width="40" height="40"', 'width="48" height="48"')}${esc(t.name)}</div>`).join('')}</div><p class="lead rise d2">Each has two upgrade paths. Pick one.</p><p class="copy rise d3">Arrows are cheap and steady. Cannons crack armor but can’t hit flyers. Spark chains through packs and loves flyers. Frost slows everything.</p>`,
+    () => `<span class="eyebrow rise">Five enemies</span><div class="legend five rise d1">${['grunt', 'runner', 'flyer', 'brute', 'boss'].map((k) => `<div>${enemyIcon(k)}${esc(TD.ENEMIES[k].name)}</div>`).join('')}</div><p class="lead rise d2">Each one that reaches the keep costs you health.</p><p class="copy rise d3">The next wave is always shown before you send it. Build the counter.</p>`,
+    () => `<span class="eyebrow rise">After every wave</span><div class="cards rise d1" style="width:100%;max-width:420px">${['sharp', 'tithe', 'walls'].map((id) => { const c = TD.CARDS.find((x) => x.id === id); return `<div class="card ${c.kind}"><span class="kind">${c.kind}</span><b>${esc(c.name)}</b><small>${esc(c.text)}</small></div>`; }).join('')}</div><p class="lead rise d2">Draft one card. Your deck is your build.</p><p class="copy rise d3">And twice per run, the road grows: the keep moves out and new spots open.</p>`,
+  ];
+  function enemyIcon(type) { const c = document.createElement('canvas'); c.width = c.height = 96; const ctx = c.getContext('2d'); A.enemyArt(ctx, type, 48, 54, 80, 0.3, 1, false); return `<img src="${c.toDataURL()}" alt="${esc(TD.ENEMIES[type].name)}" width="48" height="48">`; }
+  function HERO_SVG() {
+    const c = document.createElement('canvas'); c.width = 480; c.height = 270; const ctx = c.getContext('2d'); const s = 40;
+    const g = TD.newGame(7); g.stage = 2;
+    ctx.fillStyle = '#D9C9C0'; ctx.fillRect(0, 0, 480, 270);
+    ctx.save(); ctx.translate(0, -30);
+    const pathSet = new Set(TD.path(g).map(([x, y]) => x + ',' + y));
+    for (let r = 0; r < 8; r++) for (let cc = 0; cc < 12; cc++) { if (pathSet.has(cc + ',' + r)) A.road(ctx, cc * s, r * s, s, cc * 7 + r * 13); else A.grass(ctx, cc * s, r * s, s, cc * 7 + r * 13); }
+    [['arrow', 1, 2], ['cannon', 3, 3], ['spark', 6, 4], ['frost', 9, 4], ['arrow', 10, 3]].forEach(([t, cc, r]) => A.towerArt(ctx, t, cc * s, r * s - 4, s, 1, null, false));
+    const [kx, ky] = TD.keep(g); A.keepArt(ctx, kx * s, ky * s - 4, s, false);
+    [['grunt', 0.5, 3], ['grunt', 1.6, 3], ['runner', 2.5, 2], ['brute', 4.2, 1.9], ['flyer', 5, 4.6]].forEach(([t, x, y]) => A.enemyArt(ctx, t, (x + .5) * s, (y + .5) * s, s, 0.4, 1, false));
+    ctx.restore();
+    return `<img src="${c.toDataURL()}" alt="A road winding to a small keep, lined with towers">`;
+  }
+  function showIntro(i) {
+    ui.lesson = i; const s = $('#story'); s.hidden = false;
+    const last = i === SCENES.length - 1;
+    s.innerHTML = `<div class="story-in">${SCENES[i]()}<div class="dots">${SCENES.map((_, k) => `<span class="${k === i ? 'on' : ''}"></span>`).join('')}</div>
+      <div style="display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap"><button class="skip" data-act="skipintro" type="button">Skip</button><button class="btn primary" data-act="${last ? 'skipintro' : 'next'}" ${last ? '' : 'data-s="next"'} type="button">${last ? 'Start the run' : 'Next'}</button></div></div>`;
+    s.scrollTop = 0;
+  }
+  function hideStory() { const s = $('#story'); s.hidden = true; s.innerHTML = ''; }
+
+  // ---------- boot ----------
+  ui.coach = lsGet('td-coach') !== '0';
+  $('#bMenu').addEventListener('click', () => showOverlay(menuHTML()));
+  G = TD.newGame(1); // placeholder so draw() has state before the first run
+  showIntro(0);
+  window.TDUI = { get G() { return G; }, ui, newRun, tapCell, showIntro, hideStory, renderAll };
+})();
+
+</script>
+</body>
+</html>

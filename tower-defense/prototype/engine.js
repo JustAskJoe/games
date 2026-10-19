@@ -25,9 +25,9 @@
     [[9, 3], [9, 2], [10, 2], [11, 2], [11, 3], [11, 4]],
   ];
   const SPOTS = [
-    [[1, 2], [1, 4], [3, 3], [3, 1], [5, 2], [4, 4]],
-    [[6, 4], [7, 6], [6, 6], [9, 4], [7, 4]],
-    [[10, 3], [10, 1], [9, 1], [10, 5], [11, 5]],
+    [[1, 2], [3, 3], [3, 1], [5, 2]],
+    [[6, 4], [7, 6], [9, 4]],
+    [[10, 3], [9, 1], [10, 5]],
   ];
   function pathUpTo(stage) { return PATHS.slice(0, stage + 1).flat(); }
   function spotsUpTo(stage) { return SPOTS.slice(0, stage + 1).flat(); }
@@ -36,19 +36,19 @@
   // ---------- towers ----------
   // Each tower has two upgrade branches (A/B). Upgrading picks one; tier 2 = that branch.
   const TOWERS = {
-    arrow: { name: 'Arrow', cost: 60, range: 2.6, rate: 1.1, dmg: 9, color: '#B8873A', hit: 'single',
+    arrow: { name: 'Arrow', cost: 60, range: 2.8, rate: 1.4, dmg: 13, color: '#B8873A', hit: 'single',
       desc: 'Steady single-target shots. Cheap and reliable.',
-      up: { A: { name: 'Pierce', cost: 70, desc: 'Arrows pass through, hitting up to 3 enemies in a line.', dmg: 11, pierce: 3 },
-            B: { name: 'Multishot', cost: 70, desc: 'Fires twice as fast.', rate: 2.2, dmg: 8 } } },
-    cannon: { name: 'Cannon', cost: 90, range: 2.2, rate: 0.5, dmg: 22, color: '#6B5B7A', hit: 'splash', splash: 0.9,
+      up: { A: { name: 'Pierce', cost: 70, desc: 'Arrows pass through, hitting up to 3 enemies in a line.', dmg: 15, pierce: 3 },
+            B: { name: 'Multishot', cost: 70, desc: 'Fires twice as fast.', rate: 2.8, dmg: 11 } } },
+    cannon: { name: 'Cannon', cost: 90, range: 2.4, rate: 0.55, dmg: 30, color: '#6B5B7A', hit: 'splash', splash: 0.9,
       desc: 'Slow, heavy splash damage. Great against packs. Can\'t hit flyers.', ground: true,
-      up: { A: { name: 'Big Shot', cost: 90, desc: 'Much bigger blast radius.', splash: 1.5, dmg: 26 },
-            B: { name: 'Siege', cost: 90, desc: 'Double damage to armored enemies.', armorMul: 2, dmg: 24 } } },
-    spark: { name: 'Spark', cost: 85, range: 2.4, rate: 0.9, dmg: 12, color: '#4F8FD6', hit: 'chain', chain: 3,
+      up: { A: { name: 'Big Shot', cost: 90, desc: 'Much bigger blast radius.', splash: 1.5, dmg: 34 },
+            B: { name: 'Siege', cost: 90, desc: 'Double damage to armored enemies.', armorMul: 2, dmg: 32 } } },
+    spark: { name: 'Spark', cost: 85, range: 2.6, rate: 1.0, dmg: 16, color: '#4F8FD6', hit: 'chain', chain: 3,
       desc: 'Chain lightning jumps between enemies. Strong against flyers.', vsFlying: 1.6,
       up: { A: { name: 'Storm', cost: 80, desc: 'Chains to 5 enemies.', chain: 5 },
             B: { name: 'Overload', cost: 80, desc: 'Each jump does full damage, not less.', decay: 1 } } },
-    frost: { name: 'Frost', cost: 70, range: 2.2, rate: 0.8, dmg: 4, color: '#8FC8D8', hit: 'splash', splash: 1.0, slow: 0.45, slowT: 1.6,
+    frost: { name: 'Frost', cost: 70, range: 2.4, rate: 0.9, dmg: 6, color: '#8FC8D8', hit: 'splash', splash: 1.0, slow: 0.45, slowT: 1.6,
       desc: 'Slows everything it touches so other towers get more shots.',
       up: { A: { name: 'Deep Freeze', cost: 75, desc: 'Slows much harder, for longer.', slow: 0.65, slowT: 2.4 },
             B: { name: 'Shatter', cost: 75, desc: 'Slowed enemies take 30% more damage from everything.', brittle: 1.3 } } },
@@ -57,19 +57,19 @@
 
   // ---------- enemies ----------
   const ENEMIES = {
-    grunt:  { name: 'Grunt',  hp: 40,  speed: 1.0, bounty: 6,  leak: 1, color: '#8C6D4F' },
+    grunt:  { name: 'Grunt',  hp: 40,  speed: 1.2, bounty: 6,  leak: 1, color: '#8C6D4F' },
     runner: { name: 'Runner', hp: 22,  speed: 2.1, bounty: 5,  leak: 1, color: '#D9A441' },
     flyer:  { name: 'Flyer',  hp: 30,  speed: 1.4, bounty: 7,  leak: 1, color: '#9FB7E8', flying: true },
-    brute:  { name: 'Brute',  hp: 140, speed: 0.7, bounty: 16, leak: 2, color: '#5E6B73', armor: 4 },
-    boss:   { name: 'Warlord', hp: 1100, speed: 0.5, bounty: 80, leak: 5, color: '#A3382E', armor: 6, boss: true },
+    brute:  { name: 'Brute',  hp: 140, speed: 0.85, bounty: 16, leak: 2, color: '#5E6B73', armor: 4 },
+    boss:   { name: 'Warlord', hp: 1100, speed: 0.7, bounty: 80, leak: 5, color: '#A3382E', armor: 6, boss: true },
   };
 
   // ---------- waves (10) ----------
   // each: list of [type, count, gap seconds]; groups run in sequence. stage: which path stage must be unlocked BEFORE the wave.
   const WAVES = [
-    { stage: 0, groups: [['grunt', 6, 1.0]] },
-    { stage: 0, groups: [['grunt', 8, 0.8], ['runner', 4, 0.6]] },
-    { stage: 0, groups: [['runner', 8, 0.5], ['grunt', 6, 0.8]] },
+    { stage: 0, groups: [['grunt', 6, 1.4]] },
+    { stage: 0, groups: [['grunt', 8, 1.0], ['runner', 4, 0.8]] },
+    { stage: 0, groups: [['runner', 8, 0.6], ['grunt', 6, 0.9]] },
     { stage: 1, groups: [['grunt', 10, 0.7], ['flyer', 4, 0.9]] },            // path grows before wave 4
     { stage: 1, groups: [['brute', 2, 2.0], ['grunt', 10, 0.6]] },
     { stage: 1, groups: [['flyer', 8, 0.6], ['runner', 10, 0.45]] },
@@ -78,7 +78,8 @@
     { stage: 2, groups: [['brute', 5, 1.4], ['flyer', 10, 0.5], ['grunt', 12, 0.5]] },
     { stage: 2, groups: [['grunt', 10, 0.5], ['boss', 1, 0], ['runner', 10, 0.4]] },
   ];
-  const HP_SCALE = (w) => 1 + w * 0.22; // enemy hp grows per wave index
+  let SCALE = 0.5, BOUNTY_MUL = 0.8, BONUS_MUL = 0.8, SPEED = 0.1; // tuned 2026-10-19: smart bot ~63% wins, random ~29%
+  const HP_SCALE = (w) => 1 + w * SCALE; // enemy hp grows per wave index
 
   // ---------- cards (drafted after each wave; 3 offered, pick 1) ----------
   const CARDS = [
@@ -103,7 +104,7 @@
     return {
       seed, rnd: rng(seed), t: 0, tick: 0,
       stage: 0, wave: 0, phase: 'build',   // build | wave | draft | won | lost
-      gold: 150, health: 20, maxHealth: 20,
+      gold: 200, health: 20, maxHealth: 20,
       towers: [], enemies: [], shots: [], nextId: 1,
       spawnQueue: [], spawnT: 0, spawnedThisWave: 0,
       mods: { arrowDmg: 1, cannonDmg: 1, sparkChain: 0, frostSlowT: 1, range: 1, rate: 1, bounty: 0, interest: 0, cost: 1, rally: 1, arrowCost: 1, brittle: 1 },
@@ -163,8 +164,8 @@
   }
   function spawn(G, type) {
     const e = ENEMIES[type]; const p = path(G);
-    const hp = Math.round(e.hp * HP_SCALE(G.wave));
-    G.enemies.push({ id: G.nextId++, type, hp, maxHp: hp, speed: e.speed, idx: 0, prog: 0, slow: 0, slowT: 0, flying: !!e.flying, armor: e.armor || 0, dead: false, x: p[0][0], y: p[0][1] });
+    const hp = Math.round(e.hp * HP_SCALE(G.wave)); const spd = e.speed * (1 + G.wave * SPEED);
+    G.enemies.push({ id: G.nextId++, type, hp, maxHp: hp, speed: spd, idx: 0, prog: 0, slow: 0, slowT: 0, flying: !!e.flying, armor: e.armor || 0, dead: false, x: p[0][0], y: p[0][1] });
   }
 
   // position along the path as (x, y) in cell units
@@ -183,7 +184,7 @@
     en.hp -= d;
     if (en.hp <= 0 && !en.dead) {
       en.dead = true; G.stats.kills++;
-      const b = ENEMIES[en.type].bounty + G.mods.bounty; G.gold += b; G.stats.goldEarned += b;
+      const b = Math.round(ENEMIES[en.type].bounty * BOUNTY_MUL) + G.mods.bounty; G.gold += b; G.stats.goldEarned += b;
       if (src.tower) src.tower.kills++;
       G.events.push({ k: 'kill', id: en.id, x: en.x, y: en.y, bounty: b });
     }
@@ -245,7 +246,7 @@
     // wave over?
     if (!G.spawnQueue.length && !G.enemies.some((e) => !e.dead)) {
       G.stats.wavesCleared++;
-      const bonus = 20 + G.wave * 5; G.gold += bonus; G.stats.goldEarned += bonus;
+      const bonus = Math.round((20 + G.wave * 5) * BONUS_MUL); G.gold += bonus; G.stats.goldEarned += bonus;
       G.events.push({ k: 'waveClear', wave: G.wave, bonus });
       G.wave++;
       if (G.wave >= WAVES.length) { G.phase = 'won'; G.events.push({ k: 'won' }); }
@@ -278,6 +279,10 @@
     const w = WAVES[G.wave]; if (!w) return {};
     const n = {}; for (const [t, c] of w.groups) n[t] = (n[t] || 0) + c; return n;
   }
+  function nextWaveNeeds(G) {
+    const w = WAVES[G.wave]; if (!w) return {};
+    const n = {}; for (const [t, c] of w.groups) n[t] = (n[t] || 0) + c; return n;
+  }
   function botBuild(G, style) {
     // style: 'smart' reads the wave preview and builds counters; 'saver' keeps a reserve; 'random' is a sloppy player.
     let guard = 0;
@@ -293,7 +298,6 @@
       else if (G.towers.length >= 2 && has('frost') < 1) type = 'frost';
       else if (G.towers.length >= 5 && has('cannon') < 2) type = 'cannon';
       else type = 'arrow';
-      // upgrade instead when the board is full or we already have 4+ towers and spare gold
       const up = G.towers.find((t) => t.tier === 1 && G.gold - reserve >= upCost(G, t));
       if (up && (!free.length || (G.towers.length >= 4 && G.rnd() < 0.5))) {
         const br = up.type === 'cannon' && (need.brute || need.boss) ? 'B' : (up.type === 'spark' ? 'A' : (G.rnd() < 0.5 ? 'A' : 'B'));
@@ -329,6 +333,6 @@
     return res;
   }
 
-  const TD = { TICK, COLS, ROWS, PATHS, SPOTS, TOWERS, ENEMIES, WAVES, CARDS, SELL_RATE, rng, newGame, path, spots, keep, isSpot, towerAt, cost, upCost, canBuild, build, canUpgrade, upgrade, sellValue, sell, stats, startWave, step, pick, skipDraft, drawOffer, botBuild, botPick, playOut, simulate, posOf, nextWaveNeeds };
+  const TD = { TICK, COLS, ROWS, PATHS, SPOTS, TOWERS, ENEMIES, WAVES, CARDS, SELL_RATE, rng, newGame, path, spots, keep, isSpot, towerAt, cost, upCost, canBuild, build, canUpgrade, upgrade, sellValue, sell, stats, startWave, step, pick, skipDraft, drawOffer, botBuild, botPick, playOut, simulate, posOf, nextWaveNeeds, _setScale: (v) => { SCALE = v; }, _setEcon: (b, w) => { BOUNTY_MUL = b; BONUS_MUL = w; }, _setSpeed: (v) => { SPEED = v; } };
   if (typeof module !== 'undefined' && module.exports) module.exports = TD; else root.TD = TD;
 })(typeof window !== 'undefined' ? window : globalThis);
