@@ -16,6 +16,7 @@ These shape everything else, and none of them is settled:
 | **Who owns each game, and how is money split?** | The biggest one. Steam pays one legal person or company per game, and every file here currently says "© F Lane d/b/a One Fifty Labs" as a placeholder | Each game gets a short written agreement before it goes on sale: owners, revenue split, who publishes, what happens if someone leaves. Have a lawyer look at the first one. |
 | **Who pays for shared costs?** | Tools, Steam fees, hosting, any hired art or music | A small shared kitty, or per-game costs paid by that game's crew and paid back first from sales |
 | **How do people join, leave, get credit?** | It's a collective | Join by working on a game; credit everyone who contributed; your work stays credited if you leave |
+| **Can AI-made art, music and sound ship in the final game?** | We're leaning heavily on AI for every lane. Today's rule says AI art is mood reference only. See "AI-first toolkit" in section 4 for the facts that matter. | AI-made assets can ship if a person picks and edits them, we pay for the plan that grants commercial rights, and we disclose it on Steam. Until we agree, the current rule stands. |
 | **Where do the shared accounts live?** | Today, GitHub, Cloudflare and the site sit in Hunter's accounts | Fine for now. Move to a shared org if the collective outgrows it. |
 
 None of this is legal or tax advice. Ownership and money between several people is exactly what to get a lawyer and an accountant to review before the first sale.
@@ -107,6 +108,33 @@ Claude can write code, run tests, draft docs and decks, and make placeholder art
 | **Business setup** | Steam tax and bank onboarding for whoever publishes; the per-game agreement | Lawyer and accountant time for the first agreement |
 | **Budget** | One page per game: costs so far, costs planned, who's paying | Free |
 
+### AI-first toolkit by lane
+We're a small crew leaning heavily on AI for code, art, audio and docs. Right now the human skills are: **Hunter** can build Steam pages and drive Claude on the tech side, **Zach** knows finance, and **Joe** is still to be mapped. Until more people join, AI fills the gaps, and each lane's owner is mostly a **director**: they decide what's good, curate, fix and keep it consistent.
+
+Prices change often; check before you subscribe. Paid plans are a shared-cost question (section 1).
+
+| Lane | Use it for | Tools to consider | Notes |
+|---|---|---|---|
+| **Tech** | Writing and fixing code, tests, builds | **Claude** (your own account), **Claude in GitHub** (`@claude` on issues and pull requests; section 8), the build-and-test scripts | Steam doesn't require disclosing AI coding help |
+| **Tech** | Engine and Steam | **Godot** + GodotSteam, or the web build in **Electron**/**Tauri** | Claude writes Godot code well; the engine call is still open |
+| **Design** | Content drafts, balance, playtest analysis | **Claude** for tower, card and enemy drafts; the **bot sim** for balance; AI first-time players and feedback summaries (section 8) | A person picks what's fun. AI drafts are many options, not decisions. |
+| **Design** | Spreadsheets for stats | **Google Sheets** with Claude | Keep the source of truth in the repo |
+| **Art** | Concept and mood art | **Canva** (already in use, Hunter's credits), **Midjourney** | Midjourney's free trial has no commercial rights; paid plans start at $10/month. Companies over $1M yearly revenue need Pro or Mega. |
+| **Art** | Game-ready sprites and animation | **PixelLab** (already in use; built for pixel art and animation, Hunter's credits), **Scenario** (trains on your own style so assets stay consistent) | Our current look is painterly, not pixel. Pick one style and the tool that fits it, then stay consistent. |
+| **Art** | 3D models (if we ever go 3D) | **Meshy** | The free plan allows commercial use with attribution (CC BY 4.0); Pro is the cheapest private license |
+| **Art** | Fixing and painting over AI output | **Krita** (free), **Procreate** ($12.99) | A person editing the output is what makes it ours (see below) |
+| **Sound** | Music | **Suno** | Free plan is personal use only. Pro ($8/month yearly) or Premier grant commercial rights only for songs made while subscribed. |
+| **Sound** | Sound effects and voice | **ElevenLabs** | Paid plans include commercial use; the free plan doesn't. Effects can't be resold as standalone files. |
+| **Sound** | Wiring audio into the game | **FMOD** (free under $200K revenue), Audacity | |
+| **Showcase** | Steam page, capsules, trailer | **Steamworks** (Hunter), **Canva**, **DaVinci Resolve**, **OBS** | AI used on the store page or in marketing must be disclosed too |
+| **Producer and business** | Budget, revenue-split models, pricing, Steam tax and bank setup | **Google Sheets** with Claude; **Zach** | A natural home for Zach's finance skills |
+
+**What leaning on AI means for us (not legal advice):**
+- **Steam disclosure:** Steam requires disclosing AI-generated content in the game, on the store page and in marketing, plus anything generated live while playing. AI coding tools don't need disclosing. Keep a running list per game of which assets AI made, so the disclosure is easy and honest.
+- **Ownership:** the US Copyright Office says purely AI-generated output can't be copyrighted, and prompts alone don't make you the author. What a person adds (painting over, editing, selecting and arranging) can be protected. In practice: a game built mostly from raw AI output is harder to protect from copycats. Human editing passes protect the game as well as improving it. This feeds straight into the ownership question in section 1.
+- **Commercial rights come from paid plans.** Generate final assets only on a plan that grants commercial use, and keep a record of which account and plan made each one.
+- **Pick one look per game,** and generate everything through the same tool and style settings. Mixed AI tools are the fastest way to a game that looks stitched together.
+
 ### Splitting the work by team size
 **Split by ownership, not tasks.** Each person owns an area end to end, makes the calls in it, and is the only one who changes its files. Claude does a lot of the typing, so what we're dividing up is decisions, taste and accountability. When someone joins, **split whichever lane is the bottleneck.** For a co-op tower defense with 20+ towers, that's art first and online tech second.
 
@@ -172,7 +200,7 @@ Why not a second coder? Small teams usually neglect marketing until it's too lat
 
 ## 6. Rules we work by today (also up for debate)
 - **The public repo is public:** no secrets, emails, money numbers or personal details. No licensed music or art. No work for anyone's employer.
-- **AI art is mood reference,** labeled "AI mood reference, not final art".
+- **AI art is mood reference,** labeled "AI mood reference, not final art". This is under debate (section 1); it stays until we agree on a new rule.
 - **Ask before spending shared credits** (Canva, PixelLab) or money.
 - **Prototypes are phone-first web builds** with a balance sim. Test the rules with bots before building the screens.
 - **Every session leaves patch notes,** including things you noticed but didn't fix.
@@ -226,4 +254,11 @@ Hunter has monthly Claude API credits on top of his own Claude plan. These are i
 - Claude in GitHub (`@claude`, reviews, scheduled runs, cost controls): [Claude Code GitHub Actions](https://code.claude.com/docs/en/github-actions)
 - Batch requests at half price, usually done within an hour: [Claude batch processing](https://platform.claude.com/docs/en/build-with-claude/batch-processing)
 
-Prices checked Oct 19, 2026. Check again before spending.
+- Steam's AI disclosure rules (rewritten Jan 2026): [VGC](https://videogameschronicle.com/news/valve-has-significantly-rewritten-steams-rules-for-how-developers-much-disclose-ai-use)
+- Copyright Office on AI-generated works: [Skadden summary](https://skadden.com/insights/publications/2025/02/copyright-office-publishes-report)
+- Suno plans and commercial rights: [Sonilo](https://sonilo.com/blog/suno-v5-5-pricing-commercial-use)
+- Midjourney commercial terms: [LicenseOrg](https://licenseorg.com/blog/midjourney-license-explained)
+- ElevenLabs licensing: [LicenseOrg](https://licenseorg.com/blog/ai-voice-licensing-elevenlabs)
+- Meshy plans and licenses: [Meshy docs](https://docs.meshy.ai/en/webapp/pricing)
+
+Prices checked Oct 19, 2026. Check again before spending. Tool terms change often; read the current terms before generating anything that will ship.
