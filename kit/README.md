@@ -67,7 +67,7 @@ These parts are game-specific and get rewritten each time:
 
 ## House rules for every build
 - Ownership notice in the footer and a fixed corner mark: "© 2026 F Lane d/b/a One Fifty Labs · All rights reserved".
-- Label AI art as "AI mood reference, not final art".
+- Track which assets AI made, for Steam's AI disclosure.
 - Phone first (iPhone 390×844), then a desktop layout at 900px or wider.
 - Never reproduce someone else's rule card or IP. Original content only.
 

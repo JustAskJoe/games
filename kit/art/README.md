@@ -46,7 +46,7 @@ The workspace can't reach media.canva.com (the proxy blocks it). The **built-in 
 ## 4. Use
 - **Slides decks:** upload as assets (`Artifact publish`, `asset:true`, `file_paths`), then use `/_blob/<id>`.
 - **Web prototypes:** publish them as artifact `files` under `img/`, resized to about 1200px wide.
-- Always label them "AI mood reference, not final art".
+- Note which assets AI made, for Steam's AI disclosure.
 
 ## Reusable art per world
 Tilebound and Trickbound share these files, so check before you generate new ones:

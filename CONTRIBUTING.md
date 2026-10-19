@@ -73,7 +73,7 @@ What the checks cover:
 
 ## 5. Rules for this repo (it's public)
 - **No secrets:** no passwords, API keys, emails, client info, revenue numbers or personal details.
-- **No licensed music, lyrics or third-party art.** Placeholder music is synthesized in code. AI art is labeled "AI mood reference, not final art".
+- **No licensed music, lyrics or third-party art.** Placeholder music is synthesized in code. Keep track of which assets AI made, for Steam's AI disclosure.
 - **No employer or partner work** (for example anything for Pico).
 - **Ownership line** on builds and decks: "© 2026 F Lane d/b/a One Fifty Labs · All rights reserved". No "Confidential" here; this repo is public.
 - **Private work** goes in `onefiftylabs/games-private`.

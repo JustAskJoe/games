@@ -41,7 +41,7 @@ The source of record for Tower Defense now lives in the public GitHub repo `onef
 - Respect `prefers-reduced-motion`.
 - Hand-hold newcomers with literal "tap this, then this" steps.
 - Prefer interactive turns to passive ones.
-- **Ownership notice** on everything: "© 2026 F Lane d/b/a One Fifty Labs. All rights reserved." Label AI art "AI mood reference, not final art". (In the public games repo, drop "Confidential".)
+- **Ownership notice** on everything: "© 2026 F Lane d/b/a One Fifty Labs. All rights reserved." Track which assets AI made, for Steam's AI disclosure. (In the public games repo, drop "Confidential".)
 - **Pitch decks** need an art section of 7 or more slides. Put sources in the speaker notes.
 - **Images:** an artifact's `/_blob/` images only load inside that artifact. Re-upload them, or copy them with `from_url` and `asset_ids`.
 - **Runtime capabilities** (db, user, real-time rooms) have barely been used so far. Tilebound's, Hexed's, Neon Surf's and Tower Defense's feedback forms are the only db uses. Always build a fallback for viewers who can't write. Tower Defense's form also posts to the site's `/forge/api/feedback` when it runs on onefiftylabs.co.
