@@ -12,7 +12,7 @@ This is everything reusable from past builds, so each new game or app prototype 
 | `prototype-kit/` (`README.md` + `tilebound-v2/`) | Playable turn-based **table or card game** web prototypes: phone-first, bots, story intro, lessons, coach, feedback form | `README.md`, then the `tilebound-v2/` source |
 | `prototype-kit/hexed-v1/` | Real-time **grid / match-3 / tile-swap** prototypes: pure engine that emits animation frames, swipe input, specials and combos, blockers, goals, level map, coach with guided hints, tarot card CSS, balance sim | `hexed-v1/README.md`, then `engine.js` |
 | `prototype-kit/neon-surf-v1/` | Real-time **rhythm / beat-timed** prototypes: audio-clock song time, WebAudio placeholder beat synth, beat-grid chart, timing windows, tap-along calibration, two-thumb steer + tap input, canvas renderer, bot timing sim | `neon-surf-v1/README.md`, then `engine.js` |
-| `prototype-kit/tower-defense-p1/` | Real-time **tower defense / lane defense** prototypes: fixed-tick engine (20/s), a path that grows in stages, towers with two upgrade branches, enemy types with counters, wave table with preview, roguelite card draft, bot sim with three player styles, canvas renderer with ink-and-wash vector art, build/upgrade sheet, coach tied to the wave preview | `tower-defense-p1/README.md`, then `engine.js` |
+| `prototype-kit/tower-defense-p1/` | Real-time **tower defense / lane defense** prototypes: fixed-tick engine (20/s), a path that grows in stages, towers with two upgrade branches, enemy types with counters, wave table with preview, roguelite card draft, bot sim with three player styles, canvas renderer with ink-and-wash vector art, build/upgrade sheet, coach tied to the wave preview. Since 1.1: one `act()` action path + `hash()` checksum, tester tools, placeholder music, and a co-op room server (`tower-defense/server/`) | `tower-defense-p1/README.md`, then `engine.js` |
 | `prototype-kit/decks/` | **Pitch decks** as Slides artifacts: outline, 17 layouts, Python generator, local render check | `deck-outline.md`, `layouts.md`, `gen_deck.py` |
 | `prototype-kit/art/` | **AI mood art**: Canva prompt recipe, full-resolution fetch, contact-sheet review, art reuse list | `art/README.md` |
 | `prototype-kit/snippets/` | Pieces pulled from other projects (see below) | each file's header comment |
@@ -32,6 +32,8 @@ The source of record for Tower Defense now lives in the public GitHub repo `onef
 | `snippets/artboard-template.dc.html` | Design canvases | Skeleton for one screen of a design canvas |
 | `hexed-v1/art.js` → `tcard()` + `emblem()` | Hexed | CSS tarot card (front, back, flip) and 20+ original ink emblems for Major Arcana and a few minors |
 | `neon-surf-v1/ui.js` → `SND`, `songAt`, `startClock`, calibration | Neon Surf | Drop-in WebAudio drum/bass/lead synth, lookahead scheduler, heard-time clock from `getOutputTimestamp`, 16-click tap calibration |
+| `tower-defense/prototype/music.js` | Tower Defense 1.1 | Cozy folk placeholder score: lute arpeggios + recorder tune (build mood), frame-drum pulse (wave mood), stingers for clear/grow/won/lost/leak, ♪ toggle. Swap `PROG`, `TUNE`, `BPM` for a new game |
+| `tower-defense/server/room.js` | Tower Defense 1.1 | **Real-time co-op base:** host-authoritative intent log + `Replica` (client copy that queues actions until its local wave ends) + per-wave hash checkpoints. Use it for any deterministic game where players don't act during the action phase. For turn-based tables use Trickbound's server instead |
 | `tower-defense-p1/art.js` | Tower Defense | Canvas ink-and-wash drawing helpers (`poly`, `rect`, `circ` with ink strokes), ground tiles, a keep, four tower designs with tier marks, five enemy walks with hp bars, a coach face |
 
 ## Lessons that apply everywhere
@@ -53,4 +55,7 @@ The source of record for Tower Defense now lives in the public GitHub repo `onef
 - **Never bundle licensed music.** Use an original placeholder beat at the real song's BPM.
 - **Canvas text needs a font fallback** (`"Space Grotesk", system-ui, sans-serif`) or it renders serif before the webfont loads.
 - **Theme mechanics from the source material's real meaning** (tarot card meanings → level twists). It reads as authentic to fans.
-- **Testers need an "unlock everything" toggle** in the menu so they can jump to later content.
+- **Testers need an "unlock everything" toggle** in the menu so they can jump to later content. Tower Defense's version (Menu → Tester tools) lets the smart bot play the earlier waves, so the jump lands on a fair board, not an empty one. It also flags the run (`G.test.used`) so tester runs stay out of balance notes.
+- **Route every player action through one `act(G, intent)` function** from day one. Then replays (seed + intent log), bots, tester tools and multiplayer all reuse it, and multiplayer becomes "send the intents over a socket". Add a cheap `hash(G)` so two copies can prove they still match.
+- **For real-time co-op where players don't act mid-round, don't stream positions.** Sync the ordered intent log; every client runs the deterministic engine itself, and the server checks a hash after each round (Tower Defense `server/`).
+- **One build-and-test command per game** (build + sim with a pass band + server tests + phone test) is what lets a second person push safely.

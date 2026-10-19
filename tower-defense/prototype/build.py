@@ -2,7 +2,7 @@
 import os, pathlib
 here = pathlib.Path(__file__).parent
 parts = [(here / 'head.html').read_text(), (here / 'body.html').read_text()]
-for f in ['engine.js', 'art.js', 'ui.js']:
+for f in ['engine.js', 'art.js', 'music.js', 'ui.js']:
     parts.append('<script>\n' + (here / f).read_text() + '\n</script>\n')
 out = here.parent / 'builds' / 'tower-defense-p1.html'
 out.parent.mkdir(exist_ok=True)

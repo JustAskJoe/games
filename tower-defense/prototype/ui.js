@@ -1,4 +1,4 @@
-/* Tower Defense Prototype 1 — UI. © 2026 F Lane d/b/a One Fifty Labs. All rights reserved. */
+/* Tower Defense Prototype 1.1 — UI. © 2026 F Lane d/b/a One Fifty Labs. All rights reserved. */
 (function () {
   'use strict';
   const TD = window.TD, A = window.TDArt;
@@ -11,6 +11,7 @@
   const ui = { sel: null, pick: 'arrow', speed: 1, coach: true, lesson: 0, over: false, fx: [], flash: null, tplay: 0, lastT: 0, raf: 0, feedbackDone: false, started: false, runs: 0, fast: false };
   const FB = { q: {}, text: '', nm: '', saved: null };
   const icons = {};
+  const M = { mood: (k) => window.TDMusic && TDMusic.mood(k), sting: (k) => window.TDMusic && TDMusic.sting(k) };
 
   // ---------- render: HUD, controls, coach, sheet ----------
   function hud() {
@@ -144,12 +145,12 @@
         acc -= TD.TICK; const evs = TD.step(G); changed = true;
         for (const e of evs) {
           if (e.k === 'shot' || e.k === 'kill') ui.fx.push(Object.assign({ t: ui.tplay }, e));
-          if (e.k === 'leak') { $('#mapWrap').classList.remove('shake'); void $('#mapWrap').offsetWidth; $('#mapWrap').classList.add('shake'); hud(); }
-          if (e.k === 'waveClear') { banner('Wave ' + (e.wave + 1) + ' held! +' + e.bonus); }
-          if (e.k === 'won') { setTimeout(() => endScreen(true), 600); }
-          if (e.k === 'lost') { setTimeout(() => endScreen(false), 400); }
+          if (e.k === 'leak') { M.sting('leak'); $('#mapWrap').classList.remove('shake'); void $('#mapWrap').offsetWidth; $('#mapWrap').classList.add('shake'); hud(); }
+          if (e.k === 'waveClear') { M.sting('clear'); banner('Wave ' + (e.wave + 1) + ' held! +' + e.bonus); }
+          if (e.k === 'won') { M.sting('won'); setTimeout(() => endScreen(true), 600); }
+          if (e.k === 'lost') { M.sting('lost'); setTimeout(() => endScreen(false), 400); }
         }
-        if (G.phase !== 'wave') { ui.speed = 1; renderAll(); break; }
+        if (G.phase !== 'wave') { ui.speed = 1; M.mood('build'); renderAll(); break; }
       }
       if (changed) { hud(); }
     }
@@ -160,16 +161,17 @@
   // ---------- actions ----------
   function newRun(seed) {
     G = TD.newGame(seed || ((Date.now() % 100000) + 1)); ui.sel = null; ui.pick = 'arrow'; ui.speed = 1; ui.fx = []; ui.feedbackDone = false; ui.runs++;
-    $('#modeTag').textContent = `Prototype 1 · solo run${ui.runs > 1 ? ' · run ' + ui.runs : ''} · seed ${G.seed}`;
+    tag(); M.mood('build');
     renderAll();
     if (!ui.raf) ui.raf = requestAnimationFrame(frame);
   }
+  function tag() { $('#modeTag').innerHTML = `Prototype 1.1 · solo run${ui.runs > 1 ? ' · run ' + ui.runs : ''} · seed ${G.seed}${G.test.used ? '<span class="test-flag">tester</span>' : ''}`; }
   function tapCell(c, r) {
     if (G.phase !== 'build') return;
     const tw = TD.towerAt(G, c, r);
     if (tw) { ui.sel = [c, r]; renderAll(); return; }
     if (TD.isSpot(G, c, r)) {
-      if (TD.canBuild(G, ui.pick, c, r)) { TD.build(G, ui.pick, c, r); ui.sel = null; banner(''); renderAll(); }
+      if (TD.canBuild(G, ui.pick, c, r)) { TD.act(G, { k: 'build', type: ui.pick, c, r }); ui.sel = null; banner(''); renderAll(); }
       else { ui.sel = [c, r]; $('#mapWrap').classList.remove('shake'); void $('#mapWrap').offsetWidth; $('#mapWrap').classList.add('shake'); renderAll(); }
       return;
     }
@@ -180,12 +182,14 @@
   document.addEventListener('click', (e) => {
     const b = e.target.closest('button'); if (!b) return;
     if (b.dataset.pick && G.phase === 'build') { ui.pick = b.dataset.pick; ui.sel = null; renderAll(); return; }
-    if (b.dataset.pick && G.phase === 'draft') { TD.pick(G, b.dataset.pick); if (G.events && G.events[0] && G.events[0].k === 'grow') banner('The road grows!'); ui.sel = null; renderAll(); return; }
-    if (b.dataset.up) { const tw = TD.towerAt(G, ui.sel[0], ui.sel[1]); if (tw && TD.upgrade(G, tw, b.dataset.up)) renderAll(); return; }
+    if (b.dataset.pick && G.phase === 'draft') { TD.act(G, { k: 'pick', card: b.dataset.pick }); if (G.events && G.events[0] && G.events[0].k === 'grow') { banner('The road grows!'); M.sting('grow'); } ui.sel = null; renderAll(); return; }
+    if (b.dataset.up) { if (TD.act(G, { k: 'upgrade', c: ui.sel[0], r: ui.sel[1], branch: b.dataset.up })) renderAll(); return; }
+    if (b.dataset.tjump !== undefined) { const w = +b.dataset.tjump; if (G.phase !== 'build' || w <= G.wave) newRun(G.seed); TD.testJump(G, w); afterTest(`Jumped to wave ${w + 1}. The bot played the waves before it.`); return; }
+    if (b.dataset.tcard) { TD.testCard(G, b.dataset.tcard); afterTest(`Added ${TD.CARDS.find((c) => c.id === b.dataset.tcard).name}.`); return; }
     const a = b.dataset.act; if (!a) return;
-    if (a === 'start') { if (TD.startWave(G)) { ui.sel = null; acc = 0; renderAll(); } }
+    if (a === 'start') { if (TD.act(G, { k: 'start' })) { ui.sel = null; acc = 0; M.mood('wave'); renderAll(); } }
     else if (a === 'speed') { ui.speed = ui.speed > 1 ? 1 : 3; ctl(); coachLine(); }
-    else if (a === 'sell') { const tw = TD.towerAt(G, ui.sel[0], ui.sel[1]); if (tw) { TD.sell(G, tw); ui.sel = null; renderAll(); } }
+    else if (a === 'sell') { if (TD.act(G, { k: 'sell', c: ui.sel[0], r: ui.sel[1] })) { ui.sel = null; renderAll(); } }
     else if (a === 'unsel') { ui.sel = null; renderAll(); }
     else if (a === 'again') { closeOverlay(); newRun(); }
     else if (a === 'menu') showOverlay(menuHTML());
@@ -199,6 +203,11 @@
     else if (a === 'newrun') { closeOverlay(); newRun(); }
     else if (a === 'sim') showOverlay(simHTML());
     else if (a === 'runsim') { runSim(); }
+    else if (a === 'tester') showOverlay(testerHTML());
+    else if (a === 'tMusic') { if (window.TDMusic) TDMusic.set(!TDMusic.on); showOverlay(menuHTML()); }
+    else if (a === 'tgold') { TD.testGold(G, 500); afterTest('+500 gold.'); }
+    else if (a === 'theal') { TD.testHeal(G); afterTest('Keep repaired.'); }
+    else if (a === 'tinv') { G.test.invincible = !G.test.invincible; G.test.used = true; afterTest(G.test.invincible ? 'Keep can’t lose health now.' : 'Keep takes damage again.'); }
     else if (b.dataset.s === 'next') showIntro(ui.lesson + 1);
     else if (a === 'skipintro') { hideStory(); if (!ui.started) { ui.started = true; newRun(); } }
   });
@@ -215,7 +224,10 @@
       <button class="btn" data-act="tCoach" type="button" aria-pressed="${ui.coach}">Pell coaches you <span>${on(ui.coach)}</span></button>
       <button class="btn" data-act="newrun" type="button">New run <span>›</span></button>
       <button class="btn" data-act="intro" type="button">Replay the intro <span>›</span></button>
-      <button class="btn" data-act="sim" type="button">Bot simulation (for testers) <span>›</span></button>
+      <button class="btn" data-act="tMusic" type="button" aria-pressed="${!!(window.TDMusic && TDMusic.on)}">Music (placeholder) <span>${on(window.TDMusic && TDMusic.on)}</span></button>
+      <h3>For testers</h3>
+      <button class="btn" data-act="tester" type="button">Tester tools: jump, gold, any card <span>›</span></button>
+      <button class="btn" data-act="sim" type="button">Bot simulation <span>›</span></button>
       <button class="btn" data-act="feedback" type="button">Give feedback <span>›</span></button>
     </div><div class="acts"><button class="btn primary" data-act="close" type="button">Close</button></div>`;
   }
@@ -239,6 +251,24 @@
   }
   function cancelSpeed() { ui.speed = 1; }
 
+  // ---------- tester tools ----------
+  // Lets playtesters reach late waves and any card without grinding. A run that used them is flagged
+  // (tag in the header, `tester: true` in feedback) so balance notes can leave it out.
+  function testerHTML(msg) {
+    const owned = new Set(G.cards.map((c) => c.id));
+    return `<h2>Tester tools</h2><p class="muted">Anything here marks this run as a tester run.</p>
+      ${msg ? `<p style="color:var(--good);font-weight:700">${esc(msg)}</p>` : ''}
+      <div class="menu"><h3>Jump to wave</h3>
+      <div class="tester-row">${TD.WAVES.map((w, i) => `<button class="btn sm" type="button" data-tjump="${i}" ${i === G.wave && G.phase === 'build' ? 'aria-pressed="true"' : ''}>${i + 1}</button>`).join('')}</div>
+      <p class="tester-note">The smart bot builds and plays every wave before it, so you land on a fair board. Waves 4 and 7 open the bigger road.</p>
+      <h3>Resources</h3>
+      <div class="tester-row"><button class="btn sm" data-act="tgold" type="button">+500 gold</button><button class="btn sm" data-act="theal" type="button">Repair keep</button><button class="btn sm" data-act="tinv" type="button" aria-pressed="${G.test.invincible}">Invincible keep</button></div>
+      <h3>Add any card</h3>
+      <div class="tester-row">${TD.CARDS.map((c) => `<button class="btn sm" type="button" data-tcard="${c.id}" title="${esc(c.text)}" ${owned.has(c.id) && c.id !== 'levy' && c.id !== 'walls' ? 'disabled' : ''}>${esc(c.name)}</button>`).join('')}</div></div>
+      <div class="acts"><button class="btn" data-act="menu" type="button">Back</button><button class="btn primary" data-act="close" type="button">Play</button></div>`;
+  }
+  function afterTest(msg) { ui.sel = null; tag(); renderAll(); showOverlay(testerHTML(msg)); }
+
   // ---------- feedback ----------
   const FQ = [
     { id: 'fun', q: 'Did you want to play a second run?', opts: ['Yes, right away', 'Maybe later', 'No'] },
@@ -257,10 +287,10 @@
       ${FB.saved === true ? '<p style="color:var(--good);font-weight:700">Saved. Thank you!</p>' : FB.saved === 'copy' ? `<p class="muted">Couldn’t save from this device, so copy your answers and text them over:</p><div class="copybox" id="fbCopy">${esc(summary)}</div>` : ''}
       <div class="acts">${FB.saved === 'copy' ? '<button class="btn" data-act="fbcopy" type="button">Copy answers</button>' : ''}<button class="btn" data-act="close" type="button">Close</button>${FB.saved !== true ? '<button class="btn primary" data-act="fbsend" type="button">Send</button>' : ''}</div>`;
   }
-  function feedbackText() { const lines = FQ.map((f) => `${f.q} ${FB.q[f.id] || '–'}`); lines.push(`Notes: ${FB.text || '–'}`); lines.push(`From: ${FB.nm || 'anonymous'} · seed ${G.seed} · waves held ${G.stats.wavesCleared} · cards ${G.cards.map((c) => c.id).join(',')}`); return 'Tower Defense P1 feedback\n' + lines.join('\n'); }
+  function feedbackText() { const lines = FQ.map((f) => `${f.q} ${FB.q[f.id] || '–'}`); lines.push(`Notes: ${FB.text || '–'}`); lines.push(`From: ${FB.nm || 'anonymous'} · seed ${G.seed} · waves held ${G.stats.wavesCleared} · cards ${G.cards.map((c) => c.id).join(',')}${G.test.used ? ' · TESTER RUN' : ''}`); return 'Tower Defense P1.1 feedback\n' + lines.join('\n'); }
   async function sendFeedback() {
     const ta = $('#fbText'), nm = $('#fbName'); if (ta) FB.text = ta.value; if (nm) FB.nm = nm.value;
-    const body = { answers: Object.assign({}, FB.q), notes: FB.text, name: FB.nm, seed: G.seed, waves: G.stats.wavesCleared, phase: G.phase, cards: G.cards.map((c) => c.id), at: new Date().toISOString() };
+    const body = { answers: Object.assign({}, FB.q), notes: FB.text, name: FB.nm, seed: G.seed, waves: G.stats.wavesCleared, phase: G.phase, cards: G.cards.map((c) => c.id), tester: !!G.test.used, version: 'p1.1', at: new Date().toISOString() };
     try {
       const db = window.claude && window.claude.use ? await window.claude.use('db') : null;
       if (!db) throw new Error('no db');
@@ -290,7 +320,7 @@
 
   // ---------- intro ----------
   const SCENES = [
-    () => `<div class="hero rise">${HERO_SVG()}</div><h1 class="title rise d1">Tower Defense</h1><p class="lead rise d2">Hold the road. Draft a deck. Build a keep worth holding.</p><p class="copy rise d3">Prototype 1: one road that grows, four towers, ten waves. Solo for now; co-op is next.</p>`,
+    () => `<div class="hero rise">${HERO_SVG()}</div><h1 class="title rise d1">Tower Defense</h1><p class="lead rise d2">Hold the road. Draft a deck. Build a keep worth holding.</p><p class="copy rise d3">Prototype 1.1: one road that grows, four towers, ten waves. Solo for now; co-op is next.</p>`,
     () => `<span class="eyebrow rise">Four towers</span><div class="legend rise d1">${Object.entries(TD.TOWERS).map(([k, t]) => `<div>${towerIcon(k).replace('width="40" height="40"', 'width="48" height="48"')}${esc(t.name)}</div>`).join('')}</div><p class="lead rise d2">Each has two upgrade paths. Pick one.</p><p class="copy rise d3">Arrows are cheap and steady. Cannons crack armor but can’t hit flyers. Spark chains through packs and loves flyers. Frost slows everything.</p>`,
     () => `<span class="eyebrow rise">Five enemies</span><div class="legend five rise d1">${['grunt', 'runner', 'flyer', 'brute', 'boss'].map((k) => `<div>${enemyIcon(k)}${esc(TD.ENEMIES[k].name)}</div>`).join('')}</div><p class="lead rise d2">Each one that reaches the keep costs you health.</p><p class="copy rise d3">The next wave is always shown before you send it. Build the counter.</p>`,
     () => `<span class="eyebrow rise">After every wave</span><div class="cards rise d1" style="width:100%;max-width:420px">${['sharp', 'tithe', 'walls'].map((id) => { const c = TD.CARDS.find((x) => x.id === id); return `<div class="card ${c.kind}"><span class="kind">${c.kind}</span><b>${esc(c.name)}</b><small>${esc(c.text)}</small></div>`; }).join('')}</div><p class="lead rise d2">Draft one card. Your deck is your build.</p><p class="copy rise d3">And twice per run, the road grows: the keep moves out and new spots open.</p>`,

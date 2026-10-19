@@ -7,7 +7,7 @@ Every game starts as a pitch in Pitch Forge (our team questionnaire). Approved p
 
 | Game | What it is | Status |
 |---|---|---|
-| [Tower Defense](tower-defense/) (working title) | Tower defense, built with the crew | Pitching |
+| [Tower Defense](tower-defense/) (working title) | Co-op roguelite tower defense with a card draft, built with the crew | Prototype 1.1 (solo); co-op server base |
 | [Trickbound](trickbound/) | Spades spin-off: a trick-taking card game with familiars | Prototype |
 | [Tilebound](tilebound/) | Mahjong meets the Game Boy Pokémon TCG | Prototype |
 | [Hexed](hexed/) | Witchy tarot match-3, 10 levels | Prototype |
@@ -17,6 +17,8 @@ Every game starts as a pitch in Pitch Forge (our team questionnaire). Approved p
 | [Automation Idler](automation-idler/) | Idler built around real life automations | Design |
 
 Shared building blocks (deck generator, layouts, prototype snippets, art workflow) are in [`kit/`](kit/).
+
+**Working on a game?** Start with [CONTRIBUTING.md](CONTRIBUTING.md): setup, branches and pull requests, and the build-and-test command for each game.
 
 ## Folder layout for each game
 
@@ -36,12 +38,13 @@ Most builds are single HTML files. Open `builds/*.html` in a browser, or run a p
 
 | Game | Playable build |
 |---|---|
+| Tower Defense | [`tower-defense/builds/tower-defense-p1.html`](tower-defense/builds/tower-defense-p1.html) |
 | Trickbound | [`trickbound/builds/trickbound.html`](trickbound/builds/trickbound.html) |
 | Tilebound | [`tilebound/builds/tilebound.html`](tilebound/builds/tilebound.html) |
 | Hexed | [`hexed/builds/hexed.html`](hexed/builds/hexed.html) |
 | Neon Surf | [`neon-surf/builds/neon-surf.html`](neon-surf/builds/neon-surf.html) |
 
-GitHub shows `.html` files as source, so download the file (with its `img/` folder where there is one) and open it locally to play.
+GitHub shows `.html` files as source, so download the file (with its `img/` folder where there is one) and open it locally to play. Tower Defense is also playable on the Lab page of [onefiftylabs.co](https://onefiftylabs.co).
 
 ## Rights
 

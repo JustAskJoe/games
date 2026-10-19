@@ -1,0 +1,16 @@
+{
+  "name": "tower-defense-coop-server",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Co-op room server for One Fifty Labs' Tower Defense. Host-authoritative intent log over WebSockets.",
+  "license": "UNLICENSED",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node test.js && node smoke.js"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  },
+  "engines": { "node": ">=18" }
+}

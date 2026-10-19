@@ -1,4 +1,4 @@
-# Playwright phone walkthrough of the built prototype. Run: python3 test.py (after build.py)
+# Playwright phone walkthrough of the built prototype. Run: python3 test.py (after build.py), or ../build-and-test.py for everything
 import os, pathlib, sys
 from playwright.sync_api import sync_playwright
 here = pathlib.Path(__file__).parent
@@ -19,7 +19,9 @@ def play_wave(pg, speed=True):
 with sync_playwright() as p:
     b = p.chromium.launch(); pg = b.new_page(viewport={'width': 390, 'height': 844})
     pg.on('pageerror', lambda e: errs.append(str(e)))
-    pg.on('console', lambda m: errs.append('console: ' + m.text) if m.type == 'error' else None)
+    # ignore offline noise: blocked webfonts, and the feedback POST that can't run from file:// (the form falls back to copy)
+    benign = ('net::', 'fonts.g', 'URL scheme "file"')
+    pg.on('console', lambda m: errs.append('console: ' + m.text) if m.type == 'error' and not any(x in m.text for x in benign) else None)
     pg.goto(build.as_uri()); pg.wait_for_timeout(1200)
     pg.screenshot(path=str(shots / 's1_intro.png'))
     for i in range(3): pg.click('[data-s=next]'); pg.wait_for_timeout(500); pg.screenshot(path=str(shots / f's1_intro{i+2}.png'))
@@ -53,6 +55,23 @@ with sync_playwright() as p:
     pg.set_viewport_size({'width': 320, 'height': 640}); pg.wait_for_timeout(300); pg.click('.modal [data-act=close]'); pg.wait_for_timeout(200)
     pg.screenshot(path=str(shots / 's10_320.png'), full_page=True)
     print('scrollWidth320', pg.evaluate('document.documentElement.scrollWidth'))
+    # tester tools: jump to wave 7 on a fresh run, add gold and a card, check the run is flagged
+    pg.set_viewport_size({'width': 390, 'height': 844}); pg.wait_for_timeout(200)
+    if pg.locator('#overlay .modal').count(): pg.click('#overlay [data-act=close]')
+    pg.click('#bMenu'); pg.wait_for_timeout(200); pg.screenshot(path=str(shots / 's11_menu.png'))
+    pg.click('[data-act=tester]'); pg.wait_for_timeout(200)
+    pg.click('[data-tjump="6"]'); pg.wait_for_timeout(400)
+    pg.click('[data-act=tgold]'); card = pg.get_attribute('[data-tcard]:not([disabled])', 'data-tcard'); pg.click(f'[data-tcard={card}]'); pg.wait_for_timeout(200)
+    pg.screenshot(path=str(shots / 's12_tester.png'), full_page=True)
+    st = pg.evaluate("() => ({ wave: TDUI.G.wave, stage: TDUI.G.stage, phase: TDUI.G.phase, used: TDUI.G.test.used, cards: TDUI.G.cards.map(c => c.id) })")
+    print('tester', st)
+    assert st['wave'] == 6 and st['stage'] == 2 and st['phase'] == 'build' and st['used'] and card in st['cards'], st
+    pg.click('#overlay [data-act=close]'); pg.wait_for_timeout(200)
+    assert 'tester' in pg.inner_text('#modeTag').lower()
+    pg.screenshot(path=str(shots / 's13_wave7.png'), full_page=True)
+    # music button toggles and remembers
+    pg.click('.music-btn'); pg.wait_for_timeout(100)
+    print('music after one tap', pg.evaluate("() => TDMusic.on"), pg.evaluate("() => localStorage.getItem('td-music')"))
     print('errors', errs[:8])
     b.close()
 sys.exit(1 if errs else 0)

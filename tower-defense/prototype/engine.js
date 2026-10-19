@@ -110,6 +110,7 @@
       mods: { arrowDmg: 1, cannonDmg: 1, sparkChain: 0, frostSlowT: 1, range: 1, rate: 1, bounty: 0, interest: 0, cost: 1, rally: 1, arrowCost: 1, brittle: 1 },
       cards: [], offer: null, stats: { kills: 0, leaks: 0, goldEarned: 0, wavesCleared: 0 },
       log: [],
+      test: { used: false, invincible: false }, // tester tools; `used` marks the run so feedback and stats can ignore it
     };
   }
   const path = (G) => pathUpTo(G.stage);
@@ -205,7 +206,7 @@
       en.prog += sp * TICK;
       while (en.prog >= 1 && en.idx < last) { en.prog -= 1; en.idx++; }
       if (en.idx >= last) { // reached the keep
-        en.dead = true; en.leaked = true; const l = ENEMIES[en.type].leak; G.health -= l; G.stats.leaks++;
+        en.dead = true; en.leaked = true; const l = ENEMIES[en.type].leak; if (!G.test.invincible) G.health -= l; G.stats.leaks++;
         G.events.push({ k: 'leak', id: en.id, leak: l });
         if (G.health <= 0) { G.health = 0; G.phase = 'lost'; G.events.push({ k: 'lost' }); return G.events; }
       }
@@ -279,10 +280,6 @@
     const w = WAVES[G.wave]; if (!w) return {};
     const n = {}; for (const [t, c] of w.groups) n[t] = (n[t] || 0) + c; return n;
   }
-  function nextWaveNeeds(G) {
-    const w = WAVES[G.wave]; if (!w) return {};
-    const n = {}; for (const [t, c] of w.groups) n[t] = (n[t] || 0) + c; return n;
-  }
   function botBuild(G, style) {
     // style: 'smart' reads the wave preview and builds counters; 'saver' keeps a reserve; 'random' is a sloppy player.
     let guard = 0;
@@ -333,6 +330,51 @@
     return res;
   }
 
-  const TD = { TICK, COLS, ROWS, PATHS, SPOTS, TOWERS, ENEMIES, WAVES, CARDS, SELL_RATE, rng, newGame, path, spots, keep, isSpot, towerAt, cost, upCost, canBuild, build, canUpgrade, upgrade, sellValue, sell, stats, startWave, step, pick, skipDraft, drawOffer, botBuild, botPick, playOut, simulate, posOf, nextWaveNeeds, _setScale: (v) => { SCALE = v; }, _setEcon: (b, w) => { BOUNTY_MUL = b; BONUS_MUL = w; }, _setSpeed: (v) => { SPEED = v; } };
+  // ---------- actions: the one way to change a game ----------
+  // Every player input is an intent object. The phone UI, bots and the co-op server all go through act(),
+  // so a log of intents replays a run exactly (same seed + same intents = same game).
+  //   { k: 'build', type, c, r }  { k: 'upgrade', c, r, branch }  { k: 'sell', c, r }
+  //   { k: 'start' }  { k: 'pick', card }  { k: 'skip' }
+  function act(G, it) {
+    if (!it || typeof it !== 'object') return false;
+    const tw = () => towerAt(G, it.c | 0, it.r | 0);
+    switch (it.k) {
+      case 'build': return !!TOWERS[it.type] && build(G, it.type, it.c | 0, it.r | 0);
+      case 'upgrade': return (it.branch === 'A' || it.branch === 'B') && !!tw() && upgrade(G, tw(), it.branch);
+      case 'sell': return !!tw() && sell(G, tw());
+      case 'start': return startWave(G);
+      case 'pick': return pick(G, it.card);
+      case 'skip': return skipDraft(G);
+      default: return false;
+    }
+  }
+  // Small checksum of everything that matters, for spotting co-op desyncs. Same state, same number.
+  function hash(G) {
+    const parts = [G.tick, G.wave, G.stage, G.phase, G.gold, G.health, G.stats.kills, G.stats.leaks,
+      G.towers.map((t) => `${t.type}${t.c}${t.r}${t.tier}${t.branch || ''}`).join('.'), G.cards.map((c) => c.id).join('.')];
+    let h = 2166136261; const str = parts.join('|');
+    for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
+    return h.toString(16);
+  }
+
+  // ---------- tester tools (menu → Tester tools) ----------
+  // Jump ahead with a fair board: the smart bot plays every wave before `target` (0-based), then hands over at build.
+  function testJump(G, target) {
+    G.test.used = true; const inv = G.test.invincible; G.test.invincible = true;
+    let guard = 0;
+    while (G.wave < target && G.phase !== 'won' && G.phase !== 'lost' && guard++ < 200000) {
+      if (G.phase === 'build') { botBuild(G, 'smart'); startWave(G); }
+      else if (G.phase === 'wave') step(G);
+      else if (G.phase === 'draft') pick(G, botPick(G));
+    }
+    if (G.phase === 'draft') pick(G, botPick(G));
+    G.test.invincible = inv; G.enemies = []; G.shots = [];
+    return G;
+  }
+  function testGold(G, n) { G.test.used = true; G.gold += n; }
+  function testHeal(G) { G.test.used = true; G.health = G.maxHealth; }
+  function testCard(G, id) { const c = CARDS.find((x) => x.id === id); if (!c) return false; G.test.used = true; c.apply(G); G.cards.push(c); return true; }
+
+  const TD = { TICK, COLS, ROWS, PATHS, SPOTS, TOWERS, ENEMIES, WAVES, CARDS, SELL_RATE, rng, newGame, path, spots, keep, isSpot, towerAt, cost, upCost, canBuild, build, canUpgrade, upgrade, sellValue, sell, stats, startWave, step, pick, skipDraft, drawOffer, botBuild, botPick, playOut, simulate, posOf, nextWaveNeeds, act, hash, testJump, testGold, testHeal, testCard, _setScale: (v) => { SCALE = v; }, _setEcon: (b, w) => { BOUNTY_MUL = b; BONUS_MUL = w; }, _setSpeed: (v) => { SPEED = v; } };
   if (typeof module !== 'undefined' && module.exports) module.exports = TD; else root.TD = TD;
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -1,5 +1,5 @@
 <meta charset="utf-8">
-<title>Tower Defense · Prototype 1</title>
+<title>Tower Defense · Prototype 1.1</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -126,6 +126,15 @@ canvas#map { display: block; width: 100%; height: auto; touch-action: manipulati
 .modal .acts { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
 .menu { display: flex; flex-direction: column; gap: 8px; }
 .menu .btn { justify-content: space-between; }
+.menu h3 { font-size: 13px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--teal-2); margin: 10px 0 2px; }
+.tester-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.tester-row .btn { flex: 1 1 auto; min-width: 44px; }
+.tester-note { font-size: 13px; color: var(--muted); margin: 4px 0 0; }
+.top .t .test-flag { display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 999px; background: var(--rust); color: #fff; font-size: 10.5px; letter-spacing: 1px; font-weight: 800; vertical-align: middle; }
+.foot { padding-inline: 52px; margin-bottom: 36px; }
+.music-btn { position: fixed; left: max(10px, env(safe-area-inset-left, 0px)); bottom: max(8px, env(safe-area-inset-bottom, 0px)); z-index: 80; width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--ink); background: var(--paper); color: var(--teal-2); font-size: 18px; font-weight: 800; cursor: pointer; display: grid; place-items: center; box-shadow: 0 2px 0 var(--ink); }
+.music-btn.off { color: var(--muted); background: var(--paper-2); text-decoration: line-through; }
+.music-btn:focus-visible { outline: 3px solid var(--spark); outline-offset: 2px; }
 .field { display: flex; flex-direction: column; gap: 6px; }
 .field label { font-weight: 700; font-size: 15px; }
 .choices { display: flex; flex-wrap: wrap; gap: 6px; }
