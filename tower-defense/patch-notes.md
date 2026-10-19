@@ -34,13 +34,13 @@ Play: onefiftylabs.co/lab/tower-defense/
 - [ ] @Hunter @Joe @Zach: Pick lane owners (handoff.md → "Open: team lanes").
 - [ ] Tech lane: Make the engine call (desktop wrapper or Godot) before starting Prototype 2.
 - [x] @Hunter: Turn on branch protection for `main`. (Done Oct 19, Hunter. A direct push to `main` is now rejected.)
-- [ ] @Hunter: Delete the leftover test branch `claude/ci-preview-test` ("Delete branch" button on closed pull request #1).
+- [x] @Hunter: Delete the leftover test branches. (Done Oct 19, Claude in Hunter's browser. Only `main` remains.)
 
 ### Behind the scenes (added later on Oct 19)
 - **Automatic checks:** every pull request runs build-and-test on GitHub and blocks merging if it fails.
 - **Preview links:** each pull request gets a link to play that branch on the Lab before merging (`/lab/tower-defense@<branch>/`).
 - **Tested end to end:** a test pull request passed the check and got its preview link.
-- **Guard:** pull requests that delete builds, briefs, handoff docs, patch notes or kit files, or that change CI or repo rules, now need another teammate's approval. Claude's rules forbid force-pushes and unrequested deletions.
+- **Guard is a required check** (Oct 19), alongside Build and test. Pull requests that delete builds, briefs, handoff docs, patch notes or kit files, or that change CI or repo rules, now need another teammate's approval. Claude's rules forbid force-pushes and unrequested deletions.
 
 ### Watch out
 - [ ] **Co-op sync is only proven in Node.** Both phones must compute identical results. `Math.hypot` and `Math.pow` could differ slightly between Safari and Chrome, which would drift a co-op game. Test an iPhone against a desktop Chrome before Prototype 2 relies on it. The per-wave hash check will show any drift.
