@@ -19,3 +19,11 @@ Before pushing, run the game's build-and-test command (table in CONTRIBUTING.md)
 - **Before every push,** make sure the session has an entry. List everything you noticed but didn't fix or couldn't verify under Watch out: untested devices, assumptions, risky numbers, flaky tests, TODOs. Write these down even if nobody asked. The next person can't see your chat.
 - Tick items the session finished. Never delete someone else's open item; tick it or ask.
 - At the start of a session, run `python3 kit/open-notes.py --for <name>` and tell the person what's waiting for them.
+
+**Safety: nothing permanent or destructive without a person's explicit OK.**
+- Never force-push, rewrite history (`rebase` of pushed commits, `reset --hard` on shared branches, `filter-branch`), or delete `main`. Branch rules block this on GitHub; don't try to work around them.
+- Never delete a game folder, a `builds/` file, `pitch/`, `design/handoff.md`, `patch-notes.md`, anything in `kit/`, or the top-level docs unless the person in this chat asked for that specific deletion. Shelving a game means a note in its README, not deleting it.
+- Never edit `.github/` (CI and Guard) or this file to loosen a check, skip tests, or get a pull request past Guard. If a check is wrong, say so and propose the fix in its own pull request.
+- Work on a branch and open a pull request; never ask anyone to turn off protection. A pull request that Guard flags (deletions, rule or CI changes) needs another teammate's approval. Tell the person that, don't route around it.
+- Before anything you can't easily undo (deleting files or branches, renaming a build the Lab serves, changing what the Lab or site points at), stop and confirm in chat first.
+- Mistakes are recoverable from Git history: to undo a merged change, open a pull request that reverts it (`git revert`), never a force-push.
