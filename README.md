@@ -50,4 +50,4 @@ GitHub shows `.html` files as source, so download the file (with its `img/` fold
 
 ## Rights
 
-Code, art and text here are © 2026 F Lane d/b/a One Fifty Labs. All rights reserved. The source is public so people can look, learn and play; it is not licensed for reuse. Some art is AI mood reference, not final art, and is labeled that way.
+Code, art and text here are © 2026 F Lane d/b/a One Fifty Labs. All rights reserved. The source is public so people can look, learn and play; it is not licensed for reuse. 
