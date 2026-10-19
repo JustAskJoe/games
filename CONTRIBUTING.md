@@ -78,6 +78,7 @@ Every pull request runs **Build and test** on GitHub. You'll see a yellow dot, t
 - **When Tower Defense or `kit/` changes,** it also runs the full `build-and-test.py` (build, balance band, co-op server tests, phone test) and confirms the committed build matches the source.
 - **A red X blocks merging.** Click "Details" to see why; the error line says what to do. Or ask Claude: "the check failed on my PR, fix it."
 - **Preview links:** the check posts a comment on the pull request with a link to play your branch on the Lab: `onefiftylabs.co/lab/<game>@<branch>/` (behind the site password). It updates within about a minute of each push, so teammates can play a change before it merges.
+- **Turning on protection (repo admin, once):** GitHub → `onefiftylabs/games` → Settings → Branches → Add branch protection rule. Branch name `main`. Tick "Require a pull request before merging" (set required approvals to 0), "Require status checks to pass" (search for and add **Build and test**), and "Do not allow bypassing the above settings". Save.
 - Only Tower Defense is tested automatically so far. Other games keep their manual commands above until they're added to `.github/workflows/checks.yml`.
 
 ## 5. Rules for this repo (it's public)
