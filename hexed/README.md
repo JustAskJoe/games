@@ -12,6 +12,7 @@ Open [`builds/hexed.html`](builds/hexed.html) in a browser. Swipe to swap.
 |---|---|
 | `prototype/v1/` | Source: `engine.js` (pure match-3 engine that emits animation frames), `art.js`, `ui.js`, `head.html`, `body.html`, `build.py`, `test.py`, `sim.js`, and a README with balance numbers and lessons |
 | `builds/` | Single-file playable build |
+| `design/` | Scope doc (`scope.html`) |
 
 Build: `cd prototype/v1 && python3 build.py`. Balance sim: `node sim.js 60 casual`.
 

@@ -1,0 +1,20 @@
+<section id="architecture" style="background:#F6EEDF;color:#3A2E3F;font-family:'Nunito Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:32px">
+<p style="font-size:26px;color:#A84E31;letter-spacing:4px;font-weight:800">ARCHITECTURE</p>
+<h2 style="font-family:'Fraunces', Georgia, serif;font-size:56px;font-weight:600;line-height:1.15">Every screen shares one rules engine.</h2>
+<div style="display:flex;gap:24px">
+<div style="flex:1;background:#FFFAF0;border:2px solid #E2D3B8;border-radius:18px;padding:26px 30px;display:flex;flex-direction:column;gap:6px"><h3 style="font-size:28px;font-weight:800">iPad and phone</h3><p style="font-size:24px;color:#5B4D5C">Phaser 2D client · launch</p></div>
+<div style="flex:1;background:#FFFAF0;border:2px solid #E2D3B8;border-radius:18px;padding:26px 30px;display:flex;flex-direction:column;gap:6px"><h3 style="font-size:28px;font-weight:800">PC</h3><p style="font-size:24px;color:#5B4D5C">Same client, Steam wrapper · later</p></div>
+<div style="flex:1;background:#FFFAF0;border:2px solid #E2D3B8;border-radius:18px;padding:26px 30px;display:flex;flex-direction:column;gap:6px"><h3 style="font-size:28px;font-weight:800">XR table</h3><p style="font-size:24px;color:#5B4D5C">WebSpatial panels on PICO · later</p></div>
+</div>
+<p style="font-size:32px;color:#A84E31;text-align:center;font-weight:800">↓ all call the same functions ↓</p>
+<div style="background:#3A2E3F;border-radius:20px;padding:30px 40px;display:flex;flex-direction:column;gap:8px"><h3 style="font-family:'Fraunces', Georgia, serif;font-size:36px;font-weight:600;color:#F2B36B">Rules engine (pure TypeScript)</h3><p style="font-size:26px;color:#E8DCCB">swap · draw · discard · call · checkCard · tilesAway · scoring · no drawing, no clock, seeded RNG only</p></div>
+<p style="font-size:32px;color:#A84E31;text-align:center;font-weight:800">↑ fed by and run in ↑</p>
+<div style="display:flex;gap:24px">
+<div style="flex:1;background:#FFFAF0;border:2px solid #E2D3B8;border-radius:18px;padding:26px 30px;display:flex;flex-direction:column;gap:6px"><h3 style="font-size:28px;font-weight:800">Content (JSON)</h3><p style="font-size:24px;color:#5B4D5C">Tiles, House Cards, people, maps</p></div>
+<div style="flex:1;background:#FFFAF0;border:2px solid #E2D3B8;border-radius:18px;padding:26px 30px;display:flex;flex-direction:column;gap:6px"><h3 style="font-size:28px;font-weight:800">Save + cloud sync</h3><p style="font-size:24px;color:#5B4D5C">One save across iPad, phone, PC</p></div>
+<div style="flex:1;background:#FFFAF0;border:2px solid #E2D3B8;border-radius:18px;padding:26px 30px;display:flex;flex-direction:column;gap:6px"><h3 style="font-size:28px;font-weight:800">Bots and tests</h3><p style="font-size:24px;color:#5B4D5C">Thousands of games per change</p></div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#6E5F6B">ONE FIFTY LABS · TILEBOUND · 39</p>
+<p style="position:absolute;right:128px;top:44px;width:1100px;text-align:right;font-size:24px;color:#7A6B78">© 2026 F Lane d/b/a One Fifty Labs · All rights reserved</p>
+<aside>This is why the plan stays affordable: the engine is written once. The phone and iPad game, the balance bots, a future XR table, and online play if it ever happens are all thin layers around it.</aside>
+</section>

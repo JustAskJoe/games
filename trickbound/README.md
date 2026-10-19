@@ -14,11 +14,14 @@ Open [`builds/trickbound.html`](builds/trickbound.html) in a browser (keep the `
 | `prototype/v1/` | Source: `engine.js` (rules, bots, familiars, sim), `ui.js`, `world.js`, `line.js`, `catch.js`, `music.js`, `head.html`, `body.html`, Playwright tests |
 | `prototype/v1/server/` | Host-authoritative WebSocket table server (`npm test`, `npm start`) |
 | `builds/` | Single-file playable build and its AI mood art |
+| `deck/` | Pitch deck source (`deck.json` + `slides/*.html`, 23 slides); `deck/books-on-the-line/` is the 13-slide Books on the Line deck |
 
 Build from source: `cd prototype/v1 && python3 build-and-test.py --build-only` writes `trickbound.html` (copy `builds/img/` beside it for the art).
 
 The design docs still point at the old `prototype-kit/trickbound-v1/` and `trickbound/*.md` paths; those now live in `prototype/v1/` and `design/`.
 
 Art is AI mood reference, not final art. Placeholder cards, voices and table talk.
+
+Deck slides reference images by `/_blob/<id>`; those images are not in the repo.
 
 © 2026 F Lane d/b/a One Fifty Labs · All rights reserved

@@ -12,9 +12,9 @@ Every game starts as a pitch in Pitch Forge (our team questionnaire). Approved p
 | [Tilebound](tilebound/) | Mahjong meets the Game Boy Pokémon TCG | Prototype |
 | [Hexed](hexed/) | Witchy tarot match-3, 10 levels | Prototype |
 | [Neon Surf](neon-surf/) | Neon-ocean rhythm surfing | Tech test |
-| Cardboard Cartel | Trading-card collector idler | Design (docs not in the repo yet) |
-| Idle Hands | Idle game pitch | Pitch (docs not in the repo yet) |
-| Automation Idler | Idler built around real life automations | Design (docs not in the repo yet) |
+| [Cardboard Cartel](cardboard-cartel/) | Trading-card collector idler | Design |
+| [Idle Hands](idle-hands/) | Idle game pitch | Pitch |
+| [Automation Idler](automation-idler/) | Idler built around real life automations | Design |
 
 Shared building blocks (deck generator, layouts, prototype snippets, art workflow) are in [`kit/`](kit/).
 

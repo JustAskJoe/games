@@ -1,0 +1,16 @@
+<section id="operatorcost" data-transition="fade" style="background:#1E1B2E;color:#F6EFE3;font-family:'Nunito Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:36px">
+<p style="font-size:28px;letter-spacing:4px;text-transform:uppercase;color:#F2A541;font-weight:700">Keeping AI costs flat</p>
+<h2 style="font-family:'Fredoka', Arial, sans-serif;font-size:72px;font-weight:600;line-height:1.1">Operators are written, not generated.</h2>
+<table style="font-size:26px;color:#F6EFE3;font-family:'Nunito Sans', Arial, sans-serif">
+<tr style="background:#3A2F55"><th style="width:32%;color:#F6EFE3">Interaction</th><th style="width:44%;color:#F6EFE3">How it's made</th><th style="width:24%;color:#F2A541;text-align:right">AI cost / player / mo</th></tr>
+<tr style="background:#2A2340"><td>Everyday lines and reactions</td><td>Hand-written lines, real run data in the blanks</td><td style="text-align:right">$0</td></tr>
+<tr style="background:#1E1B2E"><td>Hearts, gifts, heart events</td><td>Scripted friendship system</td><td style="text-align:right">$0</td></tr>
+<tr style="background:#2A2340"><td>Weekly letter from each operator</td><td>One small-model call each, batched</td><td style="text-align:right">½–4¢</td></tr>
+<tr style="background:#1E1B2E"><td>Asking Tink to build something</td><td>That chat is the real agent build</td><td style="text-align:right">In Agent Energy</td></tr>
+<tr style="background:#2A2340"><td>Open-ended chit-chat</td><td>Not offered: predictable cost and safety</td><td style="text-align:right">$0</td></tr>
+</table>
+<p style="font-size:28px;line-height:1.4;color:#CFC6E0;width:1600px">Free players' operators are fully scripted. AI only speaks when it's doing real work.</p>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#9C93B3">Idle Hands · 23 · Estimates; see notes</p>
+<p style="position:absolute;right:128px;top:44px;width:1100px;text-align:right;font-size:24px;color:#A898A6">© 2026 F Lane d/b/a One Fifty Labs · All rights reserved</p>
+<aside>Weekly letter math: about 3,000 input tokens (persona prompt, cached, plus the week's run log) and 300 output tokens on Claude Haiku 5.5 at $0.10 / $0.50 per million = about $0.00045 per letter. 8 operators × 4.33 weeks ≈ 1.6¢ a month; 20 operators ≈ 3.9¢. The Batch API halves those. Dialogue packs are content cost (writing), not running cost.</aside>
+</section>

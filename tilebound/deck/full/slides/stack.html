@@ -1,0 +1,18 @@
+<section id="stack" style="background:#3A2E3F;color:#E8DCCB;font-family:'Nunito Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:36px">
+<p style="font-size:26px;color:#F2B36B;letter-spacing:4px;font-weight:800">TECH STACK</p>
+<h2 style="font-family:'Fraunces', Georgia, serif;font-size:56px;font-weight:600;line-height:1.15;color:#FFF4E2">One TypeScript codebase, every screen.</h2>
+<table style="font-size:25px;color:#3A2E3F;font-family:'Nunito Sans', Arial, sans-serif">
+<tr style="background:#F2B36B"><th style="width:20%;color:#3A2E3F">Layer</th><th style="width:34%;color:#3A2E3F">Pick</th><th style="width:46%;color:#3A2E3F">Why</th></tr>
+<tr style="background:#FFF4E2"><td><b>Rules engine</b></td><td>Pure TypeScript, seeded RNG</td><td>Same code in the app, in the bots and in the tests</td></tr>
+<tr style="background:#F6EEDF"><td><b>Game client</b></td><td>Phaser + Vite</td><td>Illustrated 2D in TypeScript; a web build is still just a link</td></tr>
+<tr style="background:#FFF4E2"><td><b>iPad and phone</b></td><td>Capacitor wrapper</td><td>One codebase on iOS and Android stores</td></tr>
+<tr style="background:#F6EEDF"><td><b>Saves</b></td><td>Local save + iCloud / Play sync</td><td>No servers to run; one save across devices</td></tr>
+<tr style="background:#FFF4E2"><td><b>XR table</b></td><td>WebSpatial + PICO CLI</td><td>Tiles and portraits become panels on your table; Claude Code builds and tests on PICO</td></tr>
+<tr style="background:#F6EEDF"><td><b>PC</b></td><td>Steam wrapper</td><td>Later, from the same build</td></tr>
+<tr style="background:#FFF4E2"><td><b>Art and audio</b></td><td>Procreate → sprite atlases</td><td>Layered tiles and portraits; AI sketches, artists paint</td></tr>
+</table>
+<p style="font-size:26px;line-height:1.45">AI-assisted throughout: Claude Code writes and tests the engine; bots tune balance. After the slice, a check: if the art pipeline or older phones fall short, the client moves to Unity 2D.</p>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#BBA9B8">ONE FIFTY LABS · TILEBOUND · 38</p>
+<p style="position:absolute;right:128px;top:44px;width:1100px;text-align:right;font-size:24px;color:#A898A6">© 2026 F Lane d/b/a One Fifty Labs · All rights reserved</p>
+<aside>Full detail is in the companion doc, “Tilebound: Tech Stack &amp; Production Pipeline”. PICO CLI 0.5.0 (released Sept 15, 2026) lets AI agents including Claude Code create, build, run and debug spatial apps for PICO OS 6 and Space Pro, in the emulator or on a device, with logs and profiling. It supports WebSpatial (HTML and React) apps, which fits a TypeScript codebase; native Spatial SDK (Kotlin) and Unity are its other routes. Sources: developer.picoxr.com blog; Holographica; Tencent News.</aside>
+</section>
