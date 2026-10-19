@@ -1,0 +1,136 @@
+<!doctype html>
+<!--
+  dashboard-screens.html
+  Source: "Slab Syndicate GUI concept" (Title/Main/Dossier/Run/Take.dc.html),
+  Design canvas, fluid "PAGE" artboards. Copy and colours generalised.
+
+  Reusable pieces (each block below is self-contained):
+   1. App header: logo link + numbered screen nav, aria-current on the active
+      tab, 44px min touch targets, wraps on narrow screens.
+   2. Hero band: [number block] [big title + blurb] [KPI callout]. The
+      `flex: 999 1 420px` middle cell soaks up width and lets the callout drop
+      below on phones without a media query. Title uses clamp() to scale.
+   3. KPI tile row: grid auto-fit with minmax(min(220px,100%),1fr) so it never
+      overflows at 320px.
+   4. Stage (kanban) columns: fixed-min columns inside overflow-x:auto so the
+      page itself never scrolls sideways.
+   5. Prediction-vs-actual matrix (confusion matrix) table: diagonal filled.
+   6. Ledger table with tfoot totals, inside an overflow-x:auto box with a
+      min-width so columns stay legible on phones.
+  Fonts: Anton (display), Archivo (body), IBM Plex Mono (labels/numbers).
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dashboard Screens</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --bg:#0D0D0F; --surface:#17171A; --ink:#F1E8D4; --muted:#C9C2B2; --dim:#8A867C;
+    --line:#2E2E33; --line-strong:#45454C;
+    --accent:#C4161F; --accent-2:#E8B422; --on-accent-2:#141416; --bad:#FF6B6B;
+    --display:'Anton',Impact,sans-serif; --body:'Archivo',system-ui,sans-serif; --mono:'IBM Plex Mono',ui-monospace,monospace;
+  }
+  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 var(--body)}
+  a{color:var(--ink)} a:hover{color:var(--accent-2)}
+  .label{font-family:var(--mono);font-size:12px;font-weight:600;letter-spacing:.16em}
+
+  /* 1. header */
+  .app-header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px 32px;padding:18px 40px;border-bottom:1px solid var(--line)}
+  .brand{display:flex;align-items:center;gap:12px;min-height:44px;text-decoration:none;font:24px var(--display);letter-spacing:.06em}
+  .tabs{display:flex;flex-wrap:wrap;gap:8px}
+  .tabs a{display:inline-flex;align-items:center;min-height:44px;padding:0 14px;font:600 13px var(--mono);letter-spacing:.08em;text-decoration:none;border:1px solid var(--line-strong)}
+  .tabs a[aria-current="page"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+
+  /* 2. hero band */
+  .hero{display:flex;flex-wrap:wrap;align-items:stretch;border-bottom:4px solid var(--ink)}
+  .hero-num{flex:0 0 auto;background:var(--accent);padding:24px 40px;display:flex;flex-direction:column;justify-content:flex-end}
+  .hero-num b{font:120px/.9 var(--display)}
+  .hero-main{flex:999 1 420px;min-width:0;padding:24px 40px;display:flex;flex-direction:column;justify-content:flex-end;gap:10px}
+  .hero-main h1{margin:0;font:400 clamp(56px,9vw,120px)/.9 var(--display);letter-spacing:.02em}
+  .hero-main p{margin:0;max-width:560px;color:var(--muted)}
+  .hero-kpi{flex:1 1 240px;background:var(--accent-2);color:var(--on-accent-2);padding:24px;display:flex;flex-direction:column;justify-content:flex-end;gap:6px}
+  .hero-kpi b{font:44px/1 var(--display)}
+
+  main{padding:32px 40px 48px;display:flex;flex-direction:column;gap:28px}
+  @media (max-width:600px){ .app-header,.hero-num,.hero-main,main{padding-left:16px;padding-right:16px} }
+
+  /* 3. KPI tiles */
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(220px,100%),1fr));gap:12px}
+  .kpi{border:1px solid var(--line-strong);padding:14px 16px}
+  .kpi .label{font-size:11px;letter-spacing:.12em;color:var(--muted)}
+  .kpi b{display:block;font:38px/1.2 var(--display)}
+
+  /* 4. stage columns */
+  .stages-scroll{overflow-x:auto;padding-bottom:8px}
+  .stages{display:grid;grid-template-columns:repeat(var(--cols,6),minmax(188px,1fr));gap:12px;align-items:start}
+  .stage{display:flex;flex-direction:column;gap:10px;min-width:0}
+  .stage-head{border-bottom:3px solid var(--ink);padding-bottom:8px}
+  .stage-head h2{margin:0;font:400 26px/1.15 var(--display);letter-spacing:.04em}
+  .card{background:var(--surface);border:1px solid var(--line-strong);border-radius:6px;overflow:hidden}
+  .card-tag{background:var(--ink);color:var(--on-accent-2);padding:5px 10px;display:flex;justify-content:space-between;gap:8px;font:600 11px var(--mono)}
+  .card-body{padding:10px}
+
+  /* 5. matrix */
+  .matrix{border-collapse:separate;border-spacing:4px;font:15px var(--mono);text-align:center}
+  .matrix th{padding:6px 4px;font-size:11px;font-weight:600;letter-spacing:.08em;color:var(--muted)}
+  .matrix th[scope=row]{text-align:left;padding-right:10px;white-space:nowrap}
+  .matrix td{width:68px;height:52px;border:1px solid var(--line-strong);font-weight:600}
+  .matrix td.hit{background:var(--accent-2);color:var(--on-accent-2);border-color:var(--accent-2)}
+  .matrix td.zero{color:var(--dim);font-weight:400}
+
+  /* 6. ledger */
+  .scroll-x{overflow-x:auto}
+  .ledger{width:100%;min-width:680px;border-collapse:collapse;font:13px var(--mono)}
+  .ledger th{font-size:11px;letter-spacing:.1em;color:var(--muted);text-align:left;font-weight:600;padding:8px 10px;border-bottom:1px solid var(--line-strong)}
+  .ledger td{padding:8px 10px;border-bottom:1px solid var(--line)}
+  .ledger .num{text-align:right}
+  .ledger .neg{color:var(--bad)}
+  .ledger tfoot td,.ledger tfoot th{border:0;padding-top:12px;font-weight:600}
+</style>
+</head>
+<body>
+<header class="app-header">
+  <a class="brand" href="#">[APP NAME]</a>
+  <nav class="tabs" aria-label="Screens">
+    <a href="#" aria-current="page">01 [SCREEN]</a><a href="#">02 [SCREEN]</a><a href="#">03 [SCREEN]</a>
+  </nav>
+</header>
+
+<section class="hero">
+  <div class="hero-num"><span class="label">[SECTION]</span><b>01</b></div>
+  <div class="hero-main"><h1>[SCREEN TITLE]</h1><p>[What this screen answers, one sentence.]</p></div>
+  <div class="hero-kpi"><span class="label">[HEADLINE METRIC]</span><b>[$000]</b><span style="font:500 12px var(--mono)">[context line]</span></div>
+</section>
+
+<main>
+  <div class="kpis">
+    <div class="kpi"><div class="label">[METRIC]</div><b>[00%]</b></div>
+    <div class="kpi"><div class="label">[METRIC]</div><b>[0]</b></div>
+    <div class="kpi"><div class="label">[METRIC]</div><b>[0]</b></div>
+  </div>
+
+  <div class="stages-scroll"><div class="stages" style="--cols:3">
+    <section class="stage">
+      <div class="stage-head"><div class="label" style="color:var(--accent-2)">STAGE 01</div><h2>[STAGE]</h2><div style="font:12px var(--mono);color:var(--muted)">[n items · $total]</div></div>
+      <article class="card"><div class="card-tag"><span>[ID]</span><span>[day n]</span></div><div class="card-body">[item]</div></article>
+    </section>
+  </div></div>
+
+  <table class="matrix">
+    <thead><tr><td></td><th scope="col">ACTUAL A</th><th scope="col">ACTUAL B</th></tr></thead>
+    <tbody>
+      <tr><th scope="row">PREDICTED A</th><td class="hit">0</td><td>1</td></tr>
+      <tr><th scope="row">PREDICTED B</th><td class="zero">0</td><td class="hit">2</td></tr>
+    </tbody>
+  </table>
+
+  <div class="scroll-x"><table class="ledger">
+    <thead><tr><th scope="col">ITEM</th><th scope="col" class="num">COST</th><th scope="col" class="num">PROFIT</th></tr></thead>
+    <tbody><tr><td>[item]</td><td class="num">$0.00</td><td class="num neg">−$0.00</td></tr></tbody>
+    <tfoot><tr><th scope="row" style="color:var(--accent-2)">TOTAL</th><td class="num">$0.00</td><td class="num">+$0.00</td></tr></tfoot>
+  </table></div>
+</main>
+</body>
+</html>

@@ -1,0 +1,108 @@
+<!doctype html>
+<!--
+  storyboard-layout.html
+  Source: "Pure Water Storyboard" (Main.dc.html = rough sketch board,
+  K*.dc.html = 960x680 key frames). Cleaned to plain HTML; project copy removed.
+
+  Two reusable layouts:
+   A) Sketch board: N panels in a 4-col grid. Each panel = header row
+      (number + title, timestamp), a 336x200 sketch SVG with a hard 2px border,
+      a handwritten-font note, and a small mechanics line. A legend codes panel
+      types by colour (e.g. "repeat/escalate" vs "new section").
+   B) Key frame: a 960x540 (16:9) scene SVG on top, a 3-column caption strip
+      under it (e.g. SONG / WORLD / PLAY, or WHEN / WHAT / WHY) with a coloured
+      top border that tags the frame type. HUD chips sit in the scene corners.
+
+  Fonts: Caveat (handwritten notes) + Space Grotesk (UI). Swap freely.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Storyboard Layout</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Space+Grotesk:wght@400;500;700&display=swap">
+<style>
+  :root {
+    --paper:#F4F1EA; --panel:#FBFAF6; --ink:#1E1D1B; --muted:#5E5A53;
+    --type-a:#E0553A; --type-a-text:#B83E25;   /* e.g. hook / repeat beat */
+    --type-b:#12867A; --type-b-text:#0B5E55;   /* e.g. verse / new location */
+    --night:#0F0E1A; --night-text:#EDEAF5; --night-muted:#A9A4BE;
+  }
+  body { margin:0; background:var(--paper); color:var(--ink); font-family:'Space Grotesk',sans-serif; }
+
+  /* ---- A) sketch board ---- */
+  .board { box-sizing:border-box; padding:52px 56px; display:flex; flex-direction:column; gap:32px; }
+  .board-head { display:flex; justify-content:space-between; align-items:flex-end; gap:24px; flex-wrap:wrap; }
+  .board-head h1 { margin:0; font:700 56px/1 'Caveat',cursive; }
+  .legend { display:flex; gap:20px; font-size:14px; color:var(--muted); }
+  .legend span { display:flex; align-items:center; gap:8px; }
+  .legend i { width:14px; height:14px; display:inline-block; }
+  .panels { display:grid; grid-template-columns:repeat(auto-fill, minmax(min(300px,100%),1fr)); gap:28px 32px; }
+  .panel { display:flex; flex-direction:column; gap:10px; }
+  .panel-head { display:flex; justify-content:space-between; font-size:14px; }
+  .panel-head b { font-weight:500; }
+  .panel[data-kind="a"] .panel-head b { color:var(--type-a-text); }
+  .panel[data-kind="b"] .panel-head b { color:var(--type-b-text); }
+  .panel-head time { color:var(--muted); }
+  .panel svg { width:100%; height:auto; border:2px solid var(--ink); background:var(--panel); }
+  .panel .note { margin:0; font:22px/1.2 'Caveat',cursive; }
+  .panel .mech { margin:0; font-size:13px; color:var(--muted); }
+
+  /* ---- B) key frame ---- */
+  .frame { width:960px; max-width:100%; background:var(--night); color:var(--night-text); display:flex; flex-direction:column; }
+  .frame > svg { width:100%; height:auto; aspect-ratio:16/9; display:block; }
+  .captions { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:24px; padding:20px 28px; border-top:4px solid var(--frame-accent, var(--type-a)); }
+  .captions div { display:flex; flex-direction:column; gap:6px; }
+  .captions small { font-size:12px; font-weight:700; letter-spacing:1px; color:var(--night-muted); }
+  .captions p { margin:0; font-size:15px; line-height:1.45; }
+  @media (max-width:640px){ .captions { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+
+<section class="board">
+  <div class="board-head">
+    <div><h1>[Title] storyboard</h1><p style="margin:0;font-size:15px;color:var(--muted)">[One-line context: tempo, runtime, pass]</p></div>
+    <div class="legend"><span><i style="background:var(--type-a)"></i>[Type A]</span><span><i style="background:var(--type-b)"></i>[Type B]</span></div>
+  </div>
+  <div class="panels">
+    <article class="panel" data-kind="a">
+      <div class="panel-head"><b>01 · [Beat name]</b><time>0:00</time></div>
+      <!-- Sketch convention: horizon line + two converging road edges = rear-chase camera -->
+      <svg viewBox="0 0 336 200" role="img" aria-label="[describe the sketch]">
+        <line x1="0" y1="80" x2="336" y2="80" stroke="#8A857C"/>
+        <path d="M30 200 L152 80 M306 200 L184 80" stroke="#1E1D1B" stroke-width="2.5" fill="none"/>
+        <rect x="148" y="160" width="40" height="22" rx="4" stroke="#1E1D1B" stroke-width="2" fill="none"/>
+      </svg>
+      <p class="note">[Handwritten intent: what the player feels]</p>
+      <p class="mech">[Mechanics line: what the input / rule is]</p>
+    </article>
+    <!-- repeat .panel -->
+  </div>
+</section>
+
+<section class="frame" style="--frame-accent:var(--type-b)">
+  <svg viewBox="0 0 960 540" role="img" aria-label="[scene description]">
+    <rect width="960" height="540" fill="#1B1A2A"/>
+    <!-- HUD chip, top-left: section + progress -->
+    <rect x="24" y="24" width="270" height="52" rx="10" fill="#05050C" fill-opacity=".6"/>
+    <text x="42" y="46" font-family="Space Grotesk" font-weight="700" font-size="16" fill="#F2EFE6">[SECTION]</text>
+    <text x="42" y="66" font-family="Space Grotesk" font-size="13" fill="#B9B4CC">[BAR 3 / 8]</text>
+    <!-- HUD chip, top-right: tier pips (filled = current) -->
+    <rect x="770" y="24" width="166" height="52" rx="10" fill="#05050C" fill-opacity=".6"/>
+    <text x="788" y="46" font-family="Space Grotesk" font-weight="700" font-size="16" fill="#F2EFE6">TIER 1</text>
+    <rect x="788" y="56" width="26" height="10" rx="2" fill="#E0553A"/><rect x="820" y="56" width="26" height="10" rx="2" fill="#F2EFE6" fill-opacity=".2"/>
+    <rect x="852" y="56" width="26" height="10" rx="2" fill="#F2EFE6" fill-opacity=".2"/><rect x="884" y="56" width="26" height="10" rx="2" fill="#F2EFE6" fill-opacity=".2"/>
+    <!-- meter, bottom-left -->
+    <text x="24" y="486" font-family="Space Grotesk" font-weight="700" font-size="13" fill="#B9B4CC">[METER]</text>
+    <rect x="24" y="496" width="200" height="14" rx="7" fill="#F2EFE6" fill-opacity=".15"/><rect x="24" y="496" width="80" height="14" rx="7" fill="#3DF5A8"/>
+  </svg>
+  <div class="captions">
+    <div><small>[COLUMN 1 · 0:00]</small><p>[What happens in the source/timeline]</p></div>
+    <div><small>[COLUMN 2]</small><p>[What the world looks like]</p></div>
+    <div><small>[COLUMN 3]</small><p>[What the player does]</p></div>
+  </div>
+</section>
+
+</body>
+</html>

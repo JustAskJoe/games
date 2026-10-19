@@ -12,9 +12,9 @@ Every game starts as a pitch in Pitch Forge (our team questionnaire). Approved p
 | [Tilebound](tilebound/) | Mahjong meets the Game Boy Pokémon TCG | Prototype |
 | [Hexed](hexed/) | Witchy tarot match-3, 10 levels | Prototype |
 | [Neon Surf](neon-surf/) | Neon-ocean rhythm surfing | Tech test |
-| [Cardboard Cartel](cardboard-cartel/) | Trading-card collector idler | Design |
-| [Idle Hands](idle-hands/) | Idle game pitch | Pitch |
-| [Automation Idler](automation-idler/) | Idler built around real life automations | Design |
+| Cardboard Cartel | Trading-card collector idler | Design (docs not in the repo yet) |
+| Idle Hands | Idle game pitch | Pitch (docs not in the repo yet) |
+| Automation Idler | Idler built around real life automations | Design (docs not in the repo yet) |
 
 Shared building blocks (deck generator, layouts, prototype snippets, art workflow) are in [`kit/`](kit/).
 
@@ -33,6 +33,15 @@ Shared building blocks (deck generator, layouts, prototype snippets, art workflo
 ## Playing the prototypes
 
 Most builds are single HTML files. Open `builds/*.html` in a browser, or run a prototype's `build.py` where one exists.
+
+| Game | Playable build |
+|---|---|
+| Trickbound | [`trickbound/builds/trickbound.html`](trickbound/builds/trickbound.html) |
+| Tilebound | [`tilebound/builds/tilebound.html`](tilebound/builds/tilebound.html) |
+| Hexed | [`hexed/builds/hexed.html`](hexed/builds/hexed.html) |
+| Neon Surf | [`neon-surf/builds/neon-surf.html`](neon-surf/builds/neon-surf.html) |
+
+GitHub shows `.html` files as source, so download the file (with its `img/` folder where there is one) and open it locally to play.
 
 ## Rights
 

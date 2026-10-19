@@ -1,0 +1,60 @@
+<!doctype html>
+<!--
+  artboard-template.dc.html
+  Source: the shared skeleton of every .dc.html artboard in Pure Water
+  Storyboard, Slab Syndicate GUI concept, Corazon Pool v2 and PC Remote
+  Branding (all made from the "Design" canvas Artifact type).
+
+  Use: copy to project/<Name>.dc.html in a Design canvas and add a matching
+  `boards` entry in project/canvas.json ({x,y,w,h,title}, plus
+  "is_interactive": true for clickable flows, "expand": "fill" for fluid PAGEs).
+
+  Patterns seen in the user's canvases:
+   - data-props = designer levers (Corazon: moodName text, spaTemp int 90-104);
+     renderVals() returns them, markup reads {{hole}} (no expressions).
+   - <sc-for list="{{rows}}" as="r"> for repeated rows; the data lives in
+     renderVals() (Corazon Safety guards list).
+   - Cross-artboard links: <a href="Other.dc.html"> make a click-through flow
+     (Corazon back links, Slab Syndicate tab nav).
+   - Keyframe CSS goes in <helmet><style>, wrapped in
+     prefers-reduced-motion (Pure Water beat pulses).
+   - Phone frame 390 wide; PAGE artboards 1280-1440 wide and fluid.
+   - Images are uploaded assets referenced as /_blob/<id> (Slab Syndicate).
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>[Artboard title]</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#0E8C9C}a:hover{color:#0A6F7C}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; padding: 24px 16px; background: #EEF4F4; color: #0D2830; font-family: Figtree, system-ui, sans-serif; display: flex; flex-direction: column; gap: 20px">
+<a href="Main.dc.html" style="text-decoration: none; font-weight: 600; font-size: 14px">‹ Back</a>
+<h1 style="margin: 0; font-size: 32px">{{title}}</h1>
+<div style="background: #FFFFFF; border: 1px solid #D5E2E3; border-radius: 14px; overflow: hidden">
+<sc-for list="{{rows}}" as="r" hint-placeholder-count="3">
+<div style="display: flex; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid #E3ECED"><span style="font-weight: 600">{{r.label}}</span><span>{{r.value}}</span></div>
+</sc-for>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"title":{"editor":"text","default":"[Screen title]"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() {
+return {
+title: this.props.title ?? '[Screen title]',
+rows: [ { label: '[Row]', value: '[Value]' }, { label: '[Row]', value: '[Value]' } ]
+};
+}
+}
+</script>
+</body>
+</html>

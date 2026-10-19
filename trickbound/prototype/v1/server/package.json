@@ -1,0 +1,9 @@
+{
+  "name": "trickbound-table-server",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Trickbound: Books on the Line — host-authoritative table server (multiplayer base)",
+  "main": "server.js",
+  "scripts": { "start": "node server.js", "test": "node test.js" },
+  "dependencies": { "ws": "^8.18.0" }
+}

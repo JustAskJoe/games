@@ -1,0 +1,89 @@
+<!doctype html>
+<!--
+  brand-board.html
+  Source: "PC Remote Branding" (Main/Icons/Studio.dc.html), Design canvas.
+  Generalised one-page brand board for any new app or studio name:
+   - Wordmark + app icon + tagline
+   - Voice: 3 rule cards
+   - Alternate-name pills
+   - Colour swatches with name, hex and ROLE (the role line is the useful part)
+   - Type specimen: display face on a real UI string + body face on real metadata
+   - Icon directions: each icon rendered at 220 / 60 / 32 px to test legibility
+     at home-screen and favicon size; simplify detail at small sizes.
+  Icon convention: 132x132 viewBox, rx=30 rounded square, so one path set
+  scales to every size. Fonts: Bricolage Grotesque + DM Sans.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Brand Board</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=DM+Sans:wght@400;500;700&display=swap">
+<style>
+  :root{ --bg:#14121F; --card:#1E1A2E; --line:#2E2843; --ink:#F6F1E7; --sub:#B9B2CC; --label:#8F87A6; --brand:#FFC93C; --icon-bg:#2A2245;
+         --display:'Bricolage Grotesque',sans-serif; --body:'DM Sans',sans-serif; }
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body)}
+  .board{max-width:1440px;margin:0 auto;padding:72px clamp(16px,6vw,88px);display:grid;grid-template-columns:repeat(auto-fit,minmax(min(420px,100%),1fr));gap:72px}
+  .col{display:flex;flex-direction:column;gap:36px}
+  .label{font-size:13px;letter-spacing:2px;text-transform:uppercase;color:var(--label);font-weight:700}
+  .group{display:flex;flex-direction:column;gap:14px}
+  .wordmark{display:flex;align-items:center;gap:28px;flex-wrap:wrap}
+  .wordmark h1{margin:0;font:800 clamp(48px,7vw,88px)/.95 var(--display);letter-spacing:-2px}
+  .wordmark h1 span{color:var(--brand)}
+  .rules{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px}
+  .rules div{background:var(--card);border-radius:16px;padding:18px;font-size:16px;line-height:1.45}
+  .pills{display:flex;flex-wrap:wrap;gap:10px}
+  .pills span{border:1px solid var(--line);border-radius:999px;padding:8px 16px}
+  .swatches{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  .swatch{border-radius:16px;overflow:hidden;border:1px solid var(--line)}
+  .swatch i{display:block;height:84px;background:var(--c)}
+  .swatch div{padding:12px 14px;background:var(--card)} .swatch small{color:var(--sub);font-size:14px}
+  .specimen{background:var(--card);border-radius:16px;padding:22px}
+  .icons{grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:48px;background:var(--ink);color:var(--bg);border-radius:24px;padding:56px}
+  .icon-dir{display:flex;flex-direction:column;align-items:center;gap:22px;text-align:center}
+  .sizes{display:flex;gap:14px;align-items:flex-end}
+</style>
+</head>
+<body>
+<div class="board">
+  <div class="col">
+    <div class="wordmark">
+      <svg width="132" height="132" viewBox="0 0 132 132" role="img" aria-label="[App] icon"><rect width="132" height="132" rx="30" fill="var(--icon-bg)"/><path d="M56 46 l24 14 l-24 14 z" fill="var(--brand)"/></svg>
+      <div><h1>[Name]<span>[Part]</span></h1><div style="font-size:22px;color:var(--sub);margin-top:10px">[Tagline.]</div></div>
+    </div>
+    <div style="font-size:20px;line-height:1.55;color:#D9D3E6;max-width:640px">[One-paragraph pitch in plain words.]</div>
+    <div class="group"><div class="label">Voice</div>
+      <div class="rules"><div>[Personality rule]</div><div>[Label/verb rule]</div><div>[Where detail lives]</div></div></div>
+    <div class="group"><div class="label">Other name options</div>
+      <div class="pills"><span>[Option]</span><span>[Option]</span><span>[Option (keep it plain)]</span></div></div>
+  </div>
+  <div class="col">
+    <div class="group"><div class="label">Colors</div>
+      <div class="swatches">
+        <div class="swatch" style="--c:#14121F"><i></i><div><b>[Name]</b><br><small>#14121F · background</small></div></div>
+        <div class="swatch" style="--c:#2A2245"><i></i><div><b>[Name]</b><br><small>#2A2245 · cards, icon</small></div></div>
+        <div class="swatch" style="--c:#FFC93C"><i></i><div><b>[Name]</b><br><small>#FFC93C · main buttons</small></div></div>
+        <div class="swatch" style="--c:#FF6B5A"><i></i><div><b>[Name]</b><br><small>#FF6B5A · alerts, live</small></div></div>
+      </div></div>
+    <div class="group"><div class="label">Type</div>
+      <div class="specimen">
+        <div style="font:800 40px var(--display);letter-spacing:-1px">[Big button label]</div>
+        <div style="color:var(--sub);font-size:14px;margin-bottom:14px">[Display face] · headlines, big buttons</div>
+        <div style="font-size:18px">[Real metadata line · S3 E14 · ends 1:49 AM]</div>
+        <div style="color:var(--sub);font-size:14px">[Body face] · everything else</div>
+      </div></div>
+  </div>
+  <div class="icons">
+    <div class="icon-dir">
+      <svg width="220" height="220" viewBox="0 0 132 132" role="img" aria-label="Icon direction A"><rect width="132" height="132" rx="30" fill="#2A2245"/><path d="M56 46 l24 14 l-24 14 z" fill="#FFC93C"/></svg>
+      <div class="sizes">
+        <svg width="60" height="60" viewBox="0 0 132 132" aria-hidden="true"><rect width="132" height="132" rx="30" fill="#2A2245"/><path d="M56 46 l24 14 l-24 14 z" fill="#FFC93C"/></svg>
+        <svg width="32" height="32" viewBox="0 0 132 132" aria-hidden="true"><rect width="132" height="132" rx="30" fill="#2A2245"/><path d="M50 40 l32 20 l-32 20 z" fill="#FFC93C"/></svg>
+      </div>
+      <div><div style="font:800 26px var(--display)">A · [Direction]</div><div style="color:#5A5370;font-size:16px;margin-top:6px">[Why / when to pick it]</div></div>
+    </div>
+    <!-- repeat .icon-dir for B, C -->
+  </div>
+</div>
+</body>
+</html>

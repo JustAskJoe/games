@@ -1,0 +1,165 @@
+<!doctype html>
+<!--
+  phone-app-shell.html
+  Source: "Corazon Pool v2" (Main/Mood/Safety.dc.html), Design canvas, 390px
+  phone mockups. Converted from inline styles to classes + tokens; device copy
+  removed.
+
+  Reusable pieces:
+   - Phone column: max-width 390px, 16px gutters, 20px vertical rhythm.
+   - Header with "Live" status dot.
+   - Hero status card (dark) with progress bar and a 2-button action row.
+   - 3-up stat tiles (big condensed number + caps label + optional note).
+   - Section label (11px caps, .12em tracking) above every group.
+   - 2-col preset/"mood" tiles incl. a dashed "+ Make your own" tile.
+   - Grouped list card: rows split by 1px borders; title + sub left, value or
+     mini progress bar right; a warning row variant with an inline action.
+   - Stepper (−  value  +) with 44px round buttons and aria-labels.
+   - Segmented choice row (one selected) and full-width primary/secondary CTA.
+   - Check-list rows (green tick badge) and a 7-day bar chart in pure CSS.
+  Everything keeps >=44px touch targets. Uses real <button>/<a>.
+  The source mockups were static (no JS); the small <script> at the bottom
+  (segmented select + stepper) was added here for the kit.
+  Fonts: Big Shoulders Display (numbers/titles) + Figtree (body).
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Phone App Shell</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800&family=Figtree:wght@400;500;600;700&display=swap">
+<style>
+  :root{
+    --bg:#EEF4F4; --card:#FFFFFF; --ink:#0D2830; --muted:#4F6C74; --line:#D5E2E3; --line-soft:#E3ECED;
+    --accent:#0E8C9C; --accent-soft:#D3EEF0; --warm:#C2541F; --ok:#2FA36B; --ok-bg:#E3F3EA; --ok-ink:#154A30;
+    --warn-bg:#FBF0D9; --warn-ink:#6B4A12;
+    --hero-bg:#2A1530; --hero-ink:#FBEAF3; --hero-accent:#F2A3C8; --hero-sub:#E9C9D9; --hero-line:#6B4570;
+    --display:'Big Shoulders Display','Arial Narrow',sans-serif; --body:Figtree,system-ui,sans-serif;
+    --r-card:14px; --r-tile:6px; --r-btn:10px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body)}
+  button{font:inherit;cursor:pointer}
+  .phone{max-width:390px;margin:0 auto;padding:24px 16px calc(32px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:20px}
+  .section{display:flex;flex-direction:column;gap:10px}
+  .section-label{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+  .display{font-family:var(--display);font-weight:800;text-transform:uppercase;line-height:.95}
+
+  .top{display:flex;justify-content:space-between;align-items:center}
+  .top h1{margin:0;font-size:34px;letter-spacing:.02em}
+  .live{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+  .live::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--ok)}
+
+  .hero{background:var(--hero-bg);color:var(--hero-ink);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:10px}
+  .hero .meta{display:flex;justify-content:space-between;align-items:baseline;color:var(--hero-accent);font-size:13px;font-weight:600}
+  .hero .meta span:first-child{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase}
+  .hero .title{font-size:40px}
+  .hero .sub{font-size:13px;color:var(--hero-sub)}
+  .bar{height:6px;border-radius:3px;background:rgba(255,255,255,.15);overflow:hidden}
+  .bar > i{display:block;height:100%;width:var(--p,50%);background:var(--hero-accent)}
+  .btn-row{display:flex;gap:8px}
+  .btn{flex:1;min-height:44px;border-radius:var(--r-btn);font-weight:700}
+  .btn.ghost{border:1px solid var(--hero-line);background:transparent;color:var(--hero-ink)}
+  .btn.solid{border:0;background:var(--hero-ink);color:var(--hero-bg)}
+
+  .stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:var(--r-tile);padding:12px 10px 10px;display:flex;flex-direction:column;gap:2px}
+  .stat b{font:800 44px/.9 var(--display)}
+  .stat span{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+  .stat small{font-size:12px;font-weight:600}
+
+  .tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .tile{min-height:92px;border-radius:var(--r-card);padding:14px;display:flex;flex-direction:column;justify-content:space-between;text-decoration:none;color:inherit;background:var(--card);border:1.5px solid var(--line)}
+  .tile b{font-size:16px} .tile span{font-size:12px;color:var(--muted)}
+  .tile.dark{background:var(--hero-bg);color:var(--hero-ink);border-color:transparent} .tile.dark span{color:var(--hero-sub)}
+  .tile.add{border-style:dashed;align-items:center;justify-content:center;font-weight:700;color:var(--muted);background:transparent}
+
+  .list{background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);overflow:hidden}
+  .row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 16px}
+  .row + .row{border-top:1px solid var(--line)}
+  .row .t{font-weight:600} .row .s{font-size:12px;color:var(--muted)}
+  .row .v{font:800 28px var(--display)}
+  .row.warn{background:var(--warn-bg)} .row.warn .s{color:var(--warn-ink)}
+  .mini{width:120px;height:8px;border-radius:4px;background:var(--accent-soft);overflow:hidden}
+  .mini > i{display:block;height:100%;width:var(--p,50%);background:var(--accent)}
+  .row-btn{flex:none;min-height:44px;padding:0 14px;border-radius:var(--r-btn);border:0;background:var(--ink);color:#fff;font-weight:700}
+
+  .stepper{display:flex;align-items:center;gap:10px}
+  .stepper button{width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:transparent;font-size:20px;color:inherit}
+  .stepper output{font:800 30px var(--display);min-width:3ch;text-align:center}
+
+  .segmented{display:grid;grid-template-columns:repeat(var(--n,4),minmax(0,1fr));gap:6px}
+  .segmented button{min-height:44px;border-radius:var(--r-btn);border:1px solid var(--line);background:transparent;color:inherit;font-weight:700}
+  .segmented button[aria-pressed="true"]{border:0;background:var(--ink);color:var(--card)}
+  .cta{min-height:56px;border-radius:var(--r-card);border:0;background:var(--accent);color:#fff;font-size:17px;font-weight:800}
+
+  .check{display:flex;gap:12px;padding:13px 16px;border-bottom:1px solid var(--line-soft)}
+  .check::before{content:"✓";flex:none;width:22px;height:22px;border-radius:50%;background:var(--ok-bg);color:#1E7A4C;display:grid;place-items:center;font-size:12px;font-weight:800}
+
+  .week{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;align-items:end;height:80px}
+  .week i{height:var(--h,100%);background:var(--accent);border-radius:4px}
+  .week i.low{background:#B7791F}
+  .week-labels{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;font-size:11px;color:var(--muted);text-align:center}
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="top"><h1 class="display">[App name]</h1><div class="live">Live</div></div>
+
+  <div class="hero">
+    <div class="meta"><span>[State on]</span><span>[Auto-off 11:30 PM]</span></div>
+    <div class="display title">[Active preset]</div>
+    <div class="sub">[status summary · status · status]</div>
+    <div class="bar" style="--p:92%"><i></i></div>
+    <div class="btn-row"><button class="btn ghost">[+30 min]</button><button class="btn solid">[End]</button></div>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><b style="color:var(--accent)">[78°]</b><span>[Label]</span></div>
+    <div class="stat"><b style="color:var(--warm)">[101°]</b><span>[Label]</span><small style="color:var(--warm)">[note]</small></div>
+    <div class="stat"><b>[66°]</b><span>[Label]</span></div>
+  </div>
+
+  <div class="section"><div class="section-label">[Presets]</div>
+    <div class="tiles">
+      <a class="tile dark" href="#"><b>[Preset]</b><span>[what it does]</span></a>
+      <a class="tile" href="#"><b>[Preset]</b><span>[what it does]</span></a>
+      <button class="tile add">+ Make your own</button>
+    </div>
+  </div>
+
+  <div class="list">
+    <div class="row"><div><div class="t">[Row title]</div><div class="s">[sub]</div></div><div class="v">[8:00 PM]</div></div>
+    <div class="row"><div><div class="t">[Progress row]</div><div class="s">[5.2 of 8 hrs]</div></div><div class="mini" style="--p:65%"><i></i></div></div>
+    <div class="row"><div class="t">[Stepper row]</div><div class="stepper"><button aria-label="Lower">−</button><output>102°</output><button aria-label="Raise">+</button></div></div>
+    <div class="row warn"><div><div class="t">[Warning]</div><div class="s">[why]</div></div><button class="row-btn">[Fix]</button></div>
+  </div>
+
+  <div class="section"><div class="section-label">[Choose one]</div>
+    <div class="segmented" style="--n:4"><button>1 hr</button><button aria-pressed="true">2 hr</button><button>3 hr</button><button>Never</button></div>
+  </div>
+
+  <div class="list"><div class="check"><div><div class="t" style="font-weight:600">[Guard]</div><div style="font-size:12px;color:var(--muted)">[explanation]</div></div></div></div>
+
+  <div class="list" style="padding:16px;display:flex;flex-direction:column;gap:12px">
+    <div class="week"><i></i><i style="--h:88%"></i><i class="low" style="--h:40%"></i><i></i><i></i><i></i><i style="--h:65%;opacity:.5"></i></div>
+    <div class="week-labels"><span>Sat</span><span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Today</span></div>
+  </div>
+
+  <button class="cta">[Primary action]</button>
+</div>
+<script>
+  // Tiny behaviour for the mock: segmented single-select and stepper.
+  document.querySelectorAll('.segmented').forEach(g => g.addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    g.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b));
+  }));
+  document.querySelectorAll('.stepper').forEach(s => {
+    const out = s.querySelector('output'), [dn, up] = s.querySelectorAll('button');
+    const min = +(s.dataset.min ?? 90), max = +(s.dataset.max ?? 104);
+    const set = d => { const v = Math.min(max, Math.max(min, parseInt(out.textContent) + d)); out.textContent = v + '°'; };
+    dn.onclick = () => set(-1); up.onclick = () => set(1);
+  });
+</script>
+</body>
+</html>

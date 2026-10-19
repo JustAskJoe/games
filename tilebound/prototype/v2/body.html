@@ -1,0 +1,42 @@
+<div class="wrap">
+  <header class="top">
+    <div class="brand"><h1>Tilebound</h1><span id="modeTag">Prototype v2</span></div>
+    <div class="meta">
+      <span class="chip" id="chipHand">Hand 1 of 4</span>
+      <span class="chip" id="chipWall">Wall 0</span>
+      <button class="btn icon" id="bMenu" type="button" aria-label="Menu">☰</button>
+    </div>
+  </header>
+
+  <div class="board">
+    <div class="main">
+      <section class="seats" aria-label="The other players">
+        <div class="seat" id="seat1"></div>
+        <div class="seat" id="seat2"></div>
+        <div class="seat" id="seat3"></div>
+      </section>
+      <section class="pond" aria-live="polite">
+        <div class="pond-head"><span>The pond · who threw what</span><span id="pondCount"></span></div>
+        <div id="pondRows"></div>
+        <div class="log" id="log"></div>
+      </section>
+      <section class="me" id="me" aria-label="Your seat">
+        <div class="me-top">
+          <div class="counter" id="counter"></div>
+          <div class="exps" id="myExps"></div>
+          <span class="chip" id="myWind"></span>
+        </div>
+        <div class="rack" id="rack"></div>
+        <div id="abil"></div>
+        <div class="prompt" id="prompt"></div>
+      </section>
+    </div>
+    <aside class="side">
+      <div class="card" id="cardPanel"></div>
+    </aside>
+  </div>
+  <p class="foot">© 2026 F Lane d/b/a One Fifty Labs. All rights reserved. Prototype. Placeholder tiles; art is AI mood reference.</p>
+</div>
+<div class="owner" aria-hidden="true">© 2026 F Lane d/b/a One Fifty Labs · All rights reserved</div>
+<div id="overlay"></div>
+<div id="story" class="story" hidden></div>
