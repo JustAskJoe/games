@@ -4,6 +4,8 @@ A co-op roguelite tower defense from Hunter and Joe at One Fifty Labs. Draft a d
 
 **Status:** Prototype 1.1 (solo), Oct 19, 2026. The co-op server base is built and tested, but not in the UI yet. **Next:** crew playtest, then Prototype 2 (co-op for 2).
 
+**What changed lately, and what's waiting:** [`patch-notes.md`](patch-notes.md).
+
 **New here? Read [`design/handoff.md`](design/handoff.md) first.** It has every decision so far, the art direction and what's next, on one page. Setup and how we use branches are in [`../CONTRIBUTING.md`](../CONTRIBUTING.md).
 
 ## Play it

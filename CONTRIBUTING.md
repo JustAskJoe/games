@@ -83,10 +83,18 @@ Each game gets one folder:
 Claude reads [`CLAUDE.md`](CLAUDE.md) in this repo, so it already knows these rules. Use these two prompts so every session starts and ends the same way. Swap in the game's folder name (`tower-defense`, `trickbound`, …).
 
 **Starting a session.** Paste this into a new chat:
-> Work on Tower Defense in the GitHub repo `onefiftylabs/games`. Clone it, read `CLAUDE.md`, `CONTRIBUTING.md` and `tower-defense/design/handoff.md`, then run `python3 tower-defense/build-and-test.py` to make sure everything passes. Tell me what state the game is in and what's next, and wait for me before changing anything. Do all work on a branch named `<your name>/<what you're doing>` and open a pull request when it's done.
+> I'm <your name>. Work on Tower Defense in the GitHub repo `onefiftylabs/games`. Clone it, read `CLAUDE.md`, `CONTRIBUTING.md`, `tower-defense/design/handoff.md` and the top entry of `tower-defense/patch-notes.md`, run `python3 kit/open-notes.py --for <your name>`, then run `python3 tower-defense/build-and-test.py` to make sure everything passes. Tell me what state the game is in, what's waiting for me, and any open watch-outs, and wait for me before changing anything. Do all work on a branch named `<your name>/<what you're doing>` and open a pull request when it's done.
 
 **Finishing a session.** Before you stop for the day:
-> Wrap up. Run `python3 tower-defense/build-and-test.py` and fix anything it flags. Update `tower-defense/design/handoff.md`: status line, any decisions we made today, and the "Next" list. Add playtest results to `design/playtest-notes.md` if we played. If we built something reusable, add it to `kit/INDEX.md`. Commit the rebuilt build with the source, push the branch and open a pull request. Then tell me in a few lines: what changed, what's next, and anything left unfinished or broken.
+> Wrap up. Run `python3 tower-defense/build-and-test.py` and fix anything it flags. Add to patch notes: what's new, next up for each person, and watch-outs for anything you noticed but didn't fix or couldn't check; tick what we finished. Update `tower-defense/design/handoff.md`: status line, any decisions we made today, and the "Next" list. Add playtest results to `design/playtest-notes.md` if we played. If we built something reusable, add it to `kit/INDEX.md`. Commit the rebuilt build with the source, push the branch and open a pull request. Then tell me in a few lines: what changed, what's next, and anything left unfinished or broken.
+
+**Mid-session:** say **"add to patch notes"** any time and Claude adds it to the game's `patch-notes.md`. Claude also writes an entry before every push, including watch-outs it noticed on its own.
+
+**Patch notes** (`<game>/patch-notes.md`) are the running log: newest entry on top, each with *What's new* (player-facing, ready to share), *Next up* and *Watch out*. The last two are checkboxes addressed with `@Name` (or nobody, if anyone can take it), and they stay open until someone ticks them. To see what's open:
+```
+python3 kit/open-notes.py               # everything
+python3 kit/open-notes.py --for Joe     # yours plus anything unassigned
+```
 
 The finish prompt is what keeps two people at 10 hours a week in sync. The next person's start prompt reads the handoff doc you just updated, so nothing lives only in someone's chat.
 
