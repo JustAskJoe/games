@@ -122,6 +122,6 @@ python3 kit/open-notes.py --for Joe     # yours plus anything unassigned
 
 The finish prompt is what keeps two people at 10 hours a week in sync. The next person's start prompt reads the handoff doc you just updated, so nothing lives only in someone's chat.
 
-**Private work** (for example F's Tower Defense) uses the same prompts with the repo swapped to `onefiftylabs/games-private`, never the public copy.
+**Private work** uses the same prompts with the repo swapped to `onefiftylabs/games-private`, never the public copy.
 
 **Before Claude can push for you:** you need collaborator access on the repo (step 1), and Claude needs GitHub connected on your own account.
