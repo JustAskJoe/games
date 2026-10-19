@@ -40,6 +40,7 @@ Play: onefiftylabs.co/lab/tower-defense/
 - **Automatic checks:** every pull request runs build-and-test on GitHub and blocks merging if it fails.
 - **Preview links:** each pull request gets a link to play that branch on the Lab before merging (`/lab/tower-defense@<branch>/`).
 - **Tested end to end:** a test pull request passed the check and got its preview link.
+- **Guard:** pull requests that delete builds, briefs, handoff docs, patch notes or kit files, or that change CI or repo rules, now need another teammate's approval. Claude's rules forbid force-pushes and unrequested deletions.
 
 ### Watch out
 - [ ] **Co-op sync is only proven in Node.** Both phones must compute identical results. `Math.hypot` and `Math.pow` could differ slightly between Safari and Chrome, which would drift a co-op game. Test an iPhone against a desktop Chrome before Prototype 2 relies on it. The per-wave hash check will show any drift.

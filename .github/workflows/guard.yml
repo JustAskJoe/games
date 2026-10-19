@@ -1,0 +1,77 @@
+# Guard: stops accidental destructive changes from merging without a second person's OK.
+# © 2026 F Lane d/b/a One Fifty Labs · All rights reserved
+#
+# Fails a pull request that deletes or renames away a game's build, a game folder's key
+# files, the kit, or the repo's rules/docs, or that edits the CI or repo rules, UNTIL someone
+# other than the author approves the pull request. Everything else passes straight away.
+#
+# It runs from main's copy of this file (pull_request_target) and only reads the list of
+# changed files through the API. It never checks out or runs the pull request's code, so
+# a pull request can't switch its own guard off.
+name: Guard
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, ready_for_review]
+  pull_request_review:
+    types: [submitted, dismissed]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  guard:
+    name: Guard
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const { owner, repo } = context.repo;
+            const files = await github.paginate(github.rest.pulls.listFiles, { owner, repo, pull_number: pr.number, per_page: 100 });
+
+            // Losing any of these is hard to notice and painful to undo once it's live on the Lab.
+            const PROTECTED_DELETE = [
+              /^[^/]+\/builds\//,                         // playable builds (and their img/)
+              /^[^/]+\/(README\.md|patch-notes\.md)$/,     // each game's front page and log
+              /^[^/]+\/design\/handoff\.md$/,             // each game's decisions
+              /^[^/]+\/pitch\//,                          // approved briefs and answers
+              /^kit\//,                                   // shared tooling
+              /^(README|CLAUDE|CONTRIBUTING|HOW-WE-WORK)\.md$/,
+              /^\.github\//,
+            ];
+            // Edits (not just deletions) to these change the rules everyone works by.
+            const PROTECTED_EDIT = [/^\.github\//, /^CLAUDE\.md$/];
+
+            const flagged = [];
+            for (const f of files) {
+              const gone = f.status === 'removed' || (f.status === 'renamed' && f.previous_filename);
+              const oldName = f.status === 'renamed' ? f.previous_filename : f.filename;
+              if (gone && PROTECTED_DELETE.some((re) => re.test(oldName))) flagged.push(`deletes or moves \`${oldName}\``);
+              else if (PROTECTED_EDIT.some((re) => re.test(f.filename))) flagged.push(`changes \`${f.filename}\` (repo rules or CI)`);
+            }
+            // A pull request that removes a big share of a file is also worth a second look.
+            for (const f of files) {
+              if (f.status === 'modified' && f.deletions > 200 && f.deletions > 3 * f.additions && /\.(js|py|html|md)$/.test(f.filename)) {
+                flagged.push(`removes most of \`${f.filename}\` (${f.deletions} lines out, ${f.additions} in)`);
+              }
+            }
+
+            if (!flagged.length) { core.info('No risky changes. Guard passes.'); return; }
+
+            const reviews = await github.paginate(github.rest.pulls.listReviews, { owner, repo, pull_number: pr.number });
+            const latest = {};
+            for (const r of reviews) latest[r.user.login] = r.state;   // later reviews override earlier ones
+            const approvers = Object.entries(latest).filter(([who, s]) => s === 'APPROVED' && who !== pr.user.login).map(([who]) => who);
+
+            const list = flagged.map((x) => `- ${x}`).join('\n');
+            if (approvers.length) {
+              core.info(`Risky changes approved by ${approvers.join(', ')}:\n${list}`);
+              return;
+            }
+            core.setFailed(`This pull request needs a teammate's approval before it can merge, because it:\n${list}\n\n` +
+              `Ask someone other than the author to review it (Files changed → Review changes → Approve). ` +
+              `If a deletion was an accident, undo it on your branch instead.`);
