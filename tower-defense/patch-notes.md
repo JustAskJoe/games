@@ -34,12 +34,19 @@ Play: onefiftylabs.co/lab/tower-defense/
 - [ ] @Hunter @Joe @Zach: Pick lane owners (handoff.md → "Open: team lanes").
 - [ ] Tech lane: Make the engine call (desktop wrapper or Godot) before starting Prototype 2.
 
+### Behind the scenes (added later on Oct 19)
+- **Automatic checks:** every pull request runs build-and-test on GitHub and blocks merging if it fails.
+- **Preview links:** each pull request gets a link to play that branch on the Lab before merging (`/lab/tower-defense@<branch>/`).
+- **`main` is protected:** changes land through pull requests only.
+
 ### Watch out
 - [ ] **Co-op sync is only proven in Node.** Both phones must compute identical results. `Math.hypot` and `Math.pow` could differ slightly between Safari and Chrome, which would drift a co-op game. Test an iPhone against a desktop Chrome before Prototype 2 relies on it. The per-wave hash check will show any drift.
 - [ ] **Music has only been tested in a headless browser.** Check on a real iPhone: the silent switch mutes Web Audio, and it may be too loud or repetitive over a 20-minute run.
 - [ ] **The build file is still named `tower-defense-p1.html`** even though it's 1.1. That's on purpose, so links don't break. Rename only together with `src/lab.js` in the site repo.
 - [ ] **Feedback from tester runs goes to the same database.** Filter out `tester: true` before drawing balance conclusions.
 - [ ] **The balance sim's bots never sell towers or use tester tools,** and only play the three styles. Human results may differ from the sim's 55%.
+- [ ] **Automatic checks only cover Tower Defense and `kit/`.** Other games still rely on their manual test commands until they're added to `.github/workflows/checks.yml`.
+- [ ] **CI installs Playwright and Chromium on every run** (a couple of minutes). Fine on a public repo; worth caching if runs get slow.
 - [ ] **The co-op server isn't hosted anywhere yet.** Prototype 2 needs a host. Cloudflare (which already runs the site) can do it with Durable Objects.
 
 ---

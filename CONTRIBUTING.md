@@ -49,8 +49,9 @@ git add -A && git commit -m "Frost: Deep Freeze slows 70%, lasts 2.4s"
 git push -u origin joe/frost-tower-rework
 ```
 Then open a pull request on GitHub and tag the other person.
-- **Small, obvious fixes** (a typo, a README line) can go straight to `main`.
-- **Anything that changes how a game plays** gets a PR, even if you merge it yourself, so it's visible.
+- **`main` is protected:** every change goes through a pull request, and it can only merge once the automatic checks pass (step 4). Nobody pushes straight to `main`, Claude included.
+- **Small, obvious fixes** (a typo, a README line) still get a pull request, but you can merge it yourself as soon as the check is green.
+- **Anything that changes how a game plays:** tag the others and give them a chance to play the preview before you merge.
 - **Keep PRs to one idea.** "Rework Frost" is good. "Frost + new enemy + menu redesign" isn't.
 - **Commit messages say what changed for the player,** not which file moved.
 - **Don't commit generated junk:** `node_modules/`, screenshots from test runs unless they show something, `.DS_Store`.
@@ -70,6 +71,14 @@ What the checks cover:
 - **Balance sims** (`node sim.js`) play hundreds of games with bots. If you touch numbers (towers, enemies, cards, levels), run the sim and put the before and after win rates in your PR.
 - **Phone tests** fail on any JavaScript error or sideways scrolling at 390 and 320 px wide.
 - **Commit the rebuilt `builds/*.html`** with your source change, so the playable file always matches the code.
+
+### Checks and previews (automatic)
+Every pull request runs **Build and test** on GitHub. You'll see a yellow dot, then a green check or a red X, on the pull request.
+- **It always:** scans for anything that looks like a key or token (the repo is public).
+- **When Tower Defense or `kit/` changes,** it also runs the full `build-and-test.py` (build, balance band, co-op server tests, phone test) and confirms the committed build matches the source.
+- **A red X blocks merging.** Click "Details" to see why; the error line says what to do. Or ask Claude: "the check failed on my PR, fix it."
+- **Preview links:** the check posts a comment on the pull request with a link to play your branch on the Lab: `onefiftylabs.co/lab/<game>@<branch>/` (behind the site password). It updates within about a minute of each push, so teammates can play a change before it merges.
+- Only Tower Defense is tested automatically so far. Other games keep their manual commands above until they're added to `.github/workflows/checks.yml`.
 
 ## 5. Rules for this repo (it's public)
 - **No secrets:** no passwords, API keys, emails, client info, revenue numbers or personal details.

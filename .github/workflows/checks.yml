@@ -1,0 +1,95 @@
+# Runs on every pull request and every push to main. The "Build and test" job is the
+# required check for merging into main (see CONTRIBUTING.md, "Checks and previews").
+# © 2026 F Lane d/b/a One Fifty Labs · All rights reserved
+name: Checks
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: write   # to post the preview-link comment
+
+concurrency:
+  group: checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: Build and test
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: What changed
+        id: changed
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then base="origin/${{ github.base_ref }}"; else base="${{ github.event.before }}"; fi
+          git diff --name-only "$base"...HEAD > /tmp/changed.txt 2>/dev/null || git ls-files > /tmp/changed.txt
+          echo "Changed files:"; cat /tmp/changed.txt
+          dirs=$(cut -d/ -f1 /tmp/changed.txt | sort -u | tr '\n' ' ')
+          echo "dirs=$dirs" >> "$GITHUB_OUTPUT"
+          if grep -qE '^(tower-defense|kit)/|^\.github/' /tmp/changed.txt; then echo "td=true" >> "$GITHUB_OUTPUT"; fi
+
+      - name: No secrets in the repo (it's public)
+        run: |
+          if git grep -nIE 'sk-ant-[A-Za-z0-9_-]{20,}|-----BEGIN [A-Z ]*PRIVATE KEY-----|ghp_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{30,}' -- . ':!.github/workflows/checks.yml'; then
+            echo "::error::Something that looks like a key or token is committed. Remove it, and rotate the key."; exit 1
+          fi
+          echo "No keys or tokens found."
+
+      - name: Set up Node
+        if: steps.changed.outputs.td == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Set up Python and Playwright
+        if: steps.changed.outputs.td == 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - if: steps.changed.outputs.td == 'true'
+        run: |
+          pip install playwright
+          python -m playwright install --with-deps chromium
+
+      - name: Tower Defense build-and-test
+        if: steps.changed.outputs.td == 'true'
+        run: python3 tower-defense/build-and-test.py
+
+      - name: Rebuilt build is committed
+        if: steps.changed.outputs.td == 'true'
+        run: |
+          if ! git diff --quiet -- tower-defense/builds; then
+            echo "::error::builds/tower-defense-p1.html doesn't match the source. Run python3 tower-defense/build-and-test.py and commit the rebuilt build."
+            git diff --stat -- tower-defense/builds; exit 1
+          fi
+          echo "The committed build matches the source."
+
+      - name: Preview links on the pull request
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        continue-on-error: true
+        uses: actions/github-script@v7
+        env:
+          DIRS: ${{ steps.changed.outputs.dirs }}
+        with:
+          script: |
+            // games the Lab can play (keep in sync with GAMES in the site's src/lab.js)
+            const LAB = { 'tower-defense': 'Tower Defense', trickbound: 'Trickbound', tilebound: 'Tilebound', hexed: 'Hexed', 'neon-surf': 'Neon Surf' };
+            const changed = process.env.DIRS.trim().split(/\s+/).filter((d) => LAB[d]);
+            if (!changed.length) { core.info('No playable game changed; no preview comment.'); return; }
+            const branch = context.payload.pull_request.head.ref;
+            const marker = '<!-- lab-preview -->';
+            const links = changed.map((g) => `- **${LAB[g]}:** https://onefiftylabs.co/lab/${g}@${encodeURIComponent(branch)}/`).join('\n');
+            const body = `${marker}\n### Play this branch\n${links}\n\nBehind the site password. Updates within about a minute of each push. Only works once the rebuilt build is committed (the check above confirms it).`;
+            const { owner, repo } = context.repo; const issue_number = context.payload.pull_request.number;
+            const comments = await github.paginate(github.rest.issues.listComments, { owner, repo, issue_number });
+            const mine = comments.find((c) => c.body && c.body.includes(marker));
+            if (mine) await github.rest.issues.updateComment({ owner, repo, comment_id: mine.id, body });
+            else await github.rest.issues.createComment({ owner, repo, issue_number, body });
