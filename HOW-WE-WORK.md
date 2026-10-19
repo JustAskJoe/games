@@ -16,7 +16,7 @@ These shape everything else, and none of them is settled:
 | **Who owns each game, and how is money split?** | The biggest one. Steam pays one legal person or company per game, and every file here currently says "© F Lane d/b/a One Fifty Labs" as a placeholder | Each game gets a short written agreement before it goes on sale: owners, revenue split, who publishes, what happens if someone leaves. Have a lawyer look at the first one. |
 | **Who pays for shared costs?** | Tools, Steam fees, hosting, any hired art or music | A small shared kitty, or per-game costs paid by that game's crew and paid back first from sales |
 | **How do people join, leave, get credit?** | It's a collective | Join by working on a game; credit everyone who contributed; your work stays credited if you leave |
-| **Can AI-made art, music and sound ship in the final game?** | We're leaning heavily on AI for every lane. Today's rule says AI art is mood reference only. See "AI-first toolkit" in section 4 for the facts that matter. | AI-made assets can ship if a person picks and edits them, we pay for the plan that grants commercial rights, and we disclose it on Steam. Until we agree, the current rule stands. |
+| **How do AI-made assets go into the final game?** | We're leaning heavily on AI for every lane. See "AI-first toolkit" in section 4 for the facts that matter. | A person picks and edits what ships, we use plans that grant commercial rights, and we disclose AI use on Steam |
 | **Where do the shared accounts live?** | Today, GitHub, Cloudflare and the site sit in Hunter's accounts | Fine for now. Move to a shared org if the collective outgrows it. |
 
 None of this is legal or tax advice. Ownership and money between several people is exactly what to get a lawyer and an accountant to review before the first sale.
@@ -84,8 +84,6 @@ Claude can write code, run tests, draft docs and decks, and make placeholder art
 
 ### Lane 3: Look, sound and feel (art, audio, UI, marketing)
 **Skills:** illustration or art direction, animation, UI layout, music or sound, video editing. Probably the lane most likely to need outside help.
-
-**House rule:** AI art is **mood reference only**, never final art, and is always labeled that way. Final art is made or licensed by a person.
 
 | Need | Options | Cost |
 |---|---|---|
@@ -200,7 +198,7 @@ Why not a second coder? Small teams usually neglect marketing until it's too lat
 
 ## 6. Rules we work by today (also up for debate)
 - **The public repo is public:** no secrets, emails, money numbers or personal details. No licensed music or art. No work for anyone's employer.
-- **AI art is mood reference,** labeled "AI mood reference, not final art". This is under debate (section 1); it stays until we agree on a new rule.
+- **Keep a list of which assets AI made** in each game, for Steam's disclosure.
 - **Ask before spending shared credits** (Canva, PixelLab) or money.
 - **Prototypes are phone-first web builds** with a balance sim. Test the rules with bots before building the screens.
 - **Every session leaves patch notes,** including things you noticed but didn't fix.
@@ -236,7 +234,7 @@ Hunter has monthly Claude API credits on top of his own Claude plan. These are i
 - **The key never goes in a repo,** only into GitHub or Cloudflare secrets. Use a separate key per use, so each one can be tracked and switched off on its own.
 - **Set a monthly spending limit** in the Claude Console, and cap each GitHub run (`--max-turns`, a timeout).
 - **On the public repo,** GitHub doesn't give secrets to pull requests from outside forks, so strangers can't spend the credits. Only collaborators can trigger `@claude`.
-- **AI text and art stay drafts** that a person reviews, same as the art rule.
+- **A person reviews AI text and art** before it goes into a game.
 
 ---
 
