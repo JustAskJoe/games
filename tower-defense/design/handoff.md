@@ -4,7 +4,7 @@
 
 The one page to read before touching this game. It covers what we decided, what's built, and what's next. The approved brief is in [`../pitch/brief.md`](../pitch/brief.md). This doc is the working version and wins if the two disagree.
 
-**Team:** Hunter and Joe, about 10 hours a week each.
+**Team:** Hunter and Joe, about 10 hours a week each. Zach is joining as a third (more people possible). Lanes are still open; see "Open: team lanes" below.
 **Status (Oct 19, 2026):** Prototype 1.1 playable, solo. The co-op server base is built and tested but not wired to the UI yet.
 
 ## The game in one line
@@ -50,6 +50,25 @@ Is drafting a card after each wave, on a map that keeps growing, fun enough to r
 3. **More towers** toward the 20+ (themes TBD), and a decision on merging.
 4. **3v1 wave player:** a new `sendWave` intent and the reserved `waves` seat.
 5. **The keep (town between runs),** only if the run is fun.
+
+## Open: team lanes (not assigned yet)
+Proposed Oct 19, 2026, for when we commit to a finished game. Commit only after P1 passes the playtest bar. Each lane has one owner, and new people join a lane rather than start a new one.
+
+| Lane | Owns | First deliverable | Owner |
+|---|---|---|---|
+| **1. Tech** (engine, co-op, Steam) | Co-op in the game (lobby, per-player gold, gifting, buy-back), saves, settings, performance, Steam build | Prototype 2: co-op for 2 over the internet | _open_ |
+| **2. Design** (content and balance) | Towers toward 20+, enemies, waves, cards, the keep; balance sim; running playtests | Tower and enemy list with counters; the keep on paper | _open_ |
+| **3. Look, sound and feel** | Final art in the painted ink style, animation, UI, music and sound effects; Steam page, trailer, pitch deck | Art style sheet; one finished tower, enemy and map; real music | _open_ |
+| **Producer** (on top of a lane) | Scope, weekly check-in, keeping this doc current | Milestone dates | _open_ |
+
+To decide:
+- Who owns which lane (Hunter, Joe, Zach), based on what each is best at.
+- **Engine call, Lane 1's first job:** wrap the web game as a desktop app for Steam (fastest; keeps everything built so far), or rebuild in an engine like Godot (more up-front work, stronger for a full premium game). Decide before Prototype 2.
+- Any target date, for example a specific Steam Next Fest for the demo.
+
+Milestones: P1 playtest passes → Prototype 2 (co-op for 2) → vertical slice (one finished-looking map, about 8 towers, the keep) → Steam demo → content complete → launch.
+
+Scope note: three people at about 10 hours a week is roughly a year or more for the full brief. The proposal is to ship with 12 to 15 towers and add more after launch, and to move 3v1 to after launch so co-op gets the time.
 
 ## Open questions
 - Title and hook line (working title is "Tower Defense").
