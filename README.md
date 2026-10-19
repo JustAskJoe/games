@@ -18,6 +18,8 @@ Every game starts as a pitch in Pitch Forge (our team questionnaire). Approved p
 
 Shared building blocks (deck generator, layouts, prototype snippets, art workflow) are in [`kit/`](kit/).
 
+**New to the collective?** Read [HOW-WE-WORK.md](HOW-WE-WORK.md) first: how ideas become games, the lanes, the tools, and the open questions we're deciding together.
+
 **Working on a game?** Start with [CONTRIBUTING.md](CONTRIBUTING.md): setup, branches and pull requests, and the build-and-test command for each game.
 
 ## Folder layout for each game

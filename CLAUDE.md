@@ -1,5 +1,7 @@
 # Working in this repo
 
+This repo belongs to a games collective; One Fifty Labs is one member and hosts the shared tools. How the collective works, and what's still up for debate, is in HOW-WE-WORK.md. Treat its proposals as drafts, not settled rules.
+
 PUBLIC repo for One Fifty Labs game work. Anyone can read it, so:
 - No secrets, emails, client info, revenue numbers or personal details.
 - No licensed music, lyrics or third-party art. Those, and any game Hunter doesn't want public yet, go in the private repo `onefiftylabs/games-private`.

@@ -21,6 +21,20 @@ How to get set up and add work to this repo without stepping on each other. This
    cd games
    ```
 
+### Initial setup with Claude (once)
+After the invite is accepted and GitHub is connected in your own Claude (Settings → Connectors, allow the `onefiftylabs` repos), paste this into a new chat:
+```
+Initial setup: I'm joining the collective to work on games in the GitHub repo onefiftylabs/games. Walk me through getting set up, one step at a time, and check each step before moving on:
+1. Confirm you can see onefiftylabs/games. If you can't, tell me exactly what I'm missing (a GitHub connection in Claude, or the collaborator invite).
+2. Clone it and confirm you can push: push a test branch named <my name>/setup-check, then delete it.
+3. Read HOW-WE-WORK.md, CLAUDE.md, CONTRIBUTING.md, README.md and kit/INDEX.md.
+4. Run python3 tower-defense/build-and-test.py to confirm the tools work here.
+5. Give me a short tour: how the collective works, the games and their status, how a game folder is laid out, the rules for this public repo, and how every work session starts and ends.
+6. Finish by giving me the start-work and end-work prompts from CONTRIBUTING.md to save.
+Don't change anything in the repo.
+```
+You only run this once. After that, every session uses the start and finish prompts in section 7.
+
 ## 2. Play a build
 Builds are single HTML files in each game's `builds/` folder. Open one in any browser (phone width is the target). On GitHub, `.html` shows as source, so download the file or play it from the Lab page on onefiftylabs.co.
 
