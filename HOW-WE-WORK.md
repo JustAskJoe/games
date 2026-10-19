@@ -107,6 +107,53 @@ Claude can write code, run tests, draft docs and decks, and make placeholder art
 | **Business setup** | Steam tax and bank onboarding for whoever publishes; the per-game agreement | Lawyer and accountant time for the first agreement |
 | **Budget** | One page per game: costs so far, costs planned, who's paying | Free |
 
+### Splitting the work by team size
+**Split by ownership, not tasks.** Each person owns an area end to end, makes the calls in it, and is the only one who changes its files. Claude does a lot of the typing, so what we're dividing up is decisions, taste and accountability. When someone joins, **split whichever lane is the bottleneck.** For a co-op tower defense with 20+ towers, that's art first and online tech second.
+
+**3 people: the core**
+
+| Role | Owns | Folder or files |
+|---|---|---|
+| **Tech** | Engine, co-op, Steam builds, the test pipeline | `prototype/engine.js`, `server/`, build scripts |
+| **Design** (+ producer) | Towers, enemies, cards, waves, the keep, balance, playtests, UI flow, scope | `design/`, stat tables, patch notes |
+| **Art and audio** | The look, UI visuals, animation, music and sound (likely managing a hired composer), Steam page art | Art assets, `music.js` and audio |
+
+At three, the gaps are marketing and audio. Plan to hire music, and start the Steam page late.
+
+**4 people: add a "showcase" role**
+
+| Role | Owns |
+|---|---|
+| **Tech** | Same as above |
+| **Design** | Content and balance. Hands producer duties to Showcase. |
+| **Art** | Visuals, UI look, animation, VFX |
+| **Showcase and sound** (+ producer) | Audio (composing or managing the composer), sound effects, trailer, Steam page, wishlists, Discord and community, recruiting playtesters, the weekly check-in |
+
+Why not a second coder? Small teams usually neglect marketing until it's too late, and Steam wishlists decide how a launch goes. This also takes producer and audio work off people who should be making the game. **Exception:** if the 4th person is a strong programmer, use the 5-person tech split and keep producer duties with Design.
+
+**5 people: split tech in two**
+
+| Role | Owns |
+|---|---|
+| **Gameplay programmer** | Towers, enemies, cards and the keep in code, UI code, game feel (hits, juice, readability) |
+| **Online and platform programmer** | Co-op and sync, Steam (achievements, lobbies, cloud saves), builds, performance, test devices |
+| **Design** | Content, balance, playtests |
+| **Art** | Visuals, animation, UI look |
+| **Showcase and sound** (+ producer) | As in the 4-person version |
+
+**6 and up, in order:** a second artist (illustration and UI vs. animation and VFX), then a dedicated producer and community person, then QA. Past about six part-timers, coordination starts eating the extra hours.
+
+**Handoffs, so lanes connect without overlapping:**
+- **Design → Gameplay:** design writes the numbers and rules (stat tables, card text). Gameplay builds them and doesn't redesign them. Disagreements go to the check-in.
+- **Art → Tech:** art delivers to a spec (sizes, palette, file names). Tech wires it in and doesn't touch the art.
+- **Design → Sound:** design keeps a cue list (what needs a sound or music change). Sound fills it.
+- **Online ↔ Gameplay:** every player action goes through one function (`act()` in Tower Defense), so gameplay adds actions and online just syncs them.
+- **Asking for something:** handoffs go in patch notes as `@Name` items, so asks don't get lost in chat.
+
+**Two rules that matter more than the tables:**
+- **Skills beat the template.** Whoever is the natural artist is Art, whatever the table says. The tables are there to make sure every area has an owner.
+- **Everyone has a backup lane** they understand enough to cover, so vacations and busy weeks don't stall the game.
+
 ---
 
 ## 5. Where everything lives

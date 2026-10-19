@@ -52,7 +52,7 @@ Is drafting a card after each wave, on a map that keeps growing, fun enough to r
 5. **The keep (town between runs),** only if the run is fun.
 
 ## Open: team lanes (not assigned yet)
-Proposed Oct 19, 2026, for when we commit to a finished game. Commit only after P1 passes the playtest bar. Each lane has one owner, and new people join a lane rather than start a new one.
+Proposed Oct 19, 2026, for when we commit to a finished game. For how the lanes split as the team grows (3, 4, 5+ people), see `HOW-WE-WORK.md`, section 4. Commit only after P1 passes the playtest bar. Each lane has one owner, and new people join a lane rather than start a new one.
 
 | Lane | Owns | First deliverable | Owner |
 |---|---|---|---|
