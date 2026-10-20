@@ -41,17 +41,19 @@
       const free = TD.spots(G).filter(([c, r]) => !TD.towerAt(G, c, r));
       const need = TD.nextWaveNeeds(G);
       if (ui.upHint && G.towers.some((x) => x.tier === 1 && TD.canUpgrade(G, x))) t = 'Card added. Now tap a tower with a gold <b>▲</b> to <b>upgrade</b> it. Each has two paths; pick one.';
-      else if (!G.towers.length) t = 'Pick a tower below, then tap a glowing <b>+</b> spot on the map to build it. Arrows are a good start.';
+      else if (ui.sel && !TD.towerAt(G, ui.sel[0], ui.sel[1])) t = G.towers.length ? 'Pick a tower to build on this spot.' : 'Now pick a tower to build here. <b>Arrows</b> are a good start.';
+      else if (!G.towers.length) t = 'Tap a glowing <b>+</b> spot on the map, then pick a tower to build there.';
       else if (need.flyer && !G.towers.some((x) => x.type === 'spark' || x.type === 'arrow')) t = 'Flyers are coming. Cannons can’t hit them; <b>Spark</b> or Arrows can.';
       else if ((need.brute || need.boss) && !G.towers.some((x) => x.type === 'cannon')) t = 'Armored <b>Brutes</b> shrug off arrows. A <b>Cannon</b> (or Spark) cracks them.';
       else if (G.towers.some((x) => x.tier === 1 && TD.canUpgrade(G, x)) && (!free.length || G.gold > 150)) t = 'Tap one of your towers to <b>upgrade</b> it. Each has two paths; pick one.';
-      else if (free.length && G.gold >= TD.cost(G, 'arrow')) t = `You can afford another tower. ${free.length} spot${free.length > 1 ? 's' : ''} open.`;
+      else if (free.length && G.gold >= cheapest()) t = `You can afford another tower. Tap one of the ${free.length} open spot${free.length > 1 ? 's' : ''}.`;
       else t = 'Ready? Hit <b>Send the wave</b>. You can’t build while it runs, so spend first.';
     } else if (G.phase === 'wave') t = ui.speed > 1 ? 'Watch the road. Tap <b>1×</b> if it gets hairy.' : 'Watch your build work. Tap <b>3×</b> to speed up.';
     else if (G.phase === 'draft') t = 'Wave cleared! Pick <b>one card</b>. It stays for the whole run.';
     else t = '';
     $('#coach').innerHTML = `<div class="av">${A.COACH_SVG}</div><p><b class="who">Pell:</b> ${t}</p>`;
   }
+  function cheapest() { return Math.min(...Object.keys(TD.TOWERS).map((k) => TD.cost(G, k))); }
   function towerIcon(type) { if (!icons[type]) icons[type] = A.towerIconSVG(type); return `<img src="${icons[type]}" alt="${esc(TD.TOWERS[type].name)}" width="40" height="40">`; }
   function sheet() {
     const el = $('#sheet');
@@ -68,9 +70,17 @@
         <div class="acts"><button class="btn sm ghost" data-act="sell" type="button">Sell for ${TD.sellValue(G, sel)}</button><button class="btn sm" data-act="unsel" type="button">Done</button></div>`;
       return;
     }
+    // spot first, then tower: with an open spot selected the shop builds there; without one it only describes the towers
+    if (ui.sel) {
+      el.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px"><h3>Build here</h3><span class="muted" style="font-size:13px">Pick a tower</span></div>
+        <div class="shop">${Object.entries(TD.TOWERS).map(([k, t]) => `<button type="button" data-build="${k}" ${G.gold < TD.cost(G, k) ? 'disabled' : ''} class="${ui.coach && !G.towers.length && k === 'arrow' ? 'hint' : ''}">${towerIcon(k)}<b>${esc(t.name)}</b><small>${TD.cost(G, k)}</small></button>`).join('')}</div>
+        <p class="muted" style="font-size:13.5px">${Object.values(TD.TOWERS).map((t) => `<b>${esc(t.name)}:</b> ${esc(t.desc)}`).join(' ')}</p>
+        <div class="acts"><button class="btn sm" data-act="unsel" type="button">Cancel</button></div>`;
+      return;
+    }
     const free = TD.spots(G).filter(([c, r]) => !TD.towerAt(G, c, r)).length;
-    el.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px"><h3>Build</h3><span class="muted" style="font-size:13px">${free} spot${free === 1 ? '' : 's'} open · tap a tower to upgrade</span></div>
-      <div class="shop">${Object.entries(TD.TOWERS).map(([k, t]) => `<button type="button" data-pick="${k}" aria-pressed="${ui.pick === k}" ${G.gold < TD.cost(G, k) ? 'disabled' : ''} class="${ui.coach && !G.towers.length && k === 'arrow' ? 'hint' : ''}">${towerIcon(k)}<b>${esc(t.name)}</b><small>${TD.cost(G, k)}</small></button>`).join('')}</div>
+    el.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px"><h3>Build</h3><span class="muted" style="font-size:13px">${free} spot${free === 1 ? '' : 's'} open · tap a <b>+</b> spot to build</span></div>
+      <div class="shop">${Object.entries(TD.TOWERS).map(([k, t]) => `<button type="button" data-pick="${k}" aria-pressed="${ui.pick === k}">${towerIcon(k)}<b>${esc(t.name)}</b><small>${TD.cost(G, k)}</small></button>`).join('')}</div>
       <p class="muted" style="font-size:13.5px">${esc(TD.TOWERS[ui.pick].desc)}</p>
       ${deckHTML()}`;
   }
@@ -111,13 +121,13 @@
     if (nextStage !== null) TD.SPOTS[nextStage].forEach(([c, r]) => { cx.save(); cx.globalAlpha = .35; A.spot(cx, c * CELL, r * CELL, CELL, true, false); cx.restore(); });
     // spots
     const inBuild = G.phase === 'build';
-    TD.spots(G).forEach(([c, r]) => { const tw = TD.towerAt(G, c, r); if (!tw) A.spot(cx, c * CELL, r * CELL, CELL, true, inBuild && G.gold >= TD.cost(G, ui.pick)); else A.spot(cx, c * CELL, r * CELL, CELL, false, false); });
+    TD.spots(G).forEach(([c, r]) => { const tw = TD.towerAt(G, c, r); if (!tw) A.spot(cx, c * CELL, r * CELL, CELL, true, inBuild && G.gold >= cheapest()); else A.spot(cx, c * CELL, r * CELL, CELL, false, false); });
     // entrance marker
     const [ex, ey] = path[0]; cx.fillStyle = A.RUST; cx.beginPath(); cx.moveTo(ex * CELL + 10, ey * CELL + 20); cx.lineTo(ex * CELL + 34, ey * CELL + 40); cx.lineTo(ex * CELL + 10, ey * CELL + 60); cx.closePath(); cx.fill(); cx.strokeStyle = A.INK; cx.lineWidth = 3; cx.stroke();
     // keep
     const [kx, ky] = TD.keep(G); A.keepArt(cx, kx * CELL, ky * CELL - 6, CELL, G.health <= 5);
     // range ring for selected / picked
-    if (inBuild && ui.sel) { const tw = TD.towerAt(G, ui.sel[0], ui.sel[1]); const rg = tw ? TD.stats(G, tw).range : TD.TOWERS[ui.pick].range * G.mods.range; cx.save(); cx.fillStyle = 'rgba(78,143,134,.18)'; cx.strokeStyle = 'rgba(58,37,24,.6)'; cx.lineWidth = 2; cx.setLineDash([8, 6]); cx.beginPath(); cx.arc((ui.sel[0] + .5) * CELL, (ui.sel[1] + .5) * CELL, rg * CELL, 0, Math.PI * 2); cx.fill(); cx.stroke(); cx.restore(); }
+    if (inBuild && ui.sel && TD.towerAt(G, ui.sel[0], ui.sel[1])) { const rg = TD.stats(G, TD.towerAt(G, ui.sel[0], ui.sel[1])).range; cx.save(); cx.fillStyle = 'rgba(78,143,134,.18)'; cx.strokeStyle = 'rgba(58,37,24,.6)'; cx.lineWidth = 2; cx.setLineDash([8, 6]); cx.beginPath(); cx.arc((ui.sel[0] + .5) * CELL, (ui.sel[1] + .5) * CELL, rg * CELL, 0, Math.PI * 2); cx.fill(); cx.stroke(); cx.restore(); }
     // towers
     const firing = new Set(ui.fx.filter((f) => f.k === 'shot' && t - f.t < .12).map((f) => f.tw));
     for (const tw of G.towers) A.towerArt(cx, tw.type, tw.c * CELL, tw.r * CELL - 8, CELL, tw.tier, tw.branch, firing.has(tw.id));
@@ -126,7 +136,7 @@
       cx.fillStyle = A.GOLD; cx.strokeStyle = A.INK; cx.lineWidth = 4; cx.beginPath(); cx.arc(ux, uy, 19, 0, Math.PI * 2); cx.fill(); cx.stroke();
       cx.fillStyle = A.INK; cx.beginPath(); cx.moveTo(ux, uy - 11); cx.lineTo(ux + 11, uy + 6); cx.lineTo(ux - 11, uy + 6); cx.closePath(); cx.fill();
     }
-    if (inBuild && ui.sel && TD.towerAt(G, ui.sel[0], ui.sel[1])) { cx.strokeStyle = A.GOLD; cx.lineWidth = 4; cx.strokeRect(ui.sel[0] * CELL + 4, ui.sel[1] * CELL + 4, CELL - 8, CELL - 8); }
+    if (inBuild && ui.sel) { if (!TD.towerAt(G, ui.sel[0], ui.sel[1])) { cx.fillStyle = 'rgba(217,164,65,.25)'; cx.fillRect(ui.sel[0] * CELL + 4, ui.sel[1] * CELL + 4, CELL - 8, CELL - 8); } cx.strokeStyle = A.GOLD; cx.lineWidth = 7; cx.strokeRect(ui.sel[0] * CELL + 4, ui.sel[1] * CELL + 4, CELL - 8, CELL - 8); }
     // enemies (ground first, flyers on top)
     const ens = G.enemies.filter((e) => !e.dead).sort((a, b) => (a.flying - b.flying) || (a.y - b.y));
     for (const e of ens) A.enemyArt(cx, e.type, (e.x + .5) * CELL, (e.y + .5) * CELL, CELL, t + e.id, e.hp / e.maxHp, e.slowT > 0);
@@ -183,18 +193,15 @@
     if (G.phase !== 'build') return;
     const tw = TD.towerAt(G, c, r);
     if (tw) { ui.sel = [c, r]; renderAll(); return; }
-    if (TD.isSpot(G, c, r)) {
-      if (TD.canBuild(G, ui.pick, c, r)) { TD.act(G, { k: 'build', type: ui.pick, c, r }); ui.sel = null; banner(''); renderAll(); }
-      else { ui.sel = [c, r]; $('#mapWrap').classList.remove('shake'); void $('#mapWrap').offsetWidth; $('#mapWrap').classList.add('shake'); renderAll(); }
-      return;
-    }
+    if (TD.isSpot(G, c, r)) { ui.sel = [c, r]; renderAll(); return; }
     ui.sel = null; renderAll();
   }
   cv.addEventListener('click', (e) => { const [c, r] = cellAt(e.clientX, e.clientY); tapCell(c, r); });
 
   document.addEventListener('click', (e) => {
     const b = e.target.closest('button'); if (!b) return;
-    if (b.dataset.pick && G.phase === 'build') { ui.pick = b.dataset.pick; ui.sel = null; renderAll(); return; }
+    if (b.dataset.pick && G.phase === 'build') { ui.pick = b.dataset.pick; renderAll(); return; }
+    if (b.dataset.build && ui.sel) { const [c, r] = ui.sel; if (TD.act(G, { k: 'build', type: b.dataset.build, c, r })) { ui.pick = b.dataset.build; ui.sel = null; renderAll(); } return; }
     if (b.dataset.pick && G.phase === 'draft') { TD.act(G, { k: 'pick', card: b.dataset.pick }); closeOverlay(); ui.upHint = true; if (G.events && G.events[0] && G.events[0].k === 'grow') { banner('The road grows!'); M.sting('grow'); } ui.sel = null; renderAll(); return; }
     if (b.dataset.up) { if (TD.act(G, { k: 'upgrade', c: ui.sel[0], r: ui.sel[1], branch: b.dataset.up })) renderAll(); return; }
     if (b.dataset.tjump !== undefined) { const w = +b.dataset.tjump; if (G.phase !== 'build' || w <= G.wave) newRun(G.seed); TD.testJump(G, w); afterTest(`Jumped to wave ${w + 1}. The bot played the waves before it.`); return; }

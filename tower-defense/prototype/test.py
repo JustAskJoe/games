@@ -28,8 +28,11 @@ with sync_playwright() as p:
     pg.click('[data-act=skipintro]'); pg.wait_for_timeout(600)
     pg.screenshot(path=str(shots / 's2_build.png'), full_page=True)
     # build: arrow at (3,3), arrow at (1,2), frost at (5,2)
-    cell_click(pg, 3, 3); cell_click(pg, 1, 2)
-    pg.click('[data-pick=frost]'); cell_click(pg, 5, 2)
+    # spot first, then tower: tap an open spot, then pick what to build on it
+    cell_click(pg, 3, 3); pg.wait_for_timeout(200); pg.screenshot(path=str(shots / 's2b_spot.png'), full_page=True)
+    pg.click('[data-build=arrow]'); cell_click(pg, 1, 2); pg.click('[data-build=arrow]')
+    cell_click(pg, 5, 2); pg.click('[data-build=frost]')
+    assert pg.evaluate("() => TDUI.G.towers.map(t => t.type).join()") == 'arrow,arrow,frost', 'spot-then-tower build failed'
     pg.wait_for_timeout(200); pg.screenshot(path=str(shots / 's3_built.png'), full_page=True)
     # select a tower
     cell_click(pg, 3, 3); pg.wait_for_timeout(200); pg.screenshot(path=str(shots / 's4_select.png'), full_page=True)
