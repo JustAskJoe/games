@@ -12,6 +12,7 @@ Say **"add to patch notes"** to Claude any time to add to the top entry. Claude 
 
 ### What's new
 - **The card draft is now a pop-up.** After each wave, once the "Wave held" banner shows, three random cards pop up over the map. Pick one and it stays for the whole run. Closing the menu mid-draft brings the cards back.
+- **Pop-ups sit in the middle of the screen.** The card draft, the menu and every other pop-up are now centered instead of docked to the bottom.
 - **Upgrade prompt after the pick.** Towers you can afford to upgrade get a gold ▲ on the map, and Pell points you at them right after you pick a card.
 - **Unchanged:** cards, towers, waves and balance.
 
