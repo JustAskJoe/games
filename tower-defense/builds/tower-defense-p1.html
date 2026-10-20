@@ -120,8 +120,8 @@ canvas#map { display: block; width: 100%; height: auto; touch-action: manipulati
 .waves i.done { background: var(--moss); } .waves i.now { background: var(--gold); }
 
 /* ---------- overlays ---------- */
-.veil-bg { position: fixed; inset: 0; background: rgba(58,37,24,.55); display: grid; place-items: end center; z-index: 50; }
-.modal { background: var(--paper); border: 3px solid var(--ink); border-radius: 22px 22px 0 0; padding: 20px max(18px, env(safe-area-inset-right, 0px)) calc(22px + env(safe-area-inset-bottom, 0px)) max(18px, env(safe-area-inset-left, 0px)); width: min(560px, 100%); max-height: 92vh; overflow: auto; display: flex; flex-direction: column; gap: 14px; animation: sheetUp .3s ease-out; }
+.veil-bg { position: fixed; inset: 0; background: rgba(58,37,24,.55); display: grid; place-items: center; padding: 12px; z-index: 50; }
+.modal { background: var(--paper); border: 3px solid var(--ink); border-radius: 22px; box-shadow: 0 6px 0 var(--ink); padding: 20px 18px; width: min(560px, 100%); max-height: calc(100vh - 24px); max-height: calc(100dvh - 24px); overflow: auto; display: flex; flex-direction: column; gap: 14px; animation: sheetUp .3s ease-out; }
 @keyframes sheetUp { from { transform: translateY(30px); opacity: 0; } to { transform: none; opacity: 1; } }
 .modal h2 { font-size: 26px; }
 .modal p, .modal ol, .modal ul { margin: 0; }
