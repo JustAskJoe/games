@@ -40,7 +40,8 @@
     if (G.phase === 'build') {
       const free = TD.spots(G).filter(([c, r]) => !TD.towerAt(G, c, r));
       const need = TD.nextWaveNeeds(G);
-      if (!G.towers.length) t = 'Pick a tower below, then tap a glowing <b>+</b> spot on the map to build it. Arrows are a good start.';
+      if (ui.upHint && G.towers.some((x) => x.tier === 1 && TD.canUpgrade(G, x))) t = 'Card added. Now tap a tower with a gold <b>▲</b> to <b>upgrade</b> it. Each has two paths; pick one.';
+      else if (!G.towers.length) t = 'Pick a tower below, then tap a glowing <b>+</b> spot on the map to build it. Arrows are a good start.';
       else if (need.flyer && !G.towers.some((x) => x.type === 'spark' || x.type === 'arrow')) t = 'Flyers are coming. Cannons can’t hit them; <b>Spark</b> or Arrows can.';
       else if ((need.brute || need.boss) && !G.towers.some((x) => x.type === 'cannon')) t = 'Armored <b>Brutes</b> shrug off arrows. A <b>Cannon</b> (or Spark) cracks them.';
       else if (G.towers.some((x) => x.tier === 1 && TD.canUpgrade(G, x)) && (!free.length || G.gold > 150)) t = 'Tap one of your towers to <b>upgrade</b> it. Each has two paths; pick one.';
@@ -54,13 +55,7 @@
   function towerIcon(type) { if (!icons[type]) icons[type] = A.towerIconSVG(type); return `<img src="${icons[type]}" alt="${esc(TD.TOWERS[type].name)}" width="40" height="40">`; }
   function sheet() {
     const el = $('#sheet');
-    if (G.phase === 'draft' && G.offer) {
-      const best = TD.botPick(G);
-      el.innerHTML = `<div><span class="eyebrow">Wave ${G.wave} cleared</span><h2>Draft a card</h2></div>
-        <div class="cards">${G.offer.map((id) => { const c = TD.CARDS.find((x) => x.id === id); return `<button class="card ${c.kind} ${ui.coach && id === best ? 'hint' : ''}" data-pick="${id}" type="button"><span class="kind">${c.kind}</span><b>${esc(c.name)}</b><small>${esc(c.text)}</small></button>`; }).join('')}</div>
-        ${deckHTML()}`;
-      return;
-    }
+    if (G.phase === 'draft' && G.offer) { el.innerHTML = `<div class="waves">${TD.WAVES.map((w, i) => `<i class="${i < G.wave ? 'done' : ''}"></i>`).join('')}</div>${deckHTML()}`; return; }
     if (G.phase === 'won' || G.phase === 'lost') { el.innerHTML = `<div class="acts"><button class="btn primary" data-act="again" type="button">Play again</button><button class="btn" data-act="feedback" type="button">Give feedback</button></div>`; return; }
     if (G.phase === 'wave') { el.innerHTML = `<div class="waves">${TD.WAVES.map((w, i) => `<i class="${i < G.wave ? 'done' : i === G.wave ? 'now' : ''}"></i>`).join('')}</div>${deckHTML()}`; return; }
     // build phase
@@ -79,8 +74,21 @@
       <p class="muted" style="font-size:13.5px">${esc(TD.TOWERS[ui.pick].desc)}</p>
       ${deckHTML()}`;
   }
+  // the draft pops up over the map once the wave-held banner has had a moment
+  function draftHTML() {
+    const best = TD.botPick(G);
+    return `<span class="eyebrow">Wave ${G.wave} held</span><h2>Pick a card</h2><p class="muted">Three random cards. The one you pick lasts the whole run. Then you can upgrade your towers.</p>
+      <div class="cards">${G.offer.map((id) => { const c = TD.CARDS.find((x) => x.id === id); return `<button class="card ${c.kind} ${ui.coach && id === best ? 'hint' : ''}" data-pick="${id}" type="button"><span class="kind">${c.kind}</span><b>${esc(c.name)}</b><small>${esc(c.text)}</small></button>`; }).join('')}</div>
+      ${deckHTML()}`;
+  }
+  function showDraft() { if (G.phase === 'draft' && G.offer) showOverlay(draftHTML()); }
+  function queueDraft() {
+    if (G.phase !== 'draft' || !G.offer || ui.draftFor === G.wave) return;
+    ui.draftFor = G.wave;
+    setTimeout(() => { if (!$('#overlay').innerHTML) showDraft(); }, 900);
+  }
   function deckHTML() { return G.cards.length ? `<div class="deck">${G.cards.map((c) => `<span class="pill" title="${esc(c.text)}">${esc(c.name)}</span>`).join('')}</div>` : ''; }
-  function renderAll() { hud(); ctl(); coachLine(); sheet(); draw(); }
+  function renderAll() { hud(); ctl(); coachLine(); sheet(); draw(); queueDraft(); }
 
   // ---------- canvas ----------
   const cv = $('#map'), cx = cv.getContext('2d');
@@ -113,6 +121,11 @@
     // towers
     const firing = new Set(ui.fx.filter((f) => f.k === 'shot' && t - f.t < .12).map((f) => f.tw));
     for (const tw of G.towers) A.towerArt(cx, tw.type, tw.c * CELL, tw.r * CELL - 8, CELL, tw.tier, tw.branch, firing.has(tw.id));
+    if (inBuild) for (const tw of G.towers) if (tw.tier === 1 && TD.canUpgrade(G, tw)) {
+      const ux = tw.c * CELL + CELL - 18, uy = tw.r * CELL + 16;
+      cx.fillStyle = A.GOLD; cx.strokeStyle = A.INK; cx.lineWidth = 4; cx.beginPath(); cx.arc(ux, uy, 19, 0, Math.PI * 2); cx.fill(); cx.stroke();
+      cx.fillStyle = A.INK; cx.beginPath(); cx.moveTo(ux, uy - 11); cx.lineTo(ux + 11, uy + 6); cx.lineTo(ux - 11, uy + 6); cx.closePath(); cx.fill();
+    }
     if (inBuild && ui.sel && TD.towerAt(G, ui.sel[0], ui.sel[1])) { cx.strokeStyle = A.GOLD; cx.lineWidth = 4; cx.strokeRect(ui.sel[0] * CELL + 4, ui.sel[1] * CELL + 4, CELL - 8, CELL - 8); }
     // enemies (ground first, flyers on top)
     const ens = G.enemies.filter((e) => !e.dead).sort((a, b) => (a.flying - b.flying) || (a.y - b.y));
@@ -160,7 +173,7 @@
 
   // ---------- actions ----------
   function newRun(seed) {
-    G = TD.newGame(seed || ((Date.now() % 100000) + 1)); ui.sel = null; ui.pick = 'arrow'; ui.speed = 1; ui.fx = []; ui.feedbackDone = false; ui.runs++;
+    G = TD.newGame(seed || ((Date.now() % 100000) + 1)); ui.sel = null; ui.pick = 'arrow'; ui.speed = 1; ui.fx = []; ui.feedbackDone = false; ui.runs++; ui.draftFor = -1; ui.upHint = false;
     tag(); M.mood('build');
     renderAll();
     if (!ui.raf) ui.raf = requestAnimationFrame(frame);
@@ -182,12 +195,12 @@
   document.addEventListener('click', (e) => {
     const b = e.target.closest('button'); if (!b) return;
     if (b.dataset.pick && G.phase === 'build') { ui.pick = b.dataset.pick; ui.sel = null; renderAll(); return; }
-    if (b.dataset.pick && G.phase === 'draft') { TD.act(G, { k: 'pick', card: b.dataset.pick }); if (G.events && G.events[0] && G.events[0].k === 'grow') { banner('The road grows!'); M.sting('grow'); } ui.sel = null; renderAll(); return; }
+    if (b.dataset.pick && G.phase === 'draft') { TD.act(G, { k: 'pick', card: b.dataset.pick }); closeOverlay(); ui.upHint = true; if (G.events && G.events[0] && G.events[0].k === 'grow') { banner('The road grows!'); M.sting('grow'); } ui.sel = null; renderAll(); return; }
     if (b.dataset.up) { if (TD.act(G, { k: 'upgrade', c: ui.sel[0], r: ui.sel[1], branch: b.dataset.up })) renderAll(); return; }
     if (b.dataset.tjump !== undefined) { const w = +b.dataset.tjump; if (G.phase !== 'build' || w <= G.wave) newRun(G.seed); TD.testJump(G, w); afterTest(`Jumped to wave ${w + 1}. The bot played the waves before it.`); return; }
     if (b.dataset.tcard) { TD.testCard(G, b.dataset.tcard); afterTest(`Added ${TD.CARDS.find((c) => c.id === b.dataset.tcard).name}.`); return; }
     const a = b.dataset.act; if (!a) return;
-    if (a === 'start') { if (TD.act(G, { k: 'start' })) { ui.sel = null; acc = 0; M.mood('wave'); renderAll(); } }
+    if (a === 'start') { if (TD.act(G, { k: 'start' })) { ui.sel = null; ui.upHint = false; acc = 0; M.mood('wave'); renderAll(); } }
     else if (a === 'speed') { ui.speed = ui.speed > 1 ? 1 : 3; ctl(); coachLine(); }
     else if (a === 'sell') { if (TD.act(G, { k: 'sell', c: ui.sel[0], r: ui.sel[1] })) { ui.sel = null; renderAll(); } }
     else if (a === 'unsel') { ui.sel = null; renderAll(); }
@@ -216,7 +229,7 @@
 
   // ---------- overlays ----------
   function showOverlay(html) { $('#overlay').innerHTML = `<div class="veil-bg"><div class="modal" role="dialog" aria-modal="true">${html}</div></div>`; }
-  function closeOverlay() { $('#overlay').innerHTML = ''; }
+  function closeOverlay() { $('#overlay').innerHTML = ''; showDraft(); }
   function menuHTML() {
     const on = (b) => (b ? 'On' : 'Off');
     return `<h2>Menu</h2><div class="menu">

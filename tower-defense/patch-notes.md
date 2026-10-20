@@ -8,6 +8,23 @@ Say **"add to patch notes"** to Claude any time to add to the top entry. Claude 
 
 ---
 
+## 1.1.1 · Oct 20, 2026 · Joe (with Claude)
+
+### What's new
+- **The card draft is now a pop-up.** After each wave, once the "Wave held" banner shows, three random cards pop up over the map. Pick one and it stays for the whole run. Closing the menu mid-draft brings the cards back.
+- **Upgrade prompt after the pick.** Towers you can afford to upgrade get a gold ▲ on the map, and Pell points you at them right after you pick a card.
+- **Unchanged:** cards, towers, waves and balance.
+
+### Next up
+- [ ] @Joe: Play the pop-up on a phone and check it feels right between waves.
+
+### Watch out
+- [ ] **You often can't afford an upgrade right after wave 1.** Upgrades cost 70–90 and a typical opening leaves around 50 gold, so the ▲ usually first shows after wave 2. If upgrading after wave 1 should be the norm, that's a balance change (start gold or wave-1 bonus) and needs a sim run.
+- [ ] **Not every card is passive.** War Levy (+40 gold now) and Stone Walls (repair 3) are one-time effects. Left as is; drop or rework them if the draft should be passive-only.
+- [ ] **The pop-up waits 0.9 s** so the wave-held banner is seen first. Only checked in headless Chromium at 390 and 320 wide, not on a real phone.
+
+---
+
 ## 1.1 · Oct 19, 2026 · Hunter (with Claude)
 Play: onefiftylabs.co/lab/tower-defense/
 

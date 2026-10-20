@@ -42,8 +42,10 @@ with sync_playwright() as p:
         if w == 0: pg.wait_for_timeout(200); pg.screenshot(path=str(shots / 's5_wave_done.png'), full_page=True)
         ph = pg.evaluate("() => TDUI.G.phase")
         if ph == 'draft':
+            pg.wait_for_selector('#overlay .modal .card')
             if w == 0: pg.screenshot(path=str(shots / 's6_draft.png'), full_page=True)
-            pg.click('.card'); pg.wait_for_timeout(300)
+            pg.click('#overlay .modal .card'); pg.wait_for_timeout(300)
+            assert pg.locator('#overlay .modal').count() == 0, 'draft pop-up should close after a pick'
             if w == 2: pg.screenshot(path=str(shots / 's7_grown.png'), full_page=True)
     pg.wait_for_timeout(900)
     pg.screenshot(path=str(shots / 's8_end.png'), full_page=True)
