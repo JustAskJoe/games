@@ -28,4 +28,6 @@ Before pushing, run the game's build-and-test command (table in CONTRIBUTING.md)
 - Before anything you can't easily undo (deleting files or branches, renaming a build the Lab serves, changing what the Lab or site points at), stop and confirm in chat first.
 - Mistakes are recoverable from Git history: to undo a merged change, open a pull request that reverts it (`git revert`), never a force-push.
 
+**How it's wired.** `ARCHITECTURE.md` describes every piece (Forge, Lab, Studio HQ, the Artist, CI, accounts). If your change alters how any of those work (a route, a secret, a schedule, an account, a new agent or game in the Lab), update `ARCHITECTURE.md` in the same pull request.
+
 **Which org.** Repo-specific names (org, Forge link, Lab link, ownership line) live in `studio.json` at the repo root. Read it instead of assuming `onefiftylabs`. The `onefiftylabs` account is Hunter's own (One Fifty Labs: the website, `onefiftylabs/games-private`, `onefiftylabs/xr-app-suite`); game work for the collective goes here.
