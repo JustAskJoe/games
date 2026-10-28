@@ -8,6 +8,25 @@ Say **"add to patch notes"** to Claude any time to add to the top entry. Claude 
 
 ---
 
+## 1.1 · Oct 28, 2026 · Hunter (with Claude)
+Art only, no build change.
+
+### What's new
+- **Art agent setup.** A shared Artist agent (`kit/agents/artist.md`) now makes briefs and free concept sheets for art requests, then final art only after a person approves.
+- **`art/art-direction.md`:** the palette (hex codes from Prototype 1), sizes and pipeline settings the agent follows.
+- **`design/ai-assets.md`:** the AI-made asset log for Steam's AI disclosure.
+
+### Next up
+- [ ] @Hunter: create the labels and the Concepts routine (steps in `kit/agents/README.md`).
+- [ ] @Hunter: open the first art request: Arrow tower, one painted and one pixel direction.
+- [ ] Crew: pick painted or pixel finals from the first concept sheets, then record it in `art/art-direction.md` and `design/handoff.md`.
+
+### Watch out
+- [ ] The agent hasn't run yet. The first concepts run is the real test of the SVG sheets and the Canva links.
+- [ ] Canva roughs are links only: cloud runs can't fetch full-size Canva images (see `kit/art/README.md`).
+- [ ] The `#td-studio` Slack channel may not exist; the agent skips Slack if it doesn't.
+- [ ] The final-art cost table in `art/art-direction.md` is empty until a source is chosen.
+
 ## 1.1 · Oct 19, 2026 · Hunter (with Claude)
 Play: onefiftylabs.co/lab/tower-defense/
 
