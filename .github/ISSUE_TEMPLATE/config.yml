@@ -1,5 +1,5 @@
 blank_issues_enabled: true
 contact_links:
   - name: Pitch a new game
-    url: https://github.com/JustAskJoe/forge
+    url: https://jaj-forge.huntefl.workers.dev
     about: New game ideas start in Forge (its link is forgeUrl in studio.json), not as an issue.

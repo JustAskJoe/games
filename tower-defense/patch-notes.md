@@ -19,7 +19,7 @@ Docs only, no build change.
 ### Next up
 - [ ] @Joe: point your local copy at the new home: `git remote set-url origin https://github.com/JustAskJoe/games.git`
 - [ ] @Zach: same command, if you have a local copy.
-- [ ] @Hunter: fill in `forgeUrl` in `studio.json` once the JustAskJoe Forge is live.
+- [x] @Hunter: fill in `forgeUrl` in `studio.json` once the JustAskJoe Forge is live. (done Oct 28: https://jaj-forge.huntefl.workers.dev)
 
 ### Watch out
 - [ ] The Artist's scheduled tasks and Studio HQ still name `onefiftylabs/games` until they're switched to the JustAskJoe ones.
