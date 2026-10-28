@@ -1,0 +1,11 @@
+name: Art request
+description: Ask the Artist agent for concept sheets (free; final art needs a person's OK)
+title: "Art request: "
+labels: [agent:art]
+body:
+  - type: markdown
+    attributes: { value: "After filing, add the `game:<folder>` label (for example `game:tower-defense`) so the Artist picks it up on its next shift." }
+  - type: textarea
+    id: ask
+    attributes: { label: What do you need?, description: "The asset, where it appears, states or variants, and any directions to try." }
+    validations: { required: true }
