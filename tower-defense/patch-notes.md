@@ -16,15 +16,17 @@ Art only, no build change.
 - Three Canva painted roughs, linked in the pull request (not committed).
 
 ### Next up
-- [ ] Crew: open both sheets on a phone and reply `Pick: A` or `Pick: B` on the concepts pull request (this is the painted vs pixel call).
-- [ ] Whoever picks: record the answer in `art/art-direction.md` (`final_art_source`) and `design/handoff.md`, and fill the cost table so the next run can price finals.
+- [x] Crew: open both sheets on a phone and reply `Pick: A` or `Pick: B` on the concepts pull request (this is the painted vs pixel call). (done Oct 28, Hunter: Pick A, painted)
+- [x] Whoever picks: record the answer in `art/art-direction.md` (`final_art_source`) and `design/handoff.md`, and fill the cost table so the next run can price finals. (done Oct 28, Hunter with Claude: `canva`; cost per generation still blank, see below)
+- [ ] @Hunter: fill "cost each" for Canva in the cost table (plan credits or $ per generation), then add `art-approved` to #9 when you want the finals run.
 
 ### Watch out
 - [ ] Sheets were checked only in headless Chromium (desktop and a 390 px phone viewport), not on a real iPhone or Android.
 - [ ] The pixel sheet (B) is a quick hand-set sketch of the same shapes, not polished pixel art: the Pierce bolt and the Multishot arrow fan are muddy at 40 × 48. Judge the style, not the pixel cleanup.
 - [ ] Multishot mechanically **fires twice as fast** (`prototype/engine.js`), but the issue asked it to *look* spread and busy, so the sheets show a fan of arrows. Players may read that as "hits several targets". Worth a name or art check.
 - [ ] The Canva roughs are much more detailed than an 80 px cell can show, and roughs A and B came out almost the same (pixel B's rough is softly "pixel-ish", not true 2x pixels). Use the SVG sheets for the phone comparison.
-- [ ] No cost estimate in dollars or credits: `final_art_source` is `undecided` and the cost table is empty. Count only: about 5 generations (4 images + 25%).
+- [ ] No cost estimate in dollars or credits yet: source is now `canva`, but Canva's cost per generation isn't in the cost table. Count only: about 5 generations (4 images + 25%).
+- [ ] Canva finals: cloud runs only get 199 × 112 thumbnails; full-size images need the built-in browser trick in `kit/art/README.md`, and then a background-removal step for transparent 160 × 192 exports. The finals run hasn't been tried yet.
 - [ ] Brief reference links (Wikimedia Commons categories) weren't opened by the agent; check they still resolve.
 
 ## 1.1 · Oct 28, 2026 · Hunter (with Claude)
@@ -38,7 +40,7 @@ Art only, no build change.
 ### Next up
 - [ ] @Hunter: create the labels and the Concepts routine (steps in `kit/agents/README.md`).
 - [x] @Hunter: open the first art request: Arrow tower, one painted and one pixel direction. (done Oct 28, Hunter: issue #9)
-- [ ] Crew: pick painted or pixel finals from the first concept sheets, then record it in `art/art-direction.md` and `design/handoff.md`.
+- [x] Crew: pick painted or pixel finals from the first concept sheets, then record it in `art/art-direction.md` and `design/handoff.md`. (done Oct 28, Hunter: painted, Canva)
 
 ### Watch out
 - [x] The agent hasn't run yet. The first concepts run is the real test of the SVG sheets and the Canva links. (done Oct 28, Artist agent: first run on #9; see its entry above)
