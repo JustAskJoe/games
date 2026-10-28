@@ -36,7 +36,7 @@ Don't change anything in the repo.
 You only run this once. After that, every session uses the start and finish prompts in section 7.
 
 ## 2. Play a build
-Builds are single HTML files in each game's `builds/` folder. Open one in any browser (phone width is the target). On GitHub, `.html` shows as source, so download the file or play it from the Lab page on onefiftylabs.co.
+Builds are single HTML files in each game's `builds/` folder. Open one in any browser (phone width is the target). On GitHub, `.html` shows as source, so download the file or play it in the JustAskJoe Lab (https://jaj-forge.huntefl.workers.dev/lab, sign in with your email).
 
 ## 3. Make a change
 We each have about 10 hours a week, often at odd times, so changes go through a short-lived branch and a pull request. That way nobody overwrites anyone, and the other person sees what changed.
@@ -77,7 +77,7 @@ Every pull request runs **Build and test** on GitHub. You'll see a yellow dot, t
 - **It always:** scans for anything that looks like a key or token (the repo is public).
 - **When Tower Defense or `kit/` changes,** it also runs the full `build-and-test.py` (build, balance band, co-op server tests, phone test) and confirms the committed build matches the source.
 - **A red X blocks merging.** Click "Details" to see why; the error line says what to do. Or ask Claude: "the check failed on my PR, fix it."
-- **Preview links:** the check posts a comment on the pull request with a link to play your branch on the Lab (today `onefiftylabs.co/lab/<game>@<branch>/`, set by the `LAB_URL` repo variable) (behind the site password). It updates within about a minute of each push, so teammates can play a change before it merges.
+- **Preview links:** the check posts a comment on the pull request with a link to play your branch on the Lab (`https://jaj-forge.huntefl.workers.dev/lab/<game>@<branch>/`, set by the `LAB_URL` repo variable; sign in with your email). It updates within about a minute of each push, so teammates can play a change before it merges.
 - **Guard (accident protection):** a second check, **Guard**, flags pull requests that delete or move a game's build, `pitch/`, `handoff.md`, patch notes, anything in `kit/`, or the top-level docs, or that change CI or `CLAUDE.md`, or that remove most of a big file. Those need **another teammate's approval** before they can merge: Files changed → Review changes → Approve. Everything else merges as soon as it's green.
 - **Nothing is ever truly lost.** `main` can't be force-pushed or deleted, so every version stays in Git history. To undo a merged change, open a pull request that reverts it (on the pull request page, click **Revert**).
 - **Turning on protection (repo admin, once):** GitHub → `JustAskJoe/games` → Settings → Branches → Add branch protection rule. Branch name `main`. Tick "Require a pull request before merging" (set required approvals to 0), "Require status checks to pass" (search for and add **Build and test**), and "Do not allow bypassing the above settings". Save.

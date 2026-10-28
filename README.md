@@ -46,7 +46,7 @@ Most builds are single HTML files. Open `builds/*.html` in a browser, or run a p
 | Hexed | [`hexed/builds/hexed.html`](hexed/builds/hexed.html) |
 | Neon Surf | [`neon-surf/builds/neon-surf.html`](neon-surf/builds/neon-surf.html) |
 
-GitHub shows `.html` files as source, so download the file (with its `img/` folder where there is one) and open it locally to play. Tower Defense is also playable on the Lab page of [onefiftylabs.co](https://onefiftylabs.co).
+GitHub shows `.html` files as source, so download the file (with its `img/` folder where there is one) and open it locally to play. Every build is also playable in the [JustAskJoe Lab](https://jaj-forge.huntefl.workers.dev/lab) (email sign-in for the crew).
 
 ## Rights
 

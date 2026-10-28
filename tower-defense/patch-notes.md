@@ -23,7 +23,7 @@ Docs only, no build change.
 
 ### Watch out
 - [ ] The Artist's scheduled tasks and Studio HQ still name `onefiftylabs/games` until they're switched to the JustAskJoe ones.
-- [ ] Preview links still go to onefiftylabs.co/lab (the `LAB_URL` repo variable). Changing it to a JustAskJoe Lab needs that Lab to exist first.
+- [x] Preview links still go to onefiftylabs.co/lab (the `LAB_URL` repo variable). Changing it to a JustAskJoe Lab needs that Lab to exist first. (done Oct 28: the JustAskJoe Lab is live at https://jaj-forge.huntefl.workers.dev/lab; LAB_URL points there)
 
 ## 1.1 · Oct 28, 2026 · Hunter (with Claude)
 Art only, no build change.

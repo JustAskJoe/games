@@ -186,7 +186,7 @@ Why not a second coder? Small teams usually neglect marketing until it's too lat
 
 | What | Where | Who can use it today |
 |---|---|---|
-| Lab (playable builds) | onefiftylabs.co/lab (password-protected for now) | Anyone with the password |
+| Lab (playable builds) | https://jaj-forge.huntefl.workers.dev/lab (email sign-in, same as Forge) | People on the Forge sign-in list |
 | Forge (pitch questionnaire) | JustAskJoe Forge (link in `studio.json`), sign-in by email code | People on the Forge invite list |
 | Games, decks, design docs (public) | GitHub `JustAskJoe/games` | Everyone can read; the **games** team can push |
 | Private game work | GitHub `onefiftylabs/games-private` | Collaborators Hunter adds |
@@ -211,7 +211,7 @@ Why not a second coder? Small teams usually neglect marketing until it's too lat
 1. **Make a GitHub account** (if you don't have one) and send Hunter your username. Hunter adds you to the **games** team in the `JustAskJoe` GitHub org. Accept the email invite.
 2. **Connect GitHub in your own Claude** (Settings → Connectors) and allow the `JustAskJoe` repos.
 3. **Paste the "Initial setup" prompt** from [CONTRIBUTING.md](CONTRIBUTING.md), step 1. Claude checks your access, gives you a tour and hands you your start-work and end-work prompts.
-4. **Play Tower Defense** at onefiftylabs.co/lab/tower-defense/ (Hunter sends the site password separately). Finish a run and tap **Give feedback**.
+4. **Play Tower Defense** at https://jaj-forge.huntefl.workers.dev/lab/tower-defense/ (sign in with the email Hunter added to the list). Finish a run and tap **Give feedback**.
 5. **Read** `tower-defense/design/handoff.md` and this doc.
 6. **Bring your take on "Decide these first"** (section 1) to the first check-in, especially ownership and money, and which lane you'd want.
 
