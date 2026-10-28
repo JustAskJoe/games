@@ -8,6 +8,25 @@ Say **"add to patch notes"** to Claude any time to add to the top entry. Claude 
 
 ---
 
+## 1.1 · Oct 28, 2026 · Artist agent (with Claude)
+Art only, no build change.
+
+### What's new
+- **Arrow tower concepts (#9), the painted vs pixel test.** Brief in `art/briefs/9-arrow-tower.md`; two concept sheets, `art/concepts/9-A.svg` (painted) and `art/concepts/9-B.svg` (pixel, 40 × 48 at 2x). Each shows the tower at 1x and 3x on grass and road, the button, a board scene, base / Pierce II / Multishot II, and the palette.
+- Three Canva painted roughs, linked in the pull request (not committed).
+
+### Next up
+- [ ] Crew: open both sheets on a phone and reply `Pick: A` or `Pick: B` on the concepts pull request (this is the painted vs pixel call).
+- [ ] Whoever picks: record the answer in `art/art-direction.md` (`final_art_source`) and `design/handoff.md`, and fill the cost table so the next run can price finals.
+
+### Watch out
+- [ ] Sheets were checked only in headless Chromium (desktop and a 390 px phone viewport), not on a real iPhone or Android.
+- [ ] The pixel sheet (B) is a quick hand-set sketch of the same shapes, not polished pixel art: the Pierce bolt and the Multishot arrow fan are muddy at 40 × 48. Judge the style, not the pixel cleanup.
+- [ ] Multishot mechanically **fires twice as fast** (`prototype/engine.js`), but the issue asked it to *look* spread and busy, so the sheets show a fan of arrows. Players may read that as "hits several targets". Worth a name or art check.
+- [ ] The Canva roughs are much more detailed than an 80 px cell can show, and roughs A and B came out almost the same (pixel B's rough is softly "pixel-ish", not true 2x pixels). Use the SVG sheets for the phone comparison.
+- [ ] No cost estimate in dollars or credits: `final_art_source` is `undecided` and the cost table is empty. Count only: about 5 generations (4 images + 25%).
+- [ ] Brief reference links (Wikimedia Commons categories) weren't opened by the agent; check they still resolve.
+
 ## 1.1 · Oct 28, 2026 · Hunter (with Claude)
 Art only, no build change.
 
@@ -18,11 +37,11 @@ Art only, no build change.
 
 ### Next up
 - [ ] @Hunter: create the labels and the Concepts routine (steps in `kit/agents/README.md`).
-- [ ] @Hunter: open the first art request: Arrow tower, one painted and one pixel direction.
+- [x] @Hunter: open the first art request: Arrow tower, one painted and one pixel direction. (done Oct 28, Hunter: issue #9)
 - [ ] Crew: pick painted or pixel finals from the first concept sheets, then record it in `art/art-direction.md` and `design/handoff.md`.
 
 ### Watch out
-- [ ] The agent hasn't run yet. The first concepts run is the real test of the SVG sheets and the Canva links.
+- [x] The agent hasn't run yet. The first concepts run is the real test of the SVG sheets and the Canva links. (done Oct 28, Artist agent: first run on #9; see its entry above)
 - [ ] Canva roughs are links only: cloud runs can't fetch full-size Canva images (see `kit/art/README.md`).
 - [ ] The `#td-studio` Slack channel may not exist; the agent skips Slack if it doesn't.
 - [ ] The final-art cost table in `art/art-direction.md` is empty until a source is chosen.
