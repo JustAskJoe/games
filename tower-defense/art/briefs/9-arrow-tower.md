@@ -19,4 +19,4 @@
   - Wikimedia Commons, timber-framed watchtowers: https://commons.wikimedia.org/wiki/Category:Wooden_watchtowers
   - Wikimedia Commons, conical slate roofs: https://commons.wikimedia.org/wiki/Category:Conical_roofs
   - Wikimedia Commons, ballistas (for Pierce): https://commons.wikimedia.org/wiki/Category:Ballistae
-- Estimate: **source undecided.** `final_art_source` is `undecided` and the cost table in `art-direction.md` has no numbers yet, so no dollar or credit figure is possible. What final art needs, whichever source wins: 3 tower states + 1 button = **4 images**, plus 25% for retries ≈ **5 generations** (or, for a commission, 4 finished pieces). Painted finals export at 160 × 192; pixel finals are 40 × 48 sources.
+- Estimate: **source: Canva** (picked Oct 28, 2026; painted won). Finals are 3 tower states + 1 button = **4 images**, plus 25% for retries ≈ **5 Canva generations**, exported at 160 × 192 with transparent backgrounds. No dollar or credit figure yet: Canva's cost each isn't in the cost table in `art-direction.md`.
