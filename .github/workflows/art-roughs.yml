@@ -1,0 +1,44 @@
+# Art roughs: makes the Artist agent's painted concept roughs for free with Cloudflare
+# Workers AI, then commits them back to the Artist's branch.
+# © 2026 F Lane d/b/a One Fifty Labs · All rights reserved
+#
+# Runs when an art/** branch adds or changes a <game>/art/concepts/*-roughs.json request
+# (see kit/art/roughs.py and kit/agents/artist.md). Never runs on or commits to main.
+# Commits made with GITHUB_TOKEN don't start other workflows, so this can't loop.
+name: Art roughs
+
+on:
+  push:
+    branches: ["art/**"]
+    paths: ["*/art/concepts/*-roughs.json"]
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: art-roughs-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  roughs:
+    name: Make painted roughs
+    if: github.ref != 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Make the roughs (Workers AI, Flux Schnell)
+        env:
+          ART_KEY: ${{ secrets.ART_KEY }}
+        run: python3 kit/art/roughs.py
+
+      - name: Commit them to this branch
+        run: |
+          git add -- '*/art/concepts/*.jpg'
+          if git diff --cached --quiet; then echo "Nothing new to commit."; exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Add painted concept roughs (Workers AI)"
+          git push
