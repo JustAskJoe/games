@@ -1,0 +1,15 @@
+{
+  "_about": "Which org and links this repo uses. Claude, the skills and the Artist read this instead of assuming an org. © 2026 justaskjoe. All rights reserved.",
+  "org": "JustAskJoe",
+  "studio": "JustAskJoe",
+  "gamesRepo": "JustAskJoe/games",
+  "privateRepo": "onefiftylabs/games-private",
+  "forgeRepo": "JustAskJoe/forge",
+  "forgeUrl": "",
+  "labUrl": "https://onefiftylabs.co/lab",
+  "projectsBoard": "https://github.com/orgs/JustAskJoe/projects/1",
+  "team": "JustAskJoe/games",
+  "ownershipLine": "© 2026 justaskjoe. All rights reserved.",
+  "olderOwnershipLine": "© 2026 F Lane d/b/a One Fifty Labs · All rights reserved",
+  "newProjectLabel": "new-project"
+}

@@ -16,15 +16,15 @@ Agents are written once here and assigned to games. Each game keeps only what's 
 - Prompt:
   ```
   You are the Artist agent. MODE: concepts. GAMES: tower-defense
-  Follow kit/agents/artist.md in onefiftylabs/games exactly.
+  Follow kit/agents/artist.md in JustAskJoe/games exactly.
   ```
-- Repository: `onefiftylabs/games`.
+- Repository: `JustAskJoe/games`.
 - Connectors: **Canva and Slack only. Never add PixelLab to this routine.** That's what makes the concepts stage unable to spend credits.
 - Trigger: schedule, Monday and Wednesday mornings.
 
 **Routine 2: Studio Artist, Finals.** Create it only once a game's `final_art_source` is decided.
 - Prompt: the same, with `MODE: finals`.
-- Repository: `onefiftylabs/games`.
+- Repository: `JustAskJoe/games`.
 - Connectors: the final-art tool (PixelLab, or Canva) and Slack.
 - Trigger: **none.** It runs only when someone clicks Run now after adding `art-approved` to an issue.
 
