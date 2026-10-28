@@ -17,7 +17,7 @@ This is everything reusable from past builds, so each new game or app prototype 
 | `prototype-kit/art/` | **AI mood art**: Canva prompt recipe, full-resolution fetch, contact-sheet review, art reuse list | `art/README.md` |
 | `prototype-kit/snippets/` | Pieces pulled from other projects (see below) | each file's header comment |
 
-The source of record for Tower Defense now lives in the public GitHub repo `onefiftylabs/games` (`tower-defense/`); the kit copy is for starting the next game.
+The source of record for Tower Defense now lives in the public GitHub repo `JustAskJoe/games` (`tower-defense/`); the kit copy is for starting the next game.
 
 ## Snippets (from other prototypes)
 | File | From | What it gives you |

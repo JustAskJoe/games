@@ -1,11 +1,11 @@
-# Working on One Fifty Labs games
+# Working on JustAskJoe games
 
 © 2026 F Lane d/b/a One Fifty Labs · All rights reserved
 
 How to get set up and add work to this repo without stepping on each other. This applies to every game here. Each game's own README covers its specifics.
 
 ## 1. Get access and set up (once)
-1. **Get added:** Hunter adds you as a collaborator on `onefiftylabs/games` (GitHub → Settings → Collaborators). Accept the email invite.
+1. **Get added:** Hunter adds you to the **games** team in the `JustAskJoe` GitHub org, which gives write access to `JustAskJoe/games`. Accept the email invite.
 2. **Install:**
    - [Git](https://git-scm.com/downloads) and a GitHub login (GitHub Desktop is fine if you'd rather click than type)
    - [Node.js 18+](https://nodejs.org) for balance sims and multiplayer servers
@@ -17,15 +17,15 @@ How to get set up and add work to this repo without stepping on each other. This
      ```
 3. **Clone:**
    ```
-   git clone https://github.com/onefiftylabs/games.git
+   git clone https://github.com/JustAskJoe/games.git
    cd games
    ```
 
 ### Initial setup with Claude (once)
-After the invite is accepted and GitHub is connected in your own Claude (Settings → Connectors, allow the `onefiftylabs` repos), paste this into a new chat:
+After the invite is accepted and GitHub is connected in your own Claude (Settings → Connectors, allow the `JustAskJoe` repos), paste this into a new chat:
 ```
-Initial setup: I'm joining the collective to work on games in the GitHub repo onefiftylabs/games. Walk me through getting set up, one step at a time, and check each step before moving on:
-1. Confirm you can see onefiftylabs/games. If you can't, tell me exactly what I'm missing (a GitHub connection in Claude, or the collaborator invite).
+Initial setup: I'm joining the collective to work on games in the GitHub repo JustAskJoe/games. Walk me through getting set up, one step at a time, and check each step before moving on:
+1. Confirm you can see JustAskJoe/games. If you can't, tell me exactly what I'm missing (a GitHub connection in Claude, or the JustAskJoe org invite).
 2. Clone it and confirm you can push: push a test branch named <my name>/setup-check, then delete it.
 3. Read HOW-WE-WORK.md, CLAUDE.md, CONTRIBUTING.md, README.md and kit/INDEX.md.
 4. Run python3 tower-defense/build-and-test.py to confirm the tools work here.
@@ -36,7 +36,7 @@ Don't change anything in the repo.
 You only run this once. After that, every session uses the start and finish prompts in section 7.
 
 ## 2. Play a build
-Builds are single HTML files in each game's `builds/` folder. Open one in any browser (phone width is the target). On GitHub, `.html` shows as source, so download the file or play it from the Lab page on onefiftylabs.co.
+Builds are single HTML files in each game's `builds/` folder. Open one in any browser (phone width is the target). On GitHub, `.html` shows as source, so download the file or play it in the JustAskJoe Lab (https://jaj-forge.huntefl.workers.dev/lab, sign in with your email).
 
 ## 3. Make a change
 We each have about 10 hours a week, often at odd times, so changes go through a short-lived branch and a pull request. That way nobody overwrites anyone, and the other person sees what changed.
@@ -77,17 +77,17 @@ Every pull request runs **Build and test** on GitHub. You'll see a yellow dot, t
 - **It always:** scans for anything that looks like a key or token (the repo is public).
 - **When Tower Defense or `kit/` changes,** it also runs the full `build-and-test.py` (build, balance band, co-op server tests, phone test) and confirms the committed build matches the source.
 - **A red X blocks merging.** Click "Details" to see why; the error line says what to do. Or ask Claude: "the check failed on my PR, fix it."
-- **Preview links:** the check posts a comment on the pull request with a link to play your branch on the Lab: `onefiftylabs.co/lab/<game>@<branch>/` (behind the site password). It updates within about a minute of each push, so teammates can play a change before it merges.
+- **Preview links:** the check posts a comment on the pull request with a link to play your branch on the Lab (`https://jaj-forge.huntefl.workers.dev/lab/<game>@<branch>/`, set by the `LAB_URL` repo variable; sign in with your email). It updates within about a minute of each push, so teammates can play a change before it merges.
 - **Guard (accident protection):** a second check, **Guard**, flags pull requests that delete or move a game's build, `pitch/`, `handoff.md`, patch notes, anything in `kit/`, or the top-level docs, or that change CI or `CLAUDE.md`, or that remove most of a big file. Those need **another teammate's approval** before they can merge: Files changed → Review changes → Approve. Everything else merges as soon as it's green.
 - **Nothing is ever truly lost.** `main` can't be force-pushed or deleted, so every version stays in Git history. To undo a merged change, open a pull request that reverts it (on the pull request page, click **Revert**).
-- **Turning on protection (repo admin, once):** GitHub → `onefiftylabs/games` → Settings → Branches → Add branch protection rule. Branch name `main`. Tick "Require a pull request before merging" (set required approvals to 0), "Require status checks to pass" (search for and add **Build and test**), and "Do not allow bypassing the above settings". Save.
+- **Turning on protection (repo admin, once):** GitHub → `JustAskJoe/games` → Settings → Branches → Add branch protection rule. Branch name `main`. Tick "Require a pull request before merging" (set required approvals to 0), "Require status checks to pass" (search for and add **Build and test**), and "Do not allow bypassing the above settings". Save.
 - Only Tower Defense is tested automatically so far. Other games keep their manual commands above until they're added to `.github/workflows/checks.yml`.
 
 ## 5. Rules for this repo (it's public)
 - **No secrets:** no passwords, API keys, emails, client info, revenue numbers or personal details.
 - **No licensed music, lyrics or third-party art.** Placeholder music is synthesized in code. Keep track of which assets AI made, for Steam's AI disclosure.
 - **No employer or partner work** (for example anything for Pico).
-- **Ownership line** on builds and decks: "© 2026 F Lane d/b/a One Fifty Labs · All rights reserved". No "Confidential" here; this repo is public.
+- **Ownership line** on new builds, decks and docs: "© 2026 justaskjoe. All rights reserved." No "Confidential" here; this repo is public. Older files keep their existing notice.
 - **Private work** goes in `onefiftylabs/games-private`.
 
 ## 6. Where things go
@@ -95,7 +95,7 @@ Each game gets one folder:
 ```
 <game>/
   README.md     what it is, status, how to play, how to work on it
-  pitch/        the brief and answers from Pitch Forge
+  pitch/        the brief from Forge (never people's raw answers)
   design/       handoff doc, scope, playtest notes
   deck/         pitch deck source
   prototype/    playable source (phone-first web)
@@ -109,7 +109,7 @@ Each game gets one folder:
 Claude reads [`CLAUDE.md`](CLAUDE.md) in this repo, so it already knows these rules. Use these two prompts so every session starts and ends the same way. Swap in the game's folder name (`tower-defense`, `trickbound`, …).
 
 **Starting a session.** Paste this into a new chat:
-> I'm <your name>. Work on Tower Defense in the GitHub repo `onefiftylabs/games`. Clone it, read `CLAUDE.md`, `CONTRIBUTING.md`, `tower-defense/design/handoff.md` and the top entry of `tower-defense/patch-notes.md`, run `python3 kit/open-notes.py --for <your name>`, then run `python3 tower-defense/build-and-test.py` to make sure everything passes. Tell me what state the game is in, what's waiting for me, and any open watch-outs, and wait for me before changing anything. Do all work on a branch named `<your name>/<what you're doing>` and open a pull request when it's done.
+> I'm <your name>. Work on Tower Defense in the GitHub repo `JustAskJoe/games`. Clone it, read `CLAUDE.md`, `CONTRIBUTING.md`, `tower-defense/design/handoff.md` and the top entry of `tower-defense/patch-notes.md`, run `python3 kit/open-notes.py --for <your name>`, then run `python3 tower-defense/build-and-test.py` to make sure everything passes. Tell me what state the game is in, what's waiting for me, and any open watch-outs, and wait for me before changing anything. Do all work on a branch named `<your name>/<what you're doing>` and open a pull request when it's done.
 
 **Finishing a session.** Before you stop for the day:
 > Wrap up. Run `python3 tower-defense/build-and-test.py` and fix anything it flags. Add to patch notes: what's new, next up for each person, and watch-outs for anything you noticed but didn't fix or couldn't check; tick what we finished. Update `tower-defense/design/handoff.md`: status line, any decisions we made today, and the "Next" list. Add playtest results to `design/playtest-notes.md` if we played. If we built something reusable, add it to `kit/INDEX.md`. Commit the rebuilt build with the source, push the branch and open a pull request. Then tell me in a few lines: what changed, what's next, and anything left unfinished or broken.

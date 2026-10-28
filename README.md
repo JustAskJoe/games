@@ -1,7 +1,7 @@
-# One Fifty Labs · Games
+# JustAskJoe · Games
 
-Game prototypes, pitch decks and design docs from [One Fifty Labs](https://onefiftylabs.co), a small studio in Austin, Texas.
-Every game starts as a pitch in Pitch Forge (our team questionnaire). Approved pitches get a folder here, and all the work on that game lands in it.
+Game prototypes, pitch decks and design docs from JustAskJoe, a small games collective. [One Fifty Labs](https://onefiftylabs.co) (Austin, Texas) is one of its members.
+Every game starts as a pitch in Forge (our team questionnaire). Approved pitches get a folder here, and all the work on that game lands in it.
 
 ## Games
 
@@ -46,8 +46,8 @@ Most builds are single HTML files. Open `builds/*.html` in a browser, or run a p
 | Hexed | [`hexed/builds/hexed.html`](hexed/builds/hexed.html) |
 | Neon Surf | [`neon-surf/builds/neon-surf.html`](neon-surf/builds/neon-surf.html) |
 
-GitHub shows `.html` files as source, so download the file (with its `img/` folder where there is one) and open it locally to play. Tower Defense is also playable on the Lab page of [onefiftylabs.co](https://onefiftylabs.co).
+GitHub shows `.html` files as source, so download the file (with its `img/` folder where there is one) and open it locally to play. Every build is also playable in the [JustAskJoe Lab](https://jaj-forge.huntefl.workers.dev/lab) (email sign-in for the crew).
 
 ## Rights
 
-Code, art and text here are © 2026 F Lane d/b/a One Fifty Labs. All rights reserved. The source is public so people can look, learn and play; it is not licensed for reuse. 
+Code, art and text here are © 2026 F Lane d/b/a One Fifty Labs. All rights reserved. New work added from Oct 28, 2026 is © 2026 justaskjoe. All rights reserved. The source is public so people can look, learn and play; it is not licensed for reuse. 

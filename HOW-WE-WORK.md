@@ -28,10 +28,10 @@ None of this is legal or tax advice. Ownership and money between several people 
 | Stage | What happens | Where | Done when |
 |---|---|---|---|
 | **1. Idea** | Anyone pitches anything | Chat, a note, Pitch Forge | Someone wants to pitch it properly |
-| **2. Pitch** | Everyone answers the Pitch Forge questions on their own time, so nobody anchors anyone else | onefiftylabs.co/forge | Everyone interested has answered |
+| **2. Pitch** | Everyone answers the Pitch Forge questions on their own time, so nobody anchors anyone else | JustAskJoe Forge (link in `studio.json`) | Everyone interested has answered |
 | **3. Discuss and decide** | Claude makes a discussion guide (where we agree, the calls to make, gaps). We meet and decide. | PDF, then a call | A short brief is written, with a first prototype and its pass bar |
 | **4. Crew deck** | About 12 slides, for us, not outsiders. Art direction gets 7+ slides. | Claude Slides | The crew says "approve" |
-| **5. Project folder** | The game gets its own folder in GitHub | `onefiftylabs/games/<game>/` (or the private repo) | The brief, README and handoff doc are in |
+| **5. Project folder** | The game gets its own folder in GitHub | `JustAskJoe/games/<game>/` (Forge opens the pull request when a pitch is approved) | The brief, README and handoff doc are in |
 | **6. Prototype 1** | A playable phone web build that answers one question, built from the kit | `<game>/prototype/`, playable on the Lab | It passes or fails its pass bar |
 | **7. Playtest** | We play it and friends play it; the feedback form collects answers | The Lab, `design/playtest-notes.md` | We decide: **commit, change, or shelve.** Shelving is normal; the work stays in the repo. |
 | **8. Production** | Lanes and owners, milestones, more prototypes, then a vertical slice (one finished-looking chunk) | Branches, pull requests, patch notes | Content complete |
@@ -80,7 +80,7 @@ Claude can write code, run tests, draft docs and decks, and make placeholder art
 | **Playtesters** | Friends and family first, then a small Discord. The Lab plus the in-game feedback form already collect answers. | Free; time to recruit |
 | **Reference games** | Play what we're up against: co-op tower defense, roguelite deckbuilders | The cost of a few games |
 | **Paper prototyping** | Index cards, dice, a whiteboard, for trying rules before code | A few dollars |
-| **Pitch Forge** | The questionnaire for new pitches; any member can start one | Free (runs on the site) |
+| **Pitch Forge** | The questionnaire for new pitches; any member can start one | Free (its own small Cloudflare Worker) |
 
 ### Lane 3: Look, sound and feel (art, audio, UI, marketing)
 **Skills:** illustration or art direction, animation, UI layout, music or sound, video editing. Probably the lane most likely to need outside help.
@@ -186,8 +186,9 @@ Why not a second coder? Small teams usually neglect marketing until it's too lat
 
 | What | Where | Who can use it today |
 |---|---|---|
-| Website, Lab (playable builds), Pitch Forge | onefiftylabs.co (password-protected for now) | Anyone with the password |
-| Games, decks, design docs (public) | GitHub `onefiftylabs/games` | Everyone can read; collaborators can push |
+| Lab (playable builds) | https://jaj-forge.huntefl.workers.dev/lab (email sign-in, same as Forge) | People on the Forge sign-in list |
+| Forge (pitch questionnaire) | JustAskJoe Forge (link in `studio.json`), sign-in by email code | People on the Forge invite list |
+| Games, decks, design docs (public) | GitHub `JustAskJoe/games` | Everyone can read; the **games** team can push |
 | Private game work | GitHub `onefiftylabs/games-private` | Collaborators Hunter adds |
 | Website source | GitHub `onefiftylabs/onefiftylabs-site` (private) | Hunter, for now |
 | Feedback and pitch answers | The site's database (Cloudflare) | Read through Claude |
@@ -207,10 +208,10 @@ Why not a second coder? Small teams usually neglect marketing until it's too lat
 ---
 
 ## 7. Today: getting Joe and Zach set up
-1. **Make a GitHub account** (if you don't have one) and send Hunter your username. Hunter adds you to `onefiftylabs/games`. Accept the email invite.
-2. **Connect GitHub in your own Claude** (Settings → Connectors) and allow the `onefiftylabs` repos.
+1. **Make a GitHub account** (if you don't have one) and send Hunter your username. Hunter adds you to the **games** team in the `JustAskJoe` GitHub org. Accept the email invite.
+2. **Connect GitHub in your own Claude** (Settings → Connectors) and allow the `JustAskJoe` repos.
 3. **Paste the "Initial setup" prompt** from [CONTRIBUTING.md](CONTRIBUTING.md), step 1. Claude checks your access, gives you a tour and hands you your start-work and end-work prompts.
-4. **Play Tower Defense** at onefiftylabs.co/lab/tower-defense/ (Hunter sends the site password separately). Finish a run and tap **Give feedback**.
+4. **Play Tower Defense** at https://jaj-forge.huntefl.workers.dev/lab/tower-defense/ (sign in with the email Hunter added to the list). Finish a run and tap **Give feedback**.
 5. **Read** `tower-defense/design/handoff.md` and this doc.
 6. **Bring your take on "Decide these first"** (section 1) to the first check-in, especially ownership and money, and which lane you'd want.
 
