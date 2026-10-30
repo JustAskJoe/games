@@ -14,6 +14,7 @@ These pull requests change what's described below. When one merges, move its lin
 
 | PR | What changes when it merges |
 | --- | --- |
+| JustAskJoe/forge#8 | Studio HQ moves onto the **Village Engine** (One Fifty Labs) + the Studio pack. Nothing looks different. |
 | (merged and deployed Oct 30) | forge#4 **Studio home** at `/` with Forge at `/forge`; forge#5 the site side of the game list; forge#6 the **Studio village** (the home drawn as a map of department buildings, each agent with a desk); forge#7 names the village Studio HQ and the claude.ai page the Art Cottage. Live now; delete this row when this PR merges. |
 | JustAskJoe/games#15 | **One game list:** `games.json` in this repo. The Lab, the Studio home and the preview links read it, so adding a game is one entry here. Fixes the "two places" gap in section 8. (Its Forge half, forge#5, is merged; until this merges the site uses its built-in list of the same games.) |
 | JustAskJoe/games#16 | **Producer, stage 1:** a free weekly digest issue every Monday 8am Central (`weekly-digest.yml`, `kit/agents/digest.js`). Design and reasoning in `kit/agents/producer.md`. |
@@ -25,7 +26,8 @@ These pull requests change what's described below. When one merges, move its lin
 | --- | --- | --- | --- |
 | **games repo** | Every game, deck, design doc and the shared kit | github.com/JustAskJoe/games (public) | GitHub, JustAskJoe org |
 | **Studio HQ (the village)** | The crew's front door, drawn as a village: Town Hall, the Forge, Art Cottage, Workshop, Arcade, Town Square, and owners-only Law Office and Supply Shed, each with a live count of what's waiting on a person | https://jaj-forge.huntefl.workers.dev (same Worker as Forge) | Same as Forge |
-| **Forge** | Pitch questionnaire, briefs, Approve → pull request | https://jaj-forge.huntefl.workers.dev/forge · source github.com/JustAskJoe/forge (public) | Cloudflare Worker `jaj-forge`, Hunter's Cloudflare account |
+| **Village Engine** | The village's engine (map, Agent Lane, desks, Go inside), shared with a future Idle Hands "Home" village. Studio HQ = engine + JustAskJoe's Studio pack (`src/village.json`, scenery, rooms) | owned by One Fifty Labs: github.com/onefiftylabs/village-engine (private); copy in `JustAskJoe/forge/src/vendor/` under its `LICENSE.md` (draft, lawyer to check) | Inside the Studio HQ page |
+| **Forge** | Pitch questionnaire, briefs, Approve → pull request | https://jaj-forge.huntefl.workers.dev/forge · source github.com/JustAskJoe/forge (private since Oct 30) | Cloudflare Worker `jaj-forge`, Hunter's Cloudflare account |
 | **Lab** | Plays builds from the games repo, plus branch previews | https://jaj-forge.huntefl.workers.dev/lab (same Worker as Forge) | Same as Forge |
 | **Forge database** | Pitches, everyone's answers, briefs, in-game feedback | Cloudflare D1 `jaj-forge` | Hunter's Cloudflare account |
 | **Sign-in** | Email one-time code; only listed emails get in | Cloudflare Zero Trust (free plan), policy "Forge crew" | Hunter's Cloudflare account |
@@ -142,7 +144,8 @@ sequenceDiagram
 
 | Account | Owner | Holds |
 | --- | --- | --- |
-| GitHub org `JustAskJoe` | Hunter and Zach (owners); crew via the **games** team | games, forge (team access); studio-private (owners only) |
+| GitHub org `JustAskJoe` | Hunter and Zach (owners); crew via the **games** team | games (public), forge (private; team access); studio-private (owners only) |
+| GitHub account `onefiftylabs` | Hunter (One Fifty Labs) | village-engine (private), plus One Fifty Labs' own repos |
 | Cloudflare | Hunter's personal account | Forge + Lab Worker, Forge database, sign-in |
 | claude.ai | Hunter's personal account | Art Cottage, both Artist tasks, the skills |
 | Canva, PixelLab | Hunter | Art credits (ask before spending) |
