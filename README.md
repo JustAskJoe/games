@@ -20,7 +20,7 @@ Shared building blocks (deck generator, layouts, prototype snippets, art workflo
 
 **New to the collective?** Read [HOW-WE-WORK.md](HOW-WE-WORK.md) first: how ideas become games, the lanes, the tools, and the open questions we're deciding together.
 
-**How it all fits together** (Forge, the Lab, Studio HQ, the Artist, accounts): [ARCHITECTURE.md](ARCHITECTURE.md).
+**How it all fits together** (Studio HQ, Forge, the Lab, the Art Cottage, the Artist, accounts): [ARCHITECTURE.md](ARCHITECTURE.md).
 
 **Working on a game?** Start with [CONTRIBUTING.md](CONTRIBUTING.md): setup, branches and pull requests, and the build-and-test command for each game.
 
