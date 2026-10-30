@@ -14,8 +14,8 @@ These pull requests change what's described below. When one merges, move its lin
 
 | PR | What changes when it merges |
 | --- | --- |
-| JustAskJoe/forge#4 | **Studio home** at `/`, Forge moves to `/forge` (section 3 already describes this). Needs a deploy after merging. |
-| JustAskJoe/games#15 + JustAskJoe/forge#5 | **One game list:** `games.json` in this repo. The Lab, the Studio home and the preview links read it, so adding a game is one entry here. Fixes the "two places" gap in section 8. |
+| (merged Oct 30, not deployed yet) | forge#4 **Studio home** at `/` with Forge at `/forge`; forge#5 the site side of the game list; forge#6 the **Studio village** (the home drawn as a map of department buildings, each agent with a desk). All three go live at the next deploy (section 3). |
+| JustAskJoe/games#15 | **One game list:** `games.json` in this repo. The Lab, the Studio home and the preview links read it, so adding a game is one entry here. Fixes the "two places" gap in section 8. (Its Forge half, forge#5, is merged; until this merges the site uses its built-in list of the same games.) |
 | JustAskJoe/games#16 | **Producer, stage 1:** a free weekly digest issue every Monday 8am Central (`weekly-digest.yml`, `kit/agents/digest.js`). Design and reasoning in `kit/agents/producer.md`. |
 | studio-private PR #1 | **Legal reviewer** goes live in the private repo (section 5, "All agents"). |
 
@@ -24,7 +24,7 @@ These pull requests change what's described below. When one merges, move its lin
 | Piece | What it is | Where it lives | Runs on |
 | --- | --- | --- | --- |
 | **games repo** | Every game, deck, design doc and the shared kit | github.com/JustAskJoe/games (public) | GitHub, JustAskJoe org |
-| **Studio home** | The crew's front door: Pitch / Play / Agents, what needs someone, games, pitches, agents, recent commits | https://jaj-forge.huntefl.workers.dev (same Worker as Forge) | Same as Forge |
+| **Studio home (the village)** | The crew's front door, drawn as a village: Town Hall, the Forge, Art Cottage, Workshop, Arcade, Town Square, and owners-only Law Office and Supply Shed, each with a live count of what's waiting on a person | https://jaj-forge.huntefl.workers.dev (same Worker as Forge) | Same as Forge |
 | **Forge** | Pitch questionnaire, briefs, Approve → pull request | https://jaj-forge.huntefl.workers.dev/forge · source github.com/JustAskJoe/forge (public) | Cloudflare Worker `jaj-forge`, Hunter's Cloudflare account |
 | **Lab** | Plays builds from the games repo, plus branch previews | https://jaj-forge.huntefl.workers.dev/lab (same Worker as Forge) | Same as Forge |
 | **Forge database** | Pitches, everyone's answers, briefs, in-game feedback | Cloudflare D1 `jaj-forge` | Hunter's Cloudflare account |
