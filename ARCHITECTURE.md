@@ -2,11 +2,21 @@
 
 © 2026 justaskjoe. All rights reserved.
 
-Written Oct 28, 2026, when the collective's game work moved from One Fifty Labs to the `JustAskJoe` GitHub org; updated Oct 30 for the Studio home and the GitHub suspension. It describes how things run today, including the parts that still depend on Hunter's personal accounts. **Keep it current:** any pull request that changes how something here works updates this file in the same pull request (see "Keeping this doc current" at the end).
+Written Oct 28, 2026, when the collective's game work moved from One Fifty Labs to the `JustAskJoe` GitHub org; updated Oct 30 for the Studio home, the GitHub suspension, the shared game list and the Producer. Tower Defense's original pitch (answers and brief) was copied into the JustAskJoe Forge on Oct 30. It describes how things run today, including the parts that still depend on Hunter's personal accounts. **Keep it current:** any pull request that changes how something here works updates this file in the same pull request (see "Keeping this doc current" at the end).
 
 ## In one paragraph
 
 The crew's front door is the **Studio** home (https://jaj-forge.huntefl.workers.dev), one signed-in page that shows what needs someone, every game, the pitch pipeline, the agents and recent changes. Game ideas start in **Forge** (`/forge` on the same site), a small website where everyone answers a pitch questionnaire on their own. When the crew approves a pitch, Forge opens a pull request that adds the game's folder to **`JustAskJoe/games`**, the public repo where all game work lives. Playable builds in that repo show up in the **Lab** (on the same site as Forge, behind the same email sign-in), including a "play this branch" link on every pull request. Art requests go to the **Artist**, a Claude agent that runs on a schedule, drafts free concept sheets as pull requests, and reports to **Studio HQ**, a claude.ai page where the crew picks and votes. GitHub is the record of truth; everything else is a view or a helper.
+
+## In review right now (Oct 30, 2026)
+
+These pull requests change what's described below. When one merges, move its line into the matching section and delete it here.
+
+| PR | What changes when it merges |
+| --- | --- |
+| JustAskJoe/forge#4 | **Studio home** at `/`, Forge moves to `/forge` (section 3 already describes this). Needs a deploy after merging. |
+| JustAskJoe/games#15 + JustAskJoe/forge#5 | **One game list:** `games.json` in this repo. The Lab, the Studio home and the preview links read it, so adding a game is one entry here. Fixes the "two places" gap in section 8. |
+| JustAskJoe/games#16 | **Producer, stage 1:** a free weekly digest issue every Monday 8am Central (`weekly-digest.yml`, `kit/agents/digest.js`). Design and reasoning in `kit/agents/producer.md`. |
 
 ## 1. Map
 
@@ -22,6 +32,7 @@ The crew's front door is the **Studio** home (https://jaj-forge.huntefl.workers.
 | **Artist: Concepts** | Free concept sheets for art requests | Scheduled task "JustAskJoe Artist: Concepts (Mon + Wed)" | Hunter's claude.ai plan |
 | **Artist: Finals** | Final art for approved requests (spends credits) | Scheduled task "JustAskJoe Artist: Finals" (Run now only) | Hunter's claude.ai plan + PixelLab/Canva credits |
 | **CI** | Build and test, secret scan, preview links, Guard | `.github/workflows/checks.yml`, `guard.yml` | GitHub Actions |
+| **Producer** (in review, games#16) | Monday digest issue: reviews waiting, stuck agents, art, bugs, what merged | `.github/workflows/weekly-digest.yml` | GitHub Actions; no AI, no cost |
 | **Projects board** | Cross-repo to-do board | https://github.com/orgs/JustAskJoe/projects/1 | GitHub |
 | **Org settings file** | Which org, links and ownership line Claude should use | `studio.json` in this repo | read by Claude, skills, agents |
 
@@ -141,7 +152,6 @@ This is fine for now ("Where do the shared accounts live?" in HOW-WE-WORK). It m
 - **Forge doesn't auto-deploy.** Merging a Forge PR changes nothing live until someone runs `npx wrangler deploy`.
 - **The Lab's game list is hardcoded in two places:** `GAMES` in `forge/src/lab.js` (+ a card in `lab.html`) and the `LAB` map in this repo's `checks.yml` (preview links). They can drift.
 - **Free painted roughs** (open PR #11) would call an endpoint on the One Fifty Labs website and need an `ART_KEY` secret here.
-- **Old pitch data:** Tower Defense's original pitch answers live in One Fifty Labs' Pitch Forge, not here.
 - **The deck and prototype kit also exist in Hunter's claude.ai Project "AI Games".** The repo's `kit/` is the copy the crew uses; the two can drift.
 - **The Artist has no automated tests.** Each real run is the test.
 
@@ -150,7 +160,7 @@ This is fine for now ("Where do the shared accounts live?" in HOW-WE-WORK). It m
 | I want to... | Do this |
 | --- | --- |
 | Add a person | Hunter: invite their GitHub username to the **games** team; add their email to the "Forge crew" policy; share Studio HQ with them ("can use"). |
-| Add a game to the Lab | PR in `JustAskJoe/forge`: one line in `GAMES` (`src/lab.js`) and a card in `src/pages/lab.html`; deploy. PR here: add it to the `LAB` map in `.github/workflows/checks.yml` (Guard needs a second approver). |
+| Add a game to the Lab | After games#15 and forge#5: one entry in `games.json` here, nothing else. Until then: PR in `JustAskJoe/forge`: one line in `GAMES` (`src/lab.js`) and a card in `src/pages/lab.html`; deploy. PR here: add it to the `LAB` map in `.github/workflows/checks.yml` (Guard needs a second approver). |
 | Change Forge or the Lab | Branch + PR in `JustAskJoe/forge`, `npm test` and `npm run check` pass, merge, deploy. |
 | Change what the Studio says about an agent | Edit `AGENTS` in `forge/src/studio.js`, PR, deploy. |
 | If a GitHub account is suspended | The owner appeals at support.github.com ("reinstatement request"). Meanwhile the other org owner keeps the org running; Forge and the Lab stay up (Cloudflare), but Approve can't open PRs if the token belongs to the suspended account. |
