@@ -2,7 +2,7 @@
 
 © 2026 justaskjoe. All rights reserved.
 
-Written Oct 28, 2026, when the collective's game work moved from One Fifty Labs to the `JustAskJoe` GitHub org; updated Oct 30 for the Studio home, the GitHub suspension, the shared game list and the Producer. Tower Defense's original pitch (answers and brief) was copied into the JustAskJoe Forge on Oct 30. It describes how things run today, including the parts that still depend on Hunter's personal accounts. **Keep it current:** any pull request that changes how something here works updates this file in the same pull request (see "Keeping this doc current" at the end).
+Written Oct 28, 2026, when the collective's game work moved from One Fifty Labs to the `JustAskJoe` GitHub org; updated Oct 30 for the Studio home, the GitHub suspension, the shared game list, the Producer, the private repo and the agent roster. Tower Defense's original pitch (answers and brief) was copied into the JustAskJoe Forge on Oct 30. It describes how things run today, including the parts that still depend on Hunter's personal accounts. **Keep it current:** any pull request that changes how something here works updates this file in the same pull request (see "Keeping this doc current" at the end).
 
 ## In one paragraph
 
@@ -17,6 +17,7 @@ These pull requests change what's described below. When one merges, move its lin
 | JustAskJoe/forge#4 | **Studio home** at `/`, Forge moves to `/forge` (section 3 already describes this). Needs a deploy after merging. |
 | JustAskJoe/games#15 + JustAskJoe/forge#5 | **One game list:** `games.json` in this repo. The Lab, the Studio home and the preview links read it, so adding a game is one entry here. Fixes the "two places" gap in section 8. |
 | JustAskJoe/games#16 | **Producer, stage 1:** a free weekly digest issue every Monday 8am Central (`weekly-digest.yml`, `kit/agents/digest.js`). Design and reasoning in `kit/agents/producer.md`. |
+| studio-private PR #1 | **Legal reviewer** goes live in the private repo (section 5, "All agents"). |
 
 ## 1. Map
 
@@ -33,6 +34,7 @@ These pull requests change what's described below. When one merges, move its lin
 | **Artist: Finals** | Final art for approved requests (spends credits) | Scheduled task "JustAskJoe Artist: Finals" (Run now only) | Hunter's claude.ai plan + PixelLab/Canva credits |
 | **CI** | Build and test, secret scan, preview links, Guard | `.github/workflows/checks.yml`, `guard.yml` | GitHub Actions |
 | **Producer** (in review, games#16) | Monday digest issue: reviews waiting, stuck agents, art, bugs, what merged | `.github/workflows/weekly-digest.yml` | GitHub Actions; no AI, no cost |
+| **Private repo** | Notes and agreements that shouldn't be public, and the legal reviewer | github.com/JustAskJoe/studio-private (private, owners only; others added by name) | GitHub, JustAskJoe org |
 | **Projects board** | Cross-repo to-do board | https://github.com/orgs/JustAskJoe/projects/1 | GitHub |
 | **Org settings file** | Which org, links and ownership line Claude should use | `studio.json` in this repo | read by Claude, skills, agents |
 
@@ -97,7 +99,7 @@ test/                Offline tests (npm test): sign-in checks, approve → PR, L
 - **Protection ("Main" rule set):** no deleting or force-pushing `main`; every change is a pull request; required checks **Build and test** and **Guard**.
 - **Guard** (`guard.yml`) fails a PR that deletes builds, `pitch/`, `handoff.md`, patch notes, `kit/` or the top-level docs, or that edits `.github/` or `CLAUDE.md`, until someone other than the author approves it.
 - **Checks** (`checks.yml`) scans for secrets, runs Tower Defense's build-and-test when that game, `kit/` or CI changes, and posts "Play this branch" links (base address from the `LAB_URL` repo variable).
-- **Access:** the **games** team (write) in the JustAskJoe org. Org owners: Hunter (`onefiftylabs`) and Zach (`savagezcs`).
+- **Access:** the **games** team (write) in the JustAskJoe org. Org owners: Hunter (`onefiftylabs`) and Zach (`savagezcs`). Org members get **no access by default** (set Oct 30), so a private repo is visible only to owners and people added to it by name.
 - **Labels:** one `game:<folder>` per game; `agent:art`, `art:review`, `art-approved`, `art:done`, `needs-human` (the Artist's state machine); `new-project` (Forge approvals); `playtest`, `pitch`.
 - **Templates:** issue forms (Bug in a game, Art request) and a PR checklist in `.github/`.
 - **Co-op server** (`tower-defense/server/`): runs locally only (`npm start`); not deployed anywhere yet.
@@ -125,11 +127,22 @@ sequenceDiagram
 - **Studio HQ data** (the page's own database): `desks` (the Artist's status), `inbox` (things to pick), `requests` (crew asks), `log`, `votes`. Crew members with "can use" access can ask and vote; only Hunter can wake the Artist or send picks, because those buttons use his claude.ai account.
 - **Adding a game to the Artist:** add `art/art-direction.md` and `design/ai-assets.md` to the game, make sure its `game:<folder>` label exists, add it to `PROJECTS:` in both task prompts, and add it to HQ's game list (page code).
 
+### All agents (Oct 30, 2026)
+
+| Agent | Kind | Status | When it runs |
+| --- | --- | --- | --- |
+| Artist: Concepts | Claude, scheduled task | Live | Mon + Wed 8:17am Central |
+| Artist: Finals | Claude, scheduled task | Live | Run now only (spends credits) |
+| Guard, Checks | GitHub Actions, no AI | Live | Every pull request |
+| Producer | GitHub Actions, no AI (stage 1) | In review (games#16) | Monday 8am Central |
+| Legal reviewer | Claude Code agent (`.claude/agents/legal-reviewer.md` in `studio-private`) | In review (studio-private PR #1) | When someone asks; first-pass review of an agreement, 🟢/🟡/🔴; not a lawyer, never signs |
+| Engineer, Playtester, Balance | Not designed yet | Planned | Probably on-demand Claude Code agents, like the legal reviewer |
+
 ## 6. Accounts and who controls what
 
 | Account | Owner | Holds |
 | --- | --- | --- |
-| GitHub org `JustAskJoe` | Hunter and Zach (owners); crew via the **games** team | games, forge |
+| GitHub org `JustAskJoe` | Hunter and Zach (owners); crew via the **games** team | games, forge (team access); studio-private (owners only) |
 | Cloudflare | Hunter's personal account | Forge + Lab Worker, Forge database, sign-in |
 | claude.ai | Hunter's personal account | Studio HQ, both Artist tasks, the skills |
 | Canva, PixelLab | Hunter | Art credits (ask before spending) |
@@ -159,7 +172,8 @@ This is fine for now ("Where do the shared accounts live?" in HOW-WE-WORK). It m
 
 | I want to... | Do this |
 | --- | --- |
-| Add a person | Hunter: invite their GitHub username to the **games** team; add their email to the "Forge crew" policy; share Studio HQ with them ("can use"). |
+| Add a person | Hunter: invite their GitHub username to the **games** team; add their email to the "Forge crew" policy; share Studio HQ with them ("can use"). They don't see `studio-private` unless an owner adds them there (repo Settings → Collaborators and teams). |
+| Review an agreement before signing | In `studio-private`: put it in `legal/agreements/`, then ask Claude Code "Use the legal-reviewer agent on <file>. It's for: <one line>." See `legal/README.md` there for when a real lawyer is needed. |
 | Add a game to the Lab | After games#15 and forge#5: one entry in `games.json` here, nothing else. Until then: PR in `JustAskJoe/forge`: one line in `GAMES` (`src/lab.js`) and a card in `src/pages/lab.html`; deploy. PR here: add it to the `LAB` map in `.github/workflows/checks.yml` (Guard needs a second approver). |
 | Change Forge or the Lab | Branch + PR in `JustAskJoe/forge`, `npm test` and `npm run check` pass, merge, deploy. |
 | Change what the Studio says about an agent | Edit `AGENTS` in `forge/src/studio.js`, PR, deploy. |
