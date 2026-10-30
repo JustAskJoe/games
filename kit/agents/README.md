@@ -14,10 +14,10 @@ Agents are written once here and assigned to games. Each game keeps only what's 
 
 **Labels** (create once in this repo, under Issues → Labels): `agent:art`, `art:review`, `art-approved`, `art:done`, `needs-human`, plus one `game:<folder>` per assigned game (`game:tower-defense`).
 
-**Her two shifts** are Claude scheduled tasks on Hunter's account (Claude sidebar → Scheduled):
-- **Studio Artist: Concepts (Mon + Wed)**: runs by itself Monday and Wednesday at 7:47am Central, `MODE: concepts`. Free. Its PixelLab connector should be switched off in the task's settings, so it can't spend credits even by mistake.
-- **Studio Artist: Finals (button only, spends credits)**: no schedule; runs only when someone clicks Run now after adding `art-approved` to an issue. `MODE: finals`.
+**Her two shifts** are Claude scheduled tasks on Hunter's claude.ai account (Claude sidebar → Scheduled), started or paused from Studio HQ:
+- **JustAskJoe Artist: Concepts (Mon + Wed)**: runs by itself Monday and Wednesday at 8:17am Central, `MODE: concepts`. Free. Connectors: Canva, Slack, Claude Code Remote. **Never add PixelLab to this task**; that's what makes the concepts stage unable to spend credits.
+- **JustAskJoe Artist: Finals**: no schedule; runs only when someone clicks Run now after adding `art-approved` to an issue. `MODE: finals`. Connectors: the final-art tool (PixelLab or Canva) and Slack.
 
-Both prompts tell a fresh cloud session to attach this repo, read `kit/agents/artist.md`, and work only on the games named after `GAMES:`.
+Both prompts tell a fresh cloud session to attach `JustAskJoe/games`, read `kit/agents/artist.md`, and work only on the projects named after `PROJECTS:` (today `JustAskJoe/games:tower-defense`).
 
-**Assigning another game:** give it an `art/art-direction.md` (copy Tower Defense's and change it), a `design/ai-assets.md`, and a `game:<folder>` label, then add the folder to `GAMES:` in both scheduled-task prompts, comma-separated.
+**Assigning another game:** give it an `art/art-direction.md` (copy Tower Defense's and change it), a `design/ai-assets.md`, and a `game:<folder>` label, then add it to `PROJECTS:` in both scheduled-task prompts, comma-separated (and to Studio HQ's game list).

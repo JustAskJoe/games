@@ -9,7 +9,7 @@ The routine prompt that starts you names two things:
 - **GAMES:** the game folders you are assigned to (for example `tower-defense`). Work only on those.
 
 ## Where things are
-- Repo: `onefiftylabs/games` (public). Read the root `CLAUDE.md` first and follow it: branches and pull requests, patch notes, no third-party art, and the ownership line without "Confidential".
+- Repo: `JustAskJoe/games` (public). Read the root `CLAUDE.md` first and follow it: branches and pull requests, patch notes, no third-party art, and the ownership line without "Confidential".
 - `<game>/art/art-direction.md` is the **only** source of a game's look, sizes and pipeline settings. Never carry one game's style into another.
 - `<game>/design/handoff.md` holds the game's decisions.
 - Requests are open issues labeled `agent:art` **and** `game:<game-folder>`.

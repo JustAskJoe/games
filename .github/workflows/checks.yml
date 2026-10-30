@@ -78,6 +78,7 @@ jobs:
         uses: actions/github-script@v7
         env:
           DIRS: ${{ steps.changed.outputs.dirs }}
+          LAB_URL: ${{ vars.LAB_URL || 'https://jaj-forge.huntefl.workers.dev/lab' }}
         with:
           script: |
             // games the Lab can play (keep in sync with GAMES in the site's src/lab.js)
@@ -86,8 +87,8 @@ jobs:
             if (!changed.length) { core.info('No playable game changed; no preview comment.'); return; }
             const branch = context.payload.pull_request.head.ref;
             const marker = '<!-- lab-preview -->';
-            const links = changed.map((g) => `- **${LAB[g]}:** https://onefiftylabs.co/lab/${g}@${encodeURIComponent(branch)}/`).join('\n');
-            const body = `${marker}\n### Play this branch\n${links}\n\nBehind the site password. Updates within about a minute of each push. Only works once the rebuilt build is committed (the check above confirms it).`;
+            const links = changed.map((g) => `- **${LAB[g]}:** ${process.env.LAB_URL}/${g}@${encodeURIComponent(branch)}/`).join('\n');
+            const body = `${marker}\n### Play this branch\n${links}\n\nBehind the Forge email sign-in. Updates within about a minute of each push. Only works once the rebuilt build is committed (the check above confirms it).`;
             const { owner, repo } = context.repo; const issue_number = context.payload.pull_request.number;
             const comments = await github.paginate(github.rest.issues.listComments, { owner, repo, issue_number });
             const mine = comments.find((c) => c.body && c.body.includes(marker));

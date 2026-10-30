@@ -9,7 +9,7 @@ A co-op roguelite tower defense from Hunter and Joe at One Fifty Labs. Draft a d
 **New here? Read [`design/handoff.md`](design/handoff.md) first.** It has every decision so far, the art direction and what's next, on one page. Setup and how we use branches are in [`../CONTRIBUTING.md`](../CONTRIBUTING.md).
 
 ## Play it
-- `builds/tower-defense-p1.html`: download and open in any browser, phone first. Also on the Lab page of onefiftylabs.co.
+- `builds/tower-defense-p1.html`: download and open in any browser, phone first. Also in the JustAskJoe Lab: https://jaj-forge.huntefl.workers.dev/lab/tower-defense/
 - **Testing late waves?** Menu → **Tester tools** → Jump to wave 7 or 10. The bot plays the earlier waves so you land on a fair board.
 - After a run, tap **Give feedback**. Results go in [`design/playtest-notes.md`](design/playtest-notes.md).
 
