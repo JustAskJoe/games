@@ -81,8 +81,10 @@ jobs:
           LAB_URL: ${{ vars.LAB_URL || 'https://jaj-forge.huntefl.workers.dev/lab' }}
         with:
           script: |
-            // games the Lab can play (keep in sync with GAMES in the site's src/lab.js)
-            const LAB = { 'tower-defense': 'Tower Defense', trickbound: 'Trickbound', tilebound: 'Tilebound', hexed: 'Hexed', 'neon-surf': 'Neon Surf' };
+            // games the Lab can play: games.json at the repo root (the same list the Lab reads)
+            const LAB = {};
+            try { for (const g of JSON.parse(require('fs').readFileSync('games.json', 'utf8')).games) LAB[g.dir] = g.name; }
+            catch (e) { core.warning('Could not read games.json: ' + e.message); return; }
             const changed = process.env.DIRS.trim().split(/\s+/).filter((d) => LAB[d]);
             if (!changed.length) { core.info('No playable game changed; no preview comment.'); return; }
             const branch = context.payload.pull_request.head.ref;
