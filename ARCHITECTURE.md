@@ -14,7 +14,7 @@ These pull requests change what's described below. When one merges, move its lin
 
 | PR | What changes when it merges |
 | --- | --- |
-| (merged Oct 30, not deployed yet) | forge#4 **Studio home** at `/` with Forge at `/forge`; forge#5 the site side of the game list; forge#6 the **Studio village** (the home drawn as a map of department buildings, each agent with a desk). All three go live at the next deploy (section 3). |
+| (merged and deployed Oct 30) | forge#4 **Studio home** at `/` with Forge at `/forge`; forge#5 the site side of the game list; forge#6 the **Studio village** (the home drawn as a map of department buildings, each agent with a desk). Live now; delete this row when this PR merges. |
 | JustAskJoe/games#15 | **One game list:** `games.json` in this repo. The Lab, the Studio home and the preview links read it, so adding a game is one entry here. Fixes the "two places" gap in section 8. (Its Forge half, forge#5, is merged; until this merges the site uses its built-in list of the same games.) |
 | JustAskJoe/games#16 | **Producer, stage 1:** a free weekly digest issue every Monday 8am Central (`weekly-digest.yml`, `kit/agents/digest.js`). Design and reasoning in `kit/agents/producer.md`. |
 | studio-private PR #1 | **Legal reviewer** goes live in the private repo (section 5, "All agents"). |
