@@ -2,18 +2,19 @@
 
 © 2026 justaskjoe. All rights reserved.
 
-Written Oct 28, 2026, when the collective's game work moved from One Fifty Labs to the `JustAskJoe` GitHub org. It describes how things run today, including the parts that still depend on Hunter's personal accounts. **Keep it current:** any pull request that changes how something here works updates this file in the same pull request (see "Keeping this doc current" at the end).
+Written Oct 28, 2026, when the collective's game work moved from One Fifty Labs to the `JustAskJoe` GitHub org; updated Oct 30 for the Studio home and the GitHub suspension. It describes how things run today, including the parts that still depend on Hunter's personal accounts. **Keep it current:** any pull request that changes how something here works updates this file in the same pull request (see "Keeping this doc current" at the end).
 
 ## In one paragraph
 
-Game ideas start in **Forge**, a small website where everyone answers a pitch questionnaire on their own. When the crew approves a pitch, Forge opens a pull request that adds the game's folder to **`JustAskJoe/games`**, the public repo where all game work lives. Playable builds in that repo show up in the **Lab** (on the same site as Forge, behind the same email sign-in), including a "play this branch" link on every pull request. Art requests go to the **Artist**, a Claude agent that runs on a schedule, drafts free concept sheets as pull requests, and reports to **Studio HQ**, a claude.ai page where the crew picks and votes. GitHub is the record of truth; everything else is a view or a helper.
+The crew's front door is the **Studio** home (https://jaj-forge.huntefl.workers.dev), one signed-in page that shows what needs someone, every game, the pitch pipeline, the agents and recent changes. Game ideas start in **Forge** (`/forge` on the same site), a small website where everyone answers a pitch questionnaire on their own. When the crew approves a pitch, Forge opens a pull request that adds the game's folder to **`JustAskJoe/games`**, the public repo where all game work lives. Playable builds in that repo show up in the **Lab** (on the same site as Forge, behind the same email sign-in), including a "play this branch" link on every pull request. Art requests go to the **Artist**, a Claude agent that runs on a schedule, drafts free concept sheets as pull requests, and reports to **Studio HQ**, a claude.ai page where the crew picks and votes. GitHub is the record of truth; everything else is a view or a helper.
 
 ## 1. Map
 
 | Piece | What it is | Where it lives | Runs on |
 | --- | --- | --- | --- |
 | **games repo** | Every game, deck, design doc and the shared kit | github.com/JustAskJoe/games (public) | GitHub, JustAskJoe org |
-| **Forge** | Pitch questionnaire, briefs, Approve → pull request | https://jaj-forge.huntefl.workers.dev · source github.com/JustAskJoe/forge (public) | Cloudflare Worker `jaj-forge`, Hunter's Cloudflare account |
+| **Studio home** | The crew's front door: Pitch / Play / Agents, what needs someone, games, pitches, agents, recent commits | https://jaj-forge.huntefl.workers.dev (same Worker as Forge) | Same as Forge |
+| **Forge** | Pitch questionnaire, briefs, Approve → pull request | https://jaj-forge.huntefl.workers.dev/forge · source github.com/JustAskJoe/forge (public) | Cloudflare Worker `jaj-forge`, Hunter's Cloudflare account |
 | **Lab** | Plays builds from the games repo, plus branch previews | https://jaj-forge.huntefl.workers.dev/lab (same Worker as Forge) | Same as Forge |
 | **Forge database** | Pitches, everyone's answers, briefs, in-game feedback | Cloudflare D1 `jaj-forge` | Hunter's Cloudflare account |
 | **Sign-in** | Email one-time code; only listed emails get in | Cloudflare Zero Trust (free plan), policy "Forge crew" | Hunter's Cloudflare account |
@@ -45,17 +46,22 @@ flowchart LR
 ## 3. Forge and the Lab (`JustAskJoe/forge`)
 
 ```
-src/worker.js        Routes. Checks sign-in first, then: / (Forge page), /api/* (Forge API),
-                     /lab and /lab/<game>[@<branch>]/ (Lab), /forge/api/feedback (game feedback)
+src/worker.js        Routes. Checks sign-in first, then: / (Studio home), /forge (Forge page),
+                     /api/studio (Studio data), /api/* (Forge API), /lab and /lab/<game>[@<branch>]/ (Lab),
+                     /forge/api/feedback (game feedback). Old /#p-<id> pitch links forward to /forge.
 src/access.js        Verifies Cloudflare Access's signed token on every request. If sign-in isn't
                      configured, Forge refuses everyone instead of opening up.
 src/forge-api.js     Pitches, answers, briefs, feedback, and /api/approve
 src/github.js        Approve → creates branch forge/<game>, adds 3 files, opens the PR, adds the label
-src/lab.js           Which games the Lab knows (GAMES) and how builds are fetched from GitHub
+src/lab.js           Which games the Lab knows (GAMES, with names; the Studio reads it too) and how builds are fetched
+src/studio.js        /api/studio: pitch counts + playtest notes from the database, open PRs, issues and commits from
+                     GitHub (cached 90 s; falls back to the public repo if the token is refused), and AGENTS
+                     (what each agent does and when it runs; update it when a schedule changes in Studio HQ)
+src/pages/studio.html The Studio home (one page, refreshes every minute)
 src/pages/forge.html The Forge app (one page)
 src/pages/lab.html   The Lab's game list
 migrations/          Database tables: pitches, answers, briefs, feedback
-test/                Offline tests (npm test): sign-in checks, approve → PR, Lab routing
+test/                Offline tests (npm test): sign-in checks, approve → PR, Lab routing, Studio data
 ```
 
 **Settings (Cloudflare secrets; names only, values never go in Git):**
@@ -80,7 +86,7 @@ test/                Offline tests (npm test): sign-in checks, approve → PR, L
 - **Protection ("Main" rule set):** no deleting or force-pushing `main`; every change is a pull request; required checks **Build and test** and **Guard**.
 - **Guard** (`guard.yml`) fails a PR that deletes builds, `pitch/`, `handoff.md`, patch notes, `kit/` or the top-level docs, or that edits `.github/` or `CLAUDE.md`, until someone other than the author approves it.
 - **Checks** (`checks.yml`) scans for secrets, runs Tower Defense's build-and-test when that game, `kit/` or CI changes, and posts "Play this branch" links (base address from the `LAB_URL` repo variable).
-- **Access:** the **games** team (write) in the JustAskJoe org. Hunter is an org admin.
+- **Access:** the **games** team (write) in the JustAskJoe org. Org owners: Hunter (`onefiftylabs`) and Zach (`savagezcs`).
 - **Labels:** one `game:<folder>` per game; `agent:art`, `art:review`, `art-approved`, `art:done`, `needs-human` (the Artist's state machine); `new-project` (Forge approvals); `playtest`, `pitch`.
 - **Templates:** issue forms (Bug in a game, Art request) and a PR checklist in `.github/`.
 - **Co-op server** (`tower-defense/server/`): runs locally only (`npm start`); not deployed anywhere yet.
@@ -112,7 +118,7 @@ sequenceDiagram
 
 | Account | Owner | Holds |
 | --- | --- | --- |
-| GitHub org `JustAskJoe` | Hunter (admin); crew via the **games** team | games, forge |
+| GitHub org `JustAskJoe` | Hunter and Zach (owners); crew via the **games** team | games, forge |
 | Cloudflare | Hunter's personal account | Forge + Lab Worker, Forge database, sign-in |
 | claude.ai | Hunter's personal account | Studio HQ, both Artist tasks, the skills |
 | Canva, PixelLab | Hunter | Art credits (ask before spending) |
@@ -124,11 +130,14 @@ This is fine for now ("Where do the shared accounts live?" in HOW-WE-WORK). It m
 
 **Can:** sign in to Forge and the Lab (if on the list), pitch, answer, paste briefs, approve pitches, push branches and open PRs, review and approve each other's PRs (needed for Guard), file art requests (GitHub issue with `agent:art` + `game:<folder>`, or the Studio HQ ask box), vote on art.
 
+**Zach, as an org owner, can also:** manage GitHub members, teams, repo settings and rules, so the org keeps running if Hunter's account is unavailable.
+
 **Can't (only Hunter, today):** deploy Forge/Lab changes, add people to the sign-in list, wake the Artist or send picks from Studio HQ, run Finals, spend art credits, change Cloudflare or claude.ai settings.
 
 ## 8. Known gaps and risks
 
-- **Single owner.** Cloudflare, claude.ai and art credits are Hunter's personal accounts (section 6).
+- **Single owner outside GitHub.** Cloudflare, claude.ai and art credits are Hunter's personal accounts (section 6). GitHub now has two owners.
+- **GitHub suspensions happen.** Hunter's account (created Oct 19) was suspended by GitHub's automated abuse detection Oct 28-30, 2026, right after a burst of automated setup (org transfer, teams, invites, rules, many branches and PRs). GitHub gave no specific reason and cleared it on appeal. While suspended, his PRs were hidden and Forge's `GITHUB_TOKEN` (made on his account) stopped working, so Approve could not open PRs. To lower the risk: spread bulk GitHub changes out, turn on two-factor sign-in, and move Forge to a GitHub App owned by the org instead of a personal token.
 - **Forge doesn't auto-deploy.** Merging a Forge PR changes nothing live until someone runs `npx wrangler deploy`.
 - **The Lab's game list is hardcoded in two places:** `GAMES` in `forge/src/lab.js` (+ a card in `lab.html`) and the `LAB` map in this repo's `checks.yml` (preview links). They can drift.
 - **Free painted roughs** (open PR #11) would call an endpoint on the One Fifty Labs website and need an `ART_KEY` secret here.
@@ -143,6 +152,8 @@ This is fine for now ("Where do the shared accounts live?" in HOW-WE-WORK). It m
 | Add a person | Hunter: invite their GitHub username to the **games** team; add their email to the "Forge crew" policy; share Studio HQ with them ("can use"). |
 | Add a game to the Lab | PR in `JustAskJoe/forge`: one line in `GAMES` (`src/lab.js`) and a card in `src/pages/lab.html`; deploy. PR here: add it to the `LAB` map in `.github/workflows/checks.yml` (Guard needs a second approver). |
 | Change Forge or the Lab | Branch + PR in `JustAskJoe/forge`, `npm test` and `npm run check` pass, merge, deploy. |
+| Change what the Studio says about an agent | Edit `AGENTS` in `forge/src/studio.js`, PR, deploy. |
+| If a GitHub account is suspended | The owner appeals at support.github.com ("reinstatement request"). Meanwhile the other org owner keeps the org running; Forge and the Lab stay up (Cloudflare), but Approve can't open PRs if the token belongs to the suspended account. |
 | Rotate the GitHub token | Make a new fine-grained token (same scope), paste it as the `GITHUB_TOKEN` secret on `jaj-forge`, delete the old one on GitHub. |
 | Add an agent (Producer, Playtester...) | Write `kit/agents/<role>.md`, create its labels, create its scheduled task(s) with only the connectors it needs, add a desk to Studio HQ, and document it here. |
 
