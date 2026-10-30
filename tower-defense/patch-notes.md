@@ -29,6 +29,23 @@ Art only, no build change.
 - [ ] Canva finals: cloud runs only get 199 × 112 thumbnails; full-size images need the built-in browser trick in `kit/art/README.md`, and then a background-removal step for transparent 160 × 192 exports. The finals run hasn't been tried yet.
 - [ ] Brief reference links (Wikimedia Commons categories) weren't opened by the agent; check they still resolve.
 
+## 1.1 · Oct 28, 2026 · Hunter (with Claude): repo move
+Docs only, no build change.
+
+### What's new
+- **The games repo now lives at `JustAskJoe/games`.** GitHub redirects the old `onefiftylabs/games` links, and the Lab already reads from the new home.
+- `studio.json` at the repo root names the org, Forge, the Lab and the ownership line, so Claude and the skills stop assuming `onefiftylabs`.
+- New files carry "© 2026 justaskjoe. All rights reserved." Existing notices stay as they are.
+
+### Next up
+- [ ] @Joe: point your local copy at the new home: `git remote set-url origin https://github.com/JustAskJoe/games.git`
+- [ ] @Zach: same command, if you have a local copy.
+- [x] @Hunter: fill in `forgeUrl` in `studio.json` once the JustAskJoe Forge is live. (done Oct 28: https://jaj-forge.huntefl.workers.dev)
+
+### Watch out
+- [ ] The Artist's scheduled tasks and Studio HQ still name `onefiftylabs/games` until they're switched to the JustAskJoe ones.
+- [x] Preview links still go to onefiftylabs.co/lab (the `LAB_URL` repo variable). Changing it to a JustAskJoe Lab needs that Lab to exist first. (done Oct 28: the JustAskJoe Lab is live at https://jaj-forge.huntefl.workers.dev/lab; LAB_URL points there)
+
 ## 1.1 · Oct 28, 2026 · Hunter (with Claude)
 Art only, no build change.
 
@@ -70,7 +87,7 @@ Play: onefiftylabs.co/lab/tower-defense/
 
 ### Next up
 - [ ] @Hunter @Joe: Play P1.1 (try Tester tools → wave 10 for the Warlord) and log runs in `design/playtest-notes.md`. Pass bar: both of you start a second run unprompted.
-- [ ] @Hunter: Add Joe and Zach as collaborators on `onefiftylabs/games`.
+- [x] @Hunter: Add Joe and Zach as collaborators on `onefiftylabs/games`. (done Oct 28: the repo moved to `JustAskJoe/games`; access is now the **games** team)
 - [ ] @Hunter @Joe @Zach: Pick lane owners (handoff.md → "Open: team lanes").
 - [ ] Tech lane: Make the engine call (desktop wrapper or Godot) before starting Prototype 2.
 - [x] @Hunter: Turn on branch protection for `main`. (Done Oct 19, Hunter. A direct push to `main` is now rejected.)

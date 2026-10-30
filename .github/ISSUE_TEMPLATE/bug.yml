@@ -1,0 +1,15 @@
+name: Bug in a game
+description: Something broken or confusing in a build
+labels: [bug]
+body:
+  - type: input
+    id: game
+    attributes: { label: Which game?, placeholder: tower-defense }
+    validations: { required: true }
+  - type: textarea
+    id: what
+    attributes: { label: What happened, and what did you expect?, description: Steps to get there help a lot. }
+    validations: { required: true }
+  - type: input
+    id: device
+    attributes: { label: Device and browser, placeholder: "iPhone 15, Safari" }

@@ -1,14 +1,14 @@
 # Working in this repo
 
-This repo belongs to a games collective; One Fifty Labs is one member and hosts the shared tools. How the collective works, and what's still up for debate, is in HOW-WE-WORK.md. Treat its proposals as drafts, not settled rules.
+This repo belongs to the JustAskJoe games collective (`JustAskJoe` org on GitHub). One Fifty Labs is one member. How the collective works, and what's still up for debate, is in HOW-WE-WORK.md. Treat its proposals as drafts, not settled rules.
 
-PUBLIC repo for One Fifty Labs game work. Anyone can read it, so:
+PUBLIC repo `JustAskJoe/games`. Anyone can read it, so:
 - No secrets, emails, client info, revenue numbers or personal details.
 - No licensed music, lyrics or third-party art. Those, and any game Hunter doesn't want public yet, go in the private repo `onefiftylabs/games-private`.
 - No employer or partner work (for example anything for Pico). That stays out of GitHub.
-- Ownership line on builds and decks: "© 2026 F Lane d/b/a One Fifty Labs · All rights reserved" (no "Confidential"; this repo is public). Keep a list in each game's `design/` of which assets AI made, for Steam's AI disclosure.
+- Ownership line on **new** builds, decks and docs: "© 2026 justaskjoe. All rights reserved." (no "Confidential"; this repo is public). Files that already carry "© 2026 F Lane d/b/a One Fifty Labs · All rights reserved" keep it: never rewrite an existing notice unless Hunter asks. Keep a list in each game's `design/` of which assets AI made, for Steam's AI disclosure.
 
-Layout: one folder per game (`pitch/ design/ deck/ prototype/ builds/` plus a README with status), shared tooling in `kit/`. When a pitch is approved in Pitch Forge, create `<game-slug>/` with the brief in `pitch/brief.md` and the answers in `pitch/answers.md`, add the game to the table in README.md, and commit all later work for that game there.
+Layout: one folder per game (`pitch/ design/ deck/ prototype/ builds/` plus a README with status), shared tooling in `kit/`. When a pitch is approved in the JustAskJoe Forge, Forge opens a pull request (label `new-project`) that adds `<game-slug>/` with `README.md`, `pitch/brief.md` and `patch-notes.md`. Review it, add the game to the table in README.md, merge, and commit all later work for that game there. **Never commit people's raw Forge answers**; they stay in Forge's database. (Older games have a `pitch/answers.md`; leave those as they are.)
 
 Decks follow `kit/decks/deck-outline.md` and `kit/decks/layouts.md` (7+ art slides in a full deck). Prototypes follow the phone-first web kit.
 
@@ -27,3 +27,5 @@ Before pushing, run the game's build-and-test command (table in CONTRIBUTING.md)
 - Work on a branch and open a pull request; never ask anyone to turn off protection. A pull request that Guard flags (deletions, rule or CI changes) needs another teammate's approval. Tell the person that, don't route around it.
 - Before anything you can't easily undo (deleting files or branches, renaming a build the Lab serves, changing what the Lab or site points at), stop and confirm in chat first.
 - Mistakes are recoverable from Git history: to undo a merged change, open a pull request that reverts it (`git revert`), never a force-push.
+
+**Which org.** Repo-specific names (org, Forge link, Lab link, ownership line) live in `studio.json` at the repo root. Read it instead of assuming `onefiftylabs`. The `onefiftylabs` account is Hunter's own (One Fifty Labs: the website, `onefiftylabs/games-private`, `onefiftylabs/xr-app-suite`); game work for the collective goes here.
