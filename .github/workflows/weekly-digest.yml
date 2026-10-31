@@ -1,0 +1,24 @@
+# Weekly digest: every Monday morning, one issue that is the check-in agenda (see kit/agents/producer.md).
+# © 2026 justaskjoe. All rights reserved.
+name: Weekly digest
+
+on:
+  schedule:
+    - cron: "0 13 * * 1"   # Mondays 13:00 UTC = 8am Central (7am during standard time)
+  workflow_dispatch:        # "Run workflow" button for a digest any time
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: read
+
+jobs:
+  digest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            await require('./kit/agents/digest.js').run({ github, context, core });

@@ -7,6 +7,7 @@ Agents are written once here and assigned to games. Each game keeps only what's 
 | Agent | File | Runs as | Assigned to |
 | --- | --- | --- | --- |
 | Artist | `artist.md` | Two Claude scheduled tasks: Concepts (scheduled, free) and Finals (button only, paid) | `tower-defense` |
+| Producer | `producer.md` | Stage 1: the Weekly digest workflow (`digest.js`), Mondays, free, no AI. Stage 2 (playtest summaries) is designed but off. | The whole studio |
 
 ## Artist setup
 
