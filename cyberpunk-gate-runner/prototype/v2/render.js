@@ -118,7 +118,7 @@
   // ---------- state ----------
   let renderer, scene, cam, rtS, rtA, rtB, fsScene, fsCam, fsQuad, mats = {}, W = 1, H = 1, DPR = 1, road, sky, runners, picks, drones, swarm, bikers, crate, boss, arches, rails, near, billboards, towerData = [], gates = [], parts = [], tracers = [], pts, lines, pi = 0;
   const camBase = new T.Vector3(0, 6.6, 9.2), look = new T.Vector3(), PN = 1600, TN = 90, v3 = new T.Vector3();
-  const frameMs = []; let lastPerf = 0, slowCheck = 0;
+  const frameMs = [], shocks = []; let lastPerf = 0, slowCheck = 0, shockI = 0, punch = 0, baseFov = 52, bossHp = 0, bossHit = 0;
 
   function buildRoad() {
     const m = new T.ShaderMaterial({
@@ -209,6 +209,8 @@
       fragmentShader: `varying vec3 vC; void main(){ float d = length(gl_PointCoord - .5) * 2.; gl_FragColor = vec4(vC * pow(max(1. - d, 0.), 1.6) * 2.5, 1.); }`
     })); pts.frustumCulled = false; scene.add(pts);
     const l = new T.BufferGeometry(); l.setAttribute('position', new T.BufferAttribute(new Float32Array(TN * 6), 3).setUsage(T.DynamicDrawUsage)); l.setAttribute('color', new T.BufferAttribute(new Float32Array(TN * 6), 3).setUsage(T.DynamicDrawUsage));
+    const rg = new T.RingGeometry(0.86, 1, 40);
+    for (let i = 0; i < 6; i++) { const m = new T.Mesh(rg, new T.MeshBasicMaterial({ transparent: true, blending: T.AdditiveBlending, depthWrite: false, side: T.DoubleSide, fog: false })); m.visible = false; m.frustumCulled = false; scene.add(m); shocks.push({ m, c: new T.Color(), t0: null, life: 1, size: 8, z: 0 }); }
     lines = new T.LineSegments(l, new T.LineBasicMaterial({ vertexColors: true, transparent: true, blending: T.AdditiveBlending, depthWrite: false })); lines.frustumCulled = false; scene.add(lines);
   }
 
@@ -252,7 +254,7 @@
   R.resize = function (w, h) {
     W = w; H = h; if (!R.ok) return;
     const aspect = W / H; cam.aspect = aspect;
-    cam.fov = Math.max(52, 2 * Math.atan(Math.tan(23 * Math.PI / 180) / aspect) * 180 / Math.PI); cam.updateProjectionMatrix();
+    baseFov = cam.fov = Math.max(52, 2 * Math.atan(Math.tan(23 * Math.PI / 180) / aspect) * 180 / Math.PI); cam.updateProjectionMatrix();
     pts.material.uniforms.uPx.value = H * Math.min(window.devicePixelRatio || 1, 2) * 0.09;
     setQuality(R.quality);
   };
@@ -281,6 +283,10 @@
     const c = new T.Color(col), px = wx(x), pz = wz(z), py = y == null ? 1 : y, s = speed || 6;
     for (let i = 0; i < n; i++) { const a = Math.random() * 6.283, k = Math.random() * s; parts[pi] = { t0: R.t, life: 0.35 + Math.random() * 0.35, x: px, y: py, z: pz, vx: Math.cos(a) * k, vy: Math.random() * s * 0.8, vz: Math.sin(a) * k + ZS, c, s: 0.25 + Math.random() * 0.35 }; pi = (pi + 1) % PN; }
   };
+  R.shock = function (x, z, col, size, y) {
+    const s = shocks[shockI]; shockI = (shockI + 1) % shocks.length; s.t0 = R.t; s.life = 0.55; s.size = size || 8; s.z = wz(z); s.c.set(col); s.m.position.set(wx(x), y == null ? 1 : y, s.z);
+  };
+  R.punch = function (v) { punch = Math.max(punch, v); };
   R.tracer = function (x0, x1, z1, col, y1) { if (tracers.length < TN) tracers.push({ t0: R.t, x0: wx(x0), x1: wx(x1), z1: wz(z1), y1: y1 == null ? 1 : y1, c: new T.Color(col) }); };
 
   function drawCity(t) {
@@ -310,7 +316,7 @@
       else if (e.kind === 'swarm') { if (swarm.count < 1000) put(swarm, x, 0.55 + Math.sin(t * 9 + e.id) * 0.1, wZ, 1, t * 3 + e.id, 0, e.hp < e.maxHp ? COL.white : COL.pink, e.hp < e.maxHp ? 1.6 : 1); }
       else if (e.kind === 'biker') put(bikers, x, 0, wZ, 1.15, 0, Math.sin(t * 7 + e.id) * 0.08, e.hp < e.maxHp * 0.5 ? COL.gold : COL.red, 1);
       else if (e.kind === 'crate') put(crate, x, 0.25 + Math.sin(t * 4) * 0.1, wZ, 1.1, t * 1.4, 0, COL.gold, 1 + UF.uPulse.value * 0.6);
-      else if (e.kind === 'boss') put(boss, 0, Math.abs(Math.sin(t * 3.2)) * 0.25, wZ, 1.5, 0, 0, e.hp < e.maxHp ? '#FFD0EC' : COL.white, 1 + UF.uPulse.value * 0.3);
+      else if (e.kind === 'boss') { if (e.hp < bossHp) bossHit = 1; bossHp = e.hp; bossHit *= 0.82; put(boss, 0, Math.abs(Math.sin(t * 3.2)) * 0.25, wZ, 1.5, 0, 0, bossHit > 0.3 ? '#FFD0EC' : COL.white, 1 + UF.uPulse.value * 0.3 + bossHit * 1.6); }
     }
     [picks, drones, swarm, bikers, crate, boss].forEach(end);
     // the next gate splits the road: your side lights up and the other dims, flipping as you cross the middle
@@ -326,10 +332,16 @@
     begin(runners);
     for (let i = 0; i < show; i++) {
       const r = Math.sqrt(i / Math.max(1, show)) * rad, a = i * 2.39996, bob = R.motion ? Math.abs(Math.sin(t * 11 + i * 1.7)) * 0.1 : 0;
-      put(runners, cx + Math.cos(a) * r, bob, Math.sin(a) * r * 0.82, s, Math.PI, lean, i === 0 ? '#FFFFFF' : oc ? '#D8FBFF' : COL.cyan, oc ? 1.15 : 0.7);
+      put(runners, cx + Math.cos(a) * r, bob, Math.sin(a) * r * 0.82, s, Math.PI, lean, i === 0 ? '#FFFFFF' : oc ? '#D8FBFF' : COL.cyan, (oc ? 1.15 : 0.7) + UF.uPulse.value * 0.25);
     }
     end(runners);
     road.material.uniforms.uSq.value.set(cx, 0); road.material.uniforms.uSqR.value = rad;
+  }
+  function drawShocks(t) {
+    shocks.forEach(s => {
+      const k = s.t0 == null ? 1 : (t - s.t0) / s.life; s.m.visible = k >= 0 && k < 1; if (!s.m.visible) return;
+      s.m.position.z = s.z + ZS * (t - s.t0); const r = 0.4 + s.size * Math.sqrt(k); s.m.scale.set(r, r, 1); s.m.material.color.copy(s.c).multiplyScalar(3 * (1 - k));
+    });
   }
   function drawFx(t) {
     const pa = pts.geometry.attributes.position, ca = pts.geometry.attributes.aC, sa = pts.geometry.attributes.aS; let n = 0;
@@ -355,10 +367,11 @@
     UF.uT.value = t; UF.uPulse.value = o.pulse; UF.uOC.value += ((oc ? 1 : 0) - UF.uOC.value) * 0.08;
     const sx = G ? G.sx : 0, aspect = W / H;
     cam.position.set(wx(sx) * 0.3 + (o.shakeX || 0) * 0.02, camBase.y + (aspect > 1 ? 1 : 0.6) + (o.shakeY || 0) * 0.02, camBase.z + (aspect > 1 ? 3.4 : 1.6));
+    punch *= 0.9; if (punch < 0.02) punch = 0; cam.fov = baseFov + punch; cam.updateProjectionMatrix();
     look.set(wx(sx) * 0.15, aspect > 1 ? 4.2 : 2.2, -11); cam.lookAt(look); cam.updateMatrixWorld();
     drawCity(t);
     if (G) { R.motion = !o.reduced; drawEnts(G, t, oc); } else { [picks, drones, swarm, bikers, crate, boss, runners].forEach(begin); for (const q of gates) q.grp.visible = false; road.material.uniforms.uSqR.value = 0; road.material.uniforms.uSq.value.set(0, 900); }
-    drawFx(t);
+    drawFx(t); drawShocks(t);
     renderer.setRenderTarget(rtS); renderer.clear(); renderer.render(scene, cam);
     mats.out.uniforms.tS.value = rtS.texture;
     if (R.quality > 0) {

@@ -7,7 +7,7 @@
   const cv = $('cv'), g = cv.getContext('2d');
   const RM = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
   const FONT = '"Space Grotesk", system-ui, sans-serif';
-  const U = { G: null, playing: false, paused: false, evi: 0, popups: [], flash: 0, shake: 0, muted: false,
+  const U = { G: null, playing: false, paused: false, evi: 0, popups: [], queue: [], fdt: 0.016, flash: 0, shake: 0, muted: false,
     drag: null, lastSent: null, endAt: 0, lastRes: null, test: false, fb: {}, attract0: performance.now(), hintFlash: 0 };
   window.GRUI = { U };
   try { U.muted = localStorage.getItem('grMuted') === '1'; } catch (e) {}
@@ -140,7 +140,7 @@
     for (const p of U.popups) { const k = (t - p.t0) / (p.life || 0.9); if (k >= 1 || k < 0) continue; g.globalAlpha = 1 - k * k; g.fillStyle = p.c; g.font = `700 ${p.big ? 30 : 20}px ${FONT}`; const hw = g.measureText(p.txt).width / 2 + 8; g.fillText(p.txt, Math.max(hw, Math.min(W - hw, p.x)), p.y - k * 40); g.globalAlpha = 1; }
     U.popups = U.popups.filter(p => t - p.t0 < (p.life || 0.9) && t >= p.t0 - 1);
     if (oc) { g.fillStyle = `rgba(255,61,168,${0.03 + 0.04 * pulse})`; g.fillRect(0, 0, W, H); }
-    if (U.flash > 0) { g.fillStyle = `rgba(255,255,255,${U.flash})`; g.fillRect(0, 0, W, H); U.flash *= RM ? 0.5 : 0.88; if (U.flash < 0.02) U.flash = 0; }
+    if (U.flash > 0) { g.fillStyle = `rgba(255,255,255,${U.flash})`; g.fillRect(0, 0, W, H); U.flash *= Math.pow(RM ? 0.5 : 0.88, U.fdt * 60); if (U.flash < 0.02) U.flash = 0; }
   }
   function label(txt, x, y, size, col) { g.font = `700 ${Math.max(9, size)}px ${FONT}`; g.textAlign = 'center'; g.fillStyle = col; g.fillText(txt, x, y); }
   function gateText(o) { return o.op === 'add' ? '+' + o.v : o.op === 'mul' ? '×' + o.v : o.op === 'trade' ? '−' + o.lose + ' ×' + o.v : o.op === 'oc' ? 'CHARGE +' + o.v + '%' : o.op === 'weapon' ? GR.WEAPONS[o.w].name.toUpperCase() : o.op === 'power' ? 'POWER +30%' : 'FIRE +' + Math.round(o.v * 100) + '%'; }
@@ -204,20 +204,23 @@
       } else if (e.type === 'kill') {
         sfx('kill'); const en = G.ents.find(q => q.id === e.id), z = en ? en.ta - G.t : 1;
         const c = e.kind === 'crate' ? '#FFB547' : e.kind === 'boss' ? '#FFFFFF' : '#FF3DA8', nP = RM ? 2 : e.kind === 'boss' ? 160 : e.kind === 'swarm' ? 4 : 10;
-        R.burst(e.x, z, c, nP, e.kind === 'boss' ? 16 : 6, e.kind === 'boss' ? 4 : 1.1);
+        R.burst(e.x, z, c, nP, e.kind === 'boss' ? 16 : e.kind === 'swarm' ? 5 : 7, e.kind === 'boss' ? 4 : 1.1);
+        if (e.kind === 'biker' || e.kind === 'crate') { R.shock(e.x, z, c, 3.5, 1); U.shake = Math.max(U.shake, 3); }
+        if (e.kind === 'boss' && !RM) for (let i = 1; i < 6; i++) U.queue.push({ at: t + i * 0.16, x: (Math.random() - 0.5) * 0.9, y: 2 + Math.random() * 6, z, c: i % 2 ? '#FF3DA8' : '#FFB547' });
         if (!firstSeen.kill) { firstSeen.kill = 1; hint('Your squad fires on its own. Line up with enemies'); }
       } else if (e.type === 'gate') {
-        sfx(e.good ? 'good' : 'bad'); U.popups.push({ t0: t, txt: gateText(e.g) + '  →  ' + e.n, x: sx, y: sy - 90, c: e.good ? '#4BFFA5' : '#FF4D6D', big: true });
+        sfx(e.good ? 'good' : 'bad'); R.punch(2.4); U.popups.push({ t0: t, txt: gateText(e.g) + '  →  ' + e.n, x: sx, y: sy - 90, c: e.good ? '#4BFFA5' : '#FF4D6D', big: true });
         if (e.g.op === 'oc' && G.t < GR.DROP_T) U.popups.push({ t0: t + 0.15, txt: 'Overclock +', x: W - 70, y: 110, c: '#FF7AD0' });
         say('Gate ' + gateText(e.g) + '. Squad ' + e.n);
       } else if (e.type === 'runner') { sfx('runner'); U.popups.push({ t0: t, txt: '+1', x: sx, y: sy - 60, c: '#BFF8FF' }); }
       else if (e.type === 'hurt' || e.type === 'bossHit') { sfx('hurt'); U.shake = e.type === 'bossHit' ? 16 : 6; U.popups.push({ t0: t, txt: '−' + e.lost, x: sx, y: sy - 70, c: '#FF4D6D', big: e.type === 'bossHit' }); }
       else if (e.type === 'weapon') { sfx('weapon'); const wp = GR.WEAPONS[e.w], up = e.lv > 1 ? wp.short.toUpperCase() + ' LV ' + e.lv : wp.name.toUpperCase(); U.popups.push({ t0: t, txt: up + '!', x: W / 2, y: H * 0.45, c: wp.col, big: true, life: 1.4 }); if (wp.tip) hint(wp.tip); say('Weapon: ' + up); }
-      else if (e.type === 'drop') { U.flash = 0.8; U.shake = 12; U.popups.push({ t0: t, txt: 'OVERCLOCK ×' + e.mult.toFixed(1), x: W / 2, y: H * 0.42, c: '#FFFFFF', big: true, life: 1.6 }); say('The drop. Overclock times ' + e.mult.toFixed(1)); }
-      else if (e.type === 'bossDown') { sfx('bossDown'); U.flash = 0.6; U.shake = 18; U.popups.push({ t0: t, txt: 'BOSS DOWN', x: W / 2, y: H * 0.4, c: '#FFB547', big: true, life: 1.6 }); say('Boss down'); }
+      else if (e.type === 'drop') { U.flash = 0.8; U.shake = 12; R.punch(9); R.shock(G.sx, 0, '#FFFFFF', 26, 0.4); U.popups.push({ t0: t, txt: 'OVERCLOCK ×' + e.mult.toFixed(1), x: W / 2, y: H * 0.42, c: '#FFFFFF', big: true, life: 1.6 }); say('The drop. Overclock times ' + e.mult.toFixed(1)); }
+      else if (e.type === 'bossDown') { sfx('bossDown'); U.flash = 0.6; U.shake = 22; R.punch(7); U.popups.push({ t0: t, txt: 'BOSS DOWN', x: W / 2, y: H * 0.4, c: '#FFB547', big: true, life: 1.6 }); say('Boss down'); }
       else if (e.type === 'lost') { sfx('lose'); stopClock(true); U.endAt = performance.now() + 1100; }
       else if (e.type === 'won') { stopClock(true); U.endAt = performance.now() + 900; }
     }
+    U.queue = U.queue.filter(q => { if (t < q.at) return true; R.burst(q.x, q.z - (t - G.t), q.c, 70, 13, q.y); R.shock(q.x, q.z, q.c, 9, q.y); U.shake = Math.max(U.shake, 9); return false; });
     // teaching hints the first time things show up
     if (!firstSeen.crate && G.ents.some(e => e.kind === 'crate' && !e.done && e.ta - G.t < 2.4)) { firstSeen.crate = 1; hint('Gold crate: shoot it to power up your weapon'); }
     if (!firstSeen.boss && G.ents.some(e => e.kind === 'boss' && e.ta - G.t < GR.BOSS_RANGE)) { firstSeen.boss = 1; hint('Boss incoming. Overclock melts it'); }
@@ -241,7 +244,7 @@
     const ctx = audioInit(); U.noAudio = !ctx;
     if (ctx && ctx.state !== 'running') ctx.resume();
     SONG = SONG || (ctx ? buildSong() : []);
-    U.G = GR.newGame({ seed: (Math.random() * 1e9) | 0 }); R.setRun(U.G, gateText); U.evi = 0; U.popups = []; U.lastSent = null; U.endAt = 0; hud.sec = null;
+    U.G = GR.newGame({ seed: (Math.random() * 1e9) | 0 }); R.setRun(U.G, gateText); U.evi = 0; U.popups = []; U.queue = []; U.lastSent = null; U.endAt = 0; hud.sec = null;
     for (const k in firstSeen) delete firstSeen[k];
     U.test = !!fromBar;
     if (fromBar) { // tester jump: the smart bot plays the street up to that bar, then you take over
@@ -349,7 +352,7 @@
   let lastF = performance.now();
   function frame(now) {
     requestAnimationFrame(frame);
-    const dt = Math.min(0.05, (now - lastF) / 1000); lastF = now;
+    const dt = Math.min(0.05, (now - lastF) / 1000); lastF = now; U.fdt = Math.max(0.001, (now - (U.lastDraw || now)) / 1000) || 0.016; U.lastDraw = now;
     let t;
     if (U.G && U.playing && !U.paused) {
       keySteer(dt);

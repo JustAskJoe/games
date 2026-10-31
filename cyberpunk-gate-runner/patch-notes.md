@@ -13,6 +13,7 @@ First step of Prototype 2: new graphics, same game.
 - **The street is real 3D now:** a neon city with lit towers, Hush propaganda billboards, a striped synthwave sun, a wet glowing road and light arches that pass overhead on the beat.
 - **New models for everything:** your runners, drones, bikers, the gold crate and the Hush Enforcer.
 - The picture adapts to the window, so it plays wide on a PC as well as tall on a phone.
+- **More impact:** shockwaves, a camera punch on gates and the drop, enemies bursting into neon shards, and a chain of explosions when the Enforcer falls.
 - **The Enforcer lands on the drop:** it appears as the beat drops and walks through the horde for an 8 second fight, instead of dying in a fraction of a second.
 - **Horde walls:** packs fill the whole road, from 24 enemies early to nearly 400 at the drop. Your fire carves a path and whatever gets through eats runners.
 - **Split road at gates:** a divider leads into each gate, your side lights up with chevrons, the other dims, and both show what they'd do for you.
