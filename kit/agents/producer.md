@@ -41,7 +41,7 @@ The Producer helps the crew's **human** producer lane (HOW-WE-WORK: "keeping sco
   - Merged this week
   - Drafts gone quiet for 7+ days
   - A three-line check-in agenda
-- **What it reads:** pull requests and issues in `JustAskJoe/games` and `JustAskJoe/forge`. Nothing private.
+- **What it reads:** pull requests and issues in `JustAskJoe/games` only. Nothing private: `JustAskJoe/forge` went private on Oct 30, so its work shows in Studio HQ, not in this public digest.
 - **What it never does:** @-mention people, comment on pull requests, change labels, merge, or spend anything.
 - **Code:** `kit/agents/digest.js` (`buildDigest` can be run locally to preview).
 

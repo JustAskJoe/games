@@ -5,7 +5,9 @@
 // Pitches and playtest notes stay private: the digest links to the Studio home for those.
 // No AI, no paid service: it costs nothing and needs no one's personal account.
 
-const REPOS = ["games", "forge"];
+// Public repos only: the digest is a public issue. forge went private on Oct 30, 2026, so it is left out
+// (the workflow's own token can't read it anyway); its pull requests show in Studio HQ's Town Hall instead.
+const REPOS = ["games"];
 const DAY = 86400000;
 const STUDIO = "https://jaj-forge.huntefl.workers.dev";
 const BOARD = "https://github.com/orgs/JustAskJoe/projects/1";
