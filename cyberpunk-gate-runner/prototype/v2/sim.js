@@ -8,7 +8,7 @@ for (const bot of Object.keys(BANDS)) {
   const r = GR.simulate(+process.argv[2] || 200, bot);
   const [lo, hi] = BANDS[bot], pass = r.win >= lo && r.win <= hi;
   if (!pass) ok = false;
-  console.log(`${pass ? 'ok  ' : 'FAIL'} ${bot.padEnd(6)} win ${(r.win * 100).toFixed(0).padStart(3)}%  boss ${(r.boss * 100).toFixed(0).padStart(3)}%  peak ${String(r.peak).padStart(4)}  left ${String(r.survivors).padStart(4)}  overclock x${r.oc}  arc ${(r.arc * 100).toFixed(0)}%  credits ${r.credits}  died in ${JSON.stringify(r.diedIn)}`);
+  console.log(`${pass ? 'ok  ' : 'FAIL'} ${bot.padEnd(6)} win ${(r.win * 100).toFixed(0).padStart(3)}%  boss ${(r.boss * 100).toFixed(0).padStart(3)}%  peak ${String(r.peak).padStart(4)}  left ${String(r.survivors).padStart(4)}  overclock x${r.oc}  crate ${(r.crate * 100).toFixed(0)}%  credits ${r.credits}  died in ${JSON.stringify(r.diedIn)}`);
 }
 // determinism: same seed + same intents = same hash
 const run = () => { const G = GR.newGame({ seed: 42 }), r = GR.rng(9); let k = 0; while (!G.over) { if (++k % 6 === 0) GR.act(G, { type: 'steer', x: GR.BOTS.casual(G, r) }); GR.step(G); } return GR.hash(G); };

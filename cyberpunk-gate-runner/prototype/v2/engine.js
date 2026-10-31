@@ -19,7 +19,7 @@
     drone: { hp: 12, bite: 3, w: 0.11, credits: 1 },
     biker: { hp: 110, bite: 9, w: 0.14, credits: 3, drift: 0.32 },
     crate: { hp: 30, bite: 0, w: 0.13, credits: 10 },
-    boss: { hp: 7000, bite: 0, w: 0.42, credits: 60 }
+    boss: { hp: 4500, bite: 0, w: 0.42, credits: 60 }
   };
   // gate pairs: one every 2 bars from bar 4 to 18. Sides are shuffled per run (seeded). No pair has an obvious answer:
   // +N beats x1.5 while the squad is small, fire rate beats both once it's big, charge trades growth for the drop,
@@ -27,13 +27,23 @@
   const GATES = [
     [{ op: 'add', v: 8 }, { op: 'mul', v: 1.5 }],
     [{ op: 'mul', v: 1.5 }, { op: 'rate', v: 0.25 }],
-    [{ op: 'add', v: 15 }, { op: 'oc', v: 30 }],
-    [{ op: 'add', v: 20 }, { op: 'mul', v: 1.5 }],
+    [{ op: 'weapon' }, { op: 'weapon' }],
+    [{ op: 'add', v: 20 }, { op: 'oc', v: 30 }],
     [{ op: 'trade', lose: 10, v: 2 }, { op: 'rate', v: 0.25 }],
-    [{ op: 'add', v: 30 }, { op: 'mul', v: 1.5 }],
+    [{ op: 'add', v: 30 }, { op: 'power' }],
     [{ op: 'oc', v: 30 }, { op: 'mul', v: 1.5 }],
-    [{ op: 'add', v: 40 }, { op: 'rate', v: 0.5 }]
+    [{ op: 'add', v: 40 }, { op: 'weapon' }]
   ];
+  // mult scales damage. aim widens or narrows the cone, pierce hits a line of targets at full damage,
+  // splash hits neighbours of each target. val is how much the bots value the extras.
+  const WEAPONS = {
+    pulse: { name: 'Pulse rifle', short: 'Pulse', mult: 1, aim: 0, val: 1, col: '#3DF0FF', tip: '' },
+    arc: { name: 'Arc gun', short: 'Arc', mult: 1.5, aim: 0, val: 1, col: '#FFB547', tip: 'Arc gun: heavy damage, tight stream' },
+    scatter: { name: 'Scatter', short: 'Scatter', mult: 1.35, aim: 0.24, val: 1.15, col: '#4BFFA5', tip: 'Scatter: a wide cone, less aiming' },
+    rail: { name: 'Railgun', short: 'Rail', mult: 1.4, aim: -0.06, pierce: 6, val: 1.25, col: '#C9B8FF', tip: 'Railgun: pierces a whole line' },
+    rocket: { name: 'Rockets', short: 'Rockets', mult: 1.3, aim: 0, splash: 0.5, val: 1.35, col: '#FF7AD0', tip: 'Rockets: blasts hit nearby enemies' }
+  };
+  const FINDS = ['arc', 'scatter', 'rail', 'rocket'], POWER = 0.3; // each weapon level adds 30% damage
   const CHARGE = 10;            // Overclock % from any gate; charge gates add more, trades add none
 
   function rng(seed) { let s = (seed >>> 0) || 1; return () => { s ^= s << 13; s ^= s >>> 17; s ^= s << 5; return ((s >>> 0) % 1e9) / 1e9; }; }
@@ -46,7 +56,8 @@
     const zz = [-0.5, 0, 0.5, 0, -0.5, 0.5, 0, -0.5, 0.5, 0];
     for (let i = 0; i < 10; i++) add('runner', at(1, 0) + i * B, zz[i], { w: 0.1 });
     // gates on the downbeat every 2 bars
-    GATES.forEach((pair, i) => { const sw = r() < 0.5; add('gate', at(4 + i * 2, 0), 0, { L: sw ? pair[1] : pair[0], R: sw ? pair[0] : pair[1] }); });
+    const offer = FINDS.slice().sort(() => r() - 0.5); let oi = 0;
+    GATES.forEach((pair, i) => { const sw = r() < 0.5, opts = pair.map(g => g.op === 'weapon' ? { op: 'weapon', w: offer[oi++ % offer.length] } : g); add('gate', at(4 + i * 2, 0), 0, { L: sw ? opts[1] : opts[0], R: sw ? opts[0] : opts[1] }); });
     // drones: a cluster on beat 3 of every bar in the build (lesson 3: fight)
     for (let bar = 5; bar < 20; bar++) {
       const n = bar < 8 ? 2 : bar < 12 ? 3 : 4, cx = (r() * 1.2 - 0.6);
@@ -64,7 +75,7 @@
   function newGame(o) {
     o = o || {};
     const r = rng(o.seed || 1);
-    return { seed: o.seed || 1, t: 0, tick: 0, n: 3, sx: 0, tx: 0, rate: 1, weapon: 'pulse', wmult: 1,
+    return { seed: o.seed || 1, t: 0, tick: 0, n: 3, sx: 0, tx: 0, rate: 1, weapon: 'pulse', wlv: 1,
       meter: 0, oc: { on: false, done: false, mult: 1 }, ents: buildStreet(r), nextVolley: B / 2,
       kills: 0, crates: 0, boss: null, bossKilled: false, gatesGood: 0, gatesBad: 0, peak: 3,
       over: false, won: false, ev: [], log: [] };
@@ -81,33 +92,38 @@
 
   // what a gate would do, without doing it (the UI shows this as a preview too)
   function gateResult(G, g) {
-    let n = G.n, rate = G.rate, c = CHARGE;
+    let n = G.n, rate = G.rate, c = CHARGE, weapon = G.weapon, wlv = G.wlv;
     if (g.op === 'add') n += g.v; else if (g.op === 'mul') n = Math.floor(n * g.v); else if (g.op === 'rate') rate += g.v;
     else if (g.op === 'oc') c = g.v; else if (g.op === 'trade') { n = Math.max(0, n - g.lose) * g.v; c = 0; }
-    return { n, rate, meter: Math.min(100, G.meter + c) };
+    else if (g.op === 'weapon') { if (g.w === weapon) wlv++; weapon = g.w; } else if (g.op === 'power') wlv++;
+    return { n, rate, weapon, wlv, meter: Math.min(100, G.meter + c) };
   }
   function applyGate(G, g) {
     const n0 = G.n, r = gateResult(G, g), good = g.op !== 'trade';
-    G.n = r.n; G.rate = r.rate; if (G.t < DROP_T) G.meter = r.meter;
+    G.n = r.n; G.rate = r.rate; G.weapon = r.weapon; G.wlv = r.wlv; if (G.t < DROP_T) G.meter = r.meter;
     if (good) G.gatesGood++; else G.gatesBad++;
     G.ev.push({ type: 'gate', t: G.t, g, good, n0, n: G.n });
+    if (g.op === 'weapon' || g.op === 'power') G.ev.push({ type: 'weapon', t: G.t, w: G.weapon, lv: G.wlv });
   }
 
   function volley(G) {
-    const sx = G.sx, aimW = AIM + width(G.n) * 0.5;
-    let pool = G.n * G.rate * G.wmult * (G.oc.on ? G.oc.mult : 1);
+    const W = WEAPONS[G.weapon], sx = G.sx, aimW = AIM + W.aim + width(G.n) * 0.5;
+    let pool = G.n * G.rate * W.mult * (1 + POWER * (G.wlv - 1)) * (G.oc.on ? G.oc.mult : 1), pierced = 0;
     const tg = G.ents.filter(e => !e.done && e.hp > 0 && KIND[e.kind] && z(G, e) > 0 && z(G, e) < RANGE && Math.abs(e.x - sx) < aimW + e.w).sort((a, b) => a.ta - b.ta);
     const hits = [];
     for (const e of tg) {
       if (pool <= 0) break;
-      const d = Math.min(pool, e.hp); e.hp -= d; pool -= d; hits.push(e.id);
+      if (e.hp <= 0) continue; // already caught in a blast this volley
+      const d = Math.min(pool, e.hp); e.hp -= d; hits.push(e.id);
+      if (W.pierce) { if (++pierced >= W.pierce) pool = 0; } else pool -= d;
+      if (W.splash) for (const o of tg) if (o !== e && o.hp > 0 && Math.abs(o.x - e.x) < 0.35 && Math.abs(o.ta - e.ta) < 0.4) { o.hp -= d * W.splash; if (o.hp <= 0) kill(G, o); }
       if (e.hp <= 0) kill(G, e);
     }
     G.ev.push({ type: 'volley', t: G.t, hits });
   }
   function kill(G, e) {
     e.done = true; e.hp = 0;
-    if (e.kind === 'crate') { G.crates++; G.weapon = 'arc'; G.wmult = 1.8; G.ev.push({ type: 'weapon', t: G.t, w: 'arc', x: e.x }); }
+    if (e.kind === 'crate') { G.crates++; G.wlv++; G.ev.push({ type: 'weapon', t: G.t, w: G.weapon, lv: G.wlv, x: e.x }); }
     else if (e.kind === 'boss') { G.bossKilled = true; G.ev.push({ type: 'bossDown', t: G.t }); }
     else G.kills++;
     G.ev.push({ type: 'kill', t: G.t, kind: e.kind, x: e.x, id: e.id });
@@ -145,16 +161,16 @@
 
   function results(G) {
     const credits = G.kills * 1 + G.crates * 10 + (G.bossKilled ? 60 : 0) + (G.won ? G.n : 0);
-    return { won: G.won, survivors: G.n, peak: G.peak, kills: G.kills, boss: G.bossKilled, weapon: G.weapon, meter: Math.round(G.meter), ocMult: Math.round(G.oc.mult * 100) / 100, gatesGood: G.gatesGood, gatesBad: G.gatesBad, credits, t: Math.round(G.t * 10) / 10, section: sectionAt(G.t).id };
+    return { won: G.won, survivors: G.n, peak: G.peak, kills: G.kills, boss: G.bossKilled, weapon: G.weapon, wlv: G.wlv, crates: G.crates, meter: Math.round(G.meter), ocMult: Math.round(G.oc.mult * 100) / 100, gatesGood: G.gatesGood, gatesBad: G.gatesBad, credits, t: Math.round(G.t * 10) / 10, section: sectionAt(G.t).id };
   }
   function hash(G) {
     let h = 2166136261 >>> 0; const mix = v => { h ^= (Math.round(v * 1000) | 0); h = Math.imul(h, 16777619) >>> 0; };
-    mix(G.t); mix(G.n); mix(G.sx); mix(G.rate); mix(G.meter); mix(G.kills); for (const e of G.ents) mix(e.hp || 0);
+    mix(G.t); mix(G.n); mix(G.sx); mix(G.rate); mix(G.meter); mix(G.kills); mix(G.wlv); for (const e of G.ents) mix(e.hp || 0);
     return h.toString(16);
   }
 
   // ---- bots, used by sim.js and the in-page tester ----
-  function gateValue(G, g) { const r = gateResult(G, g); return r.n * r.rate * (1 + 2 * r.meter / 100); }
+  function gateValue(G, g) { const r = gateResult(G, g), W = WEAPONS[r.weapon]; return r.n * r.rate * (1 + 2 * r.meter / 100) * W.mult * W.val * (1 + POWER * (r.wlv - 1)); }
   const BOTS = {
     smart: G => {
       const g = G.ents.find(e => !e.done && e.kind === 'gate' && z(G, e) < 1.6);
@@ -184,9 +200,9 @@
       out.push(results(G));
     }
     const avg = f => out.reduce((a, o) => a + f(o), 0) / out.length;
-    return { bot, runs: n, win: avg(o => o.won ? 1 : 0), boss: avg(o => o.boss ? 1 : 0), peak: Math.round(avg(o => o.peak)), survivors: Math.round(avg(o => o.survivors)), oc: Math.round(avg(o => o.ocMult) * 100) / 100, arc: avg(o => o.weapon === 'arc' ? 1 : 0), credits: Math.round(avg(o => o.credits)), diedIn: out.filter(o => !o.won).reduce((m, o) => (m[o.section] = (m[o.section] || 0) + 1, m), {}) };
+    return { bot, runs: n, win: avg(o => o.won ? 1 : 0), boss: avg(o => o.boss ? 1 : 0), peak: Math.round(avg(o => o.peak)), survivors: Math.round(avg(o => o.survivors)), oc: Math.round(avg(o => o.ocMult) * 100) / 100, crate: avg(o => o.crates ? 1 : 0), credits: Math.round(avg(o => o.credits)), diedIn: out.filter(o => !o.won).reduce((m, o) => (m[o.section] = (m[o.section] || 0) + 1, m), {}) };
   }
 
-  const GR = { BPM, B, BAR, DT, SEC, END, DROP_T, DROP_END, RANGE, KIND, width, sectionAt, newGame, gateResult, act, step, advance, results, hash, simulate, BOTS, rng };
+  const GR = { BPM, B, BAR, DT, SEC, END, DROP_T, DROP_END, RANGE, KIND, width, sectionAt, WEAPONS, newGame, gateResult, act, step, advance, results, hash, simulate, BOTS, rng };
   if (typeof module !== 'undefined' && module.exports) module.exports = GR; else root.GR = GR;
 })(typeof window !== 'undefined' ? window : globalThis);

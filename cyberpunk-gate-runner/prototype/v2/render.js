@@ -250,7 +250,7 @@
     setQuality(R.quality);
   };
   // one gate = two lit panels; the panels are rebuilt each run because sides are shuffled
-  const GCOL = op => op === 'trade' ? COL.red : op === 'rate' ? COL.gold : op === 'oc' ? COL.pink2 : COL.green;
+  const GCOL = op => op === 'trade' ? COL.red : op === 'rate' ? COL.gold : op === 'oc' ? COL.pink2 : op === 'weapon' ? COL.cyan : op === 'power' ? COL.violet : COL.green;
   function gatePanel(text, col, side) {
     const cv = document.createElement('canvas'); cv.width = 512; cv.height = 256; const c = cv.getContext('2d'), gr = c.createLinearGradient(0, 0, 0, 256);
     gr.addColorStop(0, col + '14'); gr.addColorStop(1, col + '40'); c.fillStyle = gr; c.fillRect(0, 0, 512, 256);

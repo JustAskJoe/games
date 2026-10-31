@@ -143,7 +143,7 @@
     if (U.flash > 0) { g.fillStyle = `rgba(255,255,255,${U.flash})`; g.fillRect(0, 0, W, H); U.flash *= RM ? 0.5 : 0.88; if (U.flash < 0.02) U.flash = 0; }
   }
   function label(txt, x, y, size, col) { g.font = `700 ${Math.max(9, size)}px ${FONT}`; g.textAlign = 'center'; g.fillStyle = col; g.fillText(txt, x, y); }
-  function gateText(o) { return o.op === 'add' ? '+' + o.v : o.op === 'mul' ? '×' + o.v : o.op === 'trade' ? '−' + o.lose + ' ×' + o.v : o.op === 'oc' ? 'CHARGE +' + o.v + '%' : 'FIRE +' + Math.round(o.v * 100) + '%'; }
+  function gateText(o) { return o.op === 'add' ? '+' + o.v : o.op === 'mul' ? '×' + o.v : o.op === 'trade' ? '−' + o.lose + ' ×' + o.v : o.op === 'oc' ? 'CHARGE +' + o.v + '%' : o.op === 'weapon' ? GR.WEAPONS[o.w].name.toUpperCase() : o.op === 'power' ? 'POWER +30%' : 'FIRE +' + Math.round(o.v * 100) + '%'; }
   function hpBar(x, y, w, fr, boss) { const h = boss ? 7 : 4; g.fillStyle = 'rgba(0,0,0,.55)'; g.fillRect(x - w / 2, y, w, h); g.fillStyle = boss ? '#FF3DA8' : '#4BFFA5'; g.fillRect(x - w / 2, y, w * Math.max(0, fr), h); }
   // labels and health bars sit over the 3D models, sized by how close the thing is
   function drawLabels(G) {
@@ -173,7 +173,7 @@
     $('ocBar').style.width = (G.oc.on ? 100 : G.meter) + '%';
     $('ocLbl').textContent = G.oc.on ? 'OVERCLOCK ×' + G.oc.mult.toFixed(1) : 'OVERCLOCK ' + Math.round(G.meter) + '%';
     $('hudR').classList.toggle('on', G.oc.on);
-    $('wpn').textContent = G.weapon === 'arc' ? 'Arc gun' : 'Pulse rifle';
+    $('wpn').textContent = GR.WEAPONS[G.weapon].name + (G.wlv > 1 ? ' Lv ' + G.wlv : '');
   }
   function hint(txt) { $('secHint').textContent = txt; }
   function say(txt) { $('live').textContent = txt; }
@@ -185,7 +185,7 @@
       const e = G.ev[U.evi++];
       const sq = R.project(G.sx, 0), sx = sq.x, sy = sq.y;
       if (e.type === 'volley') {
-        const col = G.oc.on ? '#FFFFFF' : G.weapon === 'arc' ? '#FFB547' : '#3DF0FF';
+        const col = G.oc.on ? '#FFFFFF' : GR.WEAPONS[G.weapon].col;
         for (const id of e.hits.slice(0, 6)) { const en = G.ents.find(q => q.id === id); if (en) R.tracer(G.sx + (Math.random() - 0.5) * GR.width(G.n), en.x, en.ta - G.t, col, en.kind === 'boss' ? 3.8 : 1.1); }
       } else if (e.type === 'kill') {
         sfx('kill'); const en = G.ents.find(q => q.id === e.id), z = en ? en.ta - G.t : 1;
@@ -198,14 +198,14 @@
         say('Gate ' + gateText(e.g) + '. Squad ' + e.n);
       } else if (e.type === 'runner') { sfx('runner'); U.popups.push({ t0: t, txt: '+1', x: sx, y: sy - 60, c: '#BFF8FF' }); }
       else if (e.type === 'hurt' || e.type === 'bossHit') { sfx('hurt'); U.shake = e.type === 'bossHit' ? 16 : 6; U.popups.push({ t0: t, txt: '−' + e.lost, x: sx, y: sy - 70, c: '#FF4D6D', big: e.type === 'bossHit' }); }
-      else if (e.type === 'weapon') { sfx('weapon'); U.popups.push({ t0: t, txt: 'ARC GUN!', x: W / 2, y: H * 0.45, c: '#FFB547', big: true, life: 1.4 }); hint('Arc gun: almost double damage'); say('New weapon: arc gun'); }
+      else if (e.type === 'weapon') { sfx('weapon'); const wp = GR.WEAPONS[e.w], up = e.lv > 1 ? wp.short.toUpperCase() + ' LV ' + e.lv : wp.name.toUpperCase(); U.popups.push({ t0: t, txt: up + '!', x: W / 2, y: H * 0.45, c: wp.col, big: true, life: 1.4 }); if (wp.tip) hint(wp.tip); say('Weapon: ' + up); }
       else if (e.type === 'drop') { U.flash = 0.8; U.shake = 12; U.popups.push({ t0: t, txt: 'OVERCLOCK ×' + e.mult.toFixed(1), x: W / 2, y: H * 0.42, c: '#FFFFFF', big: true, life: 1.6 }); say('The drop. Overclock times ' + e.mult.toFixed(1)); }
       else if (e.type === 'bossDown') { sfx('bossDown'); U.flash = 0.6; U.shake = 18; U.popups.push({ t0: t, txt: 'BOSS DOWN', x: W / 2, y: H * 0.4, c: '#FFB547', big: true, life: 1.6 }); say('Boss down'); }
       else if (e.type === 'lost') { sfx('lose'); stopClock(true); U.endAt = performance.now() + 1100; }
       else if (e.type === 'won') { stopClock(true); U.endAt = performance.now() + 900; }
     }
     // teaching hints the first time things show up
-    if (!firstSeen.crate && G.ents.some(e => e.kind === 'crate' && !e.done && e.ta - G.t < 2.4)) { firstSeen.crate = 1; hint('Gold crate: shoot it open for a new weapon'); }
+    if (!firstSeen.crate && G.ents.some(e => e.kind === 'crate' && !e.done && e.ta - G.t < 2.4)) { firstSeen.crate = 1; hint('Gold crate: shoot it to power up your weapon'); }
     if (!firstSeen.boss && G.ents.some(e => e.kind === 'boss' && e.ta - G.t < 3.2)) { firstSeen.boss = 1; hint('Boss incoming. Overclock melts it'); }
   }
 
@@ -256,7 +256,7 @@
     showSheet(`<span class="tag">${U.test ? 'TESTER RUN · ' : ''}Prototype 2</span><h2>${verdict}</h2>
       <div class="big">${r.survivors}</div><p>${sub}</p>
       <div class="stats"><div class="stat"><b>${r.peak}</b><span>peak squad</span></div><div class="stat"><b>${r.kills}</b><span>kills</span></div><div class="stat"><b>×${r.ocMult.toFixed(1)}</b><span>overclock</span></div>
-      <div class="stat"><b>${r.gatesGood}/${r.gatesGood + r.gatesBad}</b><span>good gates</span></div><div class="stat"><b>${r.weapon === 'arc' ? 'Arc' : 'Pulse'}</b><span>weapon</span></div><div class="stat"><b>${r.credits}</b><span>credits</span></div></div>
+      <div class="stat"><b>${r.gatesGood}/${r.gatesGood + r.gatesBad}</b><span>good gates</span></div><div class="stat"><b>${GR.WEAPONS[r.weapon].short}${r.wlv > 1 ? ' ' + r.wlv : ''}</b><span>weapon</span></div><div class="stat"><b>${r.credits}</b><span>credits</span></div></div>
       <button class="btn pri" data-act="play" type="button">Run it back</button>
       <button class="btn" data-act="feedback" type="button">Give feedback</button>
       <button class="btn" data-act="title" type="button">Title</button>`);
@@ -279,7 +279,7 @@
       <li><b class="c">Drag left and right</b> anywhere to steer your squad. Arrow keys work too.</li>
       <li><b class="gr">Pick a gate.</b> Flat numbers suit a small squad, multipliers a big one. <b class="r">Red</b> trades runners now for double later.</li>
       <li><b class="p">Your squad fires on its own.</b> Line up with drones and bikers to shoot them before they hit you.</li>
-      <li><b class="g">Shoot the gold crate</b> for the arc gun.</li>
+      <li><b class="g">Weapon gates</b> swap your gun: Arc, Scatter, Rail or Rockets. Shoot gold crates to power it up.</li>
       <li><b class="p">Gates charge Overclock.</b> Charge gates charge it most. When the beat drops, it fires. Melt the boss.</li></ol>
       <button class="btn pri" data-act="play" type="button">Run</button><button class="btn" data-act="title" type="button">Back</button>`);
   }
