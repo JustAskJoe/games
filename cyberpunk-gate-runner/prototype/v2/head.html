@@ -29,6 +29,12 @@ html,body{margin:0;height:100%;background:var(--night);color:var(--ink);font-fam
 #hudR .oc{font-size:10px;color:var(--mute);margin-top:6px;letter-spacing:1px}
 #hudR .bar{height:7px;border-radius:4px;background:rgba(242,239,230,.15);margin-top:3px;overflow:hidden} #hudR .bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--violet),var(--pink));transition:width .2s}
 #hudR.on .bar i{background:linear-gradient(90deg,#fff,var(--gold))} #hudR .w{font-size:11px;color:var(--gold);margin-top:5px}
+#bossBar{position:absolute;left:50%;transform:translateX(-50%);top:calc(106px + var(--sat));width:min(92vw,560px);pointer-events:none;background:rgba(5,6,18,.86);border:1px solid rgba(255,61,168,.6);border-radius:12px;padding:8px 12px 10px;z-index:4}
+#bossBar[hidden]{display:none} #game.idle #bossBar{display:none}
+#bossBar .t{display:flex;justify-content:space-between;align-items:baseline;font-weight:700;font-size:15px;letter-spacing:1px;color:#FFD0EC;margin-bottom:6px} #bossBar b{font-size:20px;color:#fff;letter-spacing:0}
+#bossBar .track{position:relative;height:18px;border-radius:6px;background:#2A0B3A;overflow:hidden}
+#bossBar i{position:absolute;left:0;top:0;bottom:0;display:block} #bossTrail{background:#FFF;transition:width .45s ease-out} #bossFill{background:linear-gradient(90deg,#FF3DA8,#FF7A3D)}
+@media (min-width:760px){ #bossBar{top:calc(12px + var(--sat));width:min(44vw,560px)} }
 #menuBtn,#muteBtn{position:absolute;width:44px;height:44px;border-radius:12px;border:1px solid var(--line);background:rgba(5,6,18,.62);color:var(--ink);font:700 18px 'Space Grotesk',system-ui,sans-serif;z-index:5;cursor:pointer}
 #menuBtn{bottom:calc(14px + var(--sab));right:calc(10px + var(--sar))} #muteBtn{bottom:calc(14px + var(--sab));right:calc(62px + var(--sar))}
 #menuBtn:focus-visible,#muteBtn:focus-visible{outline:3px solid var(--cyan)}

@@ -144,31 +144,16 @@
   }
   function label(txt, x, y, size, col) { g.font = `700 ${Math.max(9, size)}px ${FONT}`; g.textAlign = 'center'; g.fillStyle = col; g.fillText(txt, x, y); }
   function gateText(o) { return o.op === 'add' ? '+' + o.v : o.op === 'mul' ? '×' + o.v : o.op === 'trade' ? '−' + o.lose + ' ×' + o.v : o.op === 'oc' ? 'CHARGE +' + o.v + '%' : o.op === 'weapon' ? GR.WEAPONS[o.w].name.toUpperCase() : o.op === 'power' ? 'POWER +30%' : 'FIRE +' + Math.round(o.v * 100) + '%'; }
-  function hpBar(x, y, w, fr, boss) { const h = boss ? 7 : 4; g.fillStyle = 'rgba(0,0,0,.55)'; g.fillRect(x - w / 2, y, w, h); g.fillStyle = boss ? '#FF3DA8' : '#4BFFA5'; g.fillRect(x - w / 2, y, w * Math.max(0, fr), h); }
+  function hpBar(x, y, w, fr) { g.fillStyle = 'rgba(0,0,0,.55)'; g.fillRect(x - w / 2, y, w, 4); g.fillStyle = '#4BFFA5'; g.fillRect(x - w / 2, y, w * Math.max(0, fr), 4); }
   // labels and health bars sit over the 3D models, sized by how close the thing is
-  function gatePreview(G, o) {
-    const r = GR.gateResult(G, o);
-    return o.op === 'rate' ? 'fire ×' + r.rate : o.op === 'oc' ? 'overclock ' + r.meter + '%' : o.op === 'weapon' || o.op === 'power' ? GR.WEAPONS[r.weapon].short + ' Lv ' + r.wlv : r.n + ' squad';
-  }
-  function drawGatePreview(G, e, z) {
-    const k = 1 / (1 + Math.max(0, z) * 0.55), mine = G.sx < 0 ? -1 : 1;
-    for (const [side, o, name] of [[-1, e.L, 'LEFT'], [1, e.R, 'RIGHT']]) {
-      const p = R.project(side * 0.52, z, 4.1), on = side === mine, txt = (on ? name + ': ' : '') + gatePreview(G, o);
-      g.globalAlpha = on ? 1 : 0.6; g.font = `700 ${Math.max(10, (on ? 22 : 15) * k + 4)}px ${FONT}`; const hw = g.measureText(txt).width / 2 + 8, x = Math.max(hw, Math.min(W - hw, p.x));
-      g.fillStyle = 'rgba(5,6,18,.72)'; g.fillRect(x - hw, p.y - 20, hw * 2, 27); g.textAlign = 'center'; g.fillStyle = on ? '#FFFFFF' : '#B9B4CC'; g.fillText(txt, x, p.y); g.globalAlpha = 1;
-    }
-  }
   function drawLabels(G) {
-    let gateDone = false;
     for (let i = G.ei; i < G.ents.length; i++) {
       const e = G.ents[i], z = e.ta - G.t; if (z > GR.BOSS_RANGE + 0.2) break; if (e.done || (z > 4.6 && e.kind !== 'boss')) continue;
-      if (e.kind === 'gate') { if (!gateDone && z < 3.2) drawGatePreview(G, e, z); gateDone = true; continue; }
       const k = 1 / (1 + Math.max(0, z) * 0.55), fr = e.hp / e.maxHp;
       if (e.kind === 'runner' && z < 3) { const p = R.project(e.x, z, 2.1); label('+1', p.x, p.y, 15 * k + 4, '#BFF8FF'); }
       else if (e.kind === 'crate') { const p = R.project(e.x, z, 2.1); label('SHOOT IT', p.x, p.y - 6, 14 * k + 3, '#FFB547'); hpBar(p.x, p.y, 60 * k, fr); }
       else if (e.kind === 'biker' && fr < 1) { const p = R.project(e.x, z, 2.3); hpBar(p.x, p.y, 54 * k, fr); }
       else if (e.kind === 'drone' && fr < 1) { const p = R.project(e.x, z, 1.9); hpBar(p.x, p.y, 34 * k, fr); }
-      else if (e.kind === 'boss') { const y = Math.max(96, R.project(0, z, 10.6).y); label('HUSH ENFORCER', W / 2, y - 8, 17, '#FF7AD0'); hpBar(W / 2, y, Math.min(W * 0.7, 420), fr, true); }
     }
   }
   function drawCount(G, oc) {
@@ -187,6 +172,9 @@
     $('ocBar').style.width = (G.oc.on ? 100 : G.meter) + '%';
     $('ocLbl').textContent = G.oc.on ? 'OVERCLOCK ×' + G.oc.mult.toFixed(1) : 'OVERCLOCK ' + Math.round(G.meter) + '%';
     $('hudR').classList.toggle('on', G.oc.on);
+    const bs = U.boss, on = bs && !G.over && !bs.done && bs.ta - G.t < GR.BOSS_RANGE;
+    $('bossBar').hidden = !on;
+    if (on) { const fr = Math.max(0, bs.hp / bs.maxHp), pct = Math.ceil(fr * 100); $('bossFill').style.width = fr * 100 + '%'; $('bossTrail').style.width = fr * 100 + '%'; $('bossPct').textContent = pct + '%'; }
     $('wpn').textContent = GR.WEAPONS[G.weapon].name + (G.wlv > 1 ? ' Lv ' + G.wlv : '');
   }
   function hint(txt) { $('secHint').textContent = txt; }
@@ -244,7 +232,7 @@
     const ctx = audioInit(); U.noAudio = !ctx;
     if (ctx && ctx.state !== 'running') ctx.resume();
     SONG = SONG || (ctx ? buildSong() : []);
-    U.G = GR.newGame({ seed: (Math.random() * 1e9) | 0 }); R.setRun(U.G, gateText); U.evi = 0; U.popups = []; U.queue = []; U.lastSent = null; U.endAt = 0; hud.sec = null;
+    U.G = GR.newGame({ seed: (Math.random() * 1e9) | 0 }); R.setRun(U.G, gateText); U.boss = U.G.ents.find(e => e.kind === 'boss'); U.evi = 0; U.popups = []; U.queue = []; U.lastSent = null; U.endAt = 0; hud.sec = null;
     for (const k in firstSeen) delete firstSeen[k];
     U.test = !!fromBar;
     if (fromBar) { // tester jump: the smart bot plays the street up to that bar, then you take over
@@ -284,7 +272,7 @@
   function showSheet(html) { card.innerHTML = html; sheet.hidden = false; const b = card.querySelector('.btn.pri, .btn'); if (b) b.focus({ preventScroll: true }); }
   function hideSheet() { sheet.hidden = true; }
   function titleScreen() {
-    U.playing = false; U.G = null; stopClock(true); game.classList.add('idle');
+    U.playing = false; U.G = null; $('bossBar').hidden = true; stopClock(true); game.classList.add('idle');
     showSheet(`<span class="tag">Prototype 2 · one street</span><h1><span class="c">OVER</span><span class="p">CLOCK</span></h1>
       <p>Neon City, 2089. Hush banned music. Your squad brings the beat back.</p>
       <button class="btn pri" data-act="play" type="button">Run</button>
