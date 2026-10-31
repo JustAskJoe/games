@@ -27,6 +27,7 @@ A co-op roguelite tower defense. Draft a deck of buffs inside each run, and buil
 ## Art and sound direction
 - **Reference:** a hand-painted fantasy cottage illustration, ink linework over painterly flat color. It's a middle path between the moody painterly and cozy low-poly mood boards.
 - **Palette:** teal slate roofs, warm timber, cream plaster, mossy greens, dusty-rose sky. These are the CSS tokens at the top of `prototype/head.html` (`--teal`, `--timber`, `--plaster`, `--moss`, `--sky`).
+- **Final art (decided Oct 28, Hunter):** painted, not pixel, made in Canva (`art/art-direction.md` → `final_art_source: canva`). Picked from the Arrow tower concept sheets (#9, PR #10).
 - **In P1:** all art is placeholder vector drawing in `prototype/art.js` (ink strokes over flat fills), not final art.
 - **Music follows the look:** cozy, folky, warm. P1.1 has a placeholder score in `prototype/music.js`, synthesized live with Web Audio (lute plucks and a recorder tune while you build, a frame-drum pulse during waves). No licensed music, ever.
 

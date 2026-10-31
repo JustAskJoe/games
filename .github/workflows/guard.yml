@@ -40,7 +40,7 @@ jobs:
               /^[^/]+\/design\/handoff\.md$/,             // each game's decisions
               /^[^/]+\/pitch\//,                          // approved briefs and answers
               /^kit\//,                                   // shared tooling
-              /^(README|CLAUDE|CONTRIBUTING|HOW-WE-WORK)\.md$/,
+              /^(README|CLAUDE|CONTRIBUTING|HOW-WE-WORK|ARCHITECTURE)\.md$/,
               /^\.github\//,
             ];
             // Edits (not just deletions) to these change the rules everyone works by.

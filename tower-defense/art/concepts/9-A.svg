@@ -1,0 +1,232 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 1180" font-family="Georgia, 'Times New Roman', serif">
+<title>Tower Defense · Arrow tower (#9) · Direction A: Painted</title>
+<defs><g id="t0">
+<ellipse cx="40" cy="87" rx="25" ry="6" fill="#3A2518" opacity=".25"/>
+<polygon points="19,76 61,76 58,86 22,86" fill="#9A9CA3"/>
+<polygon points="21,81 59,81 59,86 21,86" fill="#6F7178"/>
+<polygon points="19,76 61,76 58,86 22,86" fill="none" stroke="#3A2518" stroke-width="2.2" stroke-linejoin="round"/>
+<polygon points="24,46 56,46 58,76 22,76" fill="#6B4226"/>
+<polygon points="44,46 56,46 58,76 46,76" fill="#4E2F1A"/>
+<polygon points="24,46 56,46 58,76 22,76" fill="none" stroke="#3A2518" stroke-width="2.2" stroke-linejoin="round"/>
+<polygon points="16,36 64,36 64,47 16,47" fill="#F7EEDC"/>
+<polygon points="16,43 64,43 64,47 16,47" fill="#E6D6B8"/>
+<polygon points="16,36 64,36 64,47 16,47" fill="none" stroke="#3A2518" stroke-width="2.2" stroke-linejoin="round"/>
+<polygon points="11,38 40,7 69,38" fill="#4E8F86"/>
+<polygon points="40,7 69,38 40,38" fill="#3A6E67"/>
+<polygon points="11,38 40,7 69,38" fill="none" stroke="#3A2518" stroke-width="2.2" stroke-linejoin="round"/>
+<line x1="31" y1="48" x2="30.7" y2="75" stroke="#4E2F1A" stroke-width="1.2" stroke-linecap="round"/>
+<line x1="38" y1="48" x2="37.7" y2="75" stroke="#4E2F1A" stroke-width="1.2" stroke-linecap="round"/>
+<line x1="25" y1="48" x2="43" y2="74" stroke="#4E2F1A" stroke-width="1.4" stroke-linecap="round"/>
+<line x1="29.8" y1="20" x2="50.2" y2="20" stroke="#3A2518" stroke-width="1.1" opacity="0.35" stroke-linecap="round"/>
+<line x1="21.1" y1="29.3" x2="58.9" y2="29.3" stroke="#3A2518" stroke-width="1.1" opacity="0.35" stroke-linecap="round"/>
+<line x1="14" y1="36.5" x2="39" y2="10" stroke="#F7EEDC" stroke-width="1.4" opacity="0.35" stroke-linecap="round"/>
+<line x1="30" y1="81" x2="30" y2="86" stroke="#6F7178" stroke-width="1" stroke-linecap="round"/>
+<line x1="50" y1="81" x2="50" y2="86" stroke="#6F7178" stroke-width="1" stroke-linecap="round"/>
+<line x1="40" y1="7" x2="40" y2="1" stroke="#3A2518" stroke-width="1.6" stroke-linecap="round"/>
+<rect x="24.5" y="38.5" width="3" height="5.5" rx=".8" fill="#3A2518"/>
+<rect x="37" y="38.5" width="3" height="5.5" rx=".8" fill="#3A2518"/>
+<rect x="49.5" y="38.5" width="3" height="5.5" rx=".8" fill="#3A2518"/>
+<polygon points="40,1 49,3.5 40,6" fill="#F7EEDC" stroke="#3A2518" stroke-width="1.4" stroke-linejoin="round"/>
+</g><g id="tA">
+<ellipse cx="40" cy="87" rx="25" ry="6" fill="#3A2518" opacity=".25"/>
+<polygon points="16,70 64,70 61,86 19,86" fill="#9A9CA3"/>
+<polygon points="18,79 62,79 62,86 18,86" fill="#6F7178"/>
+<polygon points="16,70 64,70 61,86 19,86" fill="none" stroke="#3A2518" stroke-width="2.2" stroke-linejoin="round"/>
+<polygon points="24,46 56,46 58,70 22,70" fill="#6B4226"/>
+<polygon points="44,46 56,46 58,70 46,70" fill="#4E2F1A"/>
+<polygon points="24,46 56,46 58,70 22,70" fill="none" stroke="#3A2518" stroke-width="2.2" stroke-linejoin="round"/>
+<polygon points="16,36 64,36 64,47 16,47" fill="#F7EEDC"/>
+<polygon points="16,43 64,43 64,47 16,47" fill="#E6D6B8"/>
+<polygon points="16,36 64,36 64,47 16,47" fill="none" stroke="#3A2518" stroke-width="2.2" stroke-linejoin="round"/>
+<polygon points="11,38 40,2 69,38" fill="#4E8F86"/>
+<polygon points="40,2 69,38 40,38" fill="#3A6E67"/>
+<polygon points="11,38 40,2 69,38" fill="none" stroke="#3A2518" stroke-width="2.2" stroke-linejoin="round"/>
+<polygon points="22.6,46 70.6,32 69.4,28 21.4,42" fill="#4E2F1A"/>
+<polygon points="22.6,46 70.6,32 69.4,28 21.4,42" fill="none" stroke="#3A2518" stroke-width="2.2" stroke-linejoin="round"/>
+<polygon points="68,25.5 79,28 71,35" fill="#B8533A"/>
+<polygon points="68,25.5 79,28 71,35" fill="none" stroke="#3A2518" stroke-width="2.2" stroke-linejoin="round"/>
+<polygon points="24.8,40.9 32.8,50.9 35.2,49.1 27.2,39.1" fill="#6B4226"/>
+<polygon points="24.8,40.9 32.8,50.9 35.2,49.1 27.2,39.1" fill="none" stroke="#3A2518" stroke-width="2.2" stroke-linejoin="round"/>
+<line x1="31" y1="48" x2="30.7" y2="69" stroke="#4E2F1A" stroke-width="1.2" stroke-linecap="round"/>
+<line x1="38" y1="48" x2="37.7" y2="69" stroke="#4E2F1A" stroke-width="1.2" stroke-linecap="round"/>
+<line x1="25" y1="48" x2="43" y2="68" stroke="#4E2F1A" stroke-width="1.4" stroke-linecap="round"/>
+<line x1="29.8" y1="17.1" x2="50.2" y2="17.1" stroke="#3A2518" stroke-width="1.1" opacity="0.35" stroke-linecap="round"/>
+<line x1="21.1" y1="27.9" x2="58.9" y2="27.9" stroke="#3A2518" stroke-width="1.1" opacity="0.35" stroke-linecap="round"/>
+<line x1="14" y1="36.5" x2="39" y2="5" stroke="#F7EEDC" stroke-width="1.4" opacity="0.35" stroke-linecap="round"/>
+<line x1="30" y1="79" x2="30" y2="86" stroke="#6F7178" stroke-width="1" stroke-linecap="round"/>
+<line x1="50" y1="79" x2="50" y2="86" stroke="#6F7178" stroke-width="1" stroke-linecap="round"/>
+<line x1="18" y1="75" x2="62" y2="75" stroke="#6F7178" stroke-width="1.2" stroke-linecap="round"/>
+<line x1="23.5" y1="53" x2="56.5" y2="53" stroke="#3A2518" stroke-width="1.6" opacity="0.8" stroke-linecap="round"/>
+<line x1="23" y1="62" x2="57" y2="62" stroke="#3A2518" stroke-width="1.6" opacity="0.8" stroke-linecap="round"/>
+<line x1="40" y1="2" x2="40" y2="0.5" stroke="#3A2518" stroke-width="1.6" stroke-linecap="round"/>
+<rect x="24.5" y="38.5" width="3" height="5.5" rx=".8" fill="#3A2518"/>
+<rect x="37" y="38.5" width="3" height="5.5" rx=".8" fill="#3A2518"/>
+<rect x="49.5" y="38.5" width="3" height="5.5" rx=".8" fill="#3A2518"/>
+<polygon points="40,0.5 54,3 40,5.5" fill="#B8533A" stroke="#3A2518" stroke-width="1.4" stroke-linejoin="round"/>
+<rect x="31" y="80" width="18" height="11" rx="2.5" fill="#B8533A" stroke="#3A2518" stroke-width="1.6"/>
+<rect x="36.5" y="82.5" width="2" height="6" fill="#3A2518"/><rect x="41.5" y="82.5" width="2" height="6" fill="#3A2518"/>
+</g><g id="tB">
+<ellipse cx="40" cy="87" rx="25" ry="6" fill="#3A2518" opacity=".25"/>
+<polygon points="34.6,17.9 17.8,3.8 16.2,5.6 33.1,19.8" fill="#4E2F1A"/>
+<polygon points="34.6,17.9 17.8,3.8 16.2,5.6 33.1,19.8" fill="none" stroke="#3A2518" stroke-width="2.2" stroke-linejoin="round"/>
+<polygon points="19.1,2.3 13.2,1.5 15,7.2" fill="#D9A441"/>
+<polygon points="19.1,2.3 13.2,1.5 15,7.2" fill="none" stroke="#3A2518" stroke-width="2.2" stroke-linejoin="round"/>
+<polygon points="37.7,16.2 28.4,-3.7 26.2,-2.7 35.5,17.3" fill="#4E2F1A"/>
+<polygon points="37.7,16.2 28.4,-3.7 26.2,-2.7 35.5,17.3" fill="none" stroke="#3A2518" stroke-width="2.2" stroke-linejoin="round"/>
+<polygon points="30.2,-4.5 25.2,-7.7 24.4,-1.8" fill="#D9A441"/>
+<polygon points="30.2,-4.5 25.2,-7.7 24.4,-1.8" fill="none" stroke="#3A2518" stroke-width="2.2" stroke-linejoin="round"/>
+<polygon points="41.2,16 41.2,-6 38.8,-6 38.8,16" fill="#4E2F1A"/>
+<polygon points="41.2,16 41.2,-6 38.8,-6 38.8,16" fill="none" stroke="#3A2518" stroke-width="2.2" stroke-linejoin="round"/>
+<polygon points="43.2,-6 40,-11 36.8,-6" fill="#D9A441"/>
+<polygon points="43.2,-6 40,-11 36.8,-6" fill="none" stroke="#3A2518" stroke-width="2.2" stroke-linejoin="round"/>
+<polygon points="44.5,17.3 53.8,-2.7 51.6,-3.7 42.3,16.2" fill="#4E2F1A"/>
+<polygon points="44.5,17.3 53.8,-2.7 51.6,-3.7 42.3,16.2" fill="none" stroke="#3A2518" stroke-width="2.2" stroke-linejoin="round"/>
+<polygon points="55.6,-1.8 54.8,-7.7 49.8,-4.5" fill="#D9A441"/>
+<polygon points="55.6,-1.8 54.8,-7.7 49.8,-4.5" fill="none" stroke="#3A2518" stroke-width="2.2" stroke-linejoin="round"/>
+<polygon points="46.9,19.8 63.8,5.6 62.2,3.8 45.4,17.9" fill="#4E2F1A"/>
+<polygon points="46.9,19.8 63.8,5.6 62.2,3.8 45.4,17.9" fill="none" stroke="#3A2518" stroke-width="2.2" stroke-linejoin="round"/>
+<polygon points="65,7.2 66.8,1.5 60.9,2.3" fill="#D9A441"/>
+<polygon points="65,7.2 66.8,1.5 60.9,2.3" fill="none" stroke="#3A2518" stroke-width="2.2" stroke-linejoin="round"/>
+<polygon points="19,76 61,76 58,86 22,86" fill="#9A9CA3"/>
+<polygon points="21,81 59,81 59,86 21,86" fill="#6F7178"/>
+<polygon points="19,76 61,76 58,86 22,86" fill="none" stroke="#3A2518" stroke-width="2.2" stroke-linejoin="round"/>
+<polygon points="24,46 56,46 58,76 22,76" fill="#6B4226"/>
+<polygon points="44,46 56,46 58,76 46,76" fill="#4E2F1A"/>
+<polygon points="24,46 56,46 58,76 22,76" fill="none" stroke="#3A2518" stroke-width="2.2" stroke-linejoin="round"/>
+<polygon points="10,36 70,36 70,47 10,47" fill="#F7EEDC"/>
+<polygon points="10,43 70,43 70,47 10,47" fill="#E6D6B8"/>
+<polygon points="10,36 70,36 70,47 10,47" fill="none" stroke="#3A2518" stroke-width="2.2" stroke-linejoin="round"/>
+<polygon points="4,37 13,21 22,37" fill="#4E8F86"/>
+<polygon points="13,21 22,37 13,37" fill="#3A6E67"/>
+<polygon points="4,37 13,21 22,37" fill="none" stroke="#3A2518" stroke-width="2.2" stroke-linejoin="round"/>
+<polygon points="58,37 67,21 76,37" fill="#4E8F86"/>
+<polygon points="67,21 76,37 67,37" fill="#3A6E67"/>
+<polygon points="58,37 67,21 76,37" fill="none" stroke="#3A2518" stroke-width="2.2" stroke-linejoin="round"/>
+<polygon points="11,38 40,7 69,38" fill="#4E8F86"/>
+<polygon points="40,7 69,38 40,38" fill="#3A6E67"/>
+<polygon points="11,38 40,7 69,38" fill="none" stroke="#3A2518" stroke-width="2.2" stroke-linejoin="round"/>
+<line x1="31" y1="48" x2="30.7" y2="75" stroke="#4E2F1A" stroke-width="1.2" stroke-linecap="round"/>
+<line x1="38" y1="48" x2="37.7" y2="75" stroke="#4E2F1A" stroke-width="1.2" stroke-linecap="round"/>
+<line x1="25" y1="48" x2="43" y2="74" stroke="#4E2F1A" stroke-width="1.4" stroke-linecap="round"/>
+<line x1="29.8" y1="20" x2="50.2" y2="20" stroke="#3A2518" stroke-width="1.1" opacity="0.35" stroke-linecap="round"/>
+<line x1="21.1" y1="29.3" x2="58.9" y2="29.3" stroke="#3A2518" stroke-width="1.1" opacity="0.35" stroke-linecap="round"/>
+<line x1="14" y1="36.5" x2="39" y2="10" stroke="#F7EEDC" stroke-width="1.4" opacity="0.35" stroke-linecap="round"/>
+<line x1="30" y1="81" x2="30" y2="86" stroke="#6F7178" stroke-width="1" stroke-linecap="round"/>
+<line x1="50" y1="81" x2="50" y2="86" stroke="#6F7178" stroke-width="1" stroke-linecap="round"/>
+<line x1="40" y1="7" x2="40" y2="1" stroke="#3A2518" stroke-width="1.6" stroke-linecap="round"/>
+<rect x="17.5" y="38.5" width="3" height="5.5" rx=".8" fill="#3A2518"/>
+<rect x="28.5" y="38.5" width="3" height="5.5" rx=".8" fill="#3A2518"/>
+<rect x="38.5" y="38.5" width="3" height="5.5" rx=".8" fill="#3A2518"/>
+<rect x="48.5" y="38.5" width="3" height="5.5" rx=".8" fill="#3A2518"/>
+<rect x="57.5" y="38.5" width="3" height="5.5" rx=".8" fill="#3A2518"/>
+<polygon points="40,1 49,3.5 40,6" fill="#D9A441" stroke="#3A2518" stroke-width="1.4" stroke-linejoin="round"/>
+<polygon points="13,15 7,17 13,19" fill="#D9A441" stroke="#3A2518" stroke-width="1.4" stroke-linejoin="round"/>
+<polygon points="67,15 73,17 67,19" fill="#D9A441" stroke="#3A2518" stroke-width="1.4" stroke-linejoin="round"/>
+<rect x="31" y="80" width="18" height="11" rx="2.5" fill="#D9A441" stroke="#3A2518" stroke-width="1.6"/>
+<rect x="36.5" y="82.5" width="2" height="6" fill="#3A2518"/><rect x="41.5" y="82.5" width="2" height="6" fill="#3A2518"/>
+</g></defs>
+<rect width="1280" height="1180" fill="#F1E4CC"/>
+<text x="40" y="56" font-size="34" font-weight="700" fill="#3A2518" text-anchor="start">Arrow tower · Direction A: Painted (ink line over flat color)</text>
+<text x="40" y="86" font-size="18" font-weight="400" fill="#3A2518" text-anchor="start">Tower Defense · art request #9 · concept sheet, not final art</text>
+<text x="40" y="140" font-size="20" font-weight="700" fill="#3A2518" text-anchor="start">1 · Base tower at real in-game size (1x) and at 3x</text>
+<g transform="translate(40 194) scale(1)"><rect x="0" y="0" width="80" height="80" fill="#6E9A4C"/><line x1="32.8" y1="59.6" x2="35.2" y2="48.6" stroke="#4F7A33" stroke-width="2.4" stroke-linecap="round"/><line x1="11.2" y1="52.4" x2="13.6" y2="41.4" stroke="#4F7A33" stroke-width="2.4" stroke-linecap="round"/><line x1="53.6" y1="45.2" x2="56" y2="34.2" stroke="#4F7A33" stroke-width="2.4" stroke-linecap="round"/></g><use href="#t0" transform="translate(40 170) scale(1)"/>
+<text x="80" y="300" font-size="14" font-weight="400" fill="#3A2518" text-anchor="middle">grass, 1x</text>
+<g transform="translate(140 194) scale(1)"><rect x="0" y="0" width="80" height="80" fill="#C9A77A"/><circle cx="57.6" cy="28.8" r="4" fill="#B8935F"/><circle cx="39.2" cy="20" r="4" fill="#B8935F"/><circle cx="20.8" cy="11.2" r="4" fill="#B8935F"/></g><use href="#t0" transform="translate(140 170) scale(1)"/>
+<text x="180" y="300" font-size="14" font-weight="400" fill="#3A2518" text-anchor="middle">road, 1x</text>
+<g transform="translate(250 242) scale(3)"><rect x="0" y="0" width="80" height="80" fill="#6E9A4C"/><line x1="32.8" y1="59.6" x2="35.2" y2="48.6" stroke="#4F7A33" stroke-width="2.4" stroke-linecap="round"/><line x1="11.2" y1="52.4" x2="13.6" y2="41.4" stroke="#4F7A33" stroke-width="2.4" stroke-linecap="round"/><line x1="53.6" y1="45.2" x2="56" y2="34.2" stroke="#4F7A33" stroke-width="2.4" stroke-linecap="round"/></g><use href="#t0" transform="translate(250 170) scale(3)"/>
+<text x="370" y="505" font-size="14" font-weight="400" fill="#3A2518" text-anchor="middle">grass, 3x</text>
+<g transform="translate(510 242) scale(3)"><rect x="0" y="0" width="80" height="80" fill="#C9A77A"/><circle cx="57.6" cy="28.8" r="4" fill="#B8935F"/><circle cx="39.2" cy="20" r="4" fill="#B8935F"/><circle cx="20.8" cy="11.2" r="4" fill="#B8935F"/></g><use href="#t0" transform="translate(510 170) scale(3)"/>
+<text x="630" y="505" font-size="14" font-weight="400" fill="#3A2518" text-anchor="middle">road, 3x</text>
+<text x="800" y="140" font-size="20" font-weight="700" fill="#3A2518" text-anchor="start">Tower button (96 × 96)</text>
+<rect x="800" y="170" width="96" height="96" rx="14" fill="#F7EEDC" stroke="#3A2518" stroke-width="2.5"/>
+<use href="#t0" transform="translate(808 170) scale(1)"/>
+<rect x="920" y="170" width="96" height="96" rx="14" fill="#E6D6B8" stroke="#3A2518" stroke-width="2.5"/>
+<use href="#t0" transform="translate(928 170) scale(1)"/>
+<text x="848" y="290" font-size="14" font-weight="400" fill="#3A2518" text-anchor="middle">cream</text>
+<text x="968" y="290" font-size="14" font-weight="400" fill="#3A2518" text-anchor="middle">cream shade</text>
+<text x="800" y="340" font-size="20" font-weight="700" fill="#3A2518" text-anchor="start">Scene: one board cell beside the road (1x)</text>
+<rect x="800" y="384" width="80" height="80" fill="#6E9A4C"/><line x1="837.6" y1="413.2" x2="840" y2="402.2" stroke="#4F7A33" stroke-width="2.4" stroke-linecap="round"/><line x1="816" y1="406" x2="818.4" y2="395" stroke="#4F7A33" stroke-width="2.4" stroke-linecap="round"/><line x1="858.4" y1="398.8" x2="860.8" y2="387.8" stroke="#4F7A33" stroke-width="2.4" stroke-linecap="round"/>
+<rect x="880" y="384" width="80" height="80" fill="#6E9A4C"/><line x1="947.2" y1="428.4" x2="949.6" y2="417.4" stroke="#4F7A33" stroke-width="2.4" stroke-linecap="round"/><line x1="925.6" y1="421.2" x2="928" y2="410.2" stroke="#4F7A33" stroke-width="2.4" stroke-linecap="round"/><line x1="904" y1="414" x2="906.4" y2="403" stroke="#4F7A33" stroke-width="2.4" stroke-linecap="round"/>
+<rect x="960" y="384" width="80" height="80" fill="#6E9A4C"/><line x1="992.8" y1="443.6" x2="995.2" y2="432.6" stroke="#4F7A33" stroke-width="2.4" stroke-linecap="round"/><line x1="971.2" y1="436.4" x2="973.6" y2="425.4" stroke="#4F7A33" stroke-width="2.4" stroke-linecap="round"/><line x1="1013.6" y1="429.2" x2="1016" y2="418.2" stroke="#4F7A33" stroke-width="2.4" stroke-linecap="round"/>
+<rect x="1040" y="384" width="80" height="80" fill="#6E9A4C"/><line x1="1102.4" y1="458.8" x2="1104.8" y2="447.8" stroke="#4F7A33" stroke-width="2.4" stroke-linecap="round"/><line x1="1080.8" y1="451.6" x2="1083.2" y2="440.6" stroke="#4F7A33" stroke-width="2.4" stroke-linecap="round"/><line x1="1059.2" y1="444.4" x2="1061.6" y2="433.4" stroke="#4F7A33" stroke-width="2.4" stroke-linecap="round"/>
+<rect x="1120" y="384" width="80" height="80" fill="#6E9A4C"/><line x1="1148" y1="410" x2="1150.4" y2="399" stroke="#4F7A33" stroke-width="2.4" stroke-linecap="round"/><line x1="1190.4" y1="402.8" x2="1192.8" y2="391.8" stroke="#4F7A33" stroke-width="2.4" stroke-linecap="round"/><line x1="1168.8" y1="459.6" x2="1171.2" y2="448.6" stroke="#4F7A33" stroke-width="2.4" stroke-linecap="round"/>
+<rect x="800" y="464" width="80" height="80" fill="#C9A77A"/><circle cx="844.8" cy="478.4" r="4" fill="#B8935F"/><circle cx="826.4" cy="525.6" r="4" fill="#B8935F"/><circle cx="808" cy="516.8" r="4" fill="#B8935F"/>
+<rect x="880" y="464" width="80" height="80" fill="#C9A77A"/><circle cx="893.6" cy="488.8" r="4" fill="#B8935F"/><circle cx="931.2" cy="480" r="4" fill="#B8935F"/><circle cx="912.8" cy="527.2" r="4" fill="#B8935F"/>
+<rect x="960" y="464" width="80" height="80" fill="#C9A77A"/><circle cx="998.4" cy="499.2" r="4" fill="#B8935F"/><circle cx="980" cy="490.4" r="4" fill="#B8935F"/><circle cx="1017.6" cy="481.6" r="4" fill="#B8935F"/>
+<rect x="1040" y="464" width="80" height="80" fill="#C9A77A"/><circle cx="1103.2" cy="509.6" r="4" fill="#B8935F"/><circle cx="1084.8" cy="500.8" r="4" fill="#B8935F"/><circle cx="1066.4" cy="492" r="4" fill="#B8935F"/>
+<rect x="1120" y="464" width="80" height="80" fill="#C9A77A"/><circle cx="1152" cy="520" r="4" fill="#B8935F"/><circle cx="1133.6" cy="511.2" r="4" fill="#B8935F"/><circle cx="1171.2" cy="502.4" r="4" fill="#B8935F"/>
+<rect x="800" y="544" width="80" height="80" fill="#6E9A4C"/><line x1="813.6" y1="597.2" x2="816" y2="586.2" stroke="#4F7A33" stroke-width="2.4" stroke-linecap="round"/><line x1="856" y1="590" x2="858.4" y2="579" stroke="#4F7A33" stroke-width="2.4" stroke-linecap="round"/><line x1="834.4" y1="582.8" x2="836.8" y2="571.8" stroke="#4F7A33" stroke-width="2.4" stroke-linecap="round"/>
+<rect x="880" y="544" width="80" height="80" fill="#6E9A4C"/><line x1="923.2" y1="612.4" x2="925.6" y2="601.4" stroke="#4F7A33" stroke-width="2.4" stroke-linecap="round"/><line x1="901.6" y1="605.2" x2="904" y2="594.2" stroke="#4F7A33" stroke-width="2.4" stroke-linecap="round"/><line x1="944" y1="598" x2="946.4" y2="587" stroke="#4F7A33" stroke-width="2.4" stroke-linecap="round"/>
+<rect x="960" y="544" width="80" height="80" fill="#6E9A4C"/><line x1="968.8" y1="563.6" x2="971.2" y2="552.6" stroke="#4F7A33" stroke-width="2.4" stroke-linecap="round"/><line x1="1011.2" y1="620.4" x2="1013.6" y2="609.4" stroke="#4F7A33" stroke-width="2.4" stroke-linecap="round"/><line x1="989.6" y1="613.2" x2="992" y2="602.2" stroke="#4F7A33" stroke-width="2.4" stroke-linecap="round"/>
+<rect x="1040" y="544" width="80" height="80" fill="#6E9A4C"/><line x1="1078.4" y1="578.8" x2="1080.8" y2="567.8" stroke="#4F7A33" stroke-width="2.4" stroke-linecap="round"/><line x1="1056.8" y1="571.6" x2="1059.2" y2="560.6" stroke="#4F7A33" stroke-width="2.4" stroke-linecap="round"/><line x1="1099.2" y1="564.4" x2="1101.6" y2="553.4" stroke="#4F7A33" stroke-width="2.4" stroke-linecap="round"/>
+<rect x="1120" y="544" width="80" height="80" fill="#6E9A4C"/><line x1="1188" y1="594" x2="1190.4" y2="583" stroke="#4F7A33" stroke-width="2.4" stroke-linecap="round"/><line x1="1166.4" y1="586.8" x2="1168.8" y2="575.8" stroke="#4F7A33" stroke-width="2.4" stroke-linecap="round"/><line x1="1144.8" y1="579.6" x2="1147.2" y2="568.6" stroke="#4F7A33" stroke-width="2.4" stroke-linecap="round"/>
+<rect x="800" y="384" width="400" height="240" fill="none" stroke="#3A2518" stroke-width="2"/>
+<use href="#t0" transform="translate(880 360) scale(1)"/><use href="#tB" transform="translate(1120 360) scale(1)"/><use href="#tA" transform="translate(1040 520) scale(1)"/>
+<text x="1000" y="650" font-size="14" font-weight="400" fill="#3A2518" text-anchor="middle">base · Pierce II · Multishot II, as they would sit on the board</text>
+<text x="40" y="540" font-size="20" font-weight="700" fill="#3A2518" text-anchor="start">2 · Upgrade states (2x, then 1x)</text>
+<rect x="40" y="560" width="200" height="240" rx="10" fill="#D9C9C0"/>
+<use href="#t0" transform="translate(60 575) scale(2)"/>
+<text x="140" y="828" font-size="15" font-weight="700" fill="#3A2518" text-anchor="middle">Base (tier I)</text>
+<g transform="translate(100 874) scale(1)"><rect x="0" y="0" width="80" height="80" fill="#6E9A4C"/><line x1="32.8" y1="59.6" x2="35.2" y2="48.6" stroke="#4F7A33" stroke-width="2.4" stroke-linecap="round"/><line x1="11.2" y1="52.4" x2="13.6" y2="41.4" stroke="#4F7A33" stroke-width="2.4" stroke-linecap="round"/><line x1="53.6" y1="45.2" x2="56" y2="34.2" stroke="#4F7A33" stroke-width="2.4" stroke-linecap="round"/></g><use href="#t0" transform="translate(100 850) scale(1)"/>
+<rect x="280" y="560" width="200" height="240" rx="10" fill="#D9C9C0"/>
+<use href="#tA" transform="translate(300 575) scale(2)"/>
+<text x="380" y="828" font-size="15" font-weight="700" fill="#B8533A" text-anchor="middle">Pierce II · branch A, rust mark</text>
+<g transform="translate(340 874) scale(1)"><rect x="0" y="0" width="80" height="80" fill="#6E9A4C"/><line x1="32.8" y1="59.6" x2="35.2" y2="48.6" stroke="#4F7A33" stroke-width="2.4" stroke-linecap="round"/><line x1="11.2" y1="52.4" x2="13.6" y2="41.4" stroke="#4F7A33" stroke-width="2.4" stroke-linecap="round"/><line x1="53.6" y1="45.2" x2="56" y2="34.2" stroke="#4F7A33" stroke-width="2.4" stroke-linecap="round"/></g><use href="#tA" transform="translate(340 850) scale(1)"/>
+<rect x="520" y="560" width="200" height="240" rx="10" fill="#D9C9C0"/>
+<use href="#tB" transform="translate(540 575) scale(2)"/>
+<text x="620" y="828" font-size="15" font-weight="700" fill="#4E2F1A" text-anchor="middle">Multishot II · branch B, gold mark</text>
+<g transform="translate(580 874) scale(1)"><rect x="0" y="0" width="80" height="80" fill="#6E9A4C"/><line x1="32.8" y1="59.6" x2="35.2" y2="48.6" stroke="#4F7A33" stroke-width="2.4" stroke-linecap="round"/><line x1="11.2" y1="52.4" x2="13.6" y2="41.4" stroke="#4F7A33" stroke-width="2.4" stroke-linecap="round"/><line x1="53.6" y1="45.2" x2="56" y2="34.2" stroke="#4F7A33" stroke-width="2.4" stroke-linecap="round"/></g><use href="#tB" transform="translate(580 850) scale(1)"/>
+<text x="800" y="700" font-size="20" font-weight="700" fill="#3A2518" text-anchor="start">3 · Palette used (all from art-direction.md)</text>
+<rect x="800" y="720" width="34" height="34" rx="4" fill="#3A2518" stroke="#3A2518" stroke-width="1.5"/>
+<text x="840" y="735" font-size="12" font-weight="700" fill="#3A2518" text-anchor="start">#3A2518</text>
+<text x="840" y="751" font-size="12" font-weight="400" fill="#3A2518" text-anchor="start">ink</text>
+<rect x="912" y="720" width="34" height="34" rx="4" fill="#4E8F86" stroke="#3A2518" stroke-width="1.5"/>
+<text x="952" y="735" font-size="12" font-weight="700" fill="#3A2518" text-anchor="start">#4E8F86</text>
+<text x="952" y="751" font-size="12" font-weight="400" fill="#3A2518" text-anchor="start">roof</text>
+<rect x="1024" y="720" width="34" height="34" rx="4" fill="#3A6E67" stroke="#3A2518" stroke-width="1.5"/>
+<text x="1064" y="735" font-size="12" font-weight="700" fill="#3A2518" text-anchor="start">#3A6E67</text>
+<text x="1064" y="751" font-size="12" font-weight="400" fill="#3A2518" text-anchor="start">roof shade</text>
+<rect x="1136" y="720" width="34" height="34" rx="4" fill="#6B4226" stroke="#3A2518" stroke-width="1.5"/>
+<text x="1176" y="735" font-size="12" font-weight="700" fill="#3A2518" text-anchor="start">#6B4226</text>
+<text x="1176" y="751" font-size="12" font-weight="400" fill="#3A2518" text-anchor="start">timber</text>
+<rect x="800" y="788" width="34" height="34" rx="4" fill="#4E2F1A" stroke="#3A2518" stroke-width="1.5"/>
+<text x="840" y="803" font-size="12" font-weight="700" fill="#3A2518" text-anchor="start">#4E2F1A</text>
+<text x="840" y="819" font-size="12" font-weight="400" fill="#3A2518" text-anchor="start">timber shade</text>
+<rect x="912" y="788" width="34" height="34" rx="4" fill="#F7EEDC" stroke="#3A2518" stroke-width="1.5"/>
+<text x="952" y="803" font-size="12" font-weight="700" fill="#3A2518" text-anchor="start">#F7EEDC</text>
+<text x="952" y="819" font-size="12" font-weight="400" fill="#3A2518" text-anchor="start">plaster</text>
+<rect x="1024" y="788" width="34" height="34" rx="4" fill="#E6D6B8" stroke="#3A2518" stroke-width="1.5"/>
+<text x="1064" y="803" font-size="12" font-weight="700" fill="#3A2518" text-anchor="start">#E6D6B8</text>
+<text x="1064" y="819" font-size="12" font-weight="400" fill="#3A2518" text-anchor="start">plaster shade</text>
+<rect x="1136" y="788" width="34" height="34" rx="4" fill="#9A9CA3" stroke="#3A2518" stroke-width="1.5"/>
+<text x="1176" y="803" font-size="12" font-weight="700" fill="#3A2518" text-anchor="start">#9A9CA3</text>
+<text x="1176" y="819" font-size="12" font-weight="400" fill="#3A2518" text-anchor="start">stone</text>
+<rect x="800" y="856" width="34" height="34" rx="4" fill="#6F7178" stroke="#3A2518" stroke-width="1.5"/>
+<text x="840" y="871" font-size="12" font-weight="700" fill="#3A2518" text-anchor="start">#6F7178</text>
+<text x="840" y="887" font-size="12" font-weight="400" fill="#3A2518" text-anchor="start">stone shade</text>
+<rect x="912" y="856" width="34" height="34" rx="4" fill="#B8533A" stroke="#3A2518" stroke-width="1.5"/>
+<text x="952" y="871" font-size="12" font-weight="700" fill="#3A2518" text-anchor="start">#B8533A</text>
+<text x="952" y="887" font-size="12" font-weight="400" fill="#3A2518" text-anchor="start">branch A</text>
+<rect x="1024" y="856" width="34" height="34" rx="4" fill="#D9A441" stroke="#3A2518" stroke-width="1.5"/>
+<text x="1064" y="871" font-size="12" font-weight="700" fill="#3A2518" text-anchor="start">#D9A441</text>
+<text x="1064" y="887" font-size="12" font-weight="400" fill="#3A2518" text-anchor="start">branch B</text>
+<rect x="1136" y="856" width="34" height="34" rx="4" fill="#6E9A4C" stroke="#3A2518" stroke-width="1.5"/>
+<text x="1176" y="871" font-size="12" font-weight="700" fill="#3A2518" text-anchor="start">#6E9A4C</text>
+<text x="1176" y="887" font-size="12" font-weight="400" fill="#3A2518" text-anchor="start">grass</text>
+<rect x="800" y="924" width="34" height="34" rx="4" fill="#4F7A33" stroke="#3A2518" stroke-width="1.5"/>
+<text x="840" y="939" font-size="12" font-weight="700" fill="#3A2518" text-anchor="start">#4F7A33</text>
+<text x="840" y="955" font-size="12" font-weight="400" fill="#3A2518" text-anchor="start">grass shade</text>
+<rect x="912" y="924" width="34" height="34" rx="4" fill="#C9A77A" stroke="#3A2518" stroke-width="1.5"/>
+<text x="952" y="939" font-size="12" font-weight="700" fill="#3A2518" text-anchor="start">#C9A77A</text>
+<text x="952" y="955" font-size="12" font-weight="400" fill="#3A2518" text-anchor="start">road</text>
+<rect x="1024" y="924" width="34" height="34" rx="4" fill="#B8935F" stroke="#3A2518" stroke-width="1.5"/>
+<text x="1064" y="939" font-size="12" font-weight="700" fill="#3A2518" text-anchor="start">#B8935F</text>
+<text x="1064" y="955" font-size="12" font-weight="400" fill="#3A2518" text-anchor="start">road shade</text>
+<rect x="1136" y="924" width="34" height="34" rx="4" fill="#D9C9C0" stroke="#3A2518" stroke-width="1.5"/>
+<text x="1176" y="939" font-size="12" font-weight="700" fill="#3A2518" text-anchor="start">#D9C9C0</text>
+<text x="1176" y="955" font-size="12" font-weight="400" fill="#3A2518" text-anchor="start">card bg</text>
+<line x1="40" y1="1010" x2="1240" y2="1010" stroke="#3A2518" stroke-width="1.5" opacity=".4"/>
+<text x="40" y="1046" font-size="16" font-weight="400" fill="#3A2518" text-anchor="start">Idea: storybook archer tower in ink line over flat paint. Pierce goes taller with one heavy rust-tipped bolt (focused); Multishot widens with side turrets and a gold arrow fan (busy).</text>
+<text x="40" y="1074" font-size="16" font-weight="400" fill="#3A2518" text-anchor="start">Risk: thin ink lines and the arrow fan get fussy at 80 px on a small phone; final painted art needs a painter or a painted-style tool, since PixelLab makes pixel art.</text>
+<text x="40" y="1140" font-size="14" font-weight="400" fill="#3A2518" text-anchor="start">© 2026 F Lane d/b/a One Fifty Labs · All rights reserved</text>
+</svg>

@@ -1,0 +1,15 @@
+{
+  "_about": "The one list of playable games. The JustAskJoe Lab, the Studio home and the PR preview links all read this file, so adding a game is one entry here (plus its builds/ folder). slug: the Lab address (/lab/<slug>/). dir: the game's folder. file: the build in <dir>/builds/. img: true if the build loads art from builds/img/. © 2026 justaskjoe. All rights reserved.",
+  "games": [
+    { "slug": "tower-defense", "name": "Tower Defense", "kind": "Tower defense", "build": "P1.1", "dir": "tower-defense", "file": "tower-defense-p1.html",
+      "blurb": "Co-op roguelite TD (solo for now): a road that grows, 4 towers, 10 waves, a card draft after each. Menu → Tester tools jumps to any wave." },
+    { "slug": "trickbound", "name": "Trickbound", "kind": "Card game", "dir": "trickbound", "file": "trickbound.html", "img": true,
+      "blurb": "Spades spin-off: a trick-taking card adventure with familiars. Leg 1 is playable." },
+    { "slug": "tilebound", "name": "Tilebound", "kind": "Tile game", "dir": "tilebound", "file": "tilebound.html", "img": true,
+      "blurb": "Mahjong meets the Game Boy Pokémon TCG. Plays with bots." },
+    { "slug": "hexed", "name": "Hexed", "kind": "Match-3", "dir": "hexed", "file": "hexed.html",
+      "blurb": "Witchy tarot match-3: ten levels, a journey map, powers and a coach." },
+    { "slug": "neon-surf", "name": "Neon Surf", "kind": "Tech test", "dir": "neon-surf", "file": "neon-surf.html",
+      "blurb": "Neon-ocean rhythm surfing on an original placeholder beat, with tap-along calibration." }
+  ]
+}
