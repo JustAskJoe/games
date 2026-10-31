@@ -20,7 +20,7 @@
     drone: { hp: 12, bite: 3, w: 0.11, credits: 1 },
     biker: { hp: 110, bite: 9, w: 0.14, credits: 3, drift: 0.32 },
     crate: { hp: 30, bite: 0, w: 0.13, credits: 10 },
-    boss: { hp: 25500, bite: 0, w: 0.42, credits: 60 }
+    boss: { hp: 23000, bite: 0, w: 0.42, credits: 60 }
   };
   // gate pairs: one every 2 bars from bar 4 to 18. Sides are shuffled per run (seeded). No pair has an obvious answer:
   // +N beats x1.5 while the squad is small, fire rate beats both once it's big, charge trades growth for the drop,
@@ -144,7 +144,7 @@
     if (e.kind === 'gate') { applyGate(G, G.sx < 0 ? e.L : e.R); return; }
     if (e.kind === 'crate') return; // missed the crate
     if (e.hp <= 0) return;
-    if (e.kind === 'boss') { const lost = Math.ceil(e.hp / 60); G.n = Math.max(0, G.n - lost); G.ev.push({ type: 'bossHit', t: G.t, lost }); return; }
+    if (e.kind === 'boss') { const lost = Math.ceil(e.hp / 30); G.n = Math.max(0, G.n - lost); G.ev.push({ type: 'bossHit', t: G.t, lost }); return; }
     if (hitX) { const lost = Math.max(1, Math.ceil(KIND[e.kind].bite * e.hp / e.maxHp)); G.n = Math.max(0, G.n - lost); G.ev.push({ type: 'hurt', t: G.t, lost, x: e.x }); }
   }
 

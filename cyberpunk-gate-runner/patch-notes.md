@@ -49,7 +49,8 @@ First step of Prototype 2: new graphics, same game.
 - [ ] Nobody has played the hordes, boss fight, impact or city yet. They've only been checked with bots and stills.
 - [ ] No slow-mo on the boss kill: game time is song time, so slowing it would desync the music. There's a chain of explosions instead.
 - [ ] Weapons and upgrades were tuned with bots, so a human may find one clearly best. See the table in `prototype/v2/README.md`.
-- [ ] You can still win without killing the Enforcer by surviving its contact, and a casual player does so in about 4 of 10 runs. That may feel flat.
+- [ ] You can still win without killing the Enforcer, but contact now costs twice as many runners. A casual bot kills it in 54% of runs and survives it in about 35%. Check that a survive win doesn't feel flat.
+- [ ] Peak squads are about 100 now, down from 198, after the weapon path brought back fewer power gates. Bands still pass. Results differ by upgrade: Scatter's upgrades kill the boss far less often than Rail's.
 - [ ] Sim bands changed for the harder tuning: random 25-60% is now 5-40%, idle at most 35% is now at most 25%. Smart and casual bands are unchanged. Needs a human check that a first run isn't punishing.
 - [ ] The song tempo is unchanged at 122 BPM, so gates still arrive every 2 bars. "Faster" is world speed and less shooting time, not more gates per minute. Bots don't feel speed, so whether it's readable at this pace is a human call.
 
