@@ -112,19 +112,22 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     drone: { hp: 12, bite: 3, w: 0.11, credits: 1 },
     biker: { hp: 110, bite: 9, w: 0.14, credits: 3, drift: 0.32 },
     crate: { hp: 30, bite: 0, w: 0.13, credits: 10 },
-    boss: { hp: 9000, bite: 0, w: 0.42, credits: 60 }
+    boss: { hp: 7000, bite: 0, w: 0.42, credits: 60 }
   };
-  // gate pairs: one every 2 bars from bar 4 to 18. Sides are shuffled per run (seeded).
+  // gate pairs: one every 2 bars from bar 4 to 18. Sides are shuffled per run (seeded). No pair has an obvious answer:
+  // +N beats x1.5 while the squad is small, fire rate beats both once it's big, charge trades growth for the drop,
+  // and a trade costs runners now for double later.
   const GATES = [
-    [{ op: 'add', v: 5 }, { op: 'mul', v: 2 }],
-    [{ op: 'add', v: 8 }, { op: 'sub', v: 4 }],
-    [{ op: 'rate', v: 0.5 }, { op: 'add', v: 6 }],
-    [{ op: 'mul', v: 2 }, { op: 'add', v: 10 }],
-    [{ op: 'sub', v: 8 }, { op: 'mul', v: 2 }],
-    [{ op: 'add', v: 15 }, { op: 'rate', v: 0.5 }],
-    [{ op: 'mul', v: 2 }, { op: 'sub', v: 15 }],
-    [{ op: 'add', v: 20 }, { op: 'mul', v: 2 }]
+    [{ op: 'add', v: 8 }, { op: 'mul', v: 1.5 }],
+    [{ op: 'mul', v: 1.5 }, { op: 'rate', v: 0.25 }],
+    [{ op: 'add', v: 15 }, { op: 'oc', v: 30 }],
+    [{ op: 'add', v: 20 }, { op: 'mul', v: 1.5 }],
+    [{ op: 'trade', lose: 10, v: 2 }, { op: 'rate', v: 0.25 }],
+    [{ op: 'add', v: 30 }, { op: 'mul', v: 1.5 }],
+    [{ op: 'oc', v: 30 }, { op: 'mul', v: 1.5 }],
+    [{ op: 'add', v: 40 }, { op: 'rate', v: 0.5 }]
   ];
+  const CHARGE = 10;            // Overclock % from any gate; charge gates add more, trades add none
 
   function rng(seed) { let s = (seed >>> 0) || 1; return () => { s ^= s << 13; s ^= s >>> 17; s ^= s << 5; return ((s >>> 0) % 1e9) / 1e9; }; }
 
@@ -169,12 +172,17 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     if (it.type === 'steer') G.tx = Math.max(-0.9, Math.min(0.9, +it.x || 0));
   }
 
+  // what a gate would do, without doing it (the UI shows this as a preview too)
+  function gateResult(G, g) {
+    let n = G.n, rate = G.rate, c = CHARGE;
+    if (g.op === 'add') n += g.v; else if (g.op === 'mul') n = Math.floor(n * g.v); else if (g.op === 'rate') rate += g.v;
+    else if (g.op === 'oc') c = g.v; else if (g.op === 'trade') { n = Math.max(0, n - g.lose) * g.v; c = 0; }
+    return { n, rate, meter: Math.min(100, G.meter + c) };
+  }
   function applyGate(G, g) {
-    const n0 = G.n;
-    if (g.op === 'add') G.n += g.v; else if (g.op === 'mul') G.n *= g.v; else if (g.op === 'sub') G.n = Math.max(0, G.n - g.v); else if (g.op === 'rate') G.rate += g.v;
-    const good = g.op !== 'sub';
+    const n0 = G.n, r = gateResult(G, g), good = g.op !== 'trade';
+    G.n = r.n; G.rate = r.rate; if (G.t < DROP_T) G.meter = r.meter;
     if (good) G.gatesGood++; else G.gatesBad++;
-    if (G.t < DROP_T) G.meter = Math.max(0, Math.min(100, G.meter + (good ? 12.5 : -15)));
     G.ev.push({ type: 'gate', t: G.t, g, good, n0, n: G.n });
   }
 
@@ -239,11 +247,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   }
 
   // ---- bots, used by sim.js and the in-page tester ----
-  function gateValue(G, g) {
-    let n = G.n, rate = G.rate;
-    if (g.op === 'add') n += g.v; else if (g.op === 'mul') n *= g.v; else if (g.op === 'sub') n = Math.max(0, n - g.v); else rate += g.v;
-    return n * rate;
-  }
+  function gateValue(G, g) { const r = gateResult(G, g); return r.n * r.rate * (1 + 2 * r.meter / 100); }
   const BOTS = {
     smart: G => {
       const g = G.ents.find(e => !e.done && e.kind === 'gate' && z(G, e) < 1.6);
@@ -276,7 +280,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     return { bot, runs: n, win: avg(o => o.won ? 1 : 0), boss: avg(o => o.boss ? 1 : 0), peak: Math.round(avg(o => o.peak)), survivors: Math.round(avg(o => o.survivors)), oc: Math.round(avg(o => o.ocMult) * 100) / 100, arc: avg(o => o.weapon === 'arc' ? 1 : 0), credits: Math.round(avg(o => o.credits)), diedIn: out.filter(o => !o.won).reduce((m, o) => (m[o.section] = (m[o.section] || 0) + 1, m), {}) };
   }
 
-  const GR = { BPM, B, BAR, DT, SEC, END, DROP_T, DROP_END, RANGE, KIND, width, sectionAt, newGame, act, step, advance, results, hash, simulate, BOTS, rng };
+  const GR = { BPM, B, BAR, DT, SEC, END, DROP_T, DROP_END, RANGE, KIND, width, sectionAt, newGame, gateResult, act, step, advance, results, hash, simulate, BOTS, rng };
   if (typeof module !== 'undefined' && module.exports) module.exports = GR; else root.GR = GR;
 })(typeof window !== 'undefined' ? window : globalThis);
 
@@ -534,11 +538,11 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     setQuality(R.quality);
   };
   // one gate = two lit panels; the panels are rebuilt each run because sides are shuffled
-  const GCOL = op => op === 'sub' ? COL.red : op === 'rate' ? COL.gold : COL.green;
+  const GCOL = op => op === 'trade' ? COL.red : op === 'rate' ? COL.gold : op === 'oc' ? COL.pink2 : COL.green;
   function gatePanel(text, col, side) {
     const cv = document.createElement('canvas'); cv.width = 512; cv.height = 256; const c = cv.getContext('2d'), gr = c.createLinearGradient(0, 0, 0, 256);
     gr.addColorStop(0, col + '14'); gr.addColorStop(1, col + '40'); c.fillStyle = gr; c.fillRect(0, 0, 512, 256);
-    c.textAlign = 'center'; c.textBaseline = 'middle'; c.shadowColor = col; c.shadowBlur = 18; c.fillStyle = '#fff'; c.font = `700 ${text.length > 5 ? 78 : 140}px "Space Grotesk",system-ui,sans-serif`; c.fillText(text, 256, 134);
+    c.textAlign = 'center'; c.textBaseline = 'middle'; c.shadowColor = col; c.shadowBlur = 18; c.fillStyle = '#fff'; c.font = `700 ${text.length > 8 ? 60 : text.length > 5 ? 84 : 140}px "Space Grotesk",system-ui,sans-serif`; c.fillText(text, 256, 134);
     const tex = new T.CanvasTexture(cv); tex.colorSpace = T.SRGBColorSpace; tex.anisotropy = 4;
     const w = RW * 0.97, h = 3.3, grp = new T.Group(), panel = new T.Mesh(new T.PlaneGeometry(w, h), new T.MeshBasicMaterial({ map: tex, color: new T.Color(2.4, 2.4, 2.4), transparent: true, depthWrite: false, side: T.DoubleSide }));
     panel.position.y = h / 2 + 0.2; grp.add(panel);
@@ -788,7 +792,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     if (U.flash > 0) { g.fillStyle = `rgba(255,255,255,${U.flash})`; g.fillRect(0, 0, W, H); U.flash *= RM ? 0.5 : 0.88; if (U.flash < 0.02) U.flash = 0; }
   }
   function label(txt, x, y, size, col) { g.font = `700 ${Math.max(9, size)}px ${FONT}`; g.textAlign = 'center'; g.fillStyle = col; g.fillText(txt, x, y); }
-  function gateText(o) { return o.op === 'add' ? '+' + o.v : o.op === 'sub' ? '−' + o.v : o.op === 'mul' ? '×' + o.v : 'FIRE +' + Math.round(o.v * 100) + '%'; }
+  function gateText(o) { return o.op === 'add' ? '+' + o.v : o.op === 'mul' ? '×' + o.v : o.op === 'trade' ? '−' + o.lose + ' ×' + o.v : o.op === 'oc' ? 'CHARGE +' + o.v + '%' : 'FIRE +' + Math.round(o.v * 100) + '%'; }
   function hpBar(x, y, w, fr, boss) { const h = boss ? 7 : 4; g.fillStyle = 'rgba(0,0,0,.55)'; g.fillRect(x - w / 2, y, w, h); g.fillStyle = boss ? '#FF3DA8' : '#4BFFA5'; g.fillRect(x - w / 2, y, w * Math.max(0, fr), h); }
   // labels and health bars sit over the 3D models, sized by how close the thing is
   function drawLabels(G) {
@@ -839,7 +843,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
         if (!firstSeen.kill) { firstSeen.kill = 1; hint('Your squad fires on its own. Line up with enemies'); }
       } else if (e.type === 'gate') {
         sfx(e.good ? 'good' : 'bad'); U.popups.push({ t0: t, txt: gateText(e.g) + '  →  ' + e.n, x: sx, y: sy - 90, c: e.good ? '#4BFFA5' : '#FF4D6D', big: true });
-        if (e.good && G.t < GR.DROP_T) U.popups.push({ t0: t + 0.15, txt: 'Overclock +', x: W - 70, y: 110, c: '#FF7AD0' });
+        if (e.g.op === 'oc' && G.t < GR.DROP_T) U.popups.push({ t0: t + 0.15, txt: 'Overclock +', x: W - 70, y: 110, c: '#FF7AD0' });
         say('Gate ' + gateText(e.g) + '. Squad ' + e.n);
       } else if (e.type === 'runner') { sfx('runner'); U.popups.push({ t0: t, txt: '+1', x: sx, y: sy - 60, c: '#BFF8FF' }); }
       else if (e.type === 'hurt' || e.type === 'bossHit') { sfx('hurt'); U.shake = e.type === 'bossHit' ? 16 : 6; U.popups.push({ t0: t, txt: '−' + e.lost, x: sx, y: sy - 70, c: '#FF4D6D', big: e.type === 'bossHit' }); }
@@ -897,7 +901,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   function finish() {
     const G = U.G, r = GR.results(G); U.playing = false; U.lastRes = r;
     const verdict = r.won ? (r.boss ? 'Street cleared' : 'You made it') : 'Squad down';
-    const sub = r.won ? (r.boss ? 'The Enforcer melted on the drop.' : 'The Enforcer walked through you, but your squad survived.') : (r.section === 'drop' ? 'The Enforcer was too much. More good gates means a bigger Overclock.' : 'Line up with enemies to shoot them before they reach you.');
+    const sub = r.won ? (r.boss ? 'The Enforcer melted on the drop.' : 'The Enforcer walked through you, but your squad survived.') : (r.section === 'drop' ? 'The Enforcer was too much. Build a bigger squad or charge Overclock higher.' : 'Line up with enemies to shoot them before they reach you.');
     showSheet(`<span class="tag">${U.test ? 'TESTER RUN · ' : ''}Prototype 2</span><h2>${verdict}</h2>
       <div class="big">${r.survivors}</div><p>${sub}</p>
       <div class="stats"><div class="stat"><b>${r.peak}</b><span>peak squad</span></div><div class="stat"><b>${r.kills}</b><span>kills</span></div><div class="stat"><b>×${r.ocMult.toFixed(1)}</b><span>overclock</span></div>
@@ -922,10 +926,10 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   function howScreen() {
     showSheet(`<h2>How to play</h2><ol class="steps">
       <li><b class="c">Drag left and right</b> anywhere to steer your squad. Arrow keys work too.</li>
-      <li><b class="gr">Pick a gate.</b> Green grows your squad or your firepower. <b class="r">Red</b> costs you runners.</li>
+      <li><b class="gr">Pick a gate.</b> Flat numbers suit a small squad, multipliers a big one. <b class="r">Red</b> trades runners now for double later.</li>
       <li><b class="p">Your squad fires on its own.</b> Line up with drones and bikers to shoot them before they hit you.</li>
       <li><b class="g">Shoot the gold crate</b> for the arc gun.</li>
-      <li><b class="p">Good gates charge Overclock.</b> When the beat drops, it fires. Melt the boss.</li></ol>
+      <li><b class="p">Gates charge Overclock.</b> Charge gates charge it most. When the beat drops, it fires. Melt the boss.</li></ol>
       <button class="btn pri" data-act="play" type="button">Run</button><button class="btn" data-act="title" type="button">Back</button>`);
   }
   const FQ = [

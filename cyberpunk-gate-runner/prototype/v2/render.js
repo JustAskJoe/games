@@ -250,11 +250,11 @@
     setQuality(R.quality);
   };
   // one gate = two lit panels; the panels are rebuilt each run because sides are shuffled
-  const GCOL = op => op === 'sub' ? COL.red : op === 'rate' ? COL.gold : COL.green;
+  const GCOL = op => op === 'trade' ? COL.red : op === 'rate' ? COL.gold : op === 'oc' ? COL.pink2 : COL.green;
   function gatePanel(text, col, side) {
     const cv = document.createElement('canvas'); cv.width = 512; cv.height = 256; const c = cv.getContext('2d'), gr = c.createLinearGradient(0, 0, 0, 256);
     gr.addColorStop(0, col + '14'); gr.addColorStop(1, col + '40'); c.fillStyle = gr; c.fillRect(0, 0, 512, 256);
-    c.textAlign = 'center'; c.textBaseline = 'middle'; c.shadowColor = col; c.shadowBlur = 18; c.fillStyle = '#fff'; c.font = `700 ${text.length > 5 ? 78 : 140}px "Space Grotesk",system-ui,sans-serif`; c.fillText(text, 256, 134);
+    c.textAlign = 'center'; c.textBaseline = 'middle'; c.shadowColor = col; c.shadowBlur = 18; c.fillStyle = '#fff'; c.font = `700 ${text.length > 8 ? 60 : text.length > 5 ? 84 : 140}px "Space Grotesk",system-ui,sans-serif`; c.fillText(text, 256, 134);
     const tex = new T.CanvasTexture(cv); tex.colorSpace = T.SRGBColorSpace; tex.anisotropy = 4;
     const w = RW * 0.97, h = 3.3, grp = new T.Group(), panel = new T.Mesh(new T.PlaneGeometry(w, h), new T.MeshBasicMaterial({ map: tex, color: new T.Color(2.4, 2.4, 2.4), transparent: true, depthWrite: false, side: T.DoubleSide }));
     panel.position.y = h / 2 + 0.2; grp.add(panel);

@@ -143,7 +143,7 @@
     if (U.flash > 0) { g.fillStyle = `rgba(255,255,255,${U.flash})`; g.fillRect(0, 0, W, H); U.flash *= RM ? 0.5 : 0.88; if (U.flash < 0.02) U.flash = 0; }
   }
   function label(txt, x, y, size, col) { g.font = `700 ${Math.max(9, size)}px ${FONT}`; g.textAlign = 'center'; g.fillStyle = col; g.fillText(txt, x, y); }
-  function gateText(o) { return o.op === 'add' ? '+' + o.v : o.op === 'sub' ? '−' + o.v : o.op === 'mul' ? '×' + o.v : 'FIRE +' + Math.round(o.v * 100) + '%'; }
+  function gateText(o) { return o.op === 'add' ? '+' + o.v : o.op === 'mul' ? '×' + o.v : o.op === 'trade' ? '−' + o.lose + ' ×' + o.v : o.op === 'oc' ? 'CHARGE +' + o.v + '%' : 'FIRE +' + Math.round(o.v * 100) + '%'; }
   function hpBar(x, y, w, fr, boss) { const h = boss ? 7 : 4; g.fillStyle = 'rgba(0,0,0,.55)'; g.fillRect(x - w / 2, y, w, h); g.fillStyle = boss ? '#FF3DA8' : '#4BFFA5'; g.fillRect(x - w / 2, y, w * Math.max(0, fr), h); }
   // labels and health bars sit over the 3D models, sized by how close the thing is
   function drawLabels(G) {
@@ -194,7 +194,7 @@
         if (!firstSeen.kill) { firstSeen.kill = 1; hint('Your squad fires on its own. Line up with enemies'); }
       } else if (e.type === 'gate') {
         sfx(e.good ? 'good' : 'bad'); U.popups.push({ t0: t, txt: gateText(e.g) + '  →  ' + e.n, x: sx, y: sy - 90, c: e.good ? '#4BFFA5' : '#FF4D6D', big: true });
-        if (e.good && G.t < GR.DROP_T) U.popups.push({ t0: t + 0.15, txt: 'Overclock +', x: W - 70, y: 110, c: '#FF7AD0' });
+        if (e.g.op === 'oc' && G.t < GR.DROP_T) U.popups.push({ t0: t + 0.15, txt: 'Overclock +', x: W - 70, y: 110, c: '#FF7AD0' });
         say('Gate ' + gateText(e.g) + '. Squad ' + e.n);
       } else if (e.type === 'runner') { sfx('runner'); U.popups.push({ t0: t, txt: '+1', x: sx, y: sy - 60, c: '#BFF8FF' }); }
       else if (e.type === 'hurt' || e.type === 'bossHit') { sfx('hurt'); U.shake = e.type === 'bossHit' ? 16 : 6; U.popups.push({ t0: t, txt: '−' + e.lost, x: sx, y: sy - 70, c: '#FF4D6D', big: e.type === 'bossHit' }); }
@@ -252,7 +252,7 @@
   function finish() {
     const G = U.G, r = GR.results(G); U.playing = false; U.lastRes = r;
     const verdict = r.won ? (r.boss ? 'Street cleared' : 'You made it') : 'Squad down';
-    const sub = r.won ? (r.boss ? 'The Enforcer melted on the drop.' : 'The Enforcer walked through you, but your squad survived.') : (r.section === 'drop' ? 'The Enforcer was too much. More good gates means a bigger Overclock.' : 'Line up with enemies to shoot them before they reach you.');
+    const sub = r.won ? (r.boss ? 'The Enforcer melted on the drop.' : 'The Enforcer walked through you, but your squad survived.') : (r.section === 'drop' ? 'The Enforcer was too much. Build a bigger squad or charge Overclock higher.' : 'Line up with enemies to shoot them before they reach you.');
     showSheet(`<span class="tag">${U.test ? 'TESTER RUN · ' : ''}Prototype 2</span><h2>${verdict}</h2>
       <div class="big">${r.survivors}</div><p>${sub}</p>
       <div class="stats"><div class="stat"><b>${r.peak}</b><span>peak squad</span></div><div class="stat"><b>${r.kills}</b><span>kills</span></div><div class="stat"><b>×${r.ocMult.toFixed(1)}</b><span>overclock</span></div>
@@ -277,10 +277,10 @@
   function howScreen() {
     showSheet(`<h2>How to play</h2><ol class="steps">
       <li><b class="c">Drag left and right</b> anywhere to steer your squad. Arrow keys work too.</li>
-      <li><b class="gr">Pick a gate.</b> Green grows your squad or your firepower. <b class="r">Red</b> costs you runners.</li>
+      <li><b class="gr">Pick a gate.</b> Flat numbers suit a small squad, multipliers a big one. <b class="r">Red</b> trades runners now for double later.</li>
       <li><b class="p">Your squad fires on its own.</b> Line up with drones and bikers to shoot them before they hit you.</li>
       <li><b class="g">Shoot the gold crate</b> for the arc gun.</li>
-      <li><b class="p">Good gates charge Overclock.</b> When the beat drops, it fires. Melt the boss.</li></ol>
+      <li><b class="p">Gates charge Overclock.</b> Charge gates charge it most. When the beat drops, it fires. Melt the boss.</li></ol>
       <button class="btn pri" data-act="play" type="button">Run</button><button class="btn" data-act="title" type="button">Back</button>`);
   }
   const FQ = [

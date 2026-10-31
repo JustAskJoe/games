@@ -19,19 +19,22 @@
     drone: { hp: 12, bite: 3, w: 0.11, credits: 1 },
     biker: { hp: 110, bite: 9, w: 0.14, credits: 3, drift: 0.32 },
     crate: { hp: 30, bite: 0, w: 0.13, credits: 10 },
-    boss: { hp: 9000, bite: 0, w: 0.42, credits: 60 }
+    boss: { hp: 7000, bite: 0, w: 0.42, credits: 60 }
   };
-  // gate pairs: one every 2 bars from bar 4 to 18. Sides are shuffled per run (seeded).
+  // gate pairs: one every 2 bars from bar 4 to 18. Sides are shuffled per run (seeded). No pair has an obvious answer:
+  // +N beats x1.5 while the squad is small, fire rate beats both once it's big, charge trades growth for the drop,
+  // and a trade costs runners now for double later.
   const GATES = [
-    [{ op: 'add', v: 5 }, { op: 'mul', v: 2 }],
-    [{ op: 'add', v: 8 }, { op: 'sub', v: 4 }],
-    [{ op: 'rate', v: 0.5 }, { op: 'add', v: 6 }],
-    [{ op: 'mul', v: 2 }, { op: 'add', v: 10 }],
-    [{ op: 'sub', v: 8 }, { op: 'mul', v: 2 }],
-    [{ op: 'add', v: 15 }, { op: 'rate', v: 0.5 }],
-    [{ op: 'mul', v: 2 }, { op: 'sub', v: 15 }],
-    [{ op: 'add', v: 20 }, { op: 'mul', v: 2 }]
+    [{ op: 'add', v: 8 }, { op: 'mul', v: 1.5 }],
+    [{ op: 'mul', v: 1.5 }, { op: 'rate', v: 0.25 }],
+    [{ op: 'add', v: 15 }, { op: 'oc', v: 30 }],
+    [{ op: 'add', v: 20 }, { op: 'mul', v: 1.5 }],
+    [{ op: 'trade', lose: 10, v: 2 }, { op: 'rate', v: 0.25 }],
+    [{ op: 'add', v: 30 }, { op: 'mul', v: 1.5 }],
+    [{ op: 'oc', v: 30 }, { op: 'mul', v: 1.5 }],
+    [{ op: 'add', v: 40 }, { op: 'rate', v: 0.5 }]
   ];
+  const CHARGE = 10;            // Overclock % from any gate; charge gates add more, trades add none
 
   function rng(seed) { let s = (seed >>> 0) || 1; return () => { s ^= s << 13; s ^= s >>> 17; s ^= s << 5; return ((s >>> 0) % 1e9) / 1e9; }; }
 
@@ -76,12 +79,17 @@
     if (it.type === 'steer') G.tx = Math.max(-0.9, Math.min(0.9, +it.x || 0));
   }
 
+  // what a gate would do, without doing it (the UI shows this as a preview too)
+  function gateResult(G, g) {
+    let n = G.n, rate = G.rate, c = CHARGE;
+    if (g.op === 'add') n += g.v; else if (g.op === 'mul') n = Math.floor(n * g.v); else if (g.op === 'rate') rate += g.v;
+    else if (g.op === 'oc') c = g.v; else if (g.op === 'trade') { n = Math.max(0, n - g.lose) * g.v; c = 0; }
+    return { n, rate, meter: Math.min(100, G.meter + c) };
+  }
   function applyGate(G, g) {
-    const n0 = G.n;
-    if (g.op === 'add') G.n += g.v; else if (g.op === 'mul') G.n *= g.v; else if (g.op === 'sub') G.n = Math.max(0, G.n - g.v); else if (g.op === 'rate') G.rate += g.v;
-    const good = g.op !== 'sub';
+    const n0 = G.n, r = gateResult(G, g), good = g.op !== 'trade';
+    G.n = r.n; G.rate = r.rate; if (G.t < DROP_T) G.meter = r.meter;
     if (good) G.gatesGood++; else G.gatesBad++;
-    if (G.t < DROP_T) G.meter = Math.max(0, Math.min(100, G.meter + (good ? 12.5 : -15)));
     G.ev.push({ type: 'gate', t: G.t, g, good, n0, n: G.n });
   }
 
@@ -146,11 +154,7 @@
   }
 
   // ---- bots, used by sim.js and the in-page tester ----
-  function gateValue(G, g) {
-    let n = G.n, rate = G.rate;
-    if (g.op === 'add') n += g.v; else if (g.op === 'mul') n *= g.v; else if (g.op === 'sub') n = Math.max(0, n - g.v); else rate += g.v;
-    return n * rate;
-  }
+  function gateValue(G, g) { const r = gateResult(G, g); return r.n * r.rate * (1 + 2 * r.meter / 100); }
   const BOTS = {
     smart: G => {
       const g = G.ents.find(e => !e.done && e.kind === 'gate' && z(G, e) < 1.6);
@@ -183,6 +187,6 @@
     return { bot, runs: n, win: avg(o => o.won ? 1 : 0), boss: avg(o => o.boss ? 1 : 0), peak: Math.round(avg(o => o.peak)), survivors: Math.round(avg(o => o.survivors)), oc: Math.round(avg(o => o.ocMult) * 100) / 100, arc: avg(o => o.weapon === 'arc' ? 1 : 0), credits: Math.round(avg(o => o.credits)), diedIn: out.filter(o => !o.won).reduce((m, o) => (m[o.section] = (m[o.section] || 0) + 1, m), {}) };
   }
 
-  const GR = { BPM, B, BAR, DT, SEC, END, DROP_T, DROP_END, RANGE, KIND, width, sectionAt, newGame, act, step, advance, results, hash, simulate, BOTS, rng };
+  const GR = { BPM, B, BAR, DT, SEC, END, DROP_T, DROP_END, RANGE, KIND, width, sectionAt, newGame, gateResult, act, step, advance, results, hash, simulate, BOTS, rng };
   if (typeof module !== 'undefined' && module.exports) module.exports = GR; else root.GR = GR;
 })(typeof window !== 'undefined' ? window : globalThis);
