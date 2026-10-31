@@ -5,7 +5,7 @@
    © 2026 justaskjoe. All rights reserved. */
 (function () {
   const T = window.THREE, GR = window.GR;
-  const RW = 3.4, ZS = 7, AHEAD = 6;     // road half width, world units per second of song, seconds drawn ahead
+  const RW = 3.4, ZS = 10, AHEAD = 4.6;     // road half width, world units per second of song, seconds drawn ahead
   const wx = x => x * RW, wz = z => -z * ZS;
   const R = { ok: false, quality: 2, locked: false, RW, ZS };
   const COL = { cyan: '#3DF0FF', pink: '#FF3DA8', pink2: '#FF7AD0', violet: '#8B5CFF', gold: '#FFB547', green: '#4BFFA5', red: '#FF4D6D', white: '#FFFFFF', steel: '#1B2148', ink: '#0B0E2C', plum: '#3A1050' };

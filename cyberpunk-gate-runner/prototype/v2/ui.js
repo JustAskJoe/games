@@ -148,7 +148,7 @@
   // labels and health bars sit over the 3D models, sized by how close the thing is
   function drawLabels(G) {
     for (const e of G.ents) {
-      const z = e.ta - G.t; if (z > 6) break; if (e.done || z < -0.2) continue;
+      const z = e.ta - G.t; if (z > 4.6) break; if (e.done || z < -0.2) continue;
       const k = 1 / (1 + Math.max(0, z) * 0.55), fr = e.hp / e.maxHp;
       if (e.kind === 'runner' && z < 3) { const p = R.project(e.x, z, 2.1); label('+1', p.x, p.y, 15 * k + 4, '#BFF8FF'); }
       else if (e.kind === 'crate') { const p = R.project(e.x, z, 2.1); label('SHOOT IT', p.x, p.y - 6, 14 * k + 3, '#FFB547'); hpBar(p.x, p.y, 60 * k, fr); }

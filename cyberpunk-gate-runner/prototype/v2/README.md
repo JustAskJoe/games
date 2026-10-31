@@ -19,17 +19,17 @@ A real-time **runner shooter** on the beat. Start here for any lane runner, crow
 ## How the clock works
 The engine's time **is** song time as heard (`songAt()` from `AudioContext.getOutputTimestamp()`, adapted from Neon Surf). Each frame, the UI advances the engine to that time, so a gate placed on bar 4 beat 1 crosses your squad exactly when that kick plays. Pausing suspends the audio context, which freezes the game too.
 
-## Sim (300 runs per bot, Oct 31)
+## Sim (300 runs per bot, Oct 31, after the pace change)
 | Bot | Plays like | Win | Boss killed | Peak squad | Pass band |
 |---|---|---|---|---|---|
 | Smart | best gate every time, aims at targets | 100% | 100% | 512 | ≥ 90% |
-| Casual | right gate 70% of the time, chases crates and bikers | 98% | 97% | 368 | ≥ 75% |
-| Random | coin flip on gates, never aims | 29% | 22% | 98 | 25–60% |
-| Idle | never steers | 32% | 25% | 112 | ≤ 35% |
+| Casual | right gate 70% of the time, chases crates and bikers | 85% | 82% | 354 | ≥ 75% |
+| Random | coin flip on gates, never aims | 8% | 5% | 90 | 5–40% |
+| Idle | never steers | 12% | 9% | 111 | ≤ 25% |
 
 Most losses happen at the drop, when the Enforcer reaches a squad that didn't charge Overclock. That's on purpose: the drop is where good choices pay off.
 
-**Levers, if it's too easy or too hard:** boss HP (6000) and how many runners it takes on contact (HP / 8), drone and biker HP (12 / 80), the gate list in `GATES`, and the Overclock formula in `step()`. Run `node sim.js` after any change and put before and after in the PR.
+**Levers, if it's too easy or too hard:** boss HP (9000, by far the strongest lever) and how many runners it takes on contact (HP / 8), shooting range in seconds (`RANGE`, 1.7), drone and biker HP (12 / 110) and bite (3 / 9), the gate list in `GATES`, and the Overclock formula in `step()`. Run `node sim.js` after any change and put before and after in the PR.
 
 ## Lessons
 - **Place content on the beat grid and drive the sim with song time.** Sync comes for free; no per-object timing code.

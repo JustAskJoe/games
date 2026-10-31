@@ -13,9 +13,11 @@ First step of Prototype 2: new graphics, same game.
 - **The street is real 3D now:** a neon city with lit towers, Hush propaganda billboards, a striped synthwave sun, a wet glowing road and light arches that pass overhead on the beat.
 - **New models for everything:** your runners, drones, bikers, the gold crate and the Hush Enforcer.
 - The picture adapts to the window, so it plays wide on a PC as well as tall on a phone.
+- **Faster and a bit harder:** the city rushes past about 40% faster, your squad only has 1.7 seconds to shoot what's coming (was 2.3), and drones, bikers and the Enforcer all hit harder.
 
 ### Next up
-- [ ] @Zach: play the 3D build on PC and give a verdict before the split road PR.
+- [x] @Zach: play the 3D build on PC and give a verdict. (done Oct 31, Zach: very fun, liked traveling through the city)
+- [ ] @Zach: judge the new pace on PC, then next are comparable gates and weapon upgrades.
 - [ ] @Hunter @Joe: play the Lab preview on a real phone. It's the only proof the 3D runs well there.
 - [ ] Split road at gates, horde walls, boss on the drop, impact, city reacts (one pull request each, in that order).
 
@@ -28,6 +30,8 @@ First step of Prototype 2: new graphics, same game.
 - [ ] The boss still dies in about 0.23s before reaching you, so its new model is barely seen until the boss-on-the-drop change. Rules are unchanged from P1.
 - [ ] Building from `prototype/v1` would overwrite this build with P1. Use v2.
 - [ ] The squad draws at most 180 runners; the number shown is still the true count.
+- [ ] Sim bands changed for the harder tuning: random 25-60% is now 5-40%, idle at most 35% is now at most 25%. Smart and casual bands are unchanged. Needs a human check that a first run isn't punishing.
+- [ ] The song tempo is unchanged at 122 BPM, so gates still arrive every 2 bars. "Faster" is world speed and less shooting time, not more gates per minute. Bots don't feel speed, so whether it's readable at this pace is a human call.
 
 ## P1 · Oct 31, 2026 · Zach (with Claude)
 First playable build.

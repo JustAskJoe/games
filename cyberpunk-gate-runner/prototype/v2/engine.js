@@ -12,14 +12,14 @@
     { id: 'outro', name: 'Cash out', hint: 'Street cleared', b0: 28, b1: 31 }
   ];
   const END = 31 * BAR, DROP_T = 20 * BAR, DROP_END = 28 * BAR;
-  const RANGE = 2.3;            // seconds ahead the squad can shoot
+  const RANGE = 1.7;            // seconds ahead the squad can shoot
   const AIM = 0.22;             // aim cone half-width (road units, road is -1..1)
   const SPEED = 2.6;            // squad steer speed (road units / s)
   const KIND = {
-    drone: { hp: 12, bite: 2, w: 0.11, credits: 1 },
-    biker: { hp: 80, bite: 6, w: 0.14, credits: 3, drift: 0.32 },
+    drone: { hp: 12, bite: 3, w: 0.11, credits: 1 },
+    biker: { hp: 110, bite: 9, w: 0.14, credits: 3, drift: 0.32 },
     crate: { hp: 30, bite: 0, w: 0.13, credits: 10 },
-    boss: { hp: 6000, bite: 0, w: 0.42, credits: 60 }
+    boss: { hp: 9000, bite: 0, w: 0.42, credits: 60 }
   };
   // gate pairs: one every 2 bars from bar 4 to 18. Sides are shuffled per run (seeded).
   const GATES = [

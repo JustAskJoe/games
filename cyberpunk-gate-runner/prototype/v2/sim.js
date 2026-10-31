@@ -1,8 +1,8 @@
 // Balance sim: bots play the street headless. Exits 1 if any bot leaves its pass band.
-// Bands: smart wins >= 90%, casual >= 75% (chill: easy to start), random 25-60%, idle (never steers) <= 35%.
+// Bands: smart wins >= 90%, casual >= 75% (chill: easy to start), random 5-40%, idle (never steers) <= 25%.
 // © 2026 justaskjoe. All rights reserved.
 const GR = require('./engine.js');
-const BANDS = { smart: [0.9, 1], casual: [0.75, 1], random: [0.25, 0.6], idle: [0, 0.35] };
+const BANDS = { smart: [0.9, 1], casual: [0.75, 1], random: [0.05, 0.4], idle: [0, 0.25] };
 let ok = true;
 for (const bot of Object.keys(BANDS)) {
   const r = GR.simulate(+process.argv[2] || 200, bot);
