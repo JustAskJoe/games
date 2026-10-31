@@ -6,6 +6,30 @@ Newest on top. Each entry covers **what's new** for players, **next up** for the
 
 ---
 
+## Art #25 · Oct 31, 2026 · Artist agent (with Claude)
+Art only, no build change.
+
+### What's new
+- **Squad and enemy concepts (#25):** three directions for who's fighting in the street: the squad (normal cyan and near-white Overclock, back and front), the swarm, drones and bikers. The Hush Enforcer boss is untouched. Brief in `art/briefs/25-squad-enemies.md`; sheets `art/concepts/25-A.svg` (Street Ravers), `25-B.svg` (Glowstick Punks), `25-C.svg` (Bass Crew).
+- **Draft art direction** in `art/art-direction.md` (the same draft as the #24 street concepts): the look, palette, color roles, readability rules, sizes from Prototype 2 and pipeline settings (`final_art_source: undecided`).
+- Painted roughs requested from the free Cloudflare workflow (`art/concepts/25-roughs.json`), but none were made yet: see Next up.
+
+### Next up
+- [ ] @Zach: open the three sheets on a phone and reply `Pick: A`, `B` or `C` (plus notes) on the concepts pull request.
+- [ ] @Zach @Hunter @Joe: review the draft `art/art-direction.md` with the concepts (it's the same file as in the #24 pull request).
+- [ ] @Hunter: the `ART_KEY` Actions secret is missing on `JustAskJoe/games`, so the Art roughs workflow can't make roughs. Add it, then run **Art roughs** (Actions → Run workflow) on `art/cyberpunk-gate-runner-25-squad-enemies`.
+- [ ] Whoever picks: decide the final-art source (Canva, a commission, or Claude building the models in `render.js`) and fill the cost table.
+
+### Watch out
+- [ ] The art direction is a **draft** written by the agent from the requests and P2; nobody has signed it off.
+- [ ] The concepts are based on Prototype 2 on `zach/gate-runner-boss-tune`, which isn't on main yet. If that branch changes the units, re-check the sheets.
+- [ ] Sheets were checked only in headless Chromium (1280 px and a 390 px phone width), not on a real iPhone or Android.
+- [ ] Unit sizes on a phone come from `render.js` numbers and one P2 screenshot, not measured on a device. The real test is 180 runners and 400 swarm units on screen at once; the sheets only show a sample.
+- [ ] Bikers stay red (as in P2) rather than pink, so they stand out from the swarm; red is also the risky-gate color. Confirm that's fine.
+- [ ] Brief reference links (Wikimedia Commons categories) weren't opened by the agent; check they still resolve.
+- [ ] #24 and #25 are separate pull requests that both add the same draft `art/art-direction.md` and both add a patch-notes entry here, so whichever merges second needs a small patch-notes conflict fix.
+- [ ] No cost in dollars or credits: source undecided and the cost table is empty. Count only: about 9 generations (7 + 25%).
+
 ## P1 · Oct 31, 2026 · Zach (with Claude)
 First playable build.
 

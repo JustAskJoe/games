@@ -1,0 +1,35 @@
+{
+  "style": "Polished neon low-poly 3D game art, clean flat-shaded facets, strong silhouettes and glow rather than fine detail, night city in deep navy with violet neon, hot pink for the enemy megacorp, cyan for the heroes, warm gold accents. Original design, not resembling any existing franchise or real city. No text.",
+  "items": [
+    {
+      "file": "25-A-rough-1.jpg",
+      "subject": "Street Ravers direction: a crowd of small low-poly underground ravers seen from behind running down a neon street, cyan hoodies with hoods up, a white light strip down each hood, chunky toy-like blasters, a few near-white glowing ones, facing a wall of small pink diamond-shaped robots each with a white bar across its face.",
+      "seed": 1
+    },
+    {
+      "file": "25-A-rough-2.jpg",
+      "subject": "Street Ravers direction, character lineup on a plain dark navy background: a cyan hooded raver with an LED visor and a chunky blaster, a small pink diamond robot with a white mute bar, a flat pink-ringed flying saucer drone, a heavy biker with wide armoured shoulders and a pink visor slit.",
+      "seed": 2
+    },
+    {
+      "file": "25-B-rough-1.jpg",
+      "subject": "Glowstick Punks direction: a crowd of small low-poly ravers seen from behind running down a neon street, cyan outfits, big headphones, glowing white mohawk crests, two glow sticks crossed in an X on every back, facing a wall of small round pink robot heads, two upside-down megaphone drones hovering above.",
+      "seed": 3
+    },
+    {
+      "file": "25-B-rough-2.jpg",
+      "subject": "Glowstick Punks direction, character lineup on a plain dark navy background: a cyan raver with big headphones, an LED mohawk and a bandana mask, a small round pink robot head, a flying upside-down megaphone drone with a pink glowing rim, a red monowheel bike with a rider inside the wheel.",
+      "seed": 4
+    },
+    {
+      "file": "25-C-rough-1.jpg",
+      "subject": "Bass Crew direction: a crowd of small low-poly ravers seen from behind running down a neon street, cyan puffer jackets and beanies, each with a small subwoofer backpack showing a round speaker cone, facing a wall of small pink pyramid robots with one white eye slit, square acoustic-foam drones hovering above.",
+      "seed": 5
+    },
+    {
+      "file": "25-C-rough-2.jpg",
+      "subject": "Bass Crew direction, character lineup on a plain dark navy background: a cyan raver in a puffer jacket with a respirator mask and a shoulder bass cannon, a small pink pyramid robot, a flying square dish drone covered in acoustic foam, a heavy hoverbike behind a big round pink shield dish.",
+      "seed": 6
+    }
+  ]
+}
