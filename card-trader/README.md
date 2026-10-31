@@ -1,4 +1,6 @@
-# Card Trader
+# Intergalactic Card Trader
+
+Working title. A cozy card shop on a market station where the galaxy's trade lanes cross: "happy space Akihabara".
 
 Other · solo pitch · approved in Forge on 2026-10-31 by Hunter
 
