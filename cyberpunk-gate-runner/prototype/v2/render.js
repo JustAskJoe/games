@@ -10,7 +10,7 @@
   const R = { ok: false, quality: 2, locked: false, RW, ZS };
   const COL = { cyan: '#3DF0FF', pink: '#FF3DA8', pink2: '#FF7AD0', violet: '#8B5CFF', gold: '#FFB547', green: '#4BFFA5', red: '#FF4D6D', white: '#FFFFFF', steel: '#1B2148', ink: '#0B0E2C', plum: '#3A1050' };
   const FOG = new T.Color('#1C0B3E');
-  const UF = { uFog: { value: FOG }, uFogR: { value: new T.Vector2(30, 60) }, uT: { value: 0 }, uPulse: { value: 0 }, uOC: { value: 0 } };
+  const UF = { uFog: { value: FOG }, uFogR: { value: new T.Vector2(30, 60) }, uT: { value: 0 }, uPulse: { value: 0 }, uOC: { value: 0 }, uCharge: { value: 0 } };
 
   // ---------- geometry helpers: non-indexed parts merged into one mesh, with colour and glow per vertex ----------
   const M = (x, y, z, rx, ry, rz, sx, sy, sz) => new T.Matrix4().compose(new T.Vector3(x || 0, y || 0, z || 0), new T.Quaternion().setFromEuler(new T.Euler(rx || 0, ry || 0, rz || 0)), new T.Vector3(sx || 1, sy || sx || 1, sz || sx || 1));
@@ -105,20 +105,20 @@
     vertexShader: `attribute vec3 aTint; attribute float aSeed; varying vec3 vP, vN, vW, vT, vS; varying float vR;
       void main(){ vS = vec3(length(instanceMatrix[0].xyz), length(instanceMatrix[1].xyz), length(instanceMatrix[2].xyz)); vP = position * vS; vN = normal; vT = aTint; vR = aSeed;
         vec4 w = modelMatrix * instanceMatrix * vec4(position, 1.); vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }`,
-    fragmentShader: `uniform vec3 uFog; uniform vec2 uFogR; uniform float uPulse, uOC; varying vec3 vP, vN, vW, vT, vS; varying float vR;
+    fragmentShader: `uniform vec3 uFog; uniform vec2 uFogR; uniform float uPulse, uOC, uCharge; varying vec3 vP, vN, vW, vT, vS; varying float vR;
       float h(vec2 p){ return fract(sin(dot(p, vec2(41.3, 289.1))) * 43758.5); }
       void main(){ vec2 uv = abs(vN.x) > .5 ? vec2(vP.z, vP.y) : vec2(vP.x, vP.y); vec2 cell = vec2(.72, .98), id = floor(uv / cell), f = fract(uv / cell);
-        float win = step(.18, f.x) * step(f.x, .82) * step(.25, f.y) * step(f.y, .75), r = h(id + floor(vR * 91. + .5)), on = step(.74 - .14 * uOC, r) * win * step(abs(vN.y), .5);
+        float win = step(.18, f.x) * step(f.x, .82) * step(.25, f.y) * step(f.y, .75), r = h(id + floor(vR * 91. + .5)), on = step(.9 - .26 * uCharge - .12 * uOC, r) * win * step(abs(vN.y), .5);
         vec3 c = vec3(.006, .007, .024) + vec3(.008, .005, .03) * (vP.y / vS.y), lit = mix(vT, vec3(1., .78, .5), step(.84, r));
         c += lit * on * (.5 + .7 * uPulse * step(.8, r));
-        c += vT * 1.6 * smoothstep(vS.y - .26, vS.y - .12, vP.y) * step(abs(vN.y), .5);
+        c += vT * (.5 + 1.5 * uCharge + 1.2 * uOC) * smoothstep(vS.y - .26, vS.y - .12, vP.y) * step(abs(vN.y), .5);
         gl_FragColor = vec4(mix(c, uFog, smoothstep(uFogR.x, uFogR.y, length(cameraPosition - vW))), 1.); }`
   });
 
   // ---------- state ----------
   let renderer, scene, cam, rtS, rtA, rtB, fsScene, fsCam, fsQuad, mats = {}, W = 1, H = 1, DPR = 1, road, sky, runners, picks, drones, swarm, bikers, crate, boss, arches, rails, near, billboards, towerData = [], gates = [], parts = [], tracers = [], pts, lines, pi = 0;
   const camBase = new T.Vector3(0, 6.6, 9.2), look = new T.Vector3(), PN = 1600, TN = 90, v3 = new T.Vector3();
-  const frameMs = [], shocks = []; let lastPerf = 0, slowCheck = 0, shockI = 0, punch = 0, baseFov = 52, bossHp = 0, bossHit = 0;
+  const frameMs = [], shocks = []; let lastPerf = 0, slowCheck = 0, shockI = 0, lastBeat = -1, punch = 0, baseFov = 52, bossHp = 0, bossHit = 0;
 
   function buildRoad() {
     const m = new T.ShaderMaterial({
@@ -176,18 +176,18 @@
     for (let i = 0; i < N; i++) { const s = i % 2 ? 1 : -1; towerData.push({ s, x: s * (RW * 1.55 + 2.4 + hash(i + 3) * 4), w: 3 + hash(i + 5) * 3, h: 9 + hash(i + 8) * 24, d: 6 + hash(i + 9) * 2, z0: Math.floor(i / 2) * 7.5 + hash(i) * 2 }); }
     scene.add(near);
     // billboards: Hush propaganda on the street towers
-    const cv = document.createElement('canvas'); cv.width = 1024; cv.height = 1024; const c = cv.getContext('2d');
-    [['HUSH', 'SILENCE IS SAFE', '#FF3DA8'], ['NO MUSIC', 'ZONE 7 · ENFORCED', '#3DF0FF'], ['OBEY', 'THE QUIET', '#FFB547'], ['NEON CITY', '2089', '#8B5CFF']].forEach(([a, b, col], i) => {
+    const cv = document.createElement('canvas'); cv.width = 1024; cv.height = 2048; const c = cv.getContext('2d');
+    [['HUSH', 'SILENCE IS SAFE', '#FF3DA8'], ['NO MUSIC', 'ZONE 7 · ENFORCED', '#3DF0FF'], ['OBEY', 'THE QUIET', '#FFB547'], ['NEON CITY', '2089', '#8B5CFF'], ['FREE THE BEAT', 'HUSH IS OVER', '#4BFFA5'], ['LOUD', 'ZONE 7 LIBERATED', '#FF3DA8'], ['TURN IT UP', 'ALL NIGHT', '#FFB547'], ['OVERCLOCK', 'NEON CITY UNMUTED', '#3DF0FF']].forEach(([a, b, col], i) => {
       const y = i * 256; c.fillStyle = '#080A22'; c.fillRect(0, y, 1024, 256); c.strokeStyle = col; c.lineWidth = 12; c.strokeRect(10, y + 10, 1004, 236);
-      c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = col; c.font = '700 118px "Space Grotesk",system-ui,sans-serif'; c.fillText(a, 512, y + 104); c.fillStyle = '#F2EFE6'; c.font = '500 46px "Space Grotesk",system-ui,sans-serif'; c.fillText(b, 512, y + 196);
+      c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = col; c.font = `700 ${a.length > 10 ? 96 : 118}px "Space Grotesk",system-ui,sans-serif`; c.fillText(a, 512, y + 104); c.fillStyle = '#F2EFE6'; c.font = '500 46px "Space Grotesk",system-ui,sans-serif'; c.fillText(b, 512, y + 196);
     });
     const tex = new T.CanvasTexture(cv); tex.colorSpace = T.SRGBColorSpace; tex.anisotropy = 4;
     const pg = new T.PlaneGeometry(9, 2.25), cell = new Float32Array(N); for (let i = 0; i < N; i++) cell[i] = i % 4; pg.setAttribute('aCell', new T.InstancedBufferAttribute(cell, 1));
     billboards = new T.InstancedMesh(pg, new T.ShaderMaterial({
       side: T.DoubleSide, uniforms: Object.assign({ tMap: { value: tex } }, UF, { uFogR: { value: new T.Vector2(30, 92) } }),
-      vertexShader: `attribute float aCell; varying vec2 vU; varying vec3 vW; void main(){ vU = vec2(uv.x, (3. - aCell + uv.y) / 4.); vec4 w = modelMatrix * instanceMatrix * vec4(position, 1.); vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }`,
-      fragmentShader: `uniform sampler2D tMap; uniform vec3 uFog; uniform vec2 uFogR; uniform float uPulse; varying vec2 vU; varying vec3 vW;
-        void main(){ vec3 c = texture2D(tMap, vU).rgb * (1.5 + .6 * uPulse); gl_FragColor = vec4(mix(c, uFog, smoothstep(uFogR.x, uFogR.y, length(cameraPosition - vW))), 1.); }`
+      vertexShader: `attribute float aCell; uniform float uOC; varying vec2 vU; varying vec3 vW; void main(){ vU = vec2(uv.x, (7. - (aCell + step(.5, uOC) * 4.) + uv.y) / 8.); vec4 w = modelMatrix * instanceMatrix * vec4(position, 1.); vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }`,
+      fragmentShader: `uniform sampler2D tMap; uniform vec3 uFog; uniform vec2 uFogR; uniform float uPulse, uOC, uCharge; varying vec2 vU; varying vec3 vW;
+        void main(){ vec3 c = texture2D(tMap, vU).rgb * (1.2 + .6 * uPulse + 1.4 * uCharge * uOC); gl_FragColor = vec4(mix(c, uFog, smoothstep(uFogR.x, uFogR.y, length(cameraPosition - vW))), 1.); }`
     }), N);
     billboards.instanceMatrix.setUsage(T.DynamicDrawUsage); billboards.frustumCulled = false; scene.add(billboards);
     // light streaks rushing past: moved in the shader, so they cost nothing per frame
@@ -364,6 +364,8 @@
   // t is song time (or wall time on the title screen); G may be null
   R.frame = function (t, G, o) {
     R.t = t; const oc = !!o.oc;
+    UF.uCharge.value += ((G ? (G.oc.on || G.oc.done ? 1 : G.meter / 100) : 0.45) - UF.uCharge.value) * 0.05;
+    if (oc && !o.reduced) { const b = Math.floor(t / GR.B); if (b !== lastBeat) { lastBeat = b; const s = b % 2 ? 1 : -1; R.burst(s * (2.6 + Math.random() * 1.2), 2.2 + Math.random() * 2, [COL.pink, COL.cyan, COL.gold, COL.green][b % 4], 34, 11, 14 + Math.random() * 6); } }
     UF.uT.value = t; UF.uPulse.value = o.pulse; UF.uOC.value += ((oc ? 1 : 0) - UF.uOC.value) * 0.08;
     const sx = G ? G.sx : 0, aspect = W / H;
     cam.position.set(wx(sx) * 0.3 + (o.shakeX || 0) * 0.02, camBase.y + (aspect > 1 ? 1 : 0.6) + (o.shakeY || 0) * 0.02, camBase.z + (aspect > 1 ? 3.4 : 1.6));

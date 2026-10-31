@@ -13,6 +13,7 @@ First step of Prototype 2: new graphics, same game.
 - **The street is real 3D now:** a neon city with lit towers, Hush propaganda billboards, a striped synthwave sun, a wet glowing road and light arches that pass overhead on the beat.
 - **New models for everything:** your runners, drones, bikers, the gold crate and the Hush Enforcer.
 - The picture adapts to the window, so it plays wide on a PC as well as tall on a phone.
+- **The city reacts:** windows and rooftop neon wake up as Overclock charges, and at the drop the Hush signs flip to "FREE THE BEAT" and fireworks go off over the street.
 - **More impact:** shockwaves, a camera punch on gates and the drop, enemies bursting into neon shards, and a chain of explosions when the Enforcer falls.
 - **The Enforcer lands on the drop:** it appears as the beat drops and walks through the horde for an 8 second fight, instead of dying in a fraction of a second.
 - **Horde walls:** packs fill the whole road, from 24 enemies early to nearly 400 at the drop. Your fire carves a path and whatever gets through eats runners.
@@ -24,9 +25,11 @@ First step of Prototype 2: new graphics, same game.
 
 ### Next up
 - [x] @Zach: play the 3D build on PC and give a verdict. (done Oct 31, Zach: very fun, liked traveling through the city)
-- [ ] @Zach: judge the new pace on PC, then next are comparable gates and weapon upgrades.
+- [x] @Zach: judge the new pace on PC, then next are comparable gates and weapon upgrades. (done Oct 31, Zach approved and asked for everything)
 - [ ] @Hunter @Joe: play the Lab preview on a real phone. It's the only proof the 3D runs well there.
-- [ ] Split road at gates, horde walls, boss on the drop, impact, city reacts (one pull request each, in that order).
+- [x] Split road at gates, horde walls, boss on the drop, impact, city reacts. (done Oct 31, Zach with Claude)
+- [ ] @Zach: judge the full P2 build on PC. Pass bar: do you want a second run without being asked?
+- [ ] On-beat timing bonus and tap calibration, then music and a second street.
 
 ### Watch out
 - [ ] **Not tested on a real phone or a real graphics card.** Automated runs use software graphics, so they prove it works, not that it's smooth. Frame rate is unmeasured everywhere.
@@ -34,9 +37,14 @@ First step of Prototype 2: new graphics, same game.
 - [ ] If the browser loses its graphics context (phones can do this when backgrounded), recovery is untested.
 - [ ] three.js r159 is the last version with a single-script build. Upgrading later means adding a bundler. It logs a harmless deprecation warning in the console.
 - [ ] The build grew from 56 KB to about 750 KB. Not measured on a slow connection.
-- [ ] The boss still dies in about 0.23s before reaching you, so its new model is barely seen until the boss-on-the-drop change. Rules are unchanged from P1.
+- [x] The boss still dies in about 0.23s before reaching you, so its new model is barely seen until the boss-on-the-drop change. Rules are unchanged from P1. (fixed Oct 31, Zach with Claude: it's an 8 second fight now)
 - [ ] Building from `prototype/v1` would overwrite this build with P1. Use v2.
 - [ ] The squad draws at most 180 runners; the number shown is still the true count.
+- [ ] **Hordes are the biggest performance risk:** several hundred enemies plus effects at once, not measured on any real device. Phones may need fewer drawn enemies.
+- [ ] Nobody has played the hordes, boss fight, impact or city yet. They've only been checked with bots and stills.
+- [ ] No slow-mo on the boss kill: game time is song time, so slowing it would desync the music. There's a chain of explosions instead.
+- [ ] Weapons were tuned with bots. The Railgun is strongest in the sim (casual kills the boss 95% of the time, the others about 45%), so it may need trimming.
+- [ ] You can still win without killing the Enforcer by surviving its contact, and a casual player does so in about 4 of 10 runs. That may feel flat.
 - [ ] Sim bands changed for the harder tuning: random 25-60% is now 5-40%, idle at most 35% is now at most 25%. Smart and casual bands are unchanged. Needs a human check that a first run isn't punishing.
 - [ ] The song tempo is unchanged at 122 BPM, so gates still arrive every 2 bars. "Faster" is world speed and less shooting time, not more gates per minute. Bots don't feel speed, so whether it's readable at this pace is a human call.
 

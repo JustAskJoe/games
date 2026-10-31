@@ -7,7 +7,7 @@ A real-time **runner shooter** on the beat. Start here for any lane runner, crow
 ## Files
 | File | What it is |
 |---|---|
-| `engine.js` | Pure engine (`window.GR` in the browser, `module.exports` in node). The street is built from the beat grid, so every gate, enemy and the boss arrives on the music. A fixed 60/s `step()`; every input goes through `act(G, intent)`; `hash(G)` checksums a run. Holds the bots too |
+| `engine.js` | Pure engine (`window.GR` in the browser, `module.exports` in node). The street is built from the beat grid, so every gate, enemy and the boss arrives on the music. Horde walls, gates and weapons are the tables at the top (`WALLS`, `GATES`, `WEAPONS`). A fixed 60/s `step()`; every input goes through `act(G, intent)`; `hash(G)` checksums a run. Holds the bots too |
 | `render.js` | The WebGL street (`window.GRR`). Draws only, never changes the engine. All models and textures are built in code. Quality tiers 2, 1, 0 drop automatically on slow devices; `#q=N` in the URL locks one |
 | `vendor/three.min.js` | three.js r159 (MIT, license alongside), unmodified. The last version with a single-script build |
 | `ui.js` | WebAudio house loop and SFX, the audio clock, drag steering, HUD, screens, tester jumps, feedback, and a 2D overlay canvas for labels and popups |
@@ -19,21 +19,29 @@ A real-time **runner shooter** on the beat. Start here for any lane runner, crow
 ## How the clock works
 The engine's time **is** song time as heard (`songAt()` from `AudioContext.getOutputTimestamp()`, adapted from Neon Surf). Each frame, the UI advances the engine to that time, so a gate placed on bar 4 beat 1 crosses your squad exactly when that kick plays. Pausing suspends the audio context, which freezes the game too.
 
-## Sim (300 runs per bot, Oct 31, after the pace change)
+## Sim (300 runs per bot, Oct 31, full P2)
 | Bot | Plays like | Win | Boss killed | Peak squad | Pass band |
 |---|---|---|---|---|---|
-| Smart | best gate every time, aims at targets | 100% | 100% | 512 | ≥ 90% |
-| Casual | right gate 70% of the time, chases crates and bikers | 85% | 82% | 354 | ≥ 75% |
-| Random | coin flip on gates, never aims | 8% | 5% | 90 | 5–40% |
-| Idle | never steers | 12% | 9% | 111 | ≤ 25% |
+| Smart | best gate every time, aims at targets | 100% | 90% | 198 | ≥ 90% |
+| Casual | right gate 70% of the time, chases crates and bikers | 89% | 52% | 155 | ≥ 75% |
+| Random | coin flip on gates, never aims | 15% | 4% | 54 | 5–40% |
+| Idle | never steers | 18% | 7% | 64 | ≤ 25% |
 
-Most losses happen at the drop, when the Enforcer reaches a squad that didn't charge Overclock. That's on purpose: the drop is where good choices pay off.
+You can win without killing the Enforcer by surviving its contact, which costs runners equal to its remaining HP / 60.
 
-**Levers, if it's too easy or too hard:** boss HP (9000, by far the strongest lever) and how many runners it takes on contact (HP / 8), shooting range in seconds (`RANGE`, 1.7), drone and biker HP (12 / 110) and bite (3 / 9), the gate list in `GATES`, and the Overclock formula in `step()`. Run `node sim.js` after any change and put before and after in the PR.
+| Casual, by final weapon | Win | Boss killed |
+|---|---|---|
+| Railgun | 100% | 95% |
+| Arc gun | 92% | 48% |
+| Rockets | 91% | 48% |
+| Scatter | 88% | 44% |
+
+**Levers, if it's too easy or too hard:** boss HP (24000, the strongest lever), the horde list in `WALLS`, swarm HP and bite (8 / 1), `RANGE` (1.7 seconds), the `GATES` list, and each weapon's `mult` in `WEAPONS`. Run `node sim.js` after any change, check win rate per weapon too, and put before and after in the PR.
 
 ## Lessons
 - **Place content on the beat grid and drive the sim with song time.** Sync comes for free; no per-object timing code.
 - **Volleys on 8th notes** make auto-fire feel musical without any rhythm input.
+- **Check every option by win rate, not just the total.** One weapon at 0% was hiding inside a healthy average.
 - **Keep drawing out of the engine.** The 3D rebuild left `sim.js` results and the replay hash identical to P1.
 - **Don't feed an interpolated float into a shader hash.** It speckles; round it first.
 - **Multiply gates snowball fast** (×2 five times is ×32). Tune the boss against the smart bot's peak, and the threat against the random bot.
