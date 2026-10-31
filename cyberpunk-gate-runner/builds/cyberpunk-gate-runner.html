@@ -289,7 +289,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
    © 2026 justaskjoe. All rights reserved. */
 (function () {
   const T = window.THREE, GR = window.GR;
-  const RW = 3.4, ZS = 10, AHEAD = 4.6;     // road half width, world units per second of song, seconds drawn ahead
+  const RW = 3.4, ZS = 10, AHEAD = 4.6, SIGN_TILT = 0.24;     // road half width, world units per second of song, seconds drawn ahead
   const wx = x => x * RW, wz = z => -z * ZS;
   const R = { ok: false, quality: 2, locked: false, RW, ZS };
   const COL = { cyan: '#3DF0FF', pink: '#FF3DA8', pink2: '#FF7AD0', violet: '#8B5CFF', gold: '#FFB547', green: '#4BFFA5', red: '#FF4D6D', white: '#FFFFFF', steel: '#1B2148', ink: '#0B0E2C', plum: '#3A1050' };
@@ -564,8 +564,11 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     for (let i = 0; i < N; i++) {
       const d = towerData[i], z = ((d.z0 + t * ZS) % L + L) % L - L + 22;
       dm.rotation.set(0, 0, 0); dm.position.set(d.x, 0, z); dm.scale.set(d.w, d.h, d.d); dm.updateMatrix(); near.setMatrixAt(i, dm.matrix);
-      if (i % 3 !== 2) continue;
-      dm.position.set(d.s > 0 ? d.x - d.w / 2 - 0.12 : d.x + d.w / 2 + 0.12, Math.min(d.h - 2, 6 + (i % 5)), z); dm.rotation.set(0, d.s > 0 ? -1.12 : 1.12, 0); dm.scale.setScalar(1); dm.updateMatrix(); billboards.setMatrixAt(billboards.count++, dm.matrix);
+      if (i % 3 === 0 || d.h < 12) continue;
+      // signs hang off the wall over the street, hinged at the wall so no part can cut into a tower
+      const wall = d.x - d.s * d.w / 2, sw = Math.max(3.4, Math.min(7, (Math.abs(wall) - RW * 0.95) / Math.cos(SIGN_TILT)));
+      dm.position.set(wall - d.s * (0.06 + Math.cos(SIGN_TILT) * sw / 2), 9.4 + (i % 4), z - Math.sin(SIGN_TILT) * sw / 2);
+      dm.rotation.set(0, -d.s * SIGN_TILT, 0); dm.scale.setScalar(sw / 9); dm.updateMatrix(); billboards.setMatrixAt(billboards.count++, dm.matrix);
     }
     near.instanceMatrix.needsUpdate = true; billboards.instanceMatrix.needsUpdate = true;
     begin(arches); const barT = 2 * GR.BAR, k0 = Math.floor((t - 0.5 * GR.BAR) / barT);
