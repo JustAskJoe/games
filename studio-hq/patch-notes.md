@@ -20,7 +20,7 @@ Art only, no change to Studio HQ itself.
 - [ ] The sheets are code-drawn layout and palette studies, not finished art: judge composition, palette and readability, not finish. Figures and the other rooms aren't sketched yet.
 - [ ] The Workshop sheets show 6 benches (games.json today). Finals need a plan for when games are added: spare benches, or a bench row the Studio can repeat.
 - [ ] Artist instructions cap roughs at 2 per direction, so the Town Hall room has no rough; the art direction lists it. Add it to `33-roughs.json` if wanted.
-- [ ] The Art roughs workflow failed on every art branch earlier today (#21, #22, #24, #25). If it fails here too, fix the `ART_KEY` secret or endpoint, then re-run Actions → Art roughs on `art/studio-hq-33-six-looks`.
+- [ ] @Hunter: the **Art roughs workflow failed** on this branch too (run 41247211566, "Make the roughs" step, exit 1), as on every art branch today (#21, #22, #24, #25). The agent couldn't download the log; likely the `ART_KEY` secret or the rough endpoint. Once fixed, re-run Actions → Art roughs on `art/studio-hq-33-six-looks` and the 10 roughs will land on the branch.
 - [ ] Sheets were checked only in headless Chromium, not on a real phone. A uses an SVG displacement filter and E a glow filter; older phones may draw them slowly.
 - [ ] Brief reference links weren't opened by the agent.
 
