@@ -1,0 +1,56 @@
+{
+  "_about": "Painted roughs for Studio HQ #33 (made free by the Art roughs workflow). ROUGH, mood only, not shipped. © 2026 justaskjoe. All rights reserved.",
+  "style": "Game background illustration of a small village of studio buildings at dusk, in the illustrated style named in the subject. Crisp, clean, high detail, sharp edges, readable shapes, warm window light against a cool sky. Original design, not resembling any existing game or franchise. No text, no letters, no signs.",
+  "items": [
+    {
+      "file": "33-A-rough-1.jpg",
+      "subject": "In ink storybook style: crisp ink linework over soft watercolor washes on cream paper, cozy dusk. The whole village from above at a three-quarter angle, landscape: a big town hall with a clock tower at top center, a forge with a chimney and glowing anvil at top left, a cottage with an easel and big north windows at top right, a round town square with an empty notice board in the center, a long workshop with big open doors showing workbenches at bottom left, a small formal columned office, a supply shed with crates, and an arcade with glowing cabinet windows at bottom right, all linked by paths, each building clearly separate.",
+      "seed": 331
+    },
+    {
+      "file": "33-A-rough-2.jpg",
+      "subject": "In ink storybook style: crisp ink linework over soft watercolor washes on cream paper, cozy dusk. Inside a long workshop room, wide landscape view: one row of six identical wooden workbenches across the room, each with an empty blank name plate on its front and a small desk lamp, tall back windows showing a dusk sky, wooden beams, the lower third of the picture calm and dark with nothing in it.",
+      "seed": 332
+    },
+    {
+      "file": "33-B-rough-1.jpg",
+      "subject": "In flat poster style: bold flat color shapes and strong silhouettes, like a vintage travel poster at sunset. The whole village from above at a three-quarter angle, landscape: a big town hall with a clock tower at top center, a forge with a chimney and glowing anvil at top left, a cottage with an easel and big north windows at top right, a round town square with an empty notice board in the center, a long workshop with big open doors showing workbenches at bottom left, a small formal columned office, a supply shed with crates, and an arcade with glowing cabinet windows at bottom right, all linked by paths, each building clearly separate.",
+      "seed": 333
+    },
+    {
+      "file": "33-B-rough-2.jpg",
+      "subject": "In flat poster style: bold flat color shapes and strong silhouettes, like a vintage travel poster at sunset. Inside a long workshop room, wide landscape view: one row of six identical wooden workbenches across the room, each with an empty blank name plate on its front and a small desk lamp, tall back windows showing a dusk sky, wooden beams, the lower third of the picture calm and dark with nothing in it.",
+      "seed": 334
+    },
+    {
+      "file": "33-C-rough-1.jpg",
+      "subject": "In tiny diorama style: an isometric miniature model village on a wooden board with tilt-shift depth, every building a little set piece. The whole village from above at a three-quarter angle, landscape: a big town hall with a clock tower at top center, a forge with a chimney and glowing anvil at top left, a cottage with an easel and big north windows at top right, a round town square with an empty notice board in the center, a long workshop with big open doors showing workbenches at bottom left, a small formal columned office, a supply shed with crates, and an arcade with glowing cabinet windows at bottom right, all linked by paths, each building clearly separate.",
+      "seed": 335
+    },
+    {
+      "file": "33-C-rough-2.jpg",
+      "subject": "In tiny diorama style: an isometric miniature model village on a wooden board with tilt-shift depth, every building a little set piece. Inside a long workshop room, wide landscape view: one row of six identical wooden workbenches across the room, each with an empty blank name plate on its front and a small desk lamp, tall back windows showing a dusk sky, wooden beams, the lower third of the picture calm and dark with nothing in it.",
+      "seed": 336
+    },
+    {
+      "file": "33-E-rough-1.jpg",
+      "subject": "In neon noir style: a rainy night with glowing wordless neon shapes, wet streets and reflections. The whole village from above at a three-quarter angle, landscape: a big town hall with a clock tower at top center, a forge with a chimney and glowing anvil at top left, a cottage with an easel and big north windows at top right, a round town square with an empty notice board in the center, a long workshop with big open doors showing workbenches at bottom left, a small formal columned office, a supply shed with crates, and an arcade with glowing cabinet windows at bottom right, all linked by paths, each building clearly separate.",
+      "seed": 337
+    },
+    {
+      "file": "33-E-rough-2.jpg",
+      "subject": "In neon noir style: a rainy night with glowing wordless neon shapes, wet streets and reflections. Inside a long workshop room, wide landscape view: one row of six identical wooden workbenches across the room, each with an empty blank name plate on its front and a small desk lamp, tall back windows showing a dusk sky, wooden beams, the lower third of the picture calm and dark with nothing in it.",
+      "seed": 338
+    },
+    {
+      "file": "33-F-rough-1.jpg",
+      "subject": "In papercraft style: layered paper cut-outs with real depth and soft shadows between the layers. The whole village from above at a three-quarter angle, landscape: a big town hall with a clock tower at top center, a forge with a chimney and glowing anvil at top left, a cottage with an easel and big north windows at top right, a round town square with an empty notice board in the center, a long workshop with big open doors showing workbenches at bottom left, a small formal columned office, a supply shed with crates, and an arcade with glowing cabinet windows at bottom right, all linked by paths, each building clearly separate.",
+      "seed": 339
+    },
+    {
+      "file": "33-F-rough-2.jpg",
+      "subject": "In papercraft style: layered paper cut-outs with real depth and soft shadows between the layers. Inside a long workshop room, wide landscape view: one row of six identical wooden workbenches across the room, each with an empty blank name plate on its front and a small desk lamp, tall back windows showing a dusk sky, wooden beams, the lower third of the picture calm and dark with nothing in it.",
+      "seed": 340
+    }
+  ]
+}
