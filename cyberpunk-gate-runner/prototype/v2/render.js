@@ -118,9 +118,9 @@
 
   function buildRoad() {
     const m = new T.ShaderMaterial({
-      uniforms: Object.assign({ uSq: { value: new T.Vector2() }, uSqR: { value: 1 } }, UF), defines: { RW: RW.toFixed(2), ZS: ZS.toFixed(2), BEAT: (GR.B * ZS).toFixed(4) },
+      uniforms: Object.assign({ uSq: { value: new T.Vector2() }, uSqR: { value: 1 }, uSplit: { value: new T.Vector3() } }, UF), defines: { RW: RW.toFixed(2), ZS: ZS.toFixed(2), BEAT: (GR.B * ZS).toFixed(4) },
       vertexShader: `varying vec3 vW; void main(){ vec4 w = modelMatrix * vec4(position, 1.); vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }`,
-      fragmentShader: `uniform vec3 uFog; uniform vec2 uFogR, uSq; uniform float uT, uPulse, uOC, uSqR; varying vec3 vW;
+      fragmentShader: `uniform vec3 uFog; uniform vec2 uFogR, uSq; uniform vec3 uSplit; uniform float uT, uPulse, uOC, uSqR; varying vec3 vW;
         void main(){ float x = vW.x, ax = abs(x), z = vW.z - uT * ZS, dist = length(cameraPosition - vW), on = 1. - smoothstep(RW * 1.03, RW * 1.05, ax);
           vec3 c = mix(vec3(.003, .003, .01), vec3(.006, .007, .024), on);
           float bz = abs(fract(z / BEAT + .5) - .5) * BEAT, bar = abs(fract(z / (BEAT * 4.) + .5) - .5) * BEAT * 4.;
@@ -132,6 +132,9 @@
           float wet = (sin(x * 1.7 + 1.) * .5 + .5) * (sin(x * 4.3) * .5 + .5) * (sin(z * .09 + x * .4) * .5 + .5);
           float far = smoothstep(4., 46., dist); c += on * (mix(vec3(.9, .2, .75), vec3(1., .3, .5), uOC) * wet * .16 * far + vec3(.34, .11, .48) * far * far * .22);
           vec2 q = (vW.xz - uSq) / vec2(uSqR + 1.2, (uSqR + 1.2) * .8); c += on * mix(vec3(.05, .7, .9), vec3(1., .9, .9), uOC) * exp(-dot(q, q) * 1.5) * .28;
+          float zone = step(uSplit.y, vW.z) * step(vW.z, 3.) * uSplit.z, mine = step(0., x * uSplit.x);
+          if (zone > 0.) { float cv = fract((vW.z + abs(x - uSplit.x * RW * .5) * .9 + uT * 16.) / 3.4);
+            c *= 1. - .62 * zone * (1. - mine) * on; c += on * zone * mine * vec3(.1, .75, 1.) * (.09 + .55 * step(cv, .22)); c += vec3(1.) * smoothstep(.14, .05, ax) * zone * 1.6; }
           float grid = max(smoothstep(.04, .0, abs(fract(x / 2.) - .5) * 2.), smoothstep(.04, .0, abs(fract(z / 2.) - .5) * 2.)); c += (1. - on) * vec3(.04, .025, .1) * grid;
           gl_FragColor = vec4(mix(c, uFog, smoothstep(uFogR.x + 8., uFogR.y + 40., dist)), 1.); }`
     });
@@ -258,14 +261,15 @@
     const tex = new T.CanvasTexture(cv); tex.colorSpace = T.SRGBColorSpace; tex.anisotropy = 4;
     const w = RW * 0.97, h = 3.3, grp = new T.Group(), panel = new T.Mesh(new T.PlaneGeometry(w, h), new T.MeshBasicMaterial({ map: tex, color: new T.Color(2.4, 2.4, 2.4), transparent: true, depthWrite: false, side: T.DoubleSide }));
     panel.position.y = h / 2 + 0.2; grp.add(panel);
-    const frame = new T.MeshBasicMaterial({ color: new T.Color(col).multiplyScalar(3) });
+    const base = new T.Color(col), frame = new T.MeshBasicMaterial({ color: base.clone().multiplyScalar(3) });
+    grp.lit = on => { panel.material.color.setScalar(on ? 2.8 : 0.5); frame.color.copy(base).multiplyScalar(on ? 4.5 : 0.45); };
     for (const [bw, bh, x, y] of [[w + 0.14, 0.14, 0, h + 0.2], [w + 0.14, 0.14, 0, 0.2], [0.14, h, -w / 2, h / 2 + 0.2], [0.14, h, w / 2, h / 2 + 0.2]]) { const b = new T.Mesh(new T.BoxGeometry(bw, bh, 0.14), frame); b.position.set(x, y, 0); grp.add(b); }
     grp.position.x = side * RW * 0.52; return grp;
   }
   R.setRun = function (G, text) {
     if (!R.ok) return;
     for (const g of gates) { scene.remove(g.grp); g.grp.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) { if (o.material.map) o.material.map.dispose(); o.material.dispose(); } }); }
-    gates = G.ents.filter(e => e.kind === 'gate').map(e => { const grp = new T.Group(); grp.add(gatePanel(text(e.L), GCOL(e.L.op), -1), gatePanel(text(e.R), GCOL(e.R.op), 1)); grp.visible = false; scene.add(grp); return { e, grp }; });
+    gates = G.ents.filter(e => e.kind === 'gate').map(e => { const grp = new T.Group(); const L = gatePanel(text(e.L), GCOL(e.L.op), -1), R2 = gatePanel(text(e.R), GCOL(e.R.op), 1); grp.add(L, R2); grp.visible = false; scene.add(grp); return { e, grp, L, R: R2 }; });
     parts = []; tracers = [];
   };
   R.project = function (x, z, y) { v3.set(wx(x), y || 0, wz(z)).project(cam); return { x: (v3.x + 1) / 2 * W, y: (1 - v3.y) / 2 * H }; };
@@ -304,7 +308,14 @@
       else if (e.kind === 'boss') put(boss, 0, 0, wZ, 1.15, 0, 0, COL.white, 1 + UF.uPulse.value * 0.3);
     }
     [picks, drones, bikers, crate, boss].forEach(end);
-    for (const g of gates) { const z = g.e.ta - G.t; g.grp.visible = !g.e.done && z < AHEAD && z > -0.2; if (g.grp.visible) g.grp.position.z = wz(z); }
+    // the next gate splits the road: your side lights up and the other dims, flipping as you cross the middle
+    let split = null; const side = G.sx < 0 ? -1 : 1;
+    for (const g of gates) {
+      const z = g.e.ta - G.t; g.grp.visible = !g.e.done && z < AHEAD && z > -0.2; if (!g.grp.visible) continue;
+      g.grp.position.z = wz(z); if (!split) split = { g, z };
+      const near = split.g === g; g.L.lit(!near || side < 0); g.R.lit(!near || side > 0);
+    }
+    const us = road.material.uniforms.uSplit.value; if (split) us.set(side, wz(split.z), Math.min(1, (AHEAD - split.z) / 1.2)); else us.z = 0;
     // squad
     const n = G.n, show = Math.min(n, 180), rad = GR.width(n) * RW * 1.5, cx = wx(G.sx), lean = (G.sx - G.tx) * 0.42, s = Math.max(0.74, 1.12 - show / 420);
     begin(runners);

@@ -146,9 +146,23 @@
   function gateText(o) { return o.op === 'add' ? '+' + o.v : o.op === 'mul' ? '×' + o.v : o.op === 'trade' ? '−' + o.lose + ' ×' + o.v : o.op === 'oc' ? 'CHARGE +' + o.v + '%' : o.op === 'weapon' ? GR.WEAPONS[o.w].name.toUpperCase() : o.op === 'power' ? 'POWER +30%' : 'FIRE +' + Math.round(o.v * 100) + '%'; }
   function hpBar(x, y, w, fr, boss) { const h = boss ? 7 : 4; g.fillStyle = 'rgba(0,0,0,.55)'; g.fillRect(x - w / 2, y, w, h); g.fillStyle = boss ? '#FF3DA8' : '#4BFFA5'; g.fillRect(x - w / 2, y, w * Math.max(0, fr), h); }
   // labels and health bars sit over the 3D models, sized by how close the thing is
+  function gatePreview(G, o) {
+    const r = GR.gateResult(G, o);
+    return o.op === 'rate' ? 'fire ×' + r.rate : o.op === 'oc' ? 'overclock ' + r.meter + '%' : o.op === 'weapon' || o.op === 'power' ? GR.WEAPONS[r.weapon].short + ' Lv ' + r.wlv : r.n + ' squad';
+  }
+  function drawGatePreview(G, e, z) {
+    const k = 1 / (1 + Math.max(0, z) * 0.55), mine = G.sx < 0 ? -1 : 1;
+    for (const [side, o, name] of [[-1, e.L, 'LEFT'], [1, e.R, 'RIGHT']]) {
+      const p = R.project(side * 0.52, z, 4.1), on = side === mine, txt = (on ? name + ': ' : '') + gatePreview(G, o);
+      g.globalAlpha = on ? 1 : 0.6; g.font = `700 ${Math.max(10, (on ? 22 : 15) * k + 4)}px ${FONT}`; const hw = g.measureText(txt).width / 2 + 8, x = Math.max(hw, Math.min(W - hw, p.x));
+      g.fillStyle = 'rgba(5,6,18,.72)'; g.fillRect(x - hw, p.y - 20, hw * 2, 27); g.textAlign = 'center'; g.fillStyle = on ? '#FFFFFF' : '#B9B4CC'; g.fillText(txt, x, p.y); g.globalAlpha = 1;
+    }
+  }
   function drawLabels(G) {
+    let gateDone = false;
     for (const e of G.ents) {
       const z = e.ta - G.t; if (z > 4.6) break; if (e.done || z < -0.2) continue;
+      if (e.kind === 'gate') { if (!gateDone && z < 3.2) drawGatePreview(G, e, z); gateDone = true; continue; }
       const k = 1 / (1 + Math.max(0, z) * 0.55), fr = e.hp / e.maxHp;
       if (e.kind === 'runner' && z < 3) { const p = R.project(e.x, z, 2.1); label('+1', p.x, p.y, 15 * k + 4, '#BFF8FF'); }
       else if (e.kind === 'crate') { const p = R.project(e.x, z, 2.1); label('SHOOT IT', p.x, p.y - 6, 14 * k + 3, '#FFB547'); hpBar(p.x, p.y, 60 * k, fr); }
