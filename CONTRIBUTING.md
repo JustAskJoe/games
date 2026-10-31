@@ -38,6 +38,8 @@ You only run this once. After that, every session uses the start and finish prom
 ## 2. Play a build
 Builds are single HTML files in each game's `builds/` folder. Open one in any browser (phone width is the target). On GitHub, `.html` shows as source, so download the file or play it in the JustAskJoe Lab (https://jaj-forge.huntefl.workers.dev/lab, sign in with your email).
 
+**Putting a game in the Lab:** add one entry to `games.json` at the repo root (slug, name, kind, folder, build file, a one-line blurb). The Lab, the Studio home and the preview links all read that file, so nothing else needs changing. It shows up in the Lab within about 5 minutes of merging.
+
 ## 3. Make a change
 We each have about 10 hours a week, often at odd times, so changes go through a short-lived branch and a pull request. That way nobody overwrites anyone, and the other person sees what changed.
 
