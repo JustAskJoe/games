@@ -143,7 +143,7 @@
     if (U.flash > 0) { g.fillStyle = `rgba(255,255,255,${U.flash})`; g.fillRect(0, 0, W, H); U.flash *= Math.pow(RM ? 0.5 : 0.88, U.fdt * 60); if (U.flash < 0.02) U.flash = 0; }
   }
   function label(txt, x, y, size, col) { g.font = `700 ${Math.max(9, size)}px ${FONT}`; g.textAlign = 'center'; g.fillStyle = col; g.fillText(txt, x, y); }
-  function gateText(o) { return o.op === 'add' ? '+' + o.v : o.op === 'mul' ? '×' + o.v : o.op === 'trade' ? '−' + o.lose + ' ×' + o.v : o.op === 'oc' ? 'CHARGE +' + o.v + '%' : o.op === 'weapon' ? GR.WEAPONS[o.w].name.toUpperCase() : o.op === 'power' ? 'POWER +30%' : 'FIRE +' + Math.round(o.v * 100) + '%'; }
+  function gateText(o) { return o.op === 'add' ? '+' + o.v : o.op === 'mul' ? '×' + o.v : o.op === 'trade' ? '−' + o.lose + ' ×' + o.v : o.op === 'oc' ? 'CHARGE +' + o.v + '%' : o.op === 'weapon' ? GR.WEAPONS[o.w].name.toUpperCase() : o.op === 'mod' ? GR.WEAPONS[U.G.weapon].mods[o.k].name.toUpperCase() : 'FIRE +' + Math.round(o.v * 100) + '%'; }
   function hpBar(x, y, w, fr) { g.fillStyle = 'rgba(0,0,0,.55)'; g.fillRect(x - w / 2, y, w, 4); g.fillStyle = '#4BFFA5'; g.fillRect(x - w / 2, y, w * Math.max(0, fr), 4); }
   // labels and health bars sit over the 3D models, sized by how close the thing is
   function drawLabels(G) {
@@ -175,7 +175,7 @@
     const bs = U.boss, on = bs && !G.over && !bs.done && bs.ta - G.t < GR.BOSS_RANGE;
     $('bossBar').hidden = !on;
     if (on) { const fr = Math.max(0, bs.hp / bs.maxHp), pct = Math.ceil(fr * 100); $('bossFill').style.width = fr * 100 + '%'; $('bossTrail').style.width = fr * 100 + '%'; $('bossPct').textContent = pct + '%'; }
-    $('wpn').textContent = GR.WEAPONS[G.weapon].name + (G.wlv > 1 ? ' Lv ' + G.wlv : '');
+    const wp = GR.WEAPONS[G.weapon]; $('wpn').textContent = (G.mod >= 0 ? wp.mods[G.mod].name + ' ' + wp.short : wp.name) + (G.wlv > 1 ? ' Lv ' + G.wlv : '');
   }
   function hint(txt) { $('secHint').textContent = txt; }
   function say(txt) { $('live').textContent = txt; }
@@ -202,7 +202,7 @@
         say('Gate ' + gateText(e.g) + '. Squad ' + e.n);
       } else if (e.type === 'runner') { sfx('runner'); U.popups.push({ t0: t, txt: '+1', x: sx, y: sy - 60, c: '#BFF8FF' }); }
       else if (e.type === 'hurt' || e.type === 'bossHit') { sfx('hurt'); U.shake = e.type === 'bossHit' ? 16 : 6; U.popups.push({ t0: t, txt: '−' + e.lost, x: sx, y: sy - 70, c: '#FF4D6D', big: e.type === 'bossHit' }); }
-      else if (e.type === 'weapon') { sfx('weapon'); const wp = GR.WEAPONS[e.w], up = e.lv > 1 ? wp.short.toUpperCase() + ' LV ' + e.lv : wp.name.toUpperCase(); U.popups.push({ t0: t, txt: up + '!', x: W / 2, y: H * 0.45, c: wp.col, big: true, life: 1.4 }); if (wp.tip) hint(wp.tip); say('Weapon: ' + up); }
+      else if (e.type === 'weapon') { sfx('weapon'); const wp = GR.WEAPONS[e.w], md = wp.mods[e.mod], up = md ? md.name.toUpperCase() : e.pick ? wp.name.toUpperCase() : wp.short.toUpperCase() + ' LV ' + e.lv; U.popups.push({ t0: t, txt: up + '!', x: W / 2, y: H * 0.45, c: wp.col, big: true, life: 1.4 }); const tip = md ? md.tip : e.pick ? wp.tip : ''; if (tip) hint(tip); if (e.pick) R.gates(G, gateText); say('Weapon: ' + up); }
       else if (e.type === 'drop') { U.flash = 0.8; U.shake = 12; R.punch(9); R.shock(G.sx, 0, '#FFFFFF', 26, 0.4); U.popups.push({ t0: t, txt: 'OVERCLOCK ×' + e.mult.toFixed(1), x: W / 2, y: H * 0.42, c: '#FFFFFF', big: true, life: 1.6 }); say('The drop. Overclock times ' + e.mult.toFixed(1)); }
       else if (e.type === 'bossDown') { sfx('bossDown'); U.flash = 0.6; U.shake = 22; R.punch(7); U.popups.push({ t0: t, txt: 'BOSS DOWN', x: W / 2, y: H * 0.4, c: '#FFB547', big: true, life: 1.6 }); say('Boss down'); }
       else if (e.type === 'lost') { sfx('lose'); stopClock(true); U.endAt = performance.now() + 1100; }
@@ -237,7 +237,7 @@
     U.test = !!fromBar;
     if (fromBar) { // tester jump: the smart bot plays the street up to that bar, then you take over
       const r = GR.rng(5); let k = 0; while (U.G.t < fromBar * GR.BAR) { if (++k % 6 === 0) GR.act(U.G, { type: 'steer', x: GR.BOTS.smart(U.G, r) }); GR.step(U.G); }
-      U.G.test = true; U.evi = U.G.ev.length;
+      U.G.test = true; U.evi = U.G.ev.length; R.gates(U.G, gateText);
     }
     const off = U.G.t;
     U.clock0 = performance.now() + 450 - off * 1000;
@@ -284,7 +284,7 @@
       <li><b class="c">Drag left and right</b> anywhere to steer your squad. Arrow keys work too.</li>
       <li><b class="gr">Pick a gate.</b> Flat numbers suit a small squad, multipliers a big one. <b class="r">Red</b> trades runners now for double later.</li>
       <li><b class="p">Your squad fires on its own.</b> Hordes fill the road. Carve a path through them, because whatever reaches you eats runners.</li>
-      <li><b class="g">Weapon gates</b> swap your gun: Arc, Scatter, Rail or Rockets. Shoot gold crates to power it up.</li>
+      <li><b class="g">Pick your gun</b> at the weapon fork, then an upgrade for it later. Shoot gold crates to level it up.</li>
       <li><b class="p">Gates charge Overclock.</b> Charge gates charge it most. When the beat drops, it fires. Melt the boss.</li></ol>
       <button class="btn pri" data-act="play" type="button">Run</button><button class="btn" data-act="title" type="button">Back</button>`);
   }

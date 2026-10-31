@@ -13,6 +13,7 @@ First step of Prototype 2: new graphics, same game.
 - **The street is real 3D now:** a neon city with lit towers, Hush propaganda billboards, a striped synthwave sun, a wet glowing road and light arches that pass overhead on the beat.
 - **New models for everything:** your runners, drones, bikers, the gold crate and the Hush Enforcer.
 - The picture adapts to the window, so it plays wide on a PC as well as tall on a phone.
+- **Weapons are a path now:** one weapon fork per run, then a later fork with two upgrades for the gun you chose (for example Overcharge or Forked on the Arc gun). No more swapping guns mid run.
 - **Cleaner gates:** the text floating above gates is gone. The gate itself is the one thing to read, and the lit side shows your choice.
 - **Boss health bar:** a big fixed bar with the Enforcer's health as a percentage.
 - **The city reacts:** windows and rooftop neon wake up as Overclock charges, and at the drop the Hush signs flip to "FREE THE BEAT" and fireworks go off over the street.

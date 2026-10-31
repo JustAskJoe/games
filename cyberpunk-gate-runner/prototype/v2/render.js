@@ -259,7 +259,7 @@
     setQuality(R.quality);
   };
   // one gate = two lit panels; the panels are rebuilt each run because sides are shuffled
-  const GCOL = op => op === 'trade' ? COL.red : op === 'rate' ? COL.gold : op === 'oc' ? COL.pink2 : op === 'weapon' ? COL.cyan : op === 'power' ? COL.violet : COL.green;
+  const GCOL = op => op === 'trade' ? COL.red : op === 'rate' ? COL.gold : op === 'oc' ? COL.pink2 : op === 'weapon' ? COL.cyan : op === 'mod' ? COL.violet : COL.green;
   function gatePanel(text, col, side) {
     const cv = document.createElement('canvas'); cv.width = 512; cv.height = 256; const c = cv.getContext('2d'), gr = c.createLinearGradient(0, 0, 0, 256);
     gr.addColorStop(0, col + '14'); gr.addColorStop(1, col + '40'); c.fillStyle = gr; c.fillRect(0, 0, 512, 256);
@@ -272,11 +272,11 @@
     for (const [bw, bh, x, y] of [[w + 0.14, 0.14, 0, h + 0.2], [w + 0.14, 0.14, 0, 0.2], [0.14, h, -w / 2, h / 2 + 0.2], [0.14, h, w / 2, h / 2 + 0.2]]) { const b = new T.Mesh(new T.BoxGeometry(bw, bh, 0.14), frame); b.position.set(x, y, 0); grp.add(b); }
     grp.position.x = side * RW * 0.52; return grp;
   }
-  R.setRun = function (G, text) {
+  R.setRun = function (G, text) { R.gates(G, text); parts = []; tracers = []; };
+  R.gates = function (G, text) {
     if (!R.ok) return;
     for (const g of gates) { scene.remove(g.grp); g.grp.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) { if (o.material.map) o.material.map.dispose(); o.material.dispose(); } }); }
     gates = G.ents.filter(e => e.kind === 'gate').map(e => { const grp = new T.Group(); const L = gatePanel(text(e.L), GCOL(e.L.op), -1), R2 = gatePanel(text(e.R), GCOL(e.R.op), 1); grp.add(L, R2); grp.visible = false; scene.add(grp); return { e, grp, L, R: R2 }; });
-    parts = []; tracers = [];
   };
   R.project = function (x, z, y) { v3.set(wx(x), y || 0, wz(z)).project(cam); return { x: (v3.x + 1) / 2 * W, y: (1 - v3.y) / 2 * H }; };
   R.burst = function (x, z, col, n, speed, y) {
