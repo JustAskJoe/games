@@ -4,7 +4,7 @@
 
 A cyberpunk runner shooter for phones. Steer a growing squad through neon streets, pick gates that multiply your shooters, and blast through enemies, all synced to a chill house beat.
 
-**Status:** Prototype 1, Oct 31, 2026 (solo pitch from Zach; crew review pending). **Next:** crew playtest against the pass bar.
+**Status:** Prototype 2 in progress (Oct 31, 2026): the street is now real 3D, same rules as P1. **Next:** split road at gates, then horde walls. Crew review of the pitch is still pending.
 
 **Read first:** [`pitch/brief.md`](pitch/brief.md). What changed lately, and what's waiting: [`patch-notes.md`](patch-notes.md).
 
@@ -14,7 +14,7 @@ A cyberpunk runner shooter for phones. Steer a growing squad through neon street
 - **Testing the drop?** Menu (≡) → **Jump to drop**. A bot plays up to bar 19 so you land with a fair squad. Tester runs are tagged in feedback.
 - After a run, tap **Give feedback**.
 
-## What's in Prototype 1
+## What's in the game so far
 - One street, about 60 seconds, on an original 122 BPM house loop (Am7, Fmaj7, Cmaj7, G6). Sections: intro, build, riser, **the drop**, cash out.
 - Drag anywhere to steer (arrow keys too). The squad fires on every 8th note on its own.
 - **Gates** on the downbeat every 2 bars: add, multiply, fire rate, and red minus gates. Sides shuffle each run.
@@ -27,6 +27,6 @@ A cyberpunk runner shooter for phones. Steer a growing squad through neon street
 
 ## Build and test
 ```
-cd cyberpunk-gate-runner/prototype/v1 && python3 build.py && node sim.js && python3 test.py
+cd cyberpunk-gate-runner/prototype/v2 && python3 build.py && node sim.js && python3 test.py
 ```
-Source and the sim numbers are in [`prototype/v1/README.md`](prototype/v1/README.md).
+Source is in [`prototype/v2/`](prototype/v2/README.md). The P1 source stays in `prototype/v1/` for reference; don't build it, because it writes the same build file.

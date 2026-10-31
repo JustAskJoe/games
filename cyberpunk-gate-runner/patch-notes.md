@@ -6,6 +6,29 @@ Newest on top. Each entry covers **what's new** for players, **next up** for the
 
 ---
 
+## P2 · Oct 31, 2026 · Zach (with Claude)
+First step of Prototype 2: new graphics, same game.
+
+### What's new
+- **The street is real 3D now:** a neon city with lit towers, Hush propaganda billboards, a striped synthwave sun, a wet glowing road and light arches that pass overhead on the beat.
+- **New models for everything:** your runners, drones, bikers, the gold crate and the Hush Enforcer.
+- The picture adapts to the window, so it plays wide on a PC as well as tall on a phone.
+
+### Next up
+- [ ] @Zach: play the 3D build on PC and give a verdict before the split road PR.
+- [ ] @Hunter @Joe: play the Lab preview on a real phone. It's the only proof the 3D runs well there.
+- [ ] Split road at gates, horde walls, boss on the drop, impact, city reacts (one pull request each, in that order).
+
+### Watch out
+- [ ] **Not tested on a real phone or a real graphics card.** Automated runs use software graphics, so they prove it works, not that it's smooth. Frame rate is unmeasured everywhere.
+- [ ] Automatic quality drop (under about 40 fps it lowers resolution, then turns glow off) has only been exercised in software graphics. Add `#q=0`, `#q=1` or `#q=2` to the URL to lock a tier.
+- [ ] If the browser loses its graphics context (phones can do this when backgrounded), recovery is untested.
+- [ ] three.js r159 is the last version with a single-script build. Upgrading later means adding a bundler. It logs a harmless deprecation warning in the console.
+- [ ] The build grew from 56 KB to about 750 KB. Not measured on a slow connection.
+- [ ] The boss still dies in about 0.23s before reaching you, so its new model is barely seen until the boss-on-the-drop change. Rules are unchanged from P1.
+- [ ] Building from `prototype/v1` would overwrite this build with P1. Use v2.
+- [ ] The squad draws at most 180 runners; the number shown is still the true count.
+
 ## P1 · Oct 31, 2026 · Zach (with Claude)
 First playable build.
 
