@@ -42,12 +42,14 @@ Taken from Prototype 1 (`prototype/head.html` tokens and `prototype/art.js`). Us
 
 ## Pipeline settings
 ```
+roughs: cloudflare            # cloudflare (free, full size) | canva (links only) | off
+final_art_source: undecided   # candidates: pixellab | canva | commission
 canva_roughs: on
 final_art_source: canva       # picked Oct 28, 2026 by Hunter (painted won the #9 test)
 slack_channel: #td-studio     # the agent skips Slack if this channel doesn't exist
 ```
 
-## Canva style lead (painted roughs)
+## Style lead (painted roughs, Cloudflare or Canva)
 > 2D storybook game asset, hand-painted fantasy cottage style: ink linework over painterly flat color, teal slate roofs, warm timber, cream plaster, mossy greens, dusty-rose sky. Single asset centered on a plain cream background, three-quarter top-down view, readable at small size. Original design, not resembling any existing franchise. No text.
 
 ## Final-art cost table

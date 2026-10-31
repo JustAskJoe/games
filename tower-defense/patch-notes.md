@@ -53,6 +53,7 @@ Art only, no build change.
 - **Art agent setup.** A shared Artist agent (`kit/agents/artist.md`) now makes briefs and free concept sheets for art requests, then final art only after a person approves.
 - **`art/art-direction.md`:** the palette (hex codes from Prototype 1), sizes and pipeline settings the agent follows.
 - **`design/ai-assets.md`:** the AI-made asset log for Steam's AI disclosure.
+- **Free painted roughs:** the Artist now gets full-size painted roughs from Cloudflare Workers AI (Flux Schnell) through the new Art roughs workflow, instead of Canva thumbnails. Set by `roughs: cloudflare` in `art/art-direction.md`.
 
 ### Next up
 - [ ] @Hunter: create the labels and the Concepts routine (steps in `kit/agents/README.md`).
@@ -60,10 +61,15 @@ Art only, no build change.
 - [x] Crew: pick painted or pixel finals from the first concept sheets, then record it in `art/art-direction.md` and `design/handoff.md`. (done Oct 28, Hunter: painted, Canva)
 
 ### Watch out
+- [ ] The agent hasn't run yet. The first concepts run is the real test of the SVG sheets and the Canva links.
+- [ ] Canva roughs (the fallback) are links only: cloud runs can't fetch full-size Canva images (see `kit/art/README.md`).
 - [x] The agent hasn't run yet. The first concepts run is the real test of the SVG sheets and the Canva links. (done Oct 28, Artist agent: first run on #9; see its entry above)
 - [ ] Canva roughs are links only: cloud runs can't fetch full-size Canva images (see `kit/art/README.md`).
 - [ ] The `#td-studio` Slack channel may not exist; the agent skips Slack if it doesn't.
 - [ ] The final-art cost table in `art/art-direction.md` is empty until a source is chosen.
+- [ ] @Hunter: add the `ART_KEY` Actions secret (Claude has the value) or the Art roughs workflow makes nothing.
+- [ ] The Art roughs workflow hasn't run against the live endpoint yet; the first real run is the test. Its commits don't re-run Checks on the pull request.
+- [ ] Flux Schnell's license allows commercial use as far as we know; confirm before any rough becomes final art (roughs aren't meant to ship).
 
 ## 1.1 · Oct 19, 2026 · Hunter (with Claude)
 Play: onefiftylabs.co/lab/tower-defense/

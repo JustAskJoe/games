@@ -37,9 +37,14 @@ For each matching issue that is not labeled `art:review` yet (or where someone r
    - a two-line caption: the idea, and the risk
 
    For a **pixel-art** direction, draw it as a grid of `<rect>` pixels at the source resolution in `art-direction.md`, with `shape-rendering="crispEdges"` and no smoothing. Keep each sheet under 200 KB and viewBox-based so it scales on a phone.
-3. **Painted roughs.** Only if `art-direction.md` says `canva_roughs: on`. Make up to 2 Canva `generate-image` calls per direction, starting with the style lead in `art-direction.md`. Don't commit them: cloud runs can only fetch Canva thumbnails. Put the Canva links in the pull request marked **ROUGH**, and log them in `ai-assets.md` as "rough, not shipped".
+3. **Painted roughs.** For painted directions only (a pixel direction's SVG sheet is its rough). Follow the `roughs:` setting in `art-direction.md`:
+   - `roughs: cloudflare` (free, full size). Write `<game>/art/concepts/<issue>-roughs.json` with `"style"` set to the style lead in `art-direction.md` and up to 2 `"items"` per painted direction: `{"file": "<issue>-<A|B|C>-rough-<n>.jpg", "subject": "<the asset and this direction, one or two sentences>", "seed": <n>}`. Push it with your branch. The repo's Art roughs workflow makes the images on Cloudflare and commits them to your branch, usually within 2 minutes. Wait up to 6 minutes (`git pull` every minute) and embed whichever arrived in the pull request. If none arrived, say "roughs arriving shortly" and carry on; they'll still land on the branch.
+   - `roughs: canva`. Make up to 2 Canva `generate-image` calls per painted direction, starting with the style lead. Don't commit them: cloud runs can only fetch Canva thumbnails. Put the Canva links in the pull request.
+   - `roughs: off`. Skip this step.
+
+   Mark every rough **ROUGH** in the pull request, and log it in `ai-assets.md` as "rough, not shipped" with the tool (Flux Schnell via Cloudflare Workers AI, or Canva).
 4. **Estimate** the final-art cost from the cost table in `art-direction.md`: generations × cost each, plus 25% for retries. If `final_art_source` is `undecided`, write "source undecided" and estimate each candidate that has numbers.
-5. **Open the pull request** "Art concepts: <game> #<issue> <title>". Include the brief, the SVG sheets (GitHub previews them), the rough links, the estimate, and the line: **Reply `Pick: A`, `B` or `C`, plus any notes.**
+5. **Open the pull request** "Art concepts: <game> #<issue> <title>". Include the brief, the SVG sheets (GitHub previews them), the roughs, the estimate, and the line: **Reply `Pick: A`, `B` or `C`, plus any notes.**
 6. Label the issue `art:review` and comment with the pull request link, mentioning whoever opened the issue.
 
 In this mode, never call PixelLab or any other paid generation tool, even if one is available. If you think one is needed, say so in the pull request and stop.
@@ -57,6 +62,6 @@ For each matching issue labeled `art-approved`:
 
 ## Never
 - Spend credits in concepts mode, or on an issue without `art-approved`.
-- Commit reference images, Canva roughs, or anything we didn't make.
+- Commit reference images, Canva roughs, or anything we didn't make. (Cloudflare roughs are committed by the Art roughs workflow, not by you.)
 - Edit `art-direction.md`, `design/handoff.md`, `.github/` or `CLAUDE.md`. Propose changes in your pull request instead.
 - Delete anything.
