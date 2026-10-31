@@ -44,6 +44,8 @@ Taken from Prototype 1 (`prototype/head.html` tokens and `prototype/art.js`). Us
 ```
 roughs: cloudflare            # cloudflare (free, full size) | canva (links only) | off
 final_art_source: undecided   # candidates: pixellab | canva | commission
+canva_roughs: on
+final_art_source: canva       # picked Oct 28, 2026 by Hunter (painted won the #9 test)
 slack_channel: #td-studio     # the agent skips Slack if this channel doesn't exist
 ```
 
@@ -57,9 +59,12 @@ Fill in once a source is chosen. The agent estimates from these numbers.
 | --- | --- | --- | --- |
 | pixellab | Tower (base + 2 upgrade branches) | | |
 | pixellab | Enemy with walk animation | | |
-| canva | Tower (base + 2 upgrade branches) | | |
+| canva | Tower (base + 2 upgrade branches) | 4 (3 states + button) | not filled in yet |
 
-## Open question being tested
+## Decided: painted finals, made in Canva
+Oct 28, 2026: the crew compared the Arrow tower sheets (#9) and Hunter picked **A: painted**. Finals come from Canva in the painted style above. The pixel direction (40 × 48 at 2x) is dropped.
+
+### The test (kept for the record)
 **Painted or pixel finals?** PixelLab makes pixel art, while this look is painted. The first request (Arrow tower) asks for one painted and one pixel direction. The crew compares them on a phone and records the answer in `final_art_source` above and in `design/handoff.md`.
 
 ## Brief template
