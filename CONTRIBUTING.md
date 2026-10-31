@@ -68,6 +68,7 @@ Every prototype has a one-file **build** (the parts are joined into `builds/<gam
 | Tilebound | `cd tilebound/prototype/v2 && python3 build-and-test.py` |
 | Hexed | `cd hexed/prototype/v1 && python3 build.py && python3 test.py` |
 | Neon Surf | `cd neon-surf/prototype/v1 && python3 build.py && python3 test.py` |
+| Cyberpunk Gate Runner | `cd cyberpunk-gate-runner/prototype/v1 && python3 build.py && node sim.js && python3 test.py` |
 
 What the checks cover:
 - **Balance sims** (`node sim.js`) play hundreds of games with bots. If you touch numbers (towers, enemies, cards, levels), run the sim and put the before and after win rates in your PR.

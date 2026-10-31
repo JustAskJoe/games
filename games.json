@@ -10,6 +10,8 @@
     { "slug": "hexed", "name": "Hexed", "kind": "Match-3", "dir": "hexed", "file": "hexed.html",
       "blurb": "Witchy tarot match-3: ten levels, a journey map, powers and a coach." },
     { "slug": "neon-surf", "name": "Neon Surf", "kind": "Tech test", "dir": "neon-surf", "file": "neon-surf.html",
-      "blurb": "Neon-ocean rhythm surfing on an original placeholder beat, with tap-along calibration." }
+      "blurb": "Neon-ocean rhythm surfing on an original placeholder beat, with tap-along calibration." },
+    { "slug": "cyberpunk-gate-runner", "name": "Gate Runner", "kind": "Runner shooter", "build": "P1", "dir": "cyberpunk-gate-runner", "file": "cyberpunk-gate-runner.html",
+      "blurb": "Cyberpunk runner shooter on a house beat: steer your squad through gates, shoot the street clear, melt the boss on the drop. Menu has tester jumps." }
   ]
 }
