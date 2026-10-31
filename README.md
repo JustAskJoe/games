@@ -12,7 +12,7 @@ Every game starts as a pitch in Forge (our team questionnaire). Approved pitches
 | [Tilebound](tilebound/) | Mahjong meets the Game Boy Pokémon TCG | Prototype |
 | [Hexed](hexed/) | Witchy tarot match-3, 10 levels | Prototype |
 | [Neon Surf](neon-surf/) | Neon-ocean rhythm surfing | Tech test |
-| [Cyberpunk Gate Runner](cyberpunk-gate-runner/) (working title: Overclock) | Cyberpunk runner shooter synced to a house beat | Pitch |
+| [Cyberpunk Gate Runner](cyberpunk-gate-runner/) (working title: Overclock) | Cyberpunk runner shooter synced to a house beat | Prototype 1 |
 | [Cardboard Cartel](cardboard-cartel/) | Trading-card collector idler | Design |
 | [Idle Hands](idle-hands/) | Idle game pitch | Pitch |
 | [Automation Idler](automation-idler/) | Idler built around real life automations | Design |
@@ -48,6 +48,7 @@ Most builds are single HTML files. Open `builds/*.html` in a browser, or run a p
 | Tilebound | [`tilebound/builds/tilebound.html`](tilebound/builds/tilebound.html) |
 | Hexed | [`hexed/builds/hexed.html`](hexed/builds/hexed.html) |
 | Neon Surf | [`neon-surf/builds/neon-surf.html`](neon-surf/builds/neon-surf.html) |
+| Cyberpunk Gate Runner | [`cyberpunk-gate-runner/builds/cyberpunk-gate-runner.html`](cyberpunk-gate-runner/builds/cyberpunk-gate-runner.html) |
 
 GitHub shows `.html` files as source, so download the file (with its `img/` folder where there is one) and open it locally to play. Every build is also playable in the [JustAskJoe Lab](https://jaj-forge.huntefl.workers.dev/lab) (email sign-in for the crew).
 
