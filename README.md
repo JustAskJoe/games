@@ -12,6 +12,7 @@ Every game starts as a pitch in Forge (our team questionnaire). Approved pitches
 | [Tilebound](tilebound/) | Mahjong meets the Game Boy Pokémon TCG | Prototype |
 | [Hexed](hexed/) | Witchy tarot match-3, 10 levels | Prototype |
 | [Neon Surf](neon-surf/) | Neon-ocean rhythm surfing | Tech test |
+| [Cyberpunk Gate Runner](cyberpunk-gate-runner/) (working title: Overclock) | Cyberpunk runner shooter synced to a house beat | Pitch |
 | [Cardboard Cartel](cardboard-cartel/) | Trading-card collector idler | Design |
 | [Idle Hands](idle-hands/) | Idle game pitch | Pitch |
 | [Automation Idler](automation-idler/) | Idler built around real life automations | Design |
