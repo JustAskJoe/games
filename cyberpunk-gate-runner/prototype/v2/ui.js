@@ -160,8 +160,8 @@
   }
   function drawLabels(G) {
     let gateDone = false;
-    for (const e of G.ents) {
-      const z = e.ta - G.t; if (z > 4.6) break; if (e.done || z < -0.2) continue;
+    for (let i = G.ei; i < G.ents.length; i++) {
+      const e = G.ents[i], z = e.ta - G.t; if (z > 4.6) break; if (e.done) continue;
       if (e.kind === 'gate') { if (!gateDone && z < 3.2) drawGatePreview(G, e, z); gateDone = true; continue; }
       const k = 1 / (1 + Math.max(0, z) * 0.55), fr = e.hp / e.maxHp;
       if (e.kind === 'runner' && z < 3) { const p = R.project(e.x, z, 2.1); label('+1', p.x, p.y, 15 * k + 4, '#BFF8FF'); }
@@ -203,7 +203,7 @@
         for (const id of e.hits.slice(0, 6)) { const en = G.ents.find(q => q.id === id); if (en) R.tracer(G.sx + (Math.random() - 0.5) * GR.width(G.n), en.x, en.ta - G.t, col, en.kind === 'boss' ? 3.8 : 1.1); }
       } else if (e.type === 'kill') {
         sfx('kill'); const en = G.ents.find(q => q.id === e.id), z = en ? en.ta - G.t : 1;
-        const c = e.kind === 'crate' ? '#FFB547' : e.kind === 'boss' ? '#FFFFFF' : '#FF3DA8', nP = RM ? 3 : e.kind === 'boss' ? 160 : 10;
+        const c = e.kind === 'crate' ? '#FFB547' : e.kind === 'boss' ? '#FFFFFF' : '#FF3DA8', nP = RM ? 2 : e.kind === 'boss' ? 160 : e.kind === 'swarm' ? 4 : 10;
         R.burst(e.x, z, c, nP, e.kind === 'boss' ? 16 : 6, e.kind === 'boss' ? 4 : 1.1);
         if (!firstSeen.kill) { firstSeen.kill = 1; hint('Your squad fires on its own. Line up with enemies'); }
       } else if (e.type === 'gate') {
@@ -292,7 +292,7 @@
     showSheet(`<h2>How to play</h2><ol class="steps">
       <li><b class="c">Drag left and right</b> anywhere to steer your squad. Arrow keys work too.</li>
       <li><b class="gr">Pick a gate.</b> Flat numbers suit a small squad, multipliers a big one. <b class="r">Red</b> trades runners now for double later.</li>
-      <li><b class="p">Your squad fires on its own.</b> Line up with drones and bikers to shoot them before they hit you.</li>
+      <li><b class="p">Your squad fires on its own.</b> Hordes fill the road. Carve a path through them, because whatever reaches you eats runners.</li>
       <li><b class="g">Weapon gates</b> swap your gun: Arc, Scatter, Rail or Rockets. Shoot gold crates to power it up.</li>
       <li><b class="p">Gates charge Overclock.</b> Charge gates charge it most. When the beat drops, it fires. Melt the boss.</li></ol>
       <button class="btn pri" data-act="play" type="button">Run</button><button class="btn" data-act="title" type="button">Back</button>`);

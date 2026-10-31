@@ -13,6 +13,7 @@ First step of Prototype 2: new graphics, same game.
 - **The street is real 3D now:** a neon city with lit towers, Hush propaganda billboards, a striped synthwave sun, a wet glowing road and light arches that pass overhead on the beat.
 - **New models for everything:** your runners, drones, bikers, the gold crate and the Hush Enforcer.
 - The picture adapts to the window, so it plays wide on a PC as well as tall on a phone.
+- **Horde walls:** packs fill the whole road, from 24 enemies early to nearly 400 at the drop. Your fire carves a path and whatever gets through eats runners.
 - **Split road at gates:** a divider leads into each gate, your side lights up with chevrons, the other dims, and both show what they'd do for you.
 - **Weapons:** weapon gates offer Arc gun, Scatter, Railgun and Rockets, each fighting differently. Power gates and gold crates level your gun up.
 - **Gates are real choices:** flat numbers, multipliers, fire rate, Overclock charge and risky trades, where the best pick depends on your squad.

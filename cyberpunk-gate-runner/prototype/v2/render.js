@@ -68,6 +68,10 @@
     const body = new T.OctahedronGeometry(0.46, 0), ring = new T.TorusGeometry(0.62, 0.035, 4, 14), core = new T.SphereGeometry(0.16, 8, 6);
     return merge([part(body, COL.plum, 0, M(0, 0, 0, 0, 0, 0, 1, 0.72, 1)), part(ring, COL.white, 1, M(0, 0, 0, Math.PI / 2)), part(core, COL.white, 1, M(0, 0, 0.32))]);
   }
+  function swarmGeo() {
+    const body = new T.OctahedronGeometry(0.3, 0), core = new T.SphereGeometry(0.1, 6, 4);
+    return merge([part(body, COL.plum, 0, M(0, 0, 0, 0, 0, 0, 1, 1.3, 1)), box(0.5, 0.03, 0.05, 0, 0.02, 0, COL.white, 1), part(core, COL.white, 1, M(0, 0.05, 0.24))]);
+  }
   function bikerGeo() {
     const wheel = new T.CylinderGeometry(0.34, 0.34, 0.16, 10);
     return merge([
@@ -112,8 +116,8 @@
   });
 
   // ---------- state ----------
-  let renderer, scene, cam, rtS, rtA, rtB, fsScene, fsCam, fsQuad, mats = {}, W = 1, H = 1, DPR = 1, road, sky, runners, picks, drones, bikers, crate, boss, arches, rails, near, billboards, towerData = [], gates = [], parts = [], tracers = [], pts, lines, pi = 0;
-  const camBase = new T.Vector3(0, 6.6, 9.2), look = new T.Vector3(), PN = 900, TN = 90, v3 = new T.Vector3();
+  let renderer, scene, cam, rtS, rtA, rtB, fsScene, fsCam, fsQuad, mats = {}, W = 1, H = 1, DPR = 1, road, sky, runners, picks, drones, swarm, bikers, crate, boss, arches, rails, near, billboards, towerData = [], gates = [], parts = [], tracers = [], pts, lines, pi = 0;
+  const camBase = new T.Vector3(0, 6.6, 9.2), look = new T.Vector3(), PN = 1600, TN = 90, v3 = new T.Vector3();
   const frameMs = []; let lastPerf = 0, slowCheck = 0;
 
   function buildRoad() {
@@ -240,9 +244,9 @@
     renderer.setClearColor(0x000000, 1); scene = new T.Scene(); scene.fog = new T.Fog(FOG, 32, 66);
     cam = new T.PerspectiveCamera(55, 1, 0.1, 900);
     buildSky(); buildRoad(); buildCity(); buildFx(); buildPost();
-    runners = inst(runnerGeo(), 240); picks = inst(runnerGeo(), 16); drones = inst(droneGeo(), 700); bikers = inst(bikerGeo(), 12); crate = inst(crateGeo(), 2); boss = inst(bossGeo(), 1); arches = inst(archGeo(), 4);
+    runners = inst(runnerGeo(), 240); picks = inst(runnerGeo(), 16); drones = inst(droneGeo(), 40); swarm = inst(swarmGeo(), 1000); bikers = inst(bikerGeo(), 12); crate = inst(crateGeo(), 2); boss = inst(bossGeo(), 1); arches = inst(archGeo(), 4);
     const railG = merge([box(0.1, 0.1, 110, 0, 0, 0, COL.white, 1)]); rails = inst(railG, 2);
-    [runners, picks, drones, bikers, crate, boss, arches, rails].forEach(o => scene.add(o));
+    [runners, picks, drones, swarm, bikers, crate, boss, arches, rails].forEach(o => scene.add(o));
     R.ok = true; return true;
   };
   R.resize = function (w, h) {
@@ -297,17 +301,18 @@
     begin(rails); for (const s of [-1, 1]) put(rails, s * RW * 1.05, 0.12, -38, 1, 0, 0, COL.cyan, 0.45 + UF.uPulse.value * 0.4); end(rails);
   }
   function drawEnts(G, t, oc) {
-    [picks, drones, bikers, crate, boss].forEach(begin);
-    for (const e of G.ents) {
-      const z = e.ta - G.t; if (z > AHEAD) break; if (e.done || z < -0.2) continue;
+    [picks, drones, swarm, bikers, crate, boss].forEach(begin);
+    for (let i = G.ei; i < G.ents.length; i++) {
+      const e = G.ents[i], z = e.ta - G.t; if (z > AHEAD) break; if (e.done) continue;
       const x = wx(e.x), wZ = wz(z);
       if (e.kind === 'runner') put(picks, x, Math.abs(Math.sin(t * 5 + e.id)) * 0.2, wZ, 1.4, Math.PI + t * 2, 0, COL.cyan, 1.3);
       else if (e.kind === 'drone') put(drones, x, 1.1 + Math.sin(t * 5 + e.id) * 0.16, wZ, 1, t * 2 + e.id, 0, e.hp < e.maxHp ? COL.white : COL.pink, e.hp < e.maxHp ? 1.5 : 1);
+      else if (e.kind === 'swarm') { if (swarm.count < 1000) put(swarm, x, 0.55 + Math.sin(t * 9 + e.id) * 0.1, wZ, 1, t * 3 + e.id, 0, e.hp < e.maxHp ? COL.white : COL.pink, e.hp < e.maxHp ? 1.6 : 1); }
       else if (e.kind === 'biker') put(bikers, x, 0, wZ, 1.15, 0, Math.sin(t * 7 + e.id) * 0.08, e.hp < e.maxHp * 0.5 ? COL.gold : COL.red, 1);
       else if (e.kind === 'crate') put(crate, x, 0.25 + Math.sin(t * 4) * 0.1, wZ, 1.1, t * 1.4, 0, COL.gold, 1 + UF.uPulse.value * 0.6);
       else if (e.kind === 'boss') put(boss, 0, 0, wZ, 1.15, 0, 0, COL.white, 1 + UF.uPulse.value * 0.3);
     }
-    [picks, drones, bikers, crate, boss].forEach(end);
+    [picks, drones, swarm, bikers, crate, boss].forEach(end);
     // the next gate splits the road: your side lights up and the other dims, flipping as you cross the middle
     let split = null; const side = G.sx < 0 ? -1 : 1;
     for (const g of gates) {
@@ -352,7 +357,7 @@
     cam.position.set(wx(sx) * 0.3 + (o.shakeX || 0) * 0.02, camBase.y + (aspect > 1 ? 1 : 0.6) + (o.shakeY || 0) * 0.02, camBase.z + (aspect > 1 ? 3.4 : 1.6));
     look.set(wx(sx) * 0.15, aspect > 1 ? 4.2 : 2.2, -11); cam.lookAt(look); cam.updateMatrixWorld();
     drawCity(t);
-    if (G) { R.motion = !o.reduced; drawEnts(G, t, oc); } else { [picks, drones, bikers, crate, boss, runners].forEach(begin); for (const q of gates) q.grp.visible = false; road.material.uniforms.uSqR.value = 0; road.material.uniforms.uSq.value.set(0, 900); }
+    if (G) { R.motion = !o.reduced; drawEnts(G, t, oc); } else { [picks, drones, swarm, bikers, crate, boss, runners].forEach(begin); for (const q of gates) q.grp.visible = false; road.material.uniforms.uSqR.value = 0; road.material.uniforms.uSq.value.set(0, 900); }
     drawFx(t);
     renderer.setRenderTarget(rtS); renderer.clear(); renderer.render(scene, cam);
     mats.out.uniforms.tS.value = rtS.texture;

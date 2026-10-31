@@ -16,10 +16,11 @@
   const AIM = 0.22;             // aim cone half-width (road units, road is -1..1)
   const SPEED = 2.6;            // squad steer speed (road units / s)
   const KIND = {
+    swarm: { hp: 8, bite: 1, w: 0.05, credits: 1 },
     drone: { hp: 12, bite: 3, w: 0.11, credits: 1 },
     biker: { hp: 110, bite: 9, w: 0.14, credits: 3, drift: 0.32 },
     crate: { hp: 30, bite: 0, w: 0.13, credits: 10 },
-    boss: { hp: 4500, bite: 0, w: 0.42, credits: 60 }
+    boss: { hp: 4800, bite: 0, w: 0.42, credits: 60 }
   };
   // gate pairs: one every 2 bars from bar 4 to 18. Sides are shuffled per run (seeded). No pair has an obvious answer:
   // +N beats x1.5 while the squad is small, fire rate beats both once it's big, charge trades growth for the drop,
@@ -40,10 +41,12 @@
     pulse: { name: 'Pulse rifle', short: 'Pulse', mult: 1, aim: 0, val: 1, col: '#3DF0FF', tip: '' },
     arc: { name: 'Arc gun', short: 'Arc', mult: 1.5, aim: 0, val: 1, col: '#FFB547', tip: 'Arc gun: heavy damage, tight stream' },
     scatter: { name: 'Scatter', short: 'Scatter', mult: 1.35, aim: 0.24, val: 1.15, col: '#4BFFA5', tip: 'Scatter: a wide cone, less aiming' },
-    rail: { name: 'Railgun', short: 'Rail', mult: 1.4, aim: -0.06, pierce: 6, val: 1.25, col: '#C9B8FF', tip: 'Railgun: pierces a whole line' },
+    rail: { name: 'Railgun', short: 'Rail', mult: 1.6, aim: 0.04, pierce: 24, val: 1.05, col: '#C9B8FF', tip: 'Railgun: pierces a whole line' },
     rocket: { name: 'Rockets', short: 'Rockets', mult: 1.3, aim: 0, splash: 0.5, val: 1.35, col: '#FF7AD0', tip: 'Rockets: blasts hit nearby enemies' }
   };
   const FINDS = ['arc', 'scatter', 'rail', 'rocket'], POWER = 0.3; // each weapon level adds 30% damage
+  // [bar, rows, across]: 24 enemies early, up to 396 at the drop
+  const WALLS = [[5, 4, 6], [7, 4, 7], [9, 6, 8], [11, 6, 9], [13, 8, 10], [15, 8, 11], [17, 10, 12], [19, 12, 13], [20, 22, 18], [22, 22, 18], [24, 22, 18]];
   const CHARGE = 10;            // Overclock % from any gate; charge gates add more, trades add none
 
   function rng(seed) { let s = (seed >>> 0) || 1; return () => { s ^= s << 13; s ^= s >>> 17; s ^= s << 5; return ((s >>> 0) % 1e9) / 1e9; }; }
@@ -58,16 +61,16 @@
     // gates on the downbeat every 2 bars
     const offer = FINDS.slice().sort(() => r() - 0.5); let oi = 0;
     GATES.forEach((pair, i) => { const sw = r() < 0.5, opts = pair.map(g => g.op === 'weapon' ? { op: 'weapon', w: offer[oi++ % offer.length] } : g); add('gate', at(4 + i * 2, 0), 0, { L: sw ? opts[1] : opts[0], R: sw ? opts[0] : opts[1] }); });
-    // drones: a cluster on beat 3 of every bar in the build (lesson 3: fight)
-    for (let bar = 5; bar < 20; bar++) {
-      const n = bar < 8 ? 2 : bar < 12 ? 3 : 4, cx = (r() * 1.2 - 0.6);
-      for (let k = 0; k < n; k++) add('drone', at(bar, 2) + (k % 2) * B / 2, Math.max(-0.85, Math.min(0.85, cx + (k - (n - 1) / 2) * 0.2)));
-    }
+    // horde walls fill the road on the odd bars, between gates. You carve a path; whatever's left reaches you.
+    const wall = (bar, rows, across) => {
+      for (let i = 0; i < rows; i++) for (let k = 0; k < across; k++) add('swarm', at(bar, 0) + i * 0.085, -0.92 + 1.84 * (k + 0.5) / across + (r() - 0.5) * 0.08);
+    };
+    for (const [bar, rows, across] of WALLS) wall(bar, rows, across);
+    // a few tough drones lead each wall
+    for (let bar = 5; bar < 20; bar += 2) for (let k = 0; k < 2; k++) add('drone', at(bar, 2) + k * B / 2, r() * 1.4 - 0.7);
     // weapon crate (shoot it open) and bikers in the riser
     add('crate', at(13, 2), r() < 0.5 ? -0.55 : 0.55);
     for (const bar of [14, 15, 16, 17, 18, 19]) add('biker', at(bar, 3), r() * 1.4 - 0.7);
-    // the drop: a dense horde, then the mini boss lands on bar 26
-    for (let bar = 20; bar < 26; bar++) for (let k = 0; k < 6; k++) add('drone', at(bar, k * 0.5 + 0.5), (r() * 1.6 - 0.8));
     add('boss', at(26, 0), 0);
     return E.sort((a, b) => a.ta - b.ta);
   }
@@ -76,7 +79,7 @@
     o = o || {};
     const r = rng(o.seed || 1);
     return { seed: o.seed || 1, t: 0, tick: 0, n: 3, sx: 0, tx: 0, rate: 1, weapon: 'pulse', wlv: 1,
-      meter: 0, oc: { on: false, done: false, mult: 1 }, ents: buildStreet(r), nextVolley: B / 2,
+      meter: 0, oc: { on: false, done: false, mult: 1 }, ents: buildStreet(r), ei: 0, nextVolley: B / 2,
       kills: 0, crates: 0, boss: null, bossKilled: false, gatesGood: 0, gatesBad: 0, peak: 3,
       over: false, won: false, ev: [], log: [] };
   }
@@ -109,7 +112,9 @@
   function volley(G) {
     const W = WEAPONS[G.weapon], sx = G.sx, aimW = AIM + W.aim + width(G.n) * 0.5;
     let pool = G.n * G.rate * W.mult * (1 + POWER * (G.wlv - 1)) * (G.oc.on ? G.oc.mult : 1), pierced = 0;
-    const tg = G.ents.filter(e => !e.done && e.hp > 0 && KIND[e.kind] && z(G, e) > 0 && z(G, e) < RANGE && Math.abs(e.x - sx) < aimW + e.w).sort((a, b) => a.ta - b.ta);
+    const tg = [];
+    for (let i = G.ei; i < G.ents.length; i++) { const e = G.ents[i], dz = e.ta - G.t; if (dz >= RANGE) break; if (!e.done && e.hp > 0 && KIND[e.kind] && dz > 0 && Math.abs(e.x - sx) < aimW + e.w) tg.push(e); }
+    if (W.pierce) tg.sort((p, q) => (q.kind === 'boss') - (p.kind === 'boss')); // a rail shot goes through the horde to the boss
     const hits = [];
     for (const e of tg) {
       if (pool <= 0) break;
@@ -149,10 +154,10 @@
     if (!G.oc.on && !G.oc.done && G.t >= DROP_T) { G.oc.on = true; G.oc.mult = 1 + 2 * G.meter / 100; G.ev.push({ type: 'drop', t: G.t, mult: G.oc.mult, meter: G.meter }); }
     if (G.oc.on && G.t >= DROP_END) { G.oc.on = false; G.oc.done = true; G.ev.push({ type: 'ocEnd', t: G.t }); }
     // bikers hunt the squad
-    for (const e of G.ents) if (e.kind === 'biker' && !e.done && z(G, e) < 2.6) { const dd = G.sx - e.x; e.x += Math.sign(dd) * Math.min(Math.abs(dd), KIND.biker.drift * DT); }
+    for (let i = G.ei; i < G.ents.length; i++) { const e = G.ents[i]; if (e.ta - G.t > 2.6) break; if (e.kind !== 'biker' || e.done) continue; const dd = G.sx - e.x; e.x += Math.sign(dd) * Math.min(Math.abs(dd), KIND.biker.drift * DT); }
     // volleys on every 8th note
     while (G.nextVolley <= G.t) { volley(G); G.nextVolley += B / 2; }
-    for (const e of G.ents) { if (e.ta > G.t) break; if (!e.done) arrive(G, e); }
+    while (G.ei < G.ents.length && G.ents[G.ei].ta <= G.t) { const e = G.ents[G.ei++]; if (!e.done) arrive(G, e); }
     G.peak = Math.max(G.peak, G.n);
     if (G.n <= 0) { G.over = true; G.won = false; G.ev.push({ type: 'lost', t: G.t }); }
     else if (G.t >= END) { G.over = true; G.won = true; G.ev.push({ type: 'won', t: G.t }); }
