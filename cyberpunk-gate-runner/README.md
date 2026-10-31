@@ -15,7 +15,7 @@ A cyberpunk runner shooter for phones. Steer a growing squad through neon street
 - After a run, tap **Give feedback**.
 
 ## What's in the game so far
-- One street, about 60 seconds, on an original 122 BPM house loop. Sections: intro, build, riser, **the drop**, cash out.
+- One street, about 60 seconds, on an original 122 BPM track. Sections: intro, build, riser, **the drop**, cash out.
 - Drag anywhere to steer (arrow keys too). The squad fires on every 8th note on its own.
 - **Gates** every 2 bars, on a split road that shows your side and previews both outcomes: flat numbers, multipliers, fire rate, Overclock charge, risky trades, weapons and power-ups.
 - **Weapons:** Pulse rifle, Arc gun, Scatter, Railgun and Rockets. Power gates and gold crates level your gun.

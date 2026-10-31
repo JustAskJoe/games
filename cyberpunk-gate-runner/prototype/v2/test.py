@@ -36,6 +36,8 @@ with sync_playwright() as p:
     pg.wait_for_function('() => GRUI.U.G && GRUI.U.G.ents.some(e => e.kind === "boss" && e.ta - GRUI.U.G.t < 1.6)', timeout=30000); shot(pg, '09-boss')
     pg.wait_for_function('() => !GRUI.U.playing', timeout=40000); pg.wait_for_timeout(500); shot(pg, '10-results')
     res = pg.evaluate('() => GRUI.U.lastRes'); print('result', res)
+    aerr = pg.evaluate('() => GRUI.audioErrs'); print('audio errors', len(aerr))
+    if aerr: fails.append('audio: %s' % aerr[:3])
     if not res or not res.get('won'): fails.append('smart bot lost the browser run: %s' % res)
     pg.click('[data-act=feedback]'); pg.wait_for_timeout(200)
     pg.click('[data-act=fbSend]'); pg.wait_for_timeout(200)

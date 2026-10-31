@@ -9,7 +9,7 @@
   const FONT = '"Space Grotesk", system-ui, sans-serif';
   const U = { G: null, playing: false, paused: false, evi: 0, popups: [], queue: [], fdt: 0.016, flash: 0, shake: 0, muted: false,
     drag: null, lastSent: null, endAt: 0, lastRes: null, test: false, fb: {}, attract0: performance.now(), hintFlash: 0 };
-  window.GRUI = { U };
+  window.GRUI = { U, A: null };
   try { U.muted = localStorage.getItem('grMuted') === '1'; } catch (e) {}
 
   // ================= audio: an original 122 BPM house loop =================
@@ -19,70 +19,98 @@
     const C = window.AudioContext || window.webkitAudioContext; if (!C) return null;
     try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) {}
     A.ctx = new C({ latencyHint: 'interactive' });
-    const comp = A.ctx.createDynamicsCompressor(); comp.threshold.value = -16; comp.ratio.value = 4;
-    A.out = A.ctx.createGain(); A.out.gain.value = U.muted ? 0 : 0.85; A.out.connect(comp); comp.connect(A.ctx.destination);
+    const comp = A.ctx.createDynamicsCompressor(); comp.threshold.value = -14; comp.ratio.value = 8; comp.attack.value = 0.004; comp.release.value = 0.12;
+    A.out = A.ctx.createGain(); A.out.gain.value = U.muted ? 0 : 0.7; A.out.connect(comp); comp.connect(A.ctx.destination);
     A.sfx = A.ctx.createGain(); A.sfx.gain.value = 0.7; A.sfx.connect(A.out);
     const len = A.ctx.sampleRate, b = A.ctx.createBuffer(1, len, A.ctx.sampleRate), d = b.getChannelData(0);
     for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
     A.noise = b; return A.ctx;
   }
+  window.GRUI.A = A; window.GRUI.audioErrs = [];
   const X = () => A.ctx;
-  function newBus() { if (A.bus) { try { A.bus.disconnect(); } catch (e) {} } A.bus = A.ctx.createGain(); A.bus.connect(A.out); }
+  function newBus() {
+    if (A.bus) { try { A.bus.disconnect(); } catch (e) {} }
+    A.bus = A.ctx.createGain(); A.bus.connect(A.out);
+    A.kick = A.ctx.createGain(); A.kick.connect(A.bus);                 // kick stays clean and on top
+    A.synth = A.ctx.createGain(); const drive = A.ctx.createWaveShaper(); // synths share grit and duck under the kick
+    drive.curve = DRIVE(); drive.oversample = '2x'; A.synth.connect(drive); drive.connect(A.bus);
+  }
+  let driveCurve = null;
+  function DRIVE() { if (driveCurve) return driveCurve; const n = 1024, c = new Float32Array(n); for (let i = 0; i < n; i++) { const x = i / (n - 1) * 2 - 1; c[i] = Math.tanh(x * 2.6) / Math.tanh(2.6); } return (driveCurve = c); }
   function envG(t, a, peak, dec, dest) { const gn = X().createGain(); gn.gain.setValueAtTime(0.0001, t); gn.gain.exponentialRampToValueAtTime(peak, t + a); gn.gain.exponentialRampToValueAtTime(0.0001, t + a + dec); gn.connect(dest || A.bus); return gn; }
   function noiseSrc(t, dur) { const s = X().createBufferSource(); s.buffer = A.noise; s.loop = true; s.start(t, Math.random() * 0.5); s.stop(t + dur); return s; }
   function osc(type, fr, t, dur, dest, det) { const o = X().createOscillator(); o.type = type; o.frequency.value = fr; if (det) o.detune.value = det; o.connect(dest); o.start(t); o.stop(t + dur + 0.05); return o; }
-  // chords: Am7 · Fmaj7 · Cmaj7 · G6 (one per bar)
-  const CH = [[220, 261.6, 329.6, 392], [174.6, 220, 261.6, 329.6], [261.6, 329.6, 392, 493.9], [196, 246.9, 293.7, 329.6]];
-  const ROOT = [55, 43.65, 65.41, 49];
+  // chords: Am · F · Dm · E, one per bar, with a distorted synth bus that ducks under every kick
+  const CH = [[220, 261.6, 329.6, 440], [174.6, 220, 261.6, 349.2], [146.8, 220, 293.7, 349.2], [164.8, 207.7, 246.9, 329.6]];
+  const ROOT = [55, 43.65, 36.71, 41.2];
+  // 16-step acid line and the 8-step drop riff, as notes above the chord root (semitones)
+  const ACID = [0, 0, 12, 0, 3, 0, 15, 0, 0, 7, 0, 12, 10, 0, 3, 7], RIFF = [12, 12, 15, 12, 19, 17, 15, 10];
+  const semi = (f, n) => f * Math.pow(2, n / 12);
   const SND = {
-    kick(t, v = 1) { const o = X().createOscillator(); o.type = 'sine'; o.frequency.setValueAtTime(150, t); o.frequency.exponentialRampToValueAtTime(45, t + 0.1); o.connect(envG(t, 0.002, 0.9 * v, 0.28)); o.start(t); o.stop(t + 0.35); },
-    clap(t, v = 1) { for (const [dt, pk] of [[0, 0.4], [0.012, 0.3], [0.024, 0.35]]) { const n = noiseSrc(t + dt, 0.2), f = X().createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 1500; f.Q.value = 1.1; n.connect(f); f.connect(envG(t + dt, 0.001, pk * v, 0.12)); } },
-    hat(t, v = 1, open) { const n = noiseSrc(t, open ? 0.3 : 0.06), f = X().createBiquadFilter(); f.type = 'highpass'; f.frequency.value = open ? 6500 : 8000; n.connect(f); f.connect(envG(t, 0.001, (open ? 0.1 : 0.07) * v, open ? 0.2 : 0.03)); },
-    crash(t) { const n = noiseSrc(t, 1.8), f = X().createBiquadFilter(); f.type = 'highpass'; f.frequency.value = 4000; n.connect(f); f.connect(envG(t, 0.002, 0.2, 1.6)); },
-    boom(t) { const o = X().createOscillator(); o.type = 'sine'; o.frequency.setValueAtTime(90, t); o.frequency.exponentialRampToValueAtTime(30, t + 0.9); o.connect(envG(t, 0.005, 0.9, 1.1)); o.start(t); o.stop(t + 1.3); },
-    bass(t, ci, dur) {
-      const gn = X().createGain(); gn.gain.setValueAtTime(0.0001, t); gn.gain.exponentialRampToValueAtTime(0.42, t + 0.01); gn.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-      const f = X().createBiquadFilter(); f.type = 'lowpass'; f.frequency.setValueAtTime(900, t); f.frequency.exponentialRampToValueAtTime(220, t + dur); f.connect(gn); gn.connect(A.bus);
-      osc('sawtooth', ROOT[ci] * 2, t, dur, f); osc('sine', ROOT[ci], t, dur, gn);
+    kick(t, v = 1) {
+      const o = X().createOscillator(); o.type = 'sine'; o.frequency.setValueAtTime(190, t); o.frequency.exponentialRampToValueAtTime(44, t + 0.09); o.connect(envG(t, 0.001, 1.15 * v, 0.3, A.kick)); o.start(t); o.stop(t + 0.36);
+      const c = X().createOscillator(); c.type = 'square'; c.frequency.value = 2400; c.connect(envG(t, 0.001, 0.09 * v, 0.012, A.kick)); c.start(t); c.stop(t + 0.03);
+      const d = A.synth.gain; d.cancelScheduledValues(t); d.setValueAtTime(0.28, t); d.linearRampToValueAtTime(1, t + 0.3); // sidechain pump
+    },
+    clap(t, v = 1) { for (const [dt, pk] of [[0, 0.5], [0.012, 0.4], [0.024, 0.45]]) { const n = noiseSrc(t + dt, 0.2), f = X().createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 1800; f.Q.value = 1.1; n.connect(f); f.connect(envG(t + dt, 0.001, pk * v, 0.13)); } },
+    hat(t, v = 1, open) { const n = noiseSrc(t, open ? 0.3 : 0.06), f = X().createBiquadFilter(); f.type = 'highpass'; f.frequency.value = open ? 6500 : 8500; n.connect(f); f.connect(envG(t, 0.001, (open ? 0.13 : 0.08) * v, open ? 0.2 : 0.03)); },
+    crash(t) { const n = noiseSrc(t, 2), f = X().createBiquadFilter(); f.type = 'highpass'; f.frequency.value = 3500; n.connect(f); f.connect(envG(t, 0.002, 0.28, 1.8)); },
+    boom(t) { const o = X().createOscillator(); o.type = 'sine'; o.frequency.setValueAtTime(120, t); o.frequency.exponentialRampToValueAtTime(28, t + 1.1); o.connect(envG(t, 0.004, 1.1, 1.4, A.kick)); o.start(t); o.stop(t + 1.6); },
+    // reese bass: two detuned saws and a sub, with the filter snapping shut
+    bass(t, ci, dur, cut = 1100) {
+      const gn = X().createGain(); gn.gain.setValueAtTime(0.0001, t); gn.gain.exponentialRampToValueAtTime(0.6, t + 0.008); gn.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      const f = X().createBiquadFilter(); f.type = 'lowpass'; f.Q.value = 5; f.frequency.setValueAtTime(cut, t); f.frequency.exponentialRampToValueAtTime(160, t + dur); f.connect(gn); gn.connect(A.synth);
+      osc('sawtooth', ROOT[ci] * 2, t, dur, f, -14); osc('sawtooth', ROOT[ci] * 2, t, dur, f, 14); osc('sine', ROOT[ci], t, dur, gn);
+    },
+    // acid line: a resonant saw with the filter opened by the section
+    acid(t, fr, dur, cut, v = 1) {
+      const gn = envG(t, 0.003, 0.14 * v, dur, A.synth), f = X().createBiquadFilter(); f.type = 'lowpass'; f.Q.value = 16; f.frequency.setValueAtTime(cut, t); f.frequency.exponentialRampToValueAtTime(Math.max(180, cut * 0.22), t + dur); f.connect(gn);
+      osc('sawtooth', fr, t, dur, f);
     },
     stab(t, ci, cut, v = 1) {
-      const gn = envG(t, 0.004, 0.05 * v, 0.22), f = X().createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = cut; f.Q.value = 3; f.connect(gn);
-      for (const fr of CH[ci]) { osc('sawtooth', fr, t, 0.28, f, -7); osc('sawtooth', fr, t, 0.28, f, 7); }
+      const gn = envG(t, 0.003, 0.075 * v, 0.2, A.synth), f = X().createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = cut; f.Q.value = 4; f.connect(gn);
+      for (const fr of CH[ci]) { osc('sawtooth', fr, t, 0.26, f, -9); osc('sawtooth', fr, t, 0.26, f, 9); }
     },
     pad(t, ci, dur, cut) {
-      const gn = X().createGain(); gn.gain.setValueAtTime(0.0001, t); gn.gain.exponentialRampToValueAtTime(0.03, t + 0.4); gn.gain.setValueAtTime(0.03, t + dur - 0.3); gn.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-      const f = X().createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = cut; f.connect(gn); gn.connect(A.bus);
-      for (const fr of CH[ci]) osc('triangle', fr, t, dur, f);
+      const gn = X().createGain(); gn.gain.setValueAtTime(0.0001, t); gn.gain.exponentialRampToValueAtTime(0.04, t + 0.4); gn.gain.setValueAtTime(0.04, t + dur - 0.3); gn.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      const f = X().createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = cut; f.connect(gn); gn.connect(A.synth);
+      for (const fr of CH[ci]) osc('sawtooth', fr / 2, t, dur, f, 6);
     },
-    lead(t, fr, dur) { const gn = envG(t, 0.005, 0.045, dur), f = X().createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 3800; f.connect(gn); osc('square', fr, t, dur, f); osc('triangle', fr * 2, t, dur, f); },
+    // hoover lead for the drop: stacked saws that scoop up into the note
+    hoover(t, fr, dur) {
+      const gn = envG(t, 0.012, 0.085, dur, A.synth), f = X().createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 3400; f.Q.value = 2; f.connect(gn);
+      for (const det of [-16, 0, 16]) { const o = X().createOscillator(); o.type = 'sawtooth'; o.detune.value = det; o.frequency.setValueAtTime(fr * 0.8, t); o.frequency.exponentialRampToValueAtTime(fr, t + 0.05); o.connect(f); o.start(t); o.stop(t + dur + 0.05); }
+    },
     riser(t, dur) {
-      const n = noiseSrc(t, dur), f = X().createBiquadFilter(); f.type = 'bandpass'; f.Q.value = 2; f.frequency.setValueAtTime(300, t); f.frequency.exponentialRampToValueAtTime(7000, t + dur);
-      const gn = X().createGain(); gn.gain.setValueAtTime(0.0001, t); gn.gain.exponentialRampToValueAtTime(0.16, t + dur); n.connect(f); f.connect(gn); gn.connect(A.bus);
+      const n = noiseSrc(t, dur), f = X().createBiquadFilter(); f.type = 'bandpass'; f.Q.value = 3; f.frequency.setValueAtTime(240, t); f.frequency.exponentialRampToValueAtTime(8000, t + dur);
+      const gn = X().createGain(); gn.gain.setValueAtTime(0.0001, t); gn.gain.exponentialRampToValueAtTime(0.3, t + dur); n.connect(f); f.connect(gn); gn.connect(A.bus);
     }
   };
   function buildSong() {
     const ev = [], B = GR.B, at = (b, fn, ...a) => ev.push({ t: b * B, fn, a });
     for (let bar = 0; bar < 31; bar++) {
       const s = GR.sectionAt(bar * GR.BAR + 0.001).id, ci = bar % 4, b0 = bar * 4;
-      const cut = s === 'intro' ? 700 : s === 'build' ? 1400 : s === 'riser' ? 1400 + (bar - 12) * 420 : s === 'drop' ? 5200 : 900;
+      const cut = s === 'intro' ? 600 : s === 'build' ? 1200 : s === 'riser' ? 1200 + (bar - 12) * 480 : s === 'drop' ? 4800 : 800;
       const kickOn = !(bar === 19) && bar < 30;
       for (let q = 0; q < 4; q++) {
         const b = b0 + q;
-        if (kickOn) at(b, 'kick', s === 'intro' ? 0.75 : 1);
-        if (s !== 'intro' && s !== 'outro') { at(b + 0.5, 'hat', s === 'drop' ? 1.1 : 0.9, true); at(b + 0.25, 'hat', 0.5); at(b + 0.75, 'hat', 0.5); }
+        if (kickOn) at(b, 'kick', s === 'intro' ? 0.8 : 1);
+        if (s !== 'intro' && s !== 'outro') { at(b + 0.5, 'hat', s === 'drop' ? 1.2 : 0.9, true); at(b + 0.25, 'hat', 0.55); at(b + 0.75, 'hat', 0.55); }
         else if (bar < 30) at(b + 0.5, 'hat', 0.6);
         if ((q === 1 || q === 3) && (s === 'build' || s === 'drop' || (s === 'riser' && bar < 18))) at(b, 'clap', 1);
-        if ((s === 'build' || s === 'riser' || s === 'drop') && bar !== 19) at(b + 0.5, 'bass', ci, B * 0.42);
-        if (s === 'drop') [0, 1, 2, 3].forEach(k => at(b + k * 0.25, 'lead', CH[ci][(q * 4 + k) % 4] * 2, B * 0.2));
+        if ((s === 'build' || s === 'riser') && bar !== 19) at(b + 0.5, 'bass', ci, B * 0.44, cut + 300);
+        if (s === 'drop') for (const k of [0.25, 0.5, 0.75]) at(b + k, 'bass', ci, B * 0.22, 1700);
       }
-      if (bar < 30) { at(b0 + 1.5, 'stab', ci, cut, 1); at(b0 + 3.5, 'stab', ci, cut, 0.8); if (s === 'drop') at(b0 + 2.75, 'stab', ci, cut, 0.7); }
-      if (s === 'intro' || s === 'outro') at(b0, 'pad', ci, GR.BAR, s === 'outro' ? 1200 : 900);
+      if ((s === 'build' || s === 'riser' || s === 'drop') && bar !== 19) for (let k = 0; k < 16; k++) { const st = ACID[k]; if (st || k % 4 === 0) at(b0 + k * 0.25, 'acid', semi(ROOT[ci] * 2, st), B * 0.2, Math.min(5200, cut * 1.1 + (k % 3 === 0 ? 700 : 0)), s === 'drop' ? 0.8 : 1); }
+      if (s === 'drop') for (let k = 0; k < 8; k++) at(b0 + k * 0.5, 'hoover', semi(ROOT[ci] * 4, RIFF[k]), B * 0.4);
+      if (bar < 30 && s !== 'drop') { at(b0 + 1.5, 'stab', ci, cut, 1); at(b0 + 3.5, 'stab', ci, cut, 0.8); }
+      if (s === 'intro' || s === 'outro') at(b0, 'pad', ci, GR.BAR, s === 'outro' ? 1000 : 800);
       if (bar === 18) for (let k = 0; k < 8; k++) at(b0 + k * 0.5, 'clap', 0.5 + k * 0.05);
       if (bar === 19) for (let k = 0; k < 16; k++) at(b0 + k * 0.25, 'clap', 0.6 + k * 0.04);
       if ([4, 12, 20, 28].includes(bar)) at(b0, 'crash');
     }
-    at(12 * 4, 'riser', GR.BAR * 8 / GR.B * GR.B);
-    at(20 * 4, 'boom'); at(30 * 4, 'pad', 0, GR.BAR * 1.5, 1600);
+    at(12 * 4, 'riser', GR.BAR * 8);
+    at(20 * 4, 'boom'); at(30 * 4, 'pad', 0, GR.BAR * 1.5, 1400);
     ev.sort((a, b) => a.t - b.t); return ev;
   }
   function startClock(events, offset) {
@@ -94,7 +122,7 @@
   function sched() {
     if (!A.ctx || A.ctx.state !== 'running' || !A.bus) return;
     const now = A.ctx.currentTime - A.t0;
-    while (A.ptr < A.events.length && A.events[A.ptr].t < now + 0.22) { const e = A.events[A.ptr++]; if (e.t >= now - 0.03) { try { SND[e.fn](A.t0 + e.t, ...e.a); } catch (er) {} } }
+    while (A.ptr < A.events.length && A.events[A.ptr].t < now + 0.22) { const e = A.events[A.ptr++]; if (e.t >= now - 0.03) { try { SND[e.fn](A.t0 + e.t, ...e.a); } catch (er) { window.GRUI.audioErrs.push(e.fn + ': ' + er.message); } } }
   }
   function stopClock(fade) {
     clearInterval(A.timer); A.timer = null;
@@ -332,7 +360,7 @@
   });
   $('menuBtn').addEventListener('click', () => U.playing ? pause() : null);
   const muteBtn = $('muteBtn');
-  function setMute(m) { U.muted = m; muteBtn.setAttribute('aria-pressed', m); muteBtn.setAttribute('aria-label', m ? 'Music off' : 'Music on'); muteBtn.textContent = m ? '♪̸' : '♪'; muteBtn.style.opacity = m ? 0.5 : 1; if (A.out) A.out.gain.value = m ? 0 : 0.85; try { localStorage.setItem('grMuted', m ? '1' : '0'); } catch (e) {} }
+  function setMute(m) { U.muted = m; muteBtn.setAttribute('aria-pressed', m); muteBtn.setAttribute('aria-label', m ? 'Music off' : 'Music on'); muteBtn.textContent = m ? '♪̸' : '♪'; muteBtn.style.opacity = m ? 0.5 : 1; if (A.out) A.out.gain.value = m ? 0 : 0.7; try { localStorage.setItem('grMuted', m ? '1' : '0'); } catch (e) {} }
   muteBtn.addEventListener('click', () => setMute(!U.muted)); setMute(U.muted);
   document.addEventListener('visibilitychange', () => { if (document.hidden) pause(); });
 

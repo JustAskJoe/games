@@ -13,6 +13,7 @@ First step of Prototype 2: new graphics, same game.
 - **The street is real 3D now:** a neon city with lit towers, Hush propaganda billboards, a striped synthwave sun, a wet glowing road and light arches that pass overhead on the beat.
 - **New models for everything:** your runners, drones, bikers, the gold crate and the Hush Enforcer.
 - The picture adapts to the window, so it plays wide on a PC as well as tall on a phone.
+- **Harder music:** same 122 BPM, but a punchier kick, a pumping detuned bass, an acid line through the build, darker chords and a screaming hoover riff at the drop. Still original and made in code.
 - **Weapons are a path now:** one weapon fork per run, then a later fork with two upgrades for the gun you chose (for example Overcharge or Forked on the Arc gun). No more swapping guns mid run.
 - **Cleaner gates:** the text floating above gates is gone. The gate itself is the one thing to read, and the lit side shows your choice.
 - **Boss health bar:** a big fixed bar with the Enforcer's health as a percentage.
@@ -43,10 +44,11 @@ First step of Prototype 2: new graphics, same game.
 - [x] The boss still dies in about 0.23s before reaching you, so its new model is barely seen until the boss-on-the-drop change. Rules are unchanged from P1. (fixed Oct 31, Zach with Claude: it's an 8 second fight now)
 - [ ] Building from `prototype/v1` would overwrite this build with P1. Use v2.
 - [ ] The squad draws at most 180 runners; the number shown is still the true count.
+- [ ] The new music was checked for errors and levels only. Claude can't hear it, so whether it sounds good is a human call. It also adds more audio voices at the drop, which is a risk on phones.
 - [ ] **Hordes are the biggest performance risk:** several hundred enemies plus effects at once, not measured on any real device. Phones may need fewer drawn enemies.
 - [ ] Nobody has played the hordes, boss fight, impact or city yet. They've only been checked with bots and stills.
 - [ ] No slow-mo on the boss kill: game time is song time, so slowing it would desync the music. There's a chain of explosions instead.
-- [ ] Weapons were tuned with bots. The Railgun is strongest in the sim (casual kills the boss 95% of the time, the others about 45%), so it may need trimming.
+- [ ] Weapons and upgrades were tuned with bots, so a human may find one clearly best. See the table in `prototype/v2/README.md`.
 - [ ] You can still win without killing the Enforcer by surviving its contact, and a casual player does so in about 4 of 10 runs. That may feel flat.
 - [ ] Sim bands changed for the harder tuning: random 25-60% is now 5-40%, idle at most 35% is now at most 25%. Smart and casual bands are unchanged. Needs a human check that a first run isn't punishing.
 - [ ] The song tempo is unchanged at 122 BPM, so gates still arrive every 2 bars. "Faster" is world speed and less shooting time, not more gates per minute. Bots don't feel speed, so whether it's readable at this pace is a human call.
