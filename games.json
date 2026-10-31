@@ -12,6 +12,8 @@
     { "slug": "neon-surf", "name": "Neon Surf", "kind": "Tech test", "dir": "neon-surf", "file": "neon-surf.html",
       "blurb": "Neon-ocean rhythm surfing on an original placeholder beat, with tap-along calibration." },
     { "slug": "cyberpunk-gate-runner", "name": "Gate Runner", "kind": "Runner shooter", "build": "P1", "dir": "cyberpunk-gate-runner", "file": "cyberpunk-gate-runner.html",
-      "blurb": "Cyberpunk runner shooter on a house beat: steer your squad through gates, shoot the street clear, melt the boss on the drop. Menu has tester jumps." }
+      "blurb": "Cyberpunk runner shooter on a house beat: steer your squad through gates, shoot the street clear, melt the boss on the drop. Menu has tester jumps." },
+    { "slug": "rogue-shooter", "name": "Rogue Shooter", "kind": "Auto-shooter", "build": "P1", "dir": "rogue-shooter", "file": "rogue-shooter.html",
+      "blurb": "Isometric rogue-like auto-shooter: pick a class, collect and evolve weapons, unlock synergies, survive 10 waves and a boss." }
   ]
 }
