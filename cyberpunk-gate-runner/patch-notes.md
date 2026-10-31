@@ -12,11 +12,12 @@ Art only, no build change.
 ### What's new
 - **Street concepts (#24):** three directions for the street the squad runs through, each showing towers and rooftop neon, the skyline, sun and sky, the road and overhead arches, and the hanging signs in both states (Hush propaganda before the drop, liberated after). Brief in `art/briefs/24-street.md`; sheets `art/concepts/24-A.svg` (Clean Synthwave), `24-B.svg` (Stacked Arcology), `24-C.svg` (Speaker City).
 - **Draft art direction** in `art/art-direction.md`: the look, the palette from the request, color roles, readability rules, sizes from Prototype 2 and pipeline settings (`final_art_source: undecided`).
-- Painted roughs requested from the free Cloudflare workflow (`art/concepts/24-roughs.json`); they land on the concepts branch.
+- Painted roughs requested from the free Cloudflare workflow (`art/concepts/24-roughs.json`), but none were made yet: see Next up.
 
 ### Next up
 - [ ] @Zach: open the three sheets on a phone and reply `Pick: A`, `B` or `C` (plus notes) on the concepts pull request.
 - [ ] @Zach @Hunter @Joe: review the draft `art/art-direction.md` with the concepts: palette, color roles (the city avoids cyan and pink), the four extra P2 shades, sizes, and `final_art_source`.
+- [ ] @Hunter: the Art roughs workflow failed on this branch with "ART_KEY isn't set": the `ART_KEY` Actions secret is missing on `JustAskJoe/games` (probably lost in the move from onefiftylabs). Add it, then run **Art roughs** (Actions → Run workflow) on `art/cyberpunk-gate-runner-24-street` and the roughs will land on the branch.
 - [ ] Whoever picks: decide the final-art source (Canva, a commission, or Claude building it in code in `render.js`) and fill the cost table, so finals can be priced.
 
 ### Watch out
