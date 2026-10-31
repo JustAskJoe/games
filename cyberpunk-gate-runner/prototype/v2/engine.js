@@ -12,7 +12,7 @@
     { id: 'outro', name: 'Cash out', hint: 'Street cleared', b0: 28, b1: 31 }
   ];
   const END = 31 * BAR, DROP_T = 20 * BAR, DROP_END = 28 * BAR;
-  const RANGE = 1.7;            // seconds ahead the squad can shoot
+  const RANGE = 1.7, BOSS_RANGE = 4 * BAR;            // seconds ahead the squad can shoot
   const AIM = 0.22;             // aim cone half-width (road units, road is -1..1)
   const SPEED = 2.6;            // squad steer speed (road units / s)
   const KIND = {
@@ -20,7 +20,7 @@
     drone: { hp: 12, bite: 3, w: 0.11, credits: 1 },
     biker: { hp: 110, bite: 9, w: 0.14, credits: 3, drift: 0.32 },
     crate: { hp: 30, bite: 0, w: 0.13, credits: 10 },
-    boss: { hp: 4800, bite: 0, w: 0.42, credits: 60 }
+    boss: { hp: 24000, bite: 0, w: 0.42, credits: 60 }
   };
   // gate pairs: one every 2 bars from bar 4 to 18. Sides are shuffled per run (seeded). No pair has an obvious answer:
   // +N beats x1.5 while the squad is small, fire rate beats both once it's big, charge trades growth for the drop,
@@ -46,7 +46,7 @@
   };
   const FINDS = ['arc', 'scatter', 'rail', 'rocket'], POWER = 0.3; // each weapon level adds 30% damage
   // [bar, rows, across]: 24 enemies early, up to 396 at the drop
-  const WALLS = [[5, 4, 6], [7, 4, 7], [9, 6, 8], [11, 6, 9], [13, 8, 10], [15, 8, 11], [17, 10, 12], [19, 12, 13], [20, 22, 18], [22, 22, 18], [24, 22, 18]];
+  const WALLS = [[5, 4, 6], [7, 4, 7], [9, 6, 8], [11, 6, 9], [13, 8, 10], [15, 8, 11], [17, 10, 12], [19, 12, 13], [20, 22, 18], [22, 22, 18]];
   const CHARGE = 10;            // Overclock % from any gate; charge gates add more, trades add none
 
   function rng(seed) { let s = (seed >>> 0) || 1; return () => { s ^= s << 13; s ^= s >>> 17; s ^= s << 5; return ((s >>> 0) % 1e9) / 1e9; }; }
@@ -71,7 +71,8 @@
     // weapon crate (shoot it open) and bikers in the riser
     add('crate', at(13, 2), r() < 0.5 ? -0.55 : 0.55);
     for (const bar of [14, 15, 16, 17, 18, 19]) add('biker', at(bar, 3), r() * 1.4 - 0.7);
-    add('boss', at(26, 0), 0);
+    // the Enforcer appears on the drop and reaches you four bars later: an 8 second fight through the horde
+    add('boss', at(24, 0), 0);
     return E.sort((a, b) => a.ta - b.ta);
   }
 
@@ -113,7 +114,7 @@
     const W = WEAPONS[G.weapon], sx = G.sx, aimW = AIM + W.aim + width(G.n) * 0.5;
     let pool = G.n * G.rate * W.mult * (1 + POWER * (G.wlv - 1)) * (G.oc.on ? G.oc.mult : 1), pierced = 0;
     const tg = [];
-    for (let i = G.ei; i < G.ents.length; i++) { const e = G.ents[i], dz = e.ta - G.t; if (dz >= RANGE) break; if (!e.done && e.hp > 0 && KIND[e.kind] && dz > 0 && Math.abs(e.x - sx) < aimW + e.w) tg.push(e); }
+    for (let i = G.ei; i < G.ents.length; i++) { const e = G.ents[i], dz = e.ta - G.t; if (dz >= BOSS_RANGE) break; if (e.kind !== 'boss' && dz >= RANGE) continue; if (!e.done && e.hp > 0 && KIND[e.kind] && dz > 0 && Math.abs(e.x - sx) < aimW + e.w) tg.push(e); }
     if (W.pierce) tg.sort((p, q) => (q.kind === 'boss') - (p.kind === 'boss')); // a rail shot goes through the horde to the boss
     const hits = [];
     for (const e of tg) {
@@ -141,7 +142,7 @@
     if (e.kind === 'gate') { applyGate(G, G.sx < 0 ? e.L : e.R); return; }
     if (e.kind === 'crate') return; // missed the crate
     if (e.hp <= 0) return;
-    if (e.kind === 'boss') { const lost = Math.ceil(e.hp / 8); G.n = Math.max(0, G.n - lost); G.ev.push({ type: 'bossHit', t: G.t, lost }); return; }
+    if (e.kind === 'boss') { const lost = Math.ceil(e.hp / 60); G.n = Math.max(0, G.n - lost); G.ev.push({ type: 'bossHit', t: G.t, lost }); return; }
     if (hitX) { const lost = Math.max(1, Math.ceil(KIND[e.kind].bite * e.hp / e.maxHp)); G.n = Math.max(0, G.n - lost); G.ev.push({ type: 'hurt', t: G.t, lost, x: e.x }); }
   }
 
@@ -208,6 +209,6 @@
     return { bot, runs: n, win: avg(o => o.won ? 1 : 0), boss: avg(o => o.boss ? 1 : 0), peak: Math.round(avg(o => o.peak)), survivors: Math.round(avg(o => o.survivors)), oc: Math.round(avg(o => o.ocMult) * 100) / 100, crate: avg(o => o.crates ? 1 : 0), credits: Math.round(avg(o => o.credits)), diedIn: out.filter(o => !o.won).reduce((m, o) => (m[o.section] = (m[o.section] || 0) + 1, m), {}) };
   }
 
-  const GR = { BPM, B, BAR, DT, SEC, END, DROP_T, DROP_END, RANGE, KIND, width, sectionAt, WEAPONS, newGame, gateResult, act, step, advance, results, hash, simulate, BOTS, rng };
+  const GR = { BPM, B, BAR, DT, SEC, END, DROP_T, DROP_END, RANGE, KIND, width, sectionAt, BOSS_RANGE, WEAPONS, newGame, gateResult, act, step, advance, results, hash, simulate, BOTS, rng };
   if (typeof module !== 'undefined' && module.exports) module.exports = GR; else root.GR = GR;
 })(typeof window !== 'undefined' ? window : globalThis);

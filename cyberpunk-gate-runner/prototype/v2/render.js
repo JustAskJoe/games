@@ -303,14 +303,14 @@
   function drawEnts(G, t, oc) {
     [picks, drones, swarm, bikers, crate, boss].forEach(begin);
     for (let i = G.ei; i < G.ents.length; i++) {
-      const e = G.ents[i], z = e.ta - G.t; if (z > AHEAD) break; if (e.done) continue;
+      const e = G.ents[i], z = e.ta - G.t; if (z > GR.BOSS_RANGE + 0.2) break; if (e.done || (z > AHEAD && e.kind !== 'boss')) continue;
       const x = wx(e.x), wZ = wz(z);
       if (e.kind === 'runner') put(picks, x, Math.abs(Math.sin(t * 5 + e.id)) * 0.2, wZ, 1.4, Math.PI + t * 2, 0, COL.cyan, 1.3);
       else if (e.kind === 'drone') put(drones, x, 1.1 + Math.sin(t * 5 + e.id) * 0.16, wZ, 1, t * 2 + e.id, 0, e.hp < e.maxHp ? COL.white : COL.pink, e.hp < e.maxHp ? 1.5 : 1);
       else if (e.kind === 'swarm') { if (swarm.count < 1000) put(swarm, x, 0.55 + Math.sin(t * 9 + e.id) * 0.1, wZ, 1, t * 3 + e.id, 0, e.hp < e.maxHp ? COL.white : COL.pink, e.hp < e.maxHp ? 1.6 : 1); }
       else if (e.kind === 'biker') put(bikers, x, 0, wZ, 1.15, 0, Math.sin(t * 7 + e.id) * 0.08, e.hp < e.maxHp * 0.5 ? COL.gold : COL.red, 1);
       else if (e.kind === 'crate') put(crate, x, 0.25 + Math.sin(t * 4) * 0.1, wZ, 1.1, t * 1.4, 0, COL.gold, 1 + UF.uPulse.value * 0.6);
-      else if (e.kind === 'boss') put(boss, 0, 0, wZ, 1.15, 0, 0, COL.white, 1 + UF.uPulse.value * 0.3);
+      else if (e.kind === 'boss') put(boss, 0, Math.abs(Math.sin(t * 3.2)) * 0.25, wZ, 1.5, 0, 0, e.hp < e.maxHp ? '#FFD0EC' : COL.white, 1 + UF.uPulse.value * 0.3);
     }
     [picks, drones, swarm, bikers, crate, boss].forEach(end);
     // the next gate splits the road: your side lights up and the other dims, flipping as you cross the middle

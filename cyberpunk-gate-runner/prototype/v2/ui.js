@@ -161,14 +161,14 @@
   function drawLabels(G) {
     let gateDone = false;
     for (let i = G.ei; i < G.ents.length; i++) {
-      const e = G.ents[i], z = e.ta - G.t; if (z > 4.6) break; if (e.done) continue;
+      const e = G.ents[i], z = e.ta - G.t; if (z > GR.BOSS_RANGE + 0.2) break; if (e.done || (z > 4.6 && e.kind !== 'boss')) continue;
       if (e.kind === 'gate') { if (!gateDone && z < 3.2) drawGatePreview(G, e, z); gateDone = true; continue; }
       const k = 1 / (1 + Math.max(0, z) * 0.55), fr = e.hp / e.maxHp;
       if (e.kind === 'runner' && z < 3) { const p = R.project(e.x, z, 2.1); label('+1', p.x, p.y, 15 * k + 4, '#BFF8FF'); }
       else if (e.kind === 'crate') { const p = R.project(e.x, z, 2.1); label('SHOOT IT', p.x, p.y - 6, 14 * k + 3, '#FFB547'); hpBar(p.x, p.y, 60 * k, fr); }
       else if (e.kind === 'biker' && fr < 1) { const p = R.project(e.x, z, 2.3); hpBar(p.x, p.y, 54 * k, fr); }
       else if (e.kind === 'drone' && fr < 1) { const p = R.project(e.x, z, 1.9); hpBar(p.x, p.y, 34 * k, fr); }
-      else if (e.kind === 'boss') { const p = R.project(0, z, 8.2); label('HUSH ENFORCER', p.x, p.y - 8, 18 * k + 6, '#FF7AD0'); hpBar(p.x, p.y, Math.min(W * 0.8, 340 * k + 50), fr, true); }
+      else if (e.kind === 'boss') { const y = Math.max(96, R.project(0, z, 10.6).y); label('HUSH ENFORCER', W / 2, y - 8, 17, '#FF7AD0'); hpBar(W / 2, y, Math.min(W * 0.7, 420), fr, true); }
     }
   }
   function drawCount(G, oc) {
@@ -220,7 +220,7 @@
     }
     // teaching hints the first time things show up
     if (!firstSeen.crate && G.ents.some(e => e.kind === 'crate' && !e.done && e.ta - G.t < 2.4)) { firstSeen.crate = 1; hint('Gold crate: shoot it to power up your weapon'); }
-    if (!firstSeen.boss && G.ents.some(e => e.kind === 'boss' && e.ta - G.t < 3.2)) { firstSeen.boss = 1; hint('Boss incoming. Overclock melts it'); }
+    if (!firstSeen.boss && G.ents.some(e => e.kind === 'boss' && e.ta - G.t < GR.BOSS_RANGE)) { firstSeen.boss = 1; hint('Boss incoming. Overclock melts it'); }
   }
 
   // ================= input: one thumb, drag anywhere =================
