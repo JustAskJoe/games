@@ -14,7 +14,7 @@
     { "slug": "cyberpunk-gate-runner", "name": "Gate Runner", "kind": "Runner shooter", "build": "P1", "dir": "cyberpunk-gate-runner", "file": "cyberpunk-gate-runner.html",
       "blurb": "Cyberpunk runner shooter on a house beat: steer your squad through gates, shoot the street clear, melt the boss on the drop. Menu has tester jumps." },
     { "slug": "rogue-shooter", "name": "Rogue Shooter", "kind": "Auto-shooter", "build": "P1", "dir": "rogue-shooter", "file": "rogue-shooter.html",
-      "blurb": "Isometric rogue-like auto-shooter: pick a class, collect and evolve weapons, unlock synergies, survive 10 waves and a boss." }
+      "blurb": "Isometric rogue-like auto-shooter: pick a class, collect and evolve weapons, unlock synergies, survive 10 waves and a boss." },
     { "slug": "card-trader", "name": "Intergalactic Card Trader", "kind": "Card shop sim", "build": "v1", "dir": "card-trader", "file": "card-trader.html", "img": true,
       "blurb": "Happy space Akihabara: run a card stall on a market station for 3 days. Inspect alien cards under the Loupe, haggle, catch fakes, grade gems. Desktop landscape." }
   ]
