@@ -1,0 +1,35 @@
+{
+  "style": "Polished neon low-poly 3D game art, clean flat-shaded facets, strong silhouettes and glow rather than fine detail, night city in deep navy with violet neon, hot pink for the enemy megacorp, cyan for the heroes, warm gold accents. Original design, not resembling any existing franchise or real city. No text.",
+  "items": [
+    {
+      "file": "24-A-rough-1.jpg",
+      "subject": "A night city street seen from behind and above a small group of runners, Clean Synthwave direction: tall window-grid monolith towers with a single violet neon roofline each, a big striped gold-to-violet sun on the horizon, a dark road with chevrons and cyan edge lines, plain rectangular violet neon arches over the road, blank pink-framed hanging signs.",
+      "seed": 1
+    },
+    {
+      "file": "24-A-rough-2.jpg",
+      "subject": "The same Clean Synthwave street after the city is liberated: the windows blaze gold, the rooflines and arches glow gold, the hanging signs glow gold and green, the striped sun is bright, a happy party atmosphere in a low-poly neon city at night.",
+      "seed": 2
+    },
+    {
+      "file": "24-B-rough-1.jpg",
+      "subject": "A night city street seen from behind and above a small group of runners, Stacked Arcology direction: terraced stepped towers with chamfered pyramid tops and violet neon along each setback, a distant tall corporate spire with a glowing pink halo ring instead of a sun, violet aurora bands in the sky, a dark road with a faint hexagon seam pattern and cyan edge lines, octagonal violet neon portal arches over the road.",
+      "seed": 3
+    },
+    {
+      "file": "24-B-rough-2.jpg",
+      "subject": "The same Stacked Arcology street after the city is liberated: the halo ring on the far spire breaks apart and turns gold, the setback neon and ribbon windows glow gold, the octagon portal arches glow green, green aurora in the sky, low-poly neon city at night.",
+      "seed": 4
+    },
+    {
+      "file": "24-C-rough-1.jpg",
+      "subject": "A night city street seen from behind and above a small group of runners, Speaker City direction: dark towers whose facades are speaker grilles with big round speaker cones, small dim equalizer bars on the rooftops, a huge speaker cone of concentric violet rings as the sun, a wet glossy dark road with long reflections and cyan edge lines, arches made of stacked level-meter segments mostly unlit, hanging signs taped with pink hazard stripes.",
+      "seed": 5
+    },
+    {
+      "file": "24-C-rough-2.jpg",
+      "subject": "The same Speaker City street at the music drop: the rooftop equalizer bars leap up in green and gold, the speaker cones on the facades ring with gold light, the arches light up fully like a level meter from green to gold to red at the top, the giant speaker-cone sun pulses gold, low-poly neon city at night.",
+      "seed": 6
+    }
+  ]
+}
