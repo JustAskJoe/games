@@ -2101,7 +2101,7 @@ function act(G, it) {
       if (G.store) {
         const fc = FIX[c.loc] ? FIX[c.loc].fetch : 0;
         if (fc) { G.store.stats.fetches++;
-          if (v.role === 'distract' && !v.foiled) { const got = steal(G, G.store.locked || !onGrid(G, 'case').length ? 'rack' : 'case'); event(G, { t: 'distracted', got: !!got }); say(G, v.who, '*when you come back, their friend is gone* Hm. Not quite what I wanted. Bye!'); endVisit(G, 'pass'); return ok({ distracted: true }); }
+          if (v.role === 'distract' && !v.foiled && R(G) < 0.7) { const got = steal(G, G.store.locked || !onGrid(G, 'case').length ? 'rack' : 'case'); event(G, { t: 'distracted', got: !!got }); say(G, v.who, '*when you come back, their friend is gone* Hm. Not quite what I wanted. Bye!'); endVisit(G, 'pass'); return ok({ distracted: true }); }
           if (!costPatience(G, fc)) return ok(); }
         if (!c.t) { if (v.role !== 'sealedc' || c.type !== v.wantsGood.type || c.game !== v.wantsGood.game) { say(G, v.who, 'Not what I\'m holding for.'); costPatience(G, 1); return ok(); }
           v.showing = c.uid; startHaggleBuyer(G, v, goodValue(G, c) * PEOPLE[v.who].ceilMul); v.rounds = 0; say(G, v.who, 'Sealed and clean. I\'d pay ' + v.bid + '₵.'); return ok(); }
@@ -2533,7 +2533,7 @@ const DAYS2 = [
   { name: 'Wave 4 Release Day', ships: ['mollu', 'zekk', 'puffi'], demand: { shell: 1.2, hive: 1.2, star: 1.2 }, release: true },
   { name: 'Last Call', ships: ['mollu', 'zekk', 'puffi'], demand: { shell: 1.1, hive: 1.1, star: 1.1 } },
 ];
-const RENT10 = [30, 40, 50, 60, 70, 80, 90, 100, 110, 120];
+const RENT10 = [30, 40, 50, 55, 60, 65, 70, 80, 85, 90];
 const RANKS10 = [[-1e9, 'Corner Stall'], [300, 'Strip Regular'], [900, 'Lane Favorite'], [1800, 'Dock Legend'], [3200, 'Legend of the Lanes']];
 // Signature visitors by day index (0-based). Day 1 stays the tutorial: one browser, one fetch, one fake to note.
 const V3_SPECIALS = {
@@ -2839,7 +2839,7 @@ function nightly(G) {
   const S = G.store;
   for (const c of where(G, 'case').concat(where(G, 'inbox'))) wearRoll(G, c, WEAR_DAY);
   for (const c of where(G, 'bbinder').concat(where(G, 'cbinder'))) wearRoll(G, c, WEAR_BINDER);
-  if (G.dayIdx >= 2 && !S.locked && onGrid(G, 'case').length && R(G) < 0.6) steal(G, 'case');
+  if (G.dayIdx >= 2 && !S.locked && onGrid(G, 'case').length && R(G) < 1.0) steal(G, 'case');
   // walk-ins buy merch and small sealed off the rack overnight
   for (const o of goodsAt(G, 'rack').slice()) { const D = GOODS[o.type]; if (D.nightly && R(G) < D.nightly * (1 + ratingMod(G) * 0.3)) { sellThing(G, o, o.tag || defaultTag(G, o), 'a walk-in'); S.stats.merchSales++; } }
   closeRating(G);
@@ -3032,7 +3032,7 @@ function v3Act(G, it) {
     }
     case 'inform': {
       if (!inVisit || !v.cards.some(c => c.know.fake || c.trim && c.know.loupe)) return err('find the fake first');
-      if (v.intent === 'victim') { G.rep = clamp(G.rep + 3, 0, 100); bump(G, 0.08, 'helped a fake-seller\'s victim'); S.stats.informed++; if (R(G) < 0.3) G.grateful = (G.grateful || 0) + 1; say(G, v.who, 'Oh no... thank you for telling me. I\'ll go back to that stall. Thank you!'); endVisit(G, 'pass'); return ok({ victim: true }); }
+      if (v.intent === 'victim') { G.rep = clamp(G.rep + 4, 0, 100); bump(G, 0.08, 'helped a fake-seller\'s victim'); S.stats.informed++; if (R(G) < 0.3) G.grateful = (G.grateful || 0) + 1; say(G, v.who, 'Oh no... thank you for telling me. I\'ll go back to that stall. Thank you!'); endVisit(G, 'pass'); return ok({ victim: true }); }
       say(G, v.who, 'Fake? Huh. Must have been... the other guy. *packs up fast*'); endVisit(G, 'pass'); return ok({ victim: false });
     }
     case 'sellBehind': if (!inVisit || v.role !== 'weigh') return err('not now'); return dealWeigh(G, true);

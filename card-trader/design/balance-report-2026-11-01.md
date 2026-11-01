@@ -2,15 +2,56 @@
 
 © 2026 justaskjoe. All rights reserved.
 
-The Balance agent's first pass (`kit/agents/balance.md`, JOB: report). Nothing on the branch was changed: no constants, no bots, no pass band. Every "expected effect" below comes from a scratch copy with one change and a rerun.
+The Balance agent's first pass (`kit/agents/balance.md`). It started as JOB: report; Hunter then asked for tuning ("push harder on balancing"). Every "expected effect" below comes from a scratch copy with one change and a rerun. No bots, seeds or band lines were changed.
 
-- **Base commit:** `e55bce7` (local `hunter/card-trader-v3-plan`: the CardGen economy, rent 30–120, unlocked-case theft 60%).
+## Tuned (applied in this PR)
+Four constants in `prototype/engine.js`, applied smallest first, with the full band rerun after each. Every step passed.
+
+| Step | Change | Target it serves | Result after the step (200 runs) |
+| --- | --- | --- | --- |
+| 1 | Informing a victim: +3 → **+4** rep | "Informing a victim gains about 4 rep" | Within noise (careful 210, noupgrades 171) |
+| 2 | Distraction thieves now succeed **70%** of the time on an unwatched fetch (was always) | "Distraction thieves succeed about 70%" | 2.18 of 3.0 succeed a run (73%) |
+| 3 | Unlocked case overnight theft: 60% → **100%** of nights from day 3 | "An unlocked floor loses about 1 item a day" | Greedy loses 7.5 a run (0.94 a night), 13% of final (band 5–15%) |
+| 4 | `RENT10` 30, 40, 50, 60, 70, 80, 90, 100, 110, 120 → **30, 40, 50, 55, 60, 65, 70, 80, 85, 90** | Cash-flow: a good-but-not-perfect player should rarely be broke | Tab at end: noupgrades 13 → 10%, lazy 22 → 10%, naive 30 → 14%, paranoid 55 → 32% |
+
+Two other rent curves were tried for step 4:
+- **Days 8–10 only** (… 90, 95, 100): tabs barely moved (lazy 21%).
+- **Fully flat** (30 … 90): about the same tabs as the chosen curve, but every bot inflates and upgrades fall to +22.
+
+**After tuning** (`python card-trader/build-and-test.py`, full run with the browser walkthrough): **ALL GOOD**.
+
+| Bot | Before | After | Tab at end, before → after |
+| --- | --- | --- | --- |
+| careful | +222% | +231% | 2 → 2% |
+| noupgrades | +162% | +210% | 13 → 10% |
+| lazy | +99% | +128% | 22 → 10% |
+| greedy | +127% | +132% (13% stolen) | 9 → 3% |
+| paranoid | +50% | +73% (2.04★ vs 4.26★) | 55 → 32% |
+| naive | +111% | +140% (22% stolen) | 30 → 14% |
+| sloppy | −120% | −95% | 97 → 95% |
+
+Careful beats sloppy 98%.
+
+**Side effect:** Loupe upgrades are now worth **+21** (was +60). Easier rent helps the no-upgrade shop most. That's still well above the band floor of 5, and it answers most of the runaway worry without touching upgrade prices.
+
+**Not tuned (needs Hunter):**
+- Spectrometer price / an upgrade ceiling
+- Schemer bounty size
+- Era weights (the target fights the economy)
+- Repacks (cause not found)
+- New sim bots and lines for the unmeasured targets
+
+The tables below are the report as first run, before tuning.
+
+## Before tuning
+
+- **Base commit:** `e55bce7` (the CardGen economy, rent 30–120, unlocked-case theft 60%). Rebased onto the pushed `42eac6e`; its only engine-side change (a CardGen price clamp) leaves the sim identical.
 - **For comparison:** the pushed PR #65 head `bf6d612` gives the Nov 1 numbers (careful +411%, noupgrades +220%). There, upgrades are worth **191 points**; at `e55bce7` they're worth **60**.
 - **Commands:** `node card-trader/prototype/sim.js 200` (seeds 1–200, every bot) and `python card-trader/build-and-test.py --quick`: **ALL GOOD**, every band line passes.
 - **Extra numbers:** a scratch probe (not committed). It runs the same bots on the same seeds and also records day-5 value, ever-on-a-tab, thefts by time of day, fetch walkouts, eras of incoming cards and repacks.
 - **Numbers are medians** of 200 runs unless marked.
 
-## Today's sim (`e55bce7`, 200 runs)
+### Sim before tuning (`e55bce7`, 200 runs)
 
 | Bot | Gain day 5 | Gain day 10 | Tab at end | Ever on a tab | Rating | Stolen (% of final) |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -26,7 +67,7 @@ Careful beats sloppy in 97% of seeds. When a tab first opens, it's on day 8–9 
 
 **Noise:** a change that barely touches play still moves medians by about ±10 points and tab rates by about ±6, because the seeded RNG takes a different path. For example, +1 rep for informing moved careful −12 and noupgrades +9. Treat effects under ~10 points as noise.
 
-## Report
+### Target table (before tuning)
 
 | Target | Current | Suspected cause (tested) | Suggested change | Expected effect (scratch rerun, 200 runs) |
 | --- | --- | --- | --- | --- |
@@ -49,15 +90,15 @@ Careful beats sloppy in 97% of seeds. When a tab first opens, it's on day 8–9 
 
 Two rows touch the same thing: the rent change and the bounty change both raise every bot's gain, and so does a cheaper Spectrometer. Apply them one at a time.
 
-## Failure shapes
-- **Runaway compounding: yes, smaller than before.** Upgrades are worth −6 at day 5 and +60 at day 10 (191 at `bf6d612`). It's late payoff, not a daily multiplier. Purchase timing dominates, so a small price change swings it from 60 to 3.
-- **Cash-flow trap: yes, late.** 28–44% of mid bots go on a tab at some point, almost always on days 8–10.
+## Failure shapes (before tuning; after tuning in brackets)
+- **Runaway compounding: yes, smaller than before.** Upgrades are worth −6 at day 5 and +60 at day 10 (191 at `bf6d612`). It's late payoff, not a daily multiplier. Purchase timing dominates, so a small price change swings it from 60 to 3. [After tuning: +21.]
+- **Cash-flow trap: yes, late.** 28–44% of mid bots go on a tab at some point, almost always on days 8–10. [After tuning, tab at end: noupgrades, lazy 10%, naive 14%, paranoid 32%.]
 - **Dead mechanic: repacks** (0 sold even when forced). Also near zero: misprints found (0.3 a run, careful), scalper packs (0).
 - **Degenerate strategy:** none seen, but not tested with single-action bots this pass.
 - **Stuck runs:** none in about 30,000 scratch runs (the sim's guard and NaN checks held).
 
 ## Questions for Hunter
-1. Do you want an upgrade ceiling (for example 5–40 points)? If so, I'd propose it as a band line and try the Spectrometer at 140₵.
+1. Upgrades are worth +21 after tuning. Do you want a ceiling band line (for example 5–40 points)? If they should be worth more, the Spectrometer price is the lever.
 2. "A fair day's profit" for a schemer report means ~70–90₵, which inflates growth by 40–60 points. Is that what you want, or about half a day?
 3. The era target (10% / 35%) fights the economy: vintage is half the value of every shop. Keep the target and retune prices, or move the target?
 4. OK to add the `floorOnly` / `backOnly` bots and the floor, fetch-loss and repack lines to `sim.js`, so those targets get measured?
