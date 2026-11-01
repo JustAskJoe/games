@@ -51,8 +51,10 @@
   function envG(t, a, peak, dec, dest) { const gn = X().createGain(); gn.gain.setValueAtTime(0.0001, t); gn.gain.exponentialRampToValueAtTime(peak, t + a); gn.gain.exponentialRampToValueAtTime(0.0001, t + a + dec); gn.connect(dest || A.bus); return gn; }
   function noiseSrc(t, dur) { const s = X().createBufferSource(); s.buffer = A.noise; s.loop = true; s.start(t, Math.random() * 0.5); s.stop(t + dur); return s; }
   function osc(type, fr, t, dur, dest, det) { const o = X().createOscillator(); o.type = type; o.frequency.value = fr; if (det) o.detune.value = det; o.connect(dest); o.start(t); o.stop(t + dur + 0.05); return o; }
-  // A track is plain data, so each district can bring its own: chords (voiced notes in Hz), bass roots, an arp shape over the
-  // chord tones, a stab rhythm in beats, and a hook as [beat, semitones above the base note, beats long] for each chord.
+  // A track is plain data, so each street brings its own: chords (voiced notes in Hz), bass roots, an arp shape over the chord tones,
+  // a stab rhythm in beats, and a hook as [beat, semitones above the base note, beats long] for each chord. Optional: lead (the hook's
+  // voice), bass (offsets in a beat and octave), half (half-time clap), sparse (no 16th hats at the drop). All written for this game.
+  const Hz = m => 440 * Math.pow(2, (m - 69) / 12), HZ = a => a.map(Hz);
   const TRACKS = {
     neon: {
       chords: [[220, 261.6, 329.6, 440], [174.6, 220, 261.6, 349.2], [196, 261.6, 329.6, 392], [196, 246.9, 293.7, 392]],   // Am F C G: minor, but it keeps lifting
@@ -62,11 +64,16 @@
         [[0, 12, 0.75], [0.75, 8, 0.75], [1.5, 10, 0.5], [2, 12, 0.5], [3, 7, 1]],
         [[0, 7, 0.75], [0.75, 3, 0.75], [1.5, 7, 0.5], [2, 10, 0.5], [3, 12, 1]],
         [[0, 10, 1.5], [1.5, 7, 0.5], [2, 5, 1], [3, 2, 1]]]
-    }
+    },
   };
+  // streets past the table reuse a song in a new key
+  function trackFor(def) {
+    const T = TRACKS[def.track], k = Math.pow(2, (def.transpose || 0) / 12);
+    return k === 1 ? T : Object.assign({}, T, { chords: T.chords.map(c => c.map(f => f * k)), roots: T.roots.map(f => f * k), base: T.base * k });
+  }
   const semi = (f, n) => f * Math.pow(2, n / 12);
   // how far the song's filter is open at the start of a bar: soft intro, opening build, sweep up the riser, wide open drop
-  const cutAt = bar => bar < 4 ? 520 + bar * 90 : bar < 12 ? 950 + (bar - 4) * 240 : bar < 20 ? 2900 + (bar - 12) * 1400 : bar < 28 ? 16000 : 1000;
+  const cutAt = bar => bar < 4 ? 520 + bar * 90 : bar < 12 ? 950 + (bar - 4) * 240 : bar < GR.DROP_BAR ? 2900 + (bar - 12) * 1400 : bar < GR.DROP_BAR + GR.level.drop ? 16000 : 1000;
   const SND = {
     kick(t, v = 1) {
       const o = X().createOscillator(); o.type = 'sine'; o.frequency.setValueAtTime(150, t); o.frequency.exponentialRampToValueAtTime(46, t + 0.08); o.connect(envG(t, 0.001, 1.05 * v, 0.28, A.kick)); o.start(t); o.stop(t + 0.34);
@@ -99,9 +106,10 @@
     },
     // the hook: a rounded square and a soft saw, a touch of glide, plenty of echo
     lead(t, fr, dur, v = 1) {
-      const gn = X().createGain(); gn.gain.setValueAtTime(0.0001, t); gn.gain.exponentialRampToValueAtTime(0.1 * v, t + 0.012); gn.gain.setValueAtTime(0.1 * v, t + Math.max(0.02, dur - 0.06)); gn.gain.exponentialRampToValueAtTime(0.0001, t + dur + 0.08); gn.connect(A.synth); gn.connect(A.wet);
-      const f = X().createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 3000; f.connect(gn);
-      for (const [type, det] of [['square', -5], ['sawtooth', 5]]) { const o = X().createOscillator(); o.type = type; o.detune.value = det; o.frequency.setValueAtTime(fr * 0.985, t); o.frequency.exponentialRampToValueAtTime(fr, t + 0.03); o.connect(f); o.start(t); o.stop(t + dur + 0.12); }
+      const L = U.T.lead || { osc: [['square', -5], ['sawtooth', 5]], cut: 3000, atk: 0.012, v: 1, glide: 0.985 }; v *= L.v;
+      const gn = X().createGain(); gn.gain.setValueAtTime(0.0001, t); gn.gain.exponentialRampToValueAtTime(0.1 * v, t + L.atk); gn.gain.setValueAtTime(0.1 * v, t + Math.max(0.02, dur - 0.06)); gn.gain.exponentialRampToValueAtTime(0.0001, t + dur + 0.08); gn.connect(A.synth); gn.connect(A.wet);
+      const f = X().createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = L.cut; f.connect(gn);
+      for (const [type, det] of L.osc) { const o = X().createOscillator(); o.type = type; o.detune.value = det; o.frequency.setValueAtTime(fr * L.glide, t); o.frequency.exponentialRampToValueAtTime(fr, t + 0.03); o.connect(f); o.start(t); o.stop(t + dur + 0.12); }
     },
     riser(t, dur) {
       const n = noiseSrc(t, dur), f = X().createBiquadFilter(); f.type = 'bandpass'; f.Q.value = 2; f.frequency.setValueAtTime(300, t); f.frequency.exponentialRampToValueAtTime(7000, t + dur);
@@ -117,30 +125,31 @@
   };
   function buildSong(T) {
     const ev = [], at = (b, fn, ...a) => ev.push({ t: b * GR.B, fn, a });
-    for (let bar = 0; bar < 31; bar++) {
+    const db = GR.DROP_BAR, de = db + GR.level.drop, last = de + 3, BS = T.bass || [[0.5, 1], [0.75, 2]];
+    for (let bar = 0; bar < last; bar++) {
       const s = GR.sectionAt(bar * GR.BAR + 0.001).id, ci = bar % 4, b0 = bar * 4, notes = T.chords[ci], rt = T.roots[ci];
       const drums = s === 'build' || s === 'riser' || s === 'drop', fill = bar === 19;  // the kick and bass drop out for the last bar of the riser
       at(b0, 'filt', cutAt(bar + 1), GR.BAR);
-      if (bar < 30 && !fill) for (let q = 0; q < 4; q++) at(b0 + q, 'kick', s === 'intro' ? 0.75 : s === 'outro' ? 0.8 : 1);
+      if (bar < last - 1 && !fill) for (let q = 0; q < 4; q++) at(b0 + q, 'kick', s === 'intro' ? 0.75 : s === 'outro' ? 0.8 : 1);
       if (s !== 'riser' || bar < 16) at(b0, 'pad', notes, GR.BAR, s === 'drop' ? 1.2 : 1);
       if (drums) for (let q = 0; q < 4; q++) {
         at(b0 + q + 0.5, 'hat', s === 'drop' ? 1.1 : 0.9, true);
-        if (s === 'drop') { at(b0 + q + 0.25, 'hat', 0.8); at(b0 + q + 0.75, 'hat', 0.8); }
-        if ((q === 1 || q === 3) && !(s === 'riser' && bar >= 18)) at(b0 + q, 'clap');
-        if (!fill) { at(b0 + q + 0.5, 'bass', rt, GR.B * 0.26); at(b0 + q + 0.75, 'bass', rt * (q === 3 ? 1.5 : 2), GR.B * 0.22); }
+        if (s === 'drop' && !T.sparse) { at(b0 + q + 0.25, 'hat', 0.8); at(b0 + q + 0.75, 'hat', 0.8); }
+        if ((T.half ? q === 2 : q === 1 || q === 3) && !(s === 'riser' && bar >= 18)) at(b0 + q, 'clap');
+        if (!fill) for (const [off, oc] of BS) at(b0 + q + off, 'bass', rt * (oc === 2 && q === 3 ? 1.5 : oc), GR.B * 0.24);
       }
       if (drums) for (const k of T.stabs) if (s !== 'build' || k === 1.5 || k === 3.5) at(b0 + k, 'stab', notes, s === 'drop' ? 1.2 : s === 'riser' ? 1 : 0.85);
       // arps: a hint in the intro, then rolling 16ths from the end of the build
       const arpOn = s === 'drop' || s === 'riser' || bar >= 8 && s === 'build';
       if (arpOn || (s === 'intro' && bar >= 2)) { const step = arpOn ? 0.25 : 0.5, v = s === 'drop' ? 1 : s === 'riser' ? 0.6 + (bar - 12) * 0.05 : 0.5; for (let k = 0; k * step < 4; k++) { const n = T.arp[k % T.arp.length], fr = n > 3 ? notes[0] * 4 : notes[n] * 2; at(b0 + k * step, 'pluck', fr, v, k % 2 ? 0.45 : -0.45); } }
-      if (s === 'drop') for (const [b, st, len] of T.hook[ci]) { at(b0 + b, 'lead', semi(T.base, st), len * GR.B, bar < 24 ? 0.9 : 1); if (bar >= 24) at(b0 + b, 'lead', semi(T.base, st + 12), len * GR.B, 0.3); }
-      if (bar === 28) for (const [b, st, len] of T.hook[0]) at(b0 + b, 'lead', semi(T.base, st), len * GR.B, 0.4);   // the hook once more, soft, on the way out
+      if (s === 'drop') for (const [b, st, len] of T.hook[ci]) { at(b0 + b, 'lead', semi(T.base, st), len * GR.B, bar < db + 4 ? 0.9 : 1); if (bar >= db + 4) at(b0 + b, 'lead', semi(T.base, st + 12), len * GR.B, 0.3); }
+      if (bar === de) for (const [b, st, len] of T.hook[0]) at(b0 + b, 'lead', semi(T.base, st), len * GR.B, 0.4);   // the hook once more, soft, on the way out
       if (bar === 18) for (let k = 0; k < 8; k++) at(b0 + k * 0.5, 'snare', 0.4 + k * 0.05);
       if (fill) for (let k = 0; k < 16; k++) at(b0 + k * 0.25, 'snare', 0.55 + k * 0.03);
-      if ([4, 12, 20, 28].includes(bar)) at(b0, 'crash');
+      if ([4, 12, db, de].includes(bar)) at(b0, 'crash');
     }
-    at(0, 'rain', GR.BAR * 4.5); at(28 * 4, 'rain', GR.BAR * 3);
-    at(12 * 4, 'riser', GR.BAR * 8); at(20 * 4, 'boom');
+    at(0, 'rain', GR.BAR * 4.5); at(de * 4, 'rain', GR.BAR * 3);
+    at(12 * 4, 'riser', GR.BAR * 8); at(db * 4, 'boom');
     ev.sort((a, b) => a.t - b.t); return ev;
   }
   function startClock(events, offset) {
@@ -167,7 +176,7 @@
   function sfx(kind, n) { try { sfx0(kind, n); } catch (e) {} }
   // every gun has its own shot, on the song's eighth notes and pitched to the chord playing now, so gunfire joins the track
   function shot(t, d, n) {
-    const w = U.G.weapon, M = U.G.mod, T = TRACKS.neon, ci = Math.floor(U.G.t / GR.BAR) % 4, notes = T.chords[ci], root = T.roots[ci], beat = n % 2 === 0, B = GR.B;
+    const w = U.G.weapon, M = U.G.mod, T = U.T, ci = Math.floor(U.G.t / GR.BAR) % 4, notes = T.chords[ci], root = T.roots[ci], beat = n % 2 === 0, B = GR.B;
     const sweep = (type, a, b, dur, v, cut, at) => { const s = at || t, o = X().createOscillator(), f = X().createBiquadFilter(); o.type = type; o.frequency.setValueAtTime(a, s); o.frequency.exponentialRampToValueAtTime(b, s + dur); f.type = 'lowpass'; f.frequency.value = cut || 6000; o.connect(f); f.connect(envG(s, 0.002, v, dur, d)); o.start(s); o.stop(s + dur + 0.04); };
     const hiss = (type, fr, q, dur, v) => { const s = noiseSrc(t, dur + 0.04), f = X().createBiquadFilter(); f.type = type; f.frequency.value = fr; f.Q.value = q; s.connect(f); f.connect(envG(t, 0.002, v, dur, d)); };
     if (w === 'pulse') { const fr = notes[0] * 2; sweep('square', fr * 2.5, fr, 0.05, 0.09, 3200); sweep('square', fr * 2.5, fr, 0.05, 0.06, 3200, t + B / 4); }
@@ -190,7 +199,11 @@
     else if (kind === 'shot') shot(t, A.shots, n);
     else if (kind === 'runner') osc('triangle', 1318.5, t, 0.08, envG(t, 0.002, 0.06, 0.08, d));
     else if (kind === 'hurt') { const n = noiseSrc(t, 0.15), f = X().createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 500; n.connect(f); f.connect(envG(t, 0.002, 0.25, 0.14, d)); }
-    else if (kind === 'weapon') { const nt = TRACKS.neon.chords[Math.floor(U.G.t / GR.BAR) % 4], ty = { arc: 'sawtooth', scatter: 'square', rail: 'sine', rocket: 'triangle' }[U.G.weapon] || 'square'; [nt[0] * 2, nt[1] * 2, nt[2] * 2, nt[3] * 2].forEach((fr, i) => osc(ty, fr, t + i * 0.06, 0.11, envG(t + i * 0.06, 0.003, 0.09, 0.11, d))); }
+    else if (kind === 'weapon') { const nt = U.T.chords[Math.floor(U.G.t / GR.BAR) % 4], ty = { arc: 'sawtooth', scatter: 'square', rail: 'sine', rocket: 'triangle' }[U.G.weapon] || 'square'; [nt[0] * 2, nt[1] * 2, nt[2] * 2, nt[3] * 2].forEach((fr, i) => osc(ty, fr, t + i * 0.06, 0.11, envG(t + i * 0.06, 0.003, 0.09, 0.11, d))); }
+    else if (kind === 'armorOff') { const nt = U.T.chords[Math.floor(U.G.t / GR.BAR) % 4]; nt.forEach((fr, i) => osc('triangle', fr * 2, t + i * 0.04, 0.2, envG(t + i * 0.04, 0.003, 0.1, 0.2, d))); }
+    else if (kind === 'armorOn') { const o = X().createOscillator(); o.type = 'square'; o.frequency.setValueAtTime(420, t); o.frequency.exponentialRampToValueAtTime(160, t + 0.2); const f = X().createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 1500; o.connect(f); f.connect(envG(t, 0.004, 0.12, 0.2, d)); o.start(t); o.stop(t + 0.28); }
+    else if (kind === 'slam') { const o = X().createOscillator(); o.type = 'sine'; o.frequency.setValueAtTime(120, t); o.frequency.exponentialRampToValueAtTime(40, t + 0.25); o.connect(envG(t, 0.002, 0.42, 0.28, d)); o.start(t); o.stop(t + 0.34); }
+    else if (kind === 'swap') { const n = noiseSrc(t, 0.14), f = X().createBiquadFilter(); f.type = 'highpass'; f.frequency.value = 3200; n.connect(f); f.connect(envG(t, 0.002, 0.16, 0.12, d)); }
     else if (kind === 'bossDown') { [220, 329.6, 440, 659.3].forEach(fr => osc('sawtooth', fr, t, 1, envG(t, 0.01, 0.03, 1.1, d))); }
     else if (kind === 'lose') { const o = X().createOscillator(); o.type = 'sawtooth'; o.frequency.setValueAtTime(330, t); o.frequency.exponentialRampToValueAtTime(55, t + 1.2); const f = X().createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 1200; o.connect(f); f.connect(envG(t, 0.01, 0.2, 1.2, d)); o.start(t); o.stop(t + 1.4); }
   }
@@ -220,7 +233,7 @@
   function label(txt, x, y, size, col) { g.font = `700 ${Math.max(9, size)}px ${FONT}`; g.textAlign = 'center'; g.fillStyle = col; g.fillText(txt, x, y); }
   function gateText(o) { return o.op === 'add' ? '+' + o.v : o.op === 'mul' ? '×' + o.v : o.op === 'trade' ? '−' + o.lose + ' ×' + o.v : o.op === 'oc' ? 'OVERCLOCK +' + o.v + '%' : o.op === 'weapon' ? GR.WEAPONS[o.w].name.toUpperCase() : o.op === 'mod' ? GR.WEAPONS[U.G.weapon].mods[o.k].name.toUpperCase() : 'FIRE +' + Math.round(o.v * 100) + '%'; }
   // the small line under each gate says what it does in plain words
-  function gateNote(o) { return o.op === 'add' ? 'more runners' : o.op === 'mul' ? 'multiply squad' : o.op === 'trade' ? 'lose ' + o.lose + ', then double' : o.op === 'oc' ? 'stronger drop' : o.op === 'weapon' ? GR.WEAPONS[o.w].note : o.op === 'mod' ? GR.WEAPONS[U.G.weapon].mods[o.k].note : 'shoot faster'; }
+  function gateNote(o) { return o.op === 'add' ? 'more runners' : o.op === 'mul' ? 'multiply squad' : o.op === 'trade' ? 'lose ' + o.lose + ', then double' : o.op === 'oc' ? 'stronger drop' : o.op === 'weapon' ? (o.keep ? 'keep your gun' : GR.WEAPONS[o.w].note) : o.op === 'mod' ? GR.WEAPONS[U.G.weapon].mods[o.k].note : 'shoot faster'; }
   function hpBar(x, y, w, fr) { g.fillStyle = 'rgba(0,0,0,.55)'; g.fillRect(x - w / 2, y, w, 4); g.fillStyle = '#4BFFA5'; g.fillRect(x - w / 2, y, w * Math.max(0, fr), 4); }
   // labels and health bars sit over the 3D models, sized by how close the thing is
   function drawLabels(G) {
@@ -228,9 +241,11 @@
     const ng = G.ents.find(e => e.kind === 'gate' && !e.done && e.ta > G.t);
     if (ng && ng.ta - G.t < 4.2) { const sd = G.sx < 0 ? -1 : 1, z = ng.ta - G.t, k = 1 / (1 + z * 0.4), p = R.project(sd * 0.52, z, 4.1); label('▼', p.x, p.y - Math.abs(Math.sin(G.t * 7)) * 5, 34 * k + 8, '#3DF0FF'); }
     for (let i = G.ei; i < G.ents.length; i++) {
-      const e = G.ents[i], z = e.ta - G.t; if (z > GR.BOSS_RANGE + 0.2) break; if (e.done || (z > 4.6 && e.kind !== 'boss')) continue;
+      const e = G.ents[i], z = e.ta - G.t; if (z > GR.BOSS_RANGE + 0.2) break; if (e.done || (z > 4.6 && e.kind !== 'boss' && e.kind !== 'pod')) continue;
       const k = 1 / (1 + Math.max(0, z) * 0.55), fr = e.hp / e.maxHp;
       if (e.kind === 'runner' && z < 3) { const p = R.project(e.x, z, 2.1); label('+1', p.x, p.y, 15 * k + 4, '#BFF8FF'); }
+      else if (e.kind === 'pod') { const zz = R.bossZ(z), q = 1 / (1 + zz * 0.3), p = R.project(e.x, zz, 5); label('SHOOT', p.x, p.y - 6, 18 * q + 6, '#FFB547'); hpBar(p.x, p.y, 70 * q, fr); }
+      else if (e.kind === 'orb' && z < 3.2) { const p = R.project(e.x, z, 2.2); label(e.gold ? 'CATCH' : 'DODGE', p.x, p.y, 15 * k + 5, e.gold ? '#FFB547' : '#FF4D6D'); }
       else if (e.kind === 'crate') { const p = R.project(e.x, z, 2.1); label('SHOOT IT', p.x, p.y - 6, 14 * k + 3, '#FFB547'); hpBar(p.x, p.y, 60 * k, fr); }
       else if (e.kind === 'biker' && fr < 1) { const p = R.project(e.x, z, 2.3); hpBar(p.x, p.y, 54 * k, fr); }
       else if (e.kind === 'drone' && fr < 1) { const p = R.project(e.x, z, 1.9); hpBar(p.x, p.y, 34 * k, fr); }
@@ -254,7 +269,8 @@
     $('hudR').classList.toggle('on', G.oc.on);
     const bs = U.boss, on = bs && !G.over && !bs.done && bs.ta - G.t < GR.BOSS_RANGE;
     $('bossBar').hidden = !on;
-    if (on) { const fr = Math.max(0, bs.hp / bs.maxHp), pct = Math.ceil(fr * 100); $('bossFill').style.width = fr * 100 + '%'; $('bossTrail').style.width = fr * 100 + '%'; $('bossPct').textContent = pct + '%'; }
+    $('bossBar').classList.toggle('armored', !!(on && bs.armor));
+    if (on) { const fr = Math.max(0, bs.hp / bs.maxHp), pct = Math.ceil(fr * 100); $('bossFill').style.width = fr * 100 + '%'; $('bossTrail').style.width = fr * 100 + '%'; $('bossPct').textContent = bs.armor ? 'ARMOR' : pct + '%'; }
     const wp = GR.WEAPONS[G.weapon]; $('wpn').textContent = (G.mod >= 0 ? wp.mods[G.mod].name + ' ' + wp.short : wp.name) + (G.wlv > 1 ? ' Lv ' + G.wlv : '');
   }
   function hint(txt) { $('secHint').textContent = txt; }
@@ -268,12 +284,12 @@
       const sq = R.project(G.sx, 0), sx = sq.x, sy = sq.y;
       if (e.type === 'volley') {
         if (e.hits.length) {
-          const tg = []; for (const id of e.hits.slice(0, 8)) { const en = G.ents.find(q => q.id === id); if (en) tg.push({ x: en.x, z: Math.max(0.05, en.ta - G.t), y: en.kind === 'boss' ? 3.8 : 1.1 }); }
+          const tg = []; for (const id of e.hits.slice(0, 8)) { const en = G.ents.find(q => q.id === id); if (en) tg.push({ x: en.x, z: Math.max(0.05, en.kind === 'boss' || en.kind === 'pod' ? R.bossZ(en.ta - G.t) : en.ta - G.t), y: en.kind === 'boss' || en.kind === 'pod' ? 3.8 : 1.1 }); }
           const n = Math.round(e.t / (GR.B / 2));
           sfx('shot', n); R.volley({ weapon: G.weapon, mod: G.mod, lv: G.wlv, col: GR.WEAPONS[G.weapon].col, oc: G.oc.on, x: G.sx, w: GR.width(G.n), t: tg, n, B: GR.B });
         }
       } else if (e.type === 'kill') {
-        sfx('kill'); const en = G.ents.find(q => q.id === e.id), z = en ? en.ta - G.t : 1;
+        sfx('kill'); const en = G.ents.find(q => q.id === e.id), z = en ? (en.kind === 'boss' || en.kind === 'pod' ? R.bossZ(en.ta - G.t) : en.ta - G.t) : 1;
         const c = e.kind === 'crate' ? '#FFB547' : e.kind === 'boss' ? '#FFFFFF' : '#FF3DA8', nP = RM ? 2 : e.kind === 'boss' ? 160 : e.kind === 'swarm' ? 4 : 10;
         R.burst(e.x, z, c, nP, e.kind === 'boss' ? 16 : e.kind === 'swarm' ? 5 : 7, e.kind === 'boss' ? 4 : 1.1);
         if (e.kind === 'biker' || e.kind === 'crate') { R.shock(e.x, z, c, 3.5, 1); U.shake = Math.max(U.shake, 3); }
@@ -284,8 +300,15 @@
         if (e.g.op === 'oc' && G.t < GR.DROP_T) U.popups.push({ t0: t + 0.15, txt: 'Stronger drop', x: W - 70, y: 110, c: '#FF7AD0' });
         say('Gate ' + gateText(e.g) + '. Squad ' + e.n);
       } else if (e.type === 'runner') { sfx('runner'); U.popups.push({ t0: t, txt: '+1', x: sx, y: sy - 60, c: '#BFF8FF' }); }
+      else if (e.type === 'haz') { sfx('slam'); U.shake = Math.max(U.shake, 9); R.punch(2); R.burst((e.x0 + e.x1) / 2, 0.6, e.style === 'beam' ? '#F2EFE6' : '#FF4D6D', RM ? 4 : 30, 9, 0.6); }
+      else if (e.type === 'armor') { sfx(e.on ? 'armorOn' : 'armorOff'); U.popups.push({ t0: t, txt: e.on ? 'ARMOR BACK' : 'ARMOR DOWN!', x: W / 2, y: H * 0.34, c: e.on ? '#AEB8D8' : '#4BFFA5', big: true, life: 1.3 }); say(e.on ? 'Armor back' : 'Armor down. Hit the boss'); }
+      else if (e.type === 'pod') { sfx('good'); R.shock(e.x, R.bossZ(U.boss.ta - G.t), '#FFB547', 5, 3.8); U.popups.push({ t0: t, txt: 'POD DOWN', x: W / 2, y: H * 0.34, c: '#FFB547', big: true }); }
+      else if (e.type === 'orb') { sfx('good'); R.pickup(G.sx, '#FFB547'); U.popups.push({ t0: t, txt: 'ARMOR CRACKED', x: W / 2, y: H * 0.34, c: '#FFB547', big: true }); }
+      else if (e.type === 'swap' || e.type === 'shuffle') { sfx('swap'); }
+      else if (e.type === 'blocked') { if (!firstSeen.blocked) { firstSeen.blocked = 1; hint(GR.BOSS[U.boss.boss].tip); } }
+      else if (e.type === 'reflect') { sfx('hurt'); U.shake = Math.max(U.shake, 4); U.popups.push({ t0: t, txt: 'REFLECTED −' + e.lost, x: sx, y: sy - 70, c: '#FF4D6D' }); }
       else if (e.type === 'hurt' || e.type === 'bossHit') { sfx('hurt'); U.shake = e.type === 'bossHit' ? 16 : 6; U.popups.push({ t0: t, txt: '−' + e.lost, x: sx, y: sy - 70, c: '#FF4D6D', big: e.type === 'bossHit' }); }
-      else if (e.type === 'weapon') { sfx('weapon'); const wp = GR.WEAPONS[e.w], md = wp.mods[e.mod], up = md ? md.name.toUpperCase() : e.pick ? wp.name.toUpperCase() : wp.short.toUpperCase() + ' LV ' + e.lv; U.popups.push({ t0: t, txt: up + '!', x: W / 2, y: H * 0.45, c: wp.col, big: true, life: 1.4 }); const tip = md ? md.tip : e.pick ? wp.tip : ''; if (tip) hint(tip); if (e.pick || md) { R.pickup(G.sx, wp.col); if (!RM) { U.flash = 0.34; U.flashRGB = wp.col.slice(1).match(/../g).map(h => parseInt(h, 16)).join(','); } } if (e.pick) R.gates(G, gateText, gateNote); say('Weapon: ' + up); }
+      else if (e.type === 'weapon') { sfx('weapon'); const wp = GR.WEAPONS[e.w], md = wp.mods[e.mod], up = md ? md.name.toUpperCase() : e.pick ? wp.name.toUpperCase() : wp.short.toUpperCase() + ' LV ' + e.lv; U.popups.push({ t0: t, txt: up + '!', x: W / 2, y: H * 0.45, c: wp.col, big: true, life: 1.4 }); const tip = md ? md.tip : e.pick ? wp.tip : ''; if (tip) hint(tip); if (e.pick || md) { R.pickup(G.sx, wp.col); if (!RM) { U.flash = 0.34; U.flashRGB = wp.col.slice(1).match(/../g).map(h => parseInt(h, 16)).join(','); } } if (e.pick) R.gates(G, gateText, gateNote); if (e.keep) hint(wp.short + ' kept'); say('Weapon: ' + up); }
       else if (e.type === 'drop') { U.flashRGB = null; U.flash = 0.8; U.shake = 12; R.punch(9); R.shock(G.sx, 0, '#FFFFFF', 26, 0.4); U.popups.push({ t0: t, txt: 'OVERCLOCK ×' + e.mult.toFixed(1), x: W / 2, y: H * 0.42, c: '#FFFFFF', big: true, life: 1.6 }); say('The drop. Overclock times ' + e.mult.toFixed(1)); }
       else if (e.type === 'bossDown') { sfx('bossDown'); U.flashRGB = null; U.flash = 0.6; U.shake = 22; R.punch(7); U.popups.push({ t0: t, txt: 'BOSS DOWN', x: W / 2, y: H * 0.4, c: '#FFB547', big: true, life: 1.6 }); say('Boss down'); }
       else if (e.type === 'lost') { sfx('lose'); stopClock(true); U.endAt = performance.now() + 1100; }
@@ -294,7 +317,7 @@
     U.queue = U.queue.filter(q => { if (t < q.at) return true; R.burst(q.x, q.z - (t - G.t), q.c, 70, 13, q.y); R.shock(q.x, q.z, q.c, 9, q.y); U.shake = Math.max(U.shake, 9); return false; });
     // teaching hints the first time things show up
     if (!firstSeen.crate && G.ents.some(e => e.kind === 'crate' && !e.done && e.ta - G.t < 2.4)) { firstSeen.crate = 1; hint('Gold crate: shoot it to power up your weapon'); }
-    if (!firstSeen.boss && G.ents.some(e => e.kind === 'boss' && e.ta - G.t < GR.BOSS_RANGE)) { firstSeen.boss = 1; hint('Boss incoming. Overclock melts it'); }
+    if (!firstSeen.boss && G.ents.some(e => e.kind === 'boss' && e.ta - G.t < GR.BOSS_RANGE)) { firstSeen.boss = 1; $('bossName').textContent = GR.BOSS[U.boss.boss].name; hint(GR.BOSS[U.boss.boss].tip); }
   }
 
   // ================= input: one thumb, drag anywhere =================
@@ -310,14 +333,30 @@
   function keySteer(dt) { const d = (keys.right || keys.d ? 1 : 0) - (keys.left || keys.a ? 1 : 0); if (d && U.G) steer(U.G.tx + d * 2.4 * dt); }
 
   // ================= run lifecycle =================
-  let SONG = null;
-  function startRun(fromBar) {
+  // progress lives in this browser: unlocked streets, and what each street starts with. The Lab serves every game from one origin, so the key is namespaced
+  const SAVE_KEY = 'gr.save.v1', blank = () => ({ v: 1, unlocked: 1, beaten: {}, loads: {} });
+  function loadSave() {
+    try { const s = JSON.parse(localStorage.getItem(SAVE_KEY)); if (s && s.v === 1 && s.unlocked >= 1 && s.loads && s.beaten) { s.unlocked = Math.min(GR.MAX_LEVEL, Math.floor(s.unlocked)); return s; } } catch (e) {}
+    return blank();
+  }
+  function writeSave() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(U.save)); } catch (e) {} }   // private modes can refuse; the run still works
+  U.save = loadSave(); U.lv = U.save.unlocked;
+  // a clear unlocks the next street. Replays keep your best squad, and the street's start limits stop that being farmed
+  function bankClear(G) {
+    const S = U.save, L = G.def.n, next = L + 1, c = GR.carryOut(G), old = S.loads[next];
+    S.beaten[L] = true; S.loads[next] = old && old.n > c.n ? Object.assign(c, { n: old.n }) : c;
+    S.unlocked = Math.max(S.unlocked, Math.min(next, GR.MAX_LEVEL)); writeSave();
+  }
+  const SONGS = {};
+  function startRun(level, fromBar) {
     const ctx = audioInit(); U.noAudio = !ctx;
     if (ctx && ctx.state !== 'running') ctx.resume();
-    SONG = SONG || (ctx ? buildSong(TRACKS.neon) : []);
-    U.G = GR.newGame({ seed: (Math.random() * 1e9) | 0 }); R.setRun(U.G, gateText, gateNote); U.boss = U.G.ents.find(e => e.kind === 'boss'); U.evi = 0; U.popups = []; U.queue = []; U.lastSent = null; U.endAt = 0; hud.sec = null;
+    U.lv = level || U.lv; const def = GR.levelDef(U.lv);
+    U.G = GR.newGame({ seed: U.seedFix || (Math.random() * 1e9) | 0, def, loadout: U.save.loads[U.lv] }); U.T = trackFor(def);
+    const SONG = SONGS[U.lv] = SONGS[U.lv] || (ctx ? buildSong(U.T) : []);
+    R.setLevel(def); R.setRun(U.G, gateText, gateNote); $('bossName').textContent = GR.BOSS[def.boss.id].name; U.boss = U.G.ents.find(e => e.kind === 'boss'); U.evi = 0; U.popups = []; U.queue = []; U.lastSent = null; U.endAt = 0; hud.sec = null;
     for (const k in firstSeen) delete firstSeen[k];
-    U.test = !!fromBar;
+    U.test = !!fromBar; U.popups.push({ t0: 0.2, txt: 'LEVEL ' + U.lv, x: W / 2, y: H * 0.36, c: '#FFFFFF', big: true, life: 2 });
     if (fromBar) { // tester jump: the smart bot plays the street up to that bar, then you take over
       const r = GR.rng(5); let k = 0; while (U.G.t < fromBar * GR.BAR) { if (++k % 6 === 0) GR.act(U.G, { type: 'steer', x: GR.BOTS.smart(U.G, r) }); GR.step(U.G); }
       U.G.test = true; U.evi = U.G.ev.length; R.gates(U.G, gateText, gateNote);
@@ -332,20 +371,23 @@
     if (A.ctx) A.ctx.suspend(); U.pausedAt = performance.now();
     showSheet(`<h2>Paused</h2><button class="btn pri" data-act="resume" type="button">Resume</button>
       <button class="btn" data-act="restart" type="button">Restart</button>
-      <div class="fq"><div class="q">Tester tools</div><div class="row"><button class="btn" data-act="jumpRiser" type="button">Jump to riser</button><button class="btn" data-act="jumpDrop" type="button">Jump to drop</button></div>
+      <div class="fq"><div class="q">Tester tools</div><div class="row"><button class="btn" data-act="jumpRiser" type="button">Jump to riser</button><button class="btn" data-act="jumpDrop" type="button">Jump to boss</button></div>
       <p class="foot">A bot plays up to that point for a fair squad. Tester runs are tagged in feedback.</p></div>
       <button class="btn" data-act="title" type="button">Quit to title</button>`);
   }
   function resume() { if (!U.paused) return; U.paused = false; if (A.ctx) A.ctx.resume(); else U.clock0 += performance.now() - U.pausedAt; hideSheet(); }
   function finish() {
     const G = U.G, r = GR.results(G); U.playing = false; U.lastRes = r;
-    const verdict = r.won ? (r.boss ? 'Street cleared' : 'You made it') : 'Squad down';
-    const sub = r.won ? (r.boss ? 'The Enforcer melted on the drop.' : 'The Enforcer walked through you, but your squad survived.') : (r.section === 'drop' ? 'The Enforcer was too much. Build a bigger squad or charge Overclock higher.' : 'Line up with enemies to shoot them before they reach you.');
-    showSheet(`<span class="tag">${U.test ? 'TESTER RUN · ' : ''}Prototype 2</span><h2>${verdict}</h2>
+    const BS = GR.BOSS[G.def.boss.id], L = G.def.n, more = r.cleared && L < GR.MAX_LEVEL;
+    if (r.cleared && !U.test) bankClear(G);
+    const verdict = r.cleared ? 'Street cleared' : r.won ? 'Boss got away' : 'Squad down';
+    const sub = r.cleared ? BS.win + (more ? ` You carry ${Math.min(r.survivors, GR.levelDef(L + 1).start[1])} runners and your gun to level ${L + 1}.` : ' That\'s every street for now. More are coming.') : (r.section === 'drop' || r.won) ? BS.lose : 'Line up with enemies to shoot them before they reach you.';
+    showSheet(`<span class="tag">${U.test ? 'TESTER RUN · ' : ''}Level ${L} · ${G.def.name}</span><h2>${verdict}</h2>
       <div class="big">${r.survivors}</div><p>${sub}</p>
       <div class="stats"><div class="stat"><b>${r.peak}</b><span>peak squad</span></div><div class="stat"><b>${r.kills}</b><span>kills</span></div><div class="stat"><b>×${r.ocMult.toFixed(1)}</b><span>overclock</span></div>
       <div class="stat"><b>${r.gatesGood}/${r.gatesGood + r.gatesBad}</b><span>good gates</span></div><div class="stat"><b>${GR.WEAPONS[r.weapon].short}${r.wlv > 1 ? ' ' + r.wlv : ''}</b><span>weapon</span></div><div class="stat"><b>${r.credits}</b><span>credits</span></div></div>
-      <button class="btn pri" data-act="play" type="button">Run it back</button>
+      ${more ? `<button class="btn pri" data-act="next" type="button">Next: level ${L + 1}</button>` : ''}
+      <button class="btn${more ? '' : ' pri'}" data-act="play" type="button">Run it back</button>
       <button class="btn" data-act="feedback" type="button">Give feedback</button>
       <button class="btn" data-act="title" type="button">Title</button>`);
   }
@@ -356,12 +398,24 @@
   function hideSheet() { sheet.hidden = true; }
   function titleScreen() {
     U.playing = false; U.G = null; $('bossBar').hidden = true; stopClock(true); game.classList.add('idle');
-    showSheet(`<span class="tag">Prototype 2 · one street</span><h1><span class="c">OVER</span><span class="p">CLOCK</span></h1>
+    U.lv = U.save.unlocked; R.setLevel(GR.levelDef(U.lv));
+    showSheet(`<span class="tag">Prototype 2 · ${GR.MAX_LEVEL} streets</span><h1><span class="c">OVER</span><span class="p">CLOCK</span></h1>
       <p>Neon City, 2089. Hush banned music. Your squad brings the beat back.</p>
-      <button class="btn pri" data-act="play" type="button">Run</button>
+      <button class="btn pri" data-act="play" type="button">Run level ${U.lv}: ${GR.levelDef(U.lv).name}</button>
+      <button class="btn" data-act="levels" type="button">Level select</button>
       <button class="btn" data-act="how" type="button">How to play</button>
       <button class="btn" data-act="arsenal" type="button">Weapons and gates</button>
       <p class="foot">Sound on, silent mode off. About one minute per run.</p>`);
+  }
+  function levelScreen() {
+    const S = U.save, rows = []; for (let L = 1; L <= GR.MAX_LEVEL; L++) { const d = GR.levelDef(L), open = L <= S.unlocked, ld = GR.enter(d, S.loads[L]), wp = GR.WEAPONS[ld.weapon];
+      rows.push(open ? `<button class="lv" type="button" data-lv="${L}"><span>${L}. ${d.name}${S.beaten[L] ? ' <span class="ok">✓</span>' : ''}</span><small>${GR.BOSS[d.boss.id].name} · start ${ld.n} runners, ${wp.short}${ld.wlv > 1 ? ' Lv ' + ld.wlv : ''}</small></button>` : `<button class="lv" type="button" disabled><span>${L}. Locked</span><small>Beat level ${L - 1}'s boss</small></button>`); }
+    showSheet(`<h2>Level select</h2><p>Beat a boss to open the next street. Your squad and guns carry over.</p>${rows.join('')}
+      <button class="btn" data-act="reset" type="button">Reset progress</button><button class="btn" data-act="title" type="button">Back</button>`);
+  }
+  function resetScreen() {
+    showSheet(`<h2>Reset progress?</h2><p>This locks every street again and clears your carried squad and guns. It can't be undone.</p>
+      <button class="btn" data-act="resetYes" type="button">Yes, reset</button><button class="btn pri" data-act="levels" type="button">Keep my progress</button>`);
   }
   function howScreen() {
     showSheet(`<h2>How to play</h2><ol class="steps">
@@ -369,7 +423,8 @@
       <li><b class="gr">Steer left or right of the line</b> to pick a gate. The ▼ shows your pick. Flat numbers suit a small squad, multipliers a big one. <b class="r">Red</b> trades runners now for double later.</li>
       <li><b class="p">Your squad fires on its own.</b> Hordes fill the road. Carve a path through them, because whatever reaches you eats runners.</li>
       <li><b class="g">Pick your gun</b> at the weapon fork, then an upgrade for it later. Shoot gold crates to level it up.</li>
-      <li><b class="p">Gates fill Overclock.</b> It multiplies your damage during the drop, up to ×3. Overclock gates fill it fastest. Red gates fill none.</li></ol>
+      <li><b class="p">Gates fill Overclock.</b> It multiplies your damage during the drop, up to ×3. Overclock gates fill it fastest. Red gates fill none.</li>
+      <li><b class="r">Every boss has a trick.</b> Kill it to open the next street, and take your squad and guns with you. The hint at the top tells you what to do.</li></ol>
       <button class="btn pri" data-act="play" type="button">Run</button><button class="btn" data-act="title" type="button">Back</button>`);
   }
   function arsenalScreen() {
@@ -403,7 +458,7 @@
     U.fb.note = ($('fbNote') || {}).value || ''; U.fb.name = ($('fbName') || {}).value || '';
     if (!FQ.some(f => U.fb[f.id])) { $('fbErr').textContent = 'Tap at least one answer first.'; return; }
     const r = U.lastRes || {};
-    const body = { answers: Object.fromEntries(FQ.map(f => [f.id, U.fb[f.id] || null])), notes: U.fb.note, name: U.fb.name, result: r, tester: U.test, version: 'p2', at: new Date().toISOString() };
+    const body = { answers: Object.fromEntries(FQ.map(f => [f.id, U.fb[f.id] || null])), notes: U.fb.note, name: U.fb.name, result: r, tester: U.test, level: U.lv, version: 'p3', at: new Date().toISOString() };
     let ok = false;
     try { const db = window.claude && window.claude.use ? await window.claude.use('db') : null; if (db) { await db.collection('feedback').add(body); ok = true; } } catch (e) {}
     if (!ok && location.protocol !== 'file:') { try { const res = await fetch('/forge/api/feedback', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(Object.assign({ game: 'cyberpunk-gate-runner' }, body)) }); ok = res.ok; } catch (e) {} }
@@ -414,14 +469,19 @@
   card.addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
     if (b.dataset.fq) { U.fb[b.dataset.fq] = b.dataset.fv; card.querySelectorAll(`[data-fq="${b.dataset.fq}"]`).forEach(x => x.setAttribute('aria-pressed', x === b)); return; }
+    if (b.dataset.lv) { startRun(+b.dataset.lv); return; }
     const a = b.dataset.act;
-    if (a === 'play' || a === 'restart') startRun(0);
+    if (a === 'play' || a === 'restart') startRun(U.lv);
+    else if (a === 'next') startRun(U.lv + 1);
+    else if (a === 'levels') levelScreen();
+    else if (a === 'reset') resetScreen();
+    else if (a === 'resetYes') { U.save = blank(); writeSave(); titleScreen(); }
     else if (a === 'how') howScreen();
     else if (a === 'arsenal') arsenalScreen();
     else if (a === 'title') titleScreen();
     else if (a === 'resume') resume();
-    else if (a === 'jumpRiser') startRun(12);
-    else if (a === 'jumpDrop') startRun(19);
+    else if (a === 'jumpRiser') startRun(U.lv, 12);
+    else if (a === 'jumpDrop') startRun(U.lv, 19);
     else if (a === 'feedback') feedbackScreen();
     else if (a === 'fbSend') sendFeedback();
     else if (a === 'back') finish();

@@ -10,7 +10,12 @@
   const R = { ok: false, quality: 2, locked: false, RW, ZS };
   const COL = { cyan: '#3DF0FF', pink: '#FF3DA8', pink2: '#FF7AD0', violet: '#8B5CFF', gold: '#FFB547', green: '#4BFFA5', red: '#FF4D6D', white: '#FFFFFF', steel: '#1B2148', ink: '#0B0E2C', plum: '#3A1050', bone: '#F2EFE6' };
   const FOG = new T.Color('#1C0B3E'), TONE = [new T.Color('#241038'), new T.Color('#160E44'), new T.Color('#2E1236')];   // market plum, canyon blue, the drop warm
-  const UF = { uFog: { value: FOG }, uFogR: { value: new T.Vector2(30, 60) }, uT: { value: 0 }, uPulse: { value: 0 }, uOC: { value: 0 }, uCharge: { value: 0 }, uS: { value: 0 } };
+  const UF = { uFog: { value: FOG }, uFogR: { value: new T.Vector2(30, 60) }, uT: { value: 0 }, uPulse: { value: 0 }, uOC: { value: 0 }, uCharge: { value: 0 }, uS: { value: 0 }, uA: { value: new T.Vector3(0.26, 0.11, 1) }, uB: { value: new T.Vector3(1, 0.46, 0.06) }, uFar: { value: 1 }, uBeat: { value: 4.9 } };
+  // each street's look, named by pal in the level table. fog, three tones for the song's sections, a and b are the city's two light colours (windows, sky,
+  // road accents), arch the street arches, far scales the skyline, rain thins the rain, haze pulls the fog closer. Nothing here rebuilds the city
+  const PALS = {
+    market: { fog: '#1C0B3E', tone: ['#241038', '#160E44', '#2E1236'], a: [0.26, 0.11, 1], b: [1, 0.46, 0.06], arch: [COL.violet, COL.gold], far: 1, rain: 1, haze: 1 },
+  };
 
   // ---------- geometry helpers: non-indexed parts merged into one mesh, with colour and glow per vertex ----------
   const M = (x, y, z, rx, ry, rz, sx, sy, sz) => new T.Matrix4().compose(new T.Vector3(x || 0, y || 0, z || 0), new T.Quaternion().setFromEuler(new T.Euler(rx || 0, ry || 0, rz || 0)), new T.Vector3(sx || 1, sy || sx || 1, sz || sx || 1));
@@ -103,22 +108,52 @@
       part(ring, COL.pink2, 1, M(0, 3.4, -0.9))
     ]);
   }
+  // Mute Carrier: a wide flying barge with a hull slot for each speaker pod and a pink core
+  function carrierGeo() {
+    const core = new T.CylinderGeometry(0.75, 0.75, 0.3, 14), ring = new T.TorusGeometry(1.15, 0.08, 5, 24);
+    return merge([box(6.4, 0.9, 2.6, 0, 3, 0, COL.violet), box(4.4, 0.6, 2, 0, 3.7, 0, COL.plum), box(6.8, 0.14, 2.8, 0, 2.5, 0, COL.pink, 1), box(6.8, 0.1, 2.8, 0, 3.5, 0, COL.pink2, 1), box(1.6, 1.3, 2, -2.6, 2.4, 0, COL.plum), box(1.6, 1.3, 2, 2.6, 2.4, 0, COL.plum), box(0.5, 0.5, 3.6, -1.6, 3.3, 0, COL.steel, 3), box(0.5, 0.5, 3.6, 1.6, 3.3, 0, COL.steel, 3), part(core, COL.pink, 1, M(0, 3, 1.4, Math.PI / 2)), part(ring, COL.pink2, 1, M(0, 3, 1.42))]);
+  }
+  function podGeo() {
+    const cone = new T.CylinderGeometry(0.72, 0.3, 0.5, 12), mag = new T.CylinderGeometry(0.26, 0.26, 0.2, 10), ring = new T.TorusGeometry(0.78, 0.06, 4, 18);
+    return merge([box(1.5, 1.5, 1, 0, 0, -0.3, COL.ink, 3), part(cone, COL.white, 0, M(0, 0, 0.35, -Math.PI / 2)), part(mag, COL.white, 1, M(0, 0, 0.55, Math.PI / 2)), part(ring, COL.white, 1, M(0, 0, 0.6))]);
+  }
+  // Mirror Warden: tall and thin, long legs, a narrow chest and one slit eye. The mirror is its own model so it can change sides
+  function wardenGeo() {
+    return merge([box(0.5, 4, 0.6, -0.8, 2, 0, COL.ink), box(0.5, 4, 0.6, 0.8, 2, 0, COL.ink), box(0.9, 0.3, 1.2, -0.8, 0.15, 0.1, COL.plum), box(0.9, 0.3, 1.2, 0.8, 0.15, 0.1, COL.plum), box(2.2, 3.4, 1, 0, 5.4, 0, COL.plum), box(2.5, 0.1, 1.1, 0, 3.9, 0, COL.pink, 1), box(1, 1.2, 0.9, 0, 7.8, 0, COL.ink), box(0.8, 0.12, 0.1, 0, 7.9, 0.48, COL.pink, 1), box(3, 0.5, 0.8, 0, 6.9, 0, COL.ink), box(0.14, 1.6, 0.14, 0, 9, 0, COL.pink, 1)]);
+  }
+  function mirrorGeo() {
+    return merge([box(2.5, 7.2, 0.2, 0, 3.8, 0, COL.white, 1), box(2.8, 0.2, 0.3, 0, 7.5, 0, COL.ink, 3), box(2.8, 0.2, 0.3, 0, 0.1, 0, COL.ink, 3), box(0.2, 7.6, 0.3, -1.35, 3.8, 0, COL.ink, 3), box(0.2, 7.6, 0.3, 1.35, 3.8, 0, COL.ink, 3)]);
+  }
+  // Echo: a hooded hologram with no legs, one thin ring around it
+  function echoGeo() {
+    const body = new T.ConeGeometry(1.5, 5.4, 6), head = new T.OctahedronGeometry(0.72, 0), ring = new T.TorusGeometry(1.9, 0.05, 4, 22);
+    return merge([part(body, COL.white, 1, M(0, 2.9, 0)), part(head, COL.white, 1, M(0, 6.2, 0)), part(ring, COL.white, 1, M(0, 3.4, 0, Math.PI / 2)), box(0.8, 0.1, 0.1, 0, 6.2, 0.62, COL.bone, 2)]);
+  }
+  // Director Vale: a slim figure on a floating stage, baton raised, with speaker stacks either side
+  function valeGeo() {
+    const arc = new T.TorusGeometry(3.6, 0.1, 5, 26, Math.PI);
+    return merge([box(7, 0.6, 3, 0, 0.9, 0, COL.ink), box(7.4, 0.1, 3.2, 0, 1.25, 0, COL.gold, 2), box(5, 0.1, 2.4, 0, 0.5, 0, COL.pink, 1), box(1.2, 3.6, 1.2, -3.1, 3, 0, COL.plum), box(1.2, 3.6, 1.2, 3.1, 3, 0, COL.plum), box(0.8, 0.8, 0.1, -3.1, 3.8, 0.62, COL.pink, 1), box(0.8, 0.8, 0.1, 3.1, 3.8, 0.62, COL.pink, 1),
+      box(0.4, 1.8, 0.4, -0.3, 2.2, 0, COL.ink), box(0.4, 1.8, 0.4, 0.3, 2.2, 0, COL.ink), box(1.4, 2.2, 0.8, 0, 4.1, 0, COL.bone, 3), box(0.5, 0.1, 0.1, 0, 5, 0.42, COL.pink, 1), box(0.7, 0.8, 0.7, 0, 5.6, 0, COL.ink), box(0.2, 1.6, 0.2, 1.1, 5.3, 0, COL.bone, 3, 0, 0, -0.7), box(0.05, 1.8, 0.05, 1.8, 6.6, 0, COL.white, 1, 0, 0, -0.5), part(arc, COL.pink2, 1, M(0, 3.2, -1))]);
+  }
+  function orbGeo() { const b = new T.SphereGeometry(0.42, 10, 8), r = new T.TorusGeometry(0.62, 0.04, 4, 14); return merge([part(b, COL.white, 1), part(r, COL.white, 1, M(0, 0, 0, Math.PI / 2))]); }
   function archGeo() {
     const w = RW * 1.32, h = 8;
     return merge([box(0.3, h, 0.3, -w, h / 2, 0, COL.ink), box(0.3, h, 0.3, w, h / 2, 0, COL.ink), box(w * 2 + 0.3, 0.3, 0.3, 0, h, 0, COL.ink), box(0.1, h, 0.34, -w + 0.2, h / 2, 0, COL.white, 1), box(0.1, h, 0.34, w - 0.2, h / 2, 0, COL.white, 1), box(w * 2, 0.1, 0.34, 0, h - 0.2, 0, COL.white, 1), box(0.86, 0.1, 0.36, -0.36, h - 0.46, 0, COL.bone, 2, 0, 0, 0.42), box(0.86, 0.1, 0.36, 0.36, h - 0.46, 0, COL.bone, 2, 0, 0, -0.42)]);
   }
 
   // ---------- towers: procedural gold, violet and bone windows, one violet line on the roof ----------
-  const towerMat = (fogR, scroll) => new T.ShaderMaterial({
-    defines: { SCROLL: (scroll ? ZS : 0).toFixed(2) }, uniforms: Object.assign({}, UF, { uFogR: { value: fogR } }),
-    vertexShader: `uniform float uS; attribute float aSeed; varying vec3 vP, vN, vW, vS; varying float vR;
-      void main(){ vS = vec3(length(instanceMatrix[0].xyz), length(instanceMatrix[1].xyz), length(instanceMatrix[2].xyz)); vP = position * vS; vN = normal; vR = aSeed;
-        vec4 w = modelMatrix * instanceMatrix * vec4(position, 1.); w.z += uS * SCROLL; vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }`,
-    fragmentShader: `uniform vec3 uFog; uniform vec2 uFogR; uniform float uPulse, uOC, uCharge; varying vec3 vP, vN, vW, vS; varying float vR;
+  const FOGR = [];    // fog ranges the haze setting pulls in, with their full values
+  const fogR = (a, b) => { const v = new T.Vector2(a, b); FOGR.push([v, a, b]); return v; };
+  const towerMat = (fr, scroll) => new T.ShaderMaterial({
+    defines: { SCROLL: (scroll ? ZS : 0).toFixed(2) }, uniforms: Object.assign({}, UF, { uFogR: { value: fr } }),
+    vertexShader: `uniform float uS, uFar; attribute float aSeed; varying vec3 vP, vN, vW, vS; varying float vR;
+      void main(){ float fy = SCROLL > 0. ? 1. : uFar; vS = vec3(length(instanceMatrix[0].xyz), length(instanceMatrix[1].xyz) * fy, length(instanceMatrix[2].xyz)); vP = position * vS; vN = normal; vR = aSeed;
+        vec4 w = modelMatrix * instanceMatrix * vec4(position * vec3(1., fy, 1.), 1.); w.z += uS * SCROLL; vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }`,
+    fragmentShader: `uniform vec3 uFog, uA, uB; uniform vec2 uFogR; uniform float uPulse, uOC, uCharge; varying vec3 vP, vN, vW, vS; varying float vR;
       float h(vec2 p){ return fract(sin(dot(p, vec2(41.3, 289.1))) * 43758.5); }
       void main(){ vec2 uv = abs(vN.x) > .5 ? vec2(vP.z, vP.y) : vec2(vP.x, vP.y); vec2 cell = vec2(.72, .98), id = floor(uv / cell), f = fract(uv / cell);
         float win = step(.18, f.x) * step(f.x, .82) * step(.25, f.y) * step(f.y, .75), r = h(id + floor(vR * 91. + .5)), on = step(.9 - .26 * uCharge - .12 * uOC, r) * win * step(abs(vN.y), .5);
-        float pick = h(id * 1.7 + floor(vR * 37. + .5)); const vec3 VIOLET = vec3(.26, .11, 1.), GOLD = vec3(1., .46, .06), BONE = vec3(.89, .86, .79);
+        float pick = h(id * 1.7 + floor(vR * 37. + .5)); vec3 VIOLET = uA, GOLD = uB; const vec3 BONE = vec3(.89, .86, .79);
         vec3 c = mix(vec3(.002, .0025, .012), vec3(.004, .005, .024), step(.5, abs(vN.x))) * (.7 + .6 * vP.y / vS.y), lit = pick < .55 ? GOLD : pick < .82 ? VIOLET : BONE;
         c += lit * on * (.22 + .22 * uCharge + .22 * uOC + .3 * uPulse * step(.8, r));
         c += mix(VIOLET, GOLD, uOC * step(.5, vR)) * (.5 + 1.1 * uCharge + .8 * uOC) * smoothstep(vS.y - .22, vS.y - .1, vP.y) * step(abs(vN.y), .5);
@@ -126,29 +161,29 @@
   });
 
   // ---------- state ----------
-  let renderer, scene, cam, rtS, rtA, rtB, fsScene, fsCam, fsQuad, mats = {}, W = 1, H = 1, DPR = 1, road, sky, runners, picks, drones, swarm, bikers, crate, boss, arches, rails, near, billboards, steam, rain, detail = [], gates = [], parts = [], bolts = [], blasts = [], flash = { t0: -9, life: 0.1, w: 1, h: 1, c: new T.Color(), m: null }, pts, beams, pi = 0;
+  let renderer, scene, cam, rtS, rtA, rtB, fsScene, fsCam, fsQuad, mats = {}, W = 1, H = 1, DPR = 1, road, sky, runners, picks, drones, swarm, bikers, crate, boss, BM = {}, BMS = [], pods, orbs, mirror, hazQ = [], arches, rails, near, billboards, steam, rain, detail = [], gates = [], parts = [], bolts = [], blasts = [], flash = { t0: -9, life: 0.1, w: 1, h: 1, c: new T.Color(), m: null }, pts, beams, pi = 0;
   const camBase = new T.Vector3(0, 6.6, 9.2), look = new T.Vector3(), PN = 1600, BN = 420, v3 = new T.Vector3(), v4 = new T.Vector3(), ZAX = new T.Vector3(0, 0, 1);
-  const ARCH0 = new T.Color(COL.violet), ARCH1 = new T.Color(COL.gold), archCol = new T.Color(), frameMs = [], shocks = []; let lastPerf = 0, slowCheck = 0, shockI = 0, lastBeat = -1, punch = 0, baseFov = 52, bossHp = 0, bossHit = 0;
+  const ARCH0 = new T.Color(COL.violet), ARCH1 = new T.Color(COL.gold), archCol = new T.Color(), frameMs = [], shocks = []; let lastPerf = 0, slowCheck = 0, shockI = 0, lastBeat = -1, punch = 0, baseFov = 52, bossHp = 0, bossHit = 0, rainK = 1;
 
   function buildRoad() {
     const m = new T.ShaderMaterial({
-      uniforms: Object.assign({ uSq: { value: new T.Vector2() }, uSqR: { value: 1 }, uSplit: { value: new T.Vector3() } }, UF), defines: { RW: RW.toFixed(2), ZS: ZS.toFixed(2), BEAT: (GR.B * ZS).toFixed(4) },
+      uniforms: Object.assign({ uSq: { value: new T.Vector2() }, uSqR: { value: 1 }, uSplit: { value: new T.Vector3() } }, UF), defines: { RW: RW.toFixed(2), ZS: ZS.toFixed(2), BEAT: 'uBeat' },
       vertexShader: `varying vec3 vW; void main(){ vec4 w = modelMatrix * vec4(position, 1.); vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }`,
-      fragmentShader: `uniform vec3 uFog; uniform vec2 uFogR, uSq; uniform vec3 uSplit; uniform float uT, uPulse, uOC, uSqR; varying vec3 vW;
+      fragmentShader: `uniform vec3 uFog, uA, uB; uniform vec2 uFogR, uSq; uniform vec3 uSplit; uniform float uT, uPulse, uOC, uSqR, uBeat; varying vec3 vW;
         void main(){ float x = vW.x, ax = abs(x), z = vW.z - uT * ZS, dist = length(cameraPosition - vW), on = 1. - smoothstep(RW * 1.03, RW * 1.05, ax);
           vec3 c = mix(vec3(.003, .003, .01), vec3(.006, .007, .024), on);
           float bz = abs(fract(z / BEAT + .5) - .5) * BEAT, bar = abs(fract(z / (BEAT * 4.) + .5) - .5) * BEAT * 4.;
-          vec3 acc = mix(vec3(.3, .14, 1.), vec3(1., .46, .06), uOC);
+          vec3 acc = mix(uA * 1.15, uB, uOC);
           c += on * acc * (smoothstep(.05, .0, bz) * (.05 + .14 * uPulse) + smoothstep(.1, .0, bar) * (.2 + .5 * uPulse));
-          float lane = abs(fract(x / (RW * .5) + .5) - .5) * RW * .5; c += on * vec3(.3, .15, .9) * smoothstep(.022, .0, lane) * .16;
+          float lane = abs(fract(x / (RW * .5) + .5) - .5) * RW * .5; c += on * uA * 1.1 * smoothstep(.022, .0, lane) * .16;
           float dash = step(fract(z / (BEAT * .5)), .5) * smoothstep(.07, .03, ax); c += vec3(.89, .86, .79) * dash * (.5 + .8 * uPulse);
           float cz = z - ax * .55, chev = min(abs(fract(cz / (BEAT * 8.)) - .5), abs(fract((cz + 1.1) / (BEAT * 8.)) - .5)) * BEAT * 8.; c += on * acc * smoothstep(.13, .07, chev) * step(ax, RW * .72) * (.3 + .4 * uPulse);
           c += vec3(.14, .9, 1.) * smoothstep(.16, .0, abs(ax - RW * 1.04)) * (.9 + 1.1 * uPulse);
           float wet = (sin(x * 1.7 + 1.) * .5 + .5) * (sin(x * 4.3) * .5 + .5) * (sin(z * .09 + x * .4) * .5 + .5);
           float pud = smoothstep(.55, .8, (sin(x * .9 + z * .13) * .5 + .5) * (sin(z * .31 - x * .7) * .5 + .5) + (sin(z * .07 + x * 2.1) * .5 + .5) * .35), edge = smoothstep(RW * .25, RW * .95, ax);
-          float smear = step(.5, fract(z * .023 + step(0., x) * .37)); float smear2 = step(.5, fract(z * .041 + x * .03)); vec3 glowC = mix(mix(vec3(.3, .1, 1.), vec3(1., .3, .03), smear), vec3(.2, 1., .3), smear2 * .55);
+          float smear = step(.5, fract(z * .023 + step(0., x) * .37)); float smear2 = step(.5, fract(z * .041 + x * .03)); vec3 glowC = mix(mix(uA * 1.15, uB * vec3(1., .65, .5), smear), mix(vec3(.2, 1., .3), uA, .4), smear2 * .55);
           c += glowC * pud * (.1 + .9 * edge) * (.03 + .03 * uPulse + .05 * uOC) * (1. + on); c += (1. - on) * vec3(.008, .007, .02) * (1. + pud);
-          float far = smoothstep(4., 46., dist); c += on * (mix(vec3(.3, .14, 1.), vec3(1., .46, .06), uOC) * wet * .16 * far + vec3(.34, .11, .48) * far * far * .22);
+          float far = smoothstep(4., 46., dist); c += on * (mix(uA * 1.15, uB, uOC) * wet * .16 * far + vec3(.34, .11, .48) * far * far * .22);
           vec2 q = (vW.xz - uSq) / vec2(uSqR + 1.2, (uSqR + 1.2) * .8); c += on * mix(vec3(.05, .7, .9), vec3(.5, .7, .8), uOC) * exp(-dot(q, q) * 1.5) * mix(.28, .12, uOC);
           float zone = step(uSplit.y, vW.z) * step(vW.z, 3.) * uSplit.z, mine = step(0., x * uSplit.x);
           if (zone > 0.) { float cv = fract((vW.z + abs(x - uSplit.x * RW * .5) * .9 + uT * 16.) / 3.4);
@@ -162,14 +197,14 @@
     const m = new T.ShaderMaterial({
       side: T.BackSide, depthWrite: false, uniforms: UF,
       vertexShader: `varying vec3 vD; void main(){ vD = normalize(position); gl_Position = projectionMatrix * viewMatrix * modelMatrix * vec4(position, 1.); }`,
-      fragmentShader: `uniform vec3 uFog; uniform float uPulse, uOC, uT; varying vec3 vD;
+      fragmentShader: `uniform vec3 uFog, uA, uB; uniform float uPulse, uOC, uT; varying vec3 vD;
         float h(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5); }
         void main(){ vec3 d = normalize(vD); float y = max(d.y, 0.);
-          vec3 c = mix(mix(uFog * 2.1, vec3(.05, .008, .08) + .1 * uOC * vec3(.26, .11, 1.), smoothstep(0., .1, y)), vec3(.008, .012, .05), smoothstep(.05, .5, y));
+          vec3 c = mix(mix(uFog * 2.1, vec3(.05, .008, .08) * .5 + uFog * .22 + .1 * uOC * uA, smoothstep(0., .1, y)), vec3(.008, .012, .05), smoothstep(.05, .5, y));
           vec2 sv = vec2(d.x, d.y) / max(-d.z, .05); vec2 s = sv - vec2(0., .24); float r = length(s) / .2, disc = 1. - smoothstep(.97, 1.03, r);
-          float cut = s.y > .03 ? 1. : smoothstep(-.06, .06, sin(s.y * 120. + uT * .7) + .9 + s.y * 8.); vec3 sun = mix(vec3(.26, .11, 1.), vec3(1., .46, .06), smoothstep(-.18, .18, s.y));
+          float cut = s.y > .03 ? 1. : smoothstep(-.06, .06, sin(s.y * 120. + uT * .7) + .9 + s.y * 8.); vec3 sun = mix(uA, uB, smoothstep(-.18, .18, s.y));
           c = mix(c, sun * (.34 + .34 * uOC + .16 * uPulse), disc * cut); c += sun * .035 * exp(-r * r * .42) * (.8 + .3 * uPulse);
-          for (float i = 0.; i < 3.; i += 1.) { float a = -.6 + i * .6 + sin(uT * .31 + i * 2.1) * .28, off = d.x - a * d.y * 1.6 - (i - 1.) * .38; c += mix(vec3(.26, .11, 1.), vec3(1., .46, .06), uOC) * smoothstep(.022 + y * .07, .0, abs(off)) * smoothstep(.0, .05, y) * (1. - smoothstep(.1, .62, y)) * (.05 + .09 * uOC); }
+          for (float i = 0.; i < 3.; i += 1.) { float a = -.6 + i * .6 + sin(uT * .31 + i * 2.1) * .28, off = d.x - a * d.y * 1.6 - (i - 1.) * .38; c += mix(uA, uB, uOC) * smoothstep(.022 + y * .07, .0, abs(off)) * smoothstep(.0, .05, y) * (1. - smoothstep(.1, .62, y)) * (.05 + .09 * uOC); }
           vec2 g = floor(d.xy * 190.); c += vec3(.9) * step(.994, h(g)) * smoothstep(.12, .4, y);
           gl_FragColor = vec4(c, 1.); }`
     });
@@ -203,7 +238,7 @@
     m.geometry.setAttribute('aTint', new T.InstancedBufferAttribute(tint, 3)); m.frustumCulled = false; scene.add(m); return m;
   }
   // the song's sections are places: a low night market, a stacked block, the tall canyon under the rails, the drop, and the way out
-  const place = a => { const bar = a / GR.BAR; return bar < 6 ? 'market' : bar < 12 ? 'blocks' : bar < 20 ? 'canyon' : bar < 28 ? 'drop' : 'out'; };
+  const STREET = 100, place = a => { const bar = a / GR.BAR; return bar < 6 ? 'market' : bar < 12 ? 'blocks' : bar < 20 ? 'canyon' : bar < 28 ? 'drop' : bar < 31 ? 'out' : bar < 40 ? 'canyon' : 'drop'; };   // seconds of street; the longest level sets it
   const SHAPE = { market: [8, 9, 3, 2, 0.7], blocks: [12, 16, 4, 2, 0.3], canyon: [26, 26, 5, 2, 0], drop: [18, 26, 4, 3, 0], out: [10, 10, 3, 2, 0.8] };
   function buildCity() {
     const fars = [[70, -150, 60, 175, 80, new T.Vector2(120, 340)], [46, -105, 24, 120, 46, new T.Vector2(60, 230)]];
@@ -213,7 +248,7 @@
     let id = 0;
     for (const s of [-1, 1]) {
       let a = -3.5;
-      while (a < GR.END + 11) {
+      while (a < STREET) {
         const k = id++, r = n => hash(k * 3 + n), P = SHAPE[place(a)], w = 3 + r(1) * 3, h = P[0] + r(2) * P[1], d = P[2] + r(3) * P[3], x = s * (RW * 1.55 + 2.4 + r(4) * 2.4), wall = x - s * w / 2, z = -a * ZS;
         T0.push({ x, h, w, d, z });
         if (h >= 12 && r(5) < 0.62) { const sw = Math.max(3.4, Math.min(7, (Math.abs(wall) - RW * 0.95) / Math.cos(SIGN_TILT))); signs.push({ x: wall - s * (0.06 + Math.cos(SIGN_TILT) * sw / 2), y: 9.4 + k % 4, z: z - Math.sin(SIGN_TILT) * sw / 2, ry: -s * SIGN_TILT, s: sw / 9, cell: k % 3 }); }
@@ -231,11 +266,11 @@
         a += (d + 0.4 + P[4] * r(15) * 3) / ZS;
       }
     }
-    near = towerMesh(T0.length, towerMat(new T.Vector2(34, 96), true));
+    near = towerMesh(T0.length, towerMat(fogR(34, 96), true));
     T0.forEach((q, i) => { dm.position.set(q.x, 0, q.z); dm.rotation.set(0, 0, 0); dm.scale.set(q.w, q.h, q.d); dm.updateMatrix(); near.setMatrixAt(i, dm.matrix); }); scene.add(near);
     for (let bar = 1; bar < 12; bar += 2) L.cable.push({ x: 0, y: 12.5 + (bar % 3), a: bar * GR.BAR + 1, c: COL.gold });
-    for (let bar = 13; bar < 28; bar += 3) L.overpass.push({ x: 0, a: bar * GR.BAR + GR.BAR * 0.55, c: bar < 20 ? COL.violet : COL.gold });
-    for (let bar = 13; bar < 28; bar += 3) for (const sd of [-1, 1]) ads.push({ x: sd * 7.4, y: 10.25, z: -(bar * GR.BAR + GR.BAR * 0.55) * ZS + 1.68, ry: 0, w: 13.6, h: 1.55, cell: (bar + (sd > 0 ? 4 : 0)) % 16 });
+    for (let bar = 13; bar < 50; bar += 3) L.overpass.push({ x: 0, a: bar * GR.BAR + GR.BAR * 0.55, c: bar < 20 ? COL.violet : COL.gold });
+    for (let bar = 13; bar < 50; bar += 3) for (const sd of [-1, 1]) ads.push({ x: sd * 7.4, y: 10.25, z: -(bar * GR.BAR + GR.BAR * 0.55) * ZS + 1.68, ry: 0, w: 13.6, h: 1.55, cell: (bar + (sd > 0 ? 4 : 0)) % 16 });
     const meshes = {}; for (const k in L) if (L[k].length) meshes[k] = scen(k, L[k]);
     detail = [[meshes.crowd, L.crowd.length], [meshes.debris, L.debris.length], [meshes.escape, L.escape.length]];
     // hanging signs: Hush propaganda on the street towers, flipped to a liberated slogan at the drop
@@ -247,7 +282,7 @@
     const tex = new T.CanvasTexture(cv); tex.colorSpace = T.SRGBColorSpace; tex.anisotropy = 4;
     const pg = new T.PlaneGeometry(9, 2.25), cell = new Float32Array(signs.length); signs.forEach((q, i) => { cell[i] = q.cell; }); pg.setAttribute('aCell', new T.InstancedBufferAttribute(cell, 1));
     billboards = new T.InstancedMesh(pg, new T.ShaderMaterial({
-      side: T.DoubleSide, uniforms: Object.assign({ tMap: { value: tex } }, UF, { uFogR: { value: new T.Vector2(30, 92) } }), defines: { ZS: ZS.toFixed(2) },
+      side: T.DoubleSide, uniforms: Object.assign({ tMap: { value: tex } }, UF, { uFogR: { value: fogR(30, 92) } }), defines: { ZS: ZS.toFixed(2) },
       vertexShader: `attribute float aCell; uniform float uOC, uS; varying vec2 vU; varying vec3 vW; void main(){ vU = vec2(uv.x, (5. - (aCell + step(.5, uOC) * 3.) + uv.y) / 6.); vec4 w = modelMatrix * instanceMatrix * vec4(position, 1.); w.z += uS * ZS; vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }`,
       fragmentShader: `uniform sampler2D tMap; uniform vec3 uFog; uniform vec2 uFogR; uniform float uPulse, uOC, uCharge; varying vec2 vU; varying vec3 vW;
         void main(){ vec3 c = texture2D(tMap, vU).rgb * (1. + .5 * uPulse + 1.2 * uCharge * uOC); gl_FragColor = vec4(mix(c, uFog, smoothstep(uFogR.x, uFogR.y, length(cameraPosition - vW))), 1.); }`
@@ -267,7 +302,7 @@
     });
     const htex = new T.CanvasTexture(hc); htex.colorSpace = T.SRGBColorSpace; htex.anisotropy = 4;
     const adMat = new T.ShaderMaterial({
-      side: T.DoubleSide, uniforms: Object.assign({ tMap: { value: htex } }, UF, { uFogR: { value: new T.Vector2(24, 88) } }), defines: { ZS: ZS.toFixed(2) },
+      side: T.DoubleSide, uniforms: Object.assign({ tMap: { value: htex } }, UF, { uFogR: { value: fogR(24, 88) } }), defines: { ZS: ZS.toFixed(2) },
       vertexShader: `attribute float aCell; uniform float uS; varying vec2 vU; varying vec3 vW; varying float vC;
         void main(){ vC = aCell; vec2 q = aCell < 15.5 ? vec2(mod(aCell, 2.) * .5 + uv.x * .5, 1. - (floor(aCell * .5) + 1.) * .09375 + uv.y * .09375) : vec2((aCell - 16. + uv.x) * .125, uv.y * .25); vU = q;
           vec4 w = modelMatrix * instanceMatrix * vec4(position, 1.); w.z += uS * ZS; vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }`,
@@ -301,7 +336,7 @@
     const traffic = new T.LineSegments(fg, new T.ShaderMaterial({
       transparent: true, depthWrite: false, blending: T.AdditiveBlending, uniforms: UF,
       vertexShader: `attribute float aE, aK; uniform float uT; varying float vK; void main(){ vK = aK; vec3 p = position; float dir = aK > .5 ? 1. : -1.; p.x = dir * (mod(aK * 400. + uT * (9. + aK * 7.), 240.) - 120.) + aE * 2.6; gl_Position = projectionMatrix * viewMatrix * vec4(p, 1.); }`,
-      fragmentShader: `uniform float uOC; varying float vK; void main(){ gl_FragColor = vec4(mix(vec3(.26, .11, 1.), vec3(1., .46, .06), step(.5, fract(vK * 5.))) * (.55 + .4 * uOC), 1.); }`
+      fragmentShader: `uniform float uOC; uniform vec3 uA, uB; varying float vK; void main(){ gl_FragColor = vec4(mix(uA, uB, step(.5, fract(vK * 5.))) * (.55 + .4 * uOC), 1.); }`
     })); traffic.frustumCulled = false; scene.add(traffic);
     // light streaks rushing past: moved in the shader, so they cost nothing per frame
     const n = 150, pos = new Float32Array(n * 6), az = new Float32Array(n * 2), ae = new Float32Array(n * 2);
@@ -310,7 +345,7 @@
     const st = new T.LineSegments(lg, new T.ShaderMaterial({
       transparent: true, depthWrite: false, blending: T.AdditiveBlending, uniforms: UF, defines: { ZS: ZS.toFixed(2) },
       vertexShader: `attribute float aZ, aE; uniform float uT; varying float vA; void main(){ float z = mod(aZ + uT * ZS * 1.5, 90.) - 76. - aE * 2.8; vA = smoothstep(-76., -44., z) * .55; gl_Position = projectionMatrix * viewMatrix * vec4(position.xy, z, 1.); }`,
-      fragmentShader: `uniform float uOC; varying float vA; void main(){ gl_FragColor = vec4(mix(vec3(.3, .14, 1.), vec3(1., .46, .06), uOC) * vA, 1.); }`
+      fragmentShader: `uniform float uOC; uniform vec3 uA, uB; varying float vA; void main(){ gl_FragColor = vec4(mix(uA * 1.15, uB, uOC) * vA, 1.); }`
     }));
     st.frustumCulled = false; scene.add(st);
   }
@@ -348,7 +383,7 @@
     rtA = new T.WebGLRenderTarget(pw >> 2, ph >> 2, opt); rtB = new T.WebGLRenderTarget(pw >> 2, ph >> 2, opt);
     mats.blackout = mats.blackout || new T.DataTexture(new Uint8Array(4), 1, 1); mats.blackout.needsUpdate = true;
   }
-  function setQuality(q) { R.quality = q; if (rain) { rain.geometry.setDrawRange(0, q === 2 ? 840 : q === 1 ? 460 : 160); steam.visible = q > 0; for (const [m, n] of detail) if (m) m.count = q === 0 ? n >> 1 : n; } DPR = Math.min(window.devicePixelRatio || 1, q === 2 ? 2 : q === 1 ? 1.25 : 1); renderer.setPixelRatio(DPR); renderer.setSize(W, H, false); makeTargets(); }
+  function setQuality(q) { R.quality = q; if (rain) { rain.geometry.setDrawRange(0, Math.round((q === 2 ? 840 : q === 1 ? 460 : 160) * rainK / 2) * 2); steam.visible = q > 0; for (const [m, n] of detail) if (m) m.count = q === 0 ? n >> 1 : n; } DPR = Math.min(window.devicePixelRatio || 1, q === 2 ? 2 : q === 1 ? 1.25 : 1); renderer.setPixelRatio(DPR); renderer.setSize(W, H, false); makeTargets(); }
 
   // ---------- public ----------
   R.init = function (canvas) {
@@ -361,8 +396,11 @@
     cam = new T.PerspectiveCamera(55, 1, 0.1, 900);
     buildSky(); buildRoad(); buildCity(); buildFx(); buildPost();
     runners = inst(runnerGeo(), 240); picks = inst(runnerGeo(), 16); drones = inst(droneGeo(), 40); swarm = inst(swarmGeo(), 1000); bikers = inst(bikerGeo(), 12); crate = inst(crateGeo(), 2); boss = inst(bossGeo(), 1); arches = inst(archGeo(), 4);
+    BM = { enforcer: boss, carrier: inst(carrierGeo(), 1), warden: inst(wardenGeo(), 1), echo: inst(echoGeo(), 3), vale: inst(valeGeo(), 1) }; BMS = Object.values(BM); pods = inst(podGeo(), 2); orbs = inst(orbGeo(), 12); mirror = inst(mirrorGeo(), 1);
+    const hg = new T.PlaneGeometry(1, 1); hg.rotateX(-Math.PI / 2);
+    for (let i = 0; i < 4; i++) { const m = new T.Mesh(hg, new T.MeshBasicMaterial({ transparent: true, blending: T.AdditiveBlending, depthWrite: false, fog: false })); m.visible = false; m.frustumCulled = false; m.position.y = 0.06; scene.add(m); hazQ.push(m); }
     const railG = merge([box(0.1, 0.1, 110, 0, 0, 0, COL.white, 1)]); rails = inst(railG, 2);
-    [runners, picks, drones, swarm, bikers, crate, boss, arches, rails].forEach(o => scene.add(o));
+    [runners, picks, drones, swarm, bikers, crate, arches, rails, pods, orbs, mirror].concat(BMS).forEach(o => scene.add(o));
     R.ok = true; return true;
   };
   R.resize = function (w, h) {
@@ -386,6 +424,15 @@
     for (const [bw, bh, x, y] of [[w + 0.14, 0.14, 0, h + 0.2], [w + 0.14, 0.14, 0, 0.2], [0.14, h, -w / 2, h / 2 + 0.2], [0.14, h, w / 2, h / 2 + 0.2]]) { const b = new T.Mesh(new T.BoxGeometry(bw, bh, 0.14), frame); b.position.set(x, y, 0); grp.add(b); }
     grp.position.x = side * RW * 0.52; return grp;
   }
+  // a street's look. Only uniforms and colours change, so swapping levels costs nothing
+  R.setLevel = function (def) {
+    if (!R.ok) return; const P = PALS[def.pal] || PALS.market;
+    FOG.set(P.fog); P.tone.forEach((c, i) => TONE[i].set(c)); UF.uA.value.set(...P.a); UF.uB.value.set(...P.b); ARCH0.set(P.arch[0]); ARCH1.set(P.arch[1]); UF.uFar.value = P.far; UF.uBeat.value = GR.B * ZS;
+    for (const [v, a, b] of FOGR) v.set(a * P.haze, b * P.haze);
+    rainK = P.rain; setQuality(R.quality); R.pal = def.pal;
+  };
+  // a fight can last 20 seconds, too far to see through the fog, so a boss looms at this distance and closes in at the end. Draw only: the engine keeps the true distance
+  R.bossZ = z => Math.min(z, 3.5);
   R.setRun = function (G, text, note) { R.gates(G, text, note); parts = []; bolts = []; blasts = []; };
   R.gates = function (G, text, note) {
     if (!R.ok) return;
@@ -468,18 +515,32 @@
     begin(rails); for (const s of [-1, 1]) put(rails, s * RW * 1.05, 0.12, -38, 1, 0, 0, COL.cyan, 0.45 + UF.uPulse.value * 0.4); end(rails);
   }
   function drawEnts(G, t, oc) {
-    [picks, drones, swarm, bikers, crate, boss].forEach(begin);
+    const LIST = [picks, drones, swarm, bikers, crate, pods, orbs, mirror].concat(BMS); LIST.forEach(begin);
+    let hi = 0; const zone = (h, k) => { if (hi >= hazQ.length) return; const m = hazQ[hi++], x0 = Math.max(-1, h.x0), x1 = Math.min(1, h.x1); m.visible = true; m.position.set(wx((x0 + x1) / 2), 0.06, -14); m.scale.set((x1 - x0) * RW, 1, 34); m.material.color.set(h.style === 'beam' ? COL.bone : h.style === 'wave' ? COL.violet : COL.red).multiplyScalar(k); };
+    for (const h of G.live) zone(h, 0.9);
     for (let i = G.ei; i < G.ents.length; i++) {
-      const e = G.ents[i], z = e.ta - G.t; if (z > GR.BOSS_RANGE + 0.2) break; if (e.done || (z > AHEAD && e.kind !== 'boss')) continue;
+      const e = G.ents[i], z = e.ta - G.t; if (z > GR.BOSS_RANGE + 0.2) break;
+      if (e.kind === 'haz') { if (!e.done && z < e.warn && !G.bossKilled) zone(e, (0.25 + 0.75 * (1 - z / e.warn)) * (0.7 + 0.3 * Math.sin(t * 22))); continue; }
+      if (e.done || (z > AHEAD && e.kind !== 'boss' && e.kind !== 'pod')) continue;
       const x = wx(e.x), wZ = wz(z);
       if (e.kind === 'runner') put(picks, x, Math.abs(Math.sin(t * 5 + e.id)) * 0.2, wZ, 1.4, Math.PI + t * 2, 0, COL.cyan, 1.3);
       else if (e.kind === 'drone') put(drones, x, 1.1 + Math.sin(t * 5 + e.id) * 0.16, wZ, 1, Math.sin(t * 2 + e.id) * 0.3, 0, e.hp < e.maxHp ? bone : COL.pink, e.hp < e.maxHp ? 1.5 : 1);
       else if (e.kind === 'swarm') { if (swarm.count < 1000) put(swarm, x, 0.55 + Math.sin(t * 9 + e.id) * 0.1, wZ, 1, 0, Math.sin(t * 3 + e.id) * 0.22, e.hp < e.maxHp ? bone : COL.pink, e.hp < e.maxHp ? 1.3 : 0.62); }
       else if (e.kind === 'biker') put(bikers, x, 0, wZ, 1.15, 0, Math.sin(t * 7 + e.id) * 0.08, e.hp < e.maxHp * 0.5 ? COL.gold : COL.red, 1);
       else if (e.kind === 'crate') put(crate, x, 0.25 + Math.sin(t * 4) * 0.1, wZ, 1.1, t * 1.4, 0, COL.gold, 1 + UF.uPulse.value * 0.6);
-      else if (e.kind === 'boss') { if (e.hp < bossHp) bossHit = 1; bossHp = e.hp; bossHit *= 0.82; put(boss, 0, Math.abs(Math.sin(t * 3.2)) * 0.25, wZ, 1.5, 0, 0, bossHit > 0.3 ? '#FFD0EC' : COL.white, 1 + UF.uPulse.value * 0.3 + bossHit * 1.6); }
+      else if (e.kind === 'orb') { if (!G.bossKilled) put(orbs, x, 1 + Math.sin(t * 6 + e.id) * 0.12, wZ, 1.15, t * 2, 0, e.gold ? COL.gold : COL.red, 1.6); }
+      else if (e.kind === 'pod') put(pods, x, 3.4, wz(R.bossZ(z)) + 2.1, 1.25, 0, 0, e.hp < e.maxHp ? COL.gold : COL.pink, 1 + UF.uPulse.value * 0.5);
+      else if (e.kind === 'boss') {
+        if (e.hp < bossHp) bossHit = 1; bossHp = e.hp; bossHit *= 0.82;
+        const m = BM[e.boss] || boss, bz = wz(R.bossZ(z)), bob = Math.abs(Math.sin(t * 3.2)) * 0.25, armored = e.armor, tint = armored ? '#7C86B0' : bossHit > 0.3 ? '#FFD0EC' : COL.white, glow = armored ? 0.8 : 1 + UF.uPulse.value * 0.3 + bossHit * 1.6;
+        if (e.boss === 'echo') e.lanes.forEach((lx, i) => { const real = lx === e.x; put(m, wx(lx), 0.3 + bob, bz, 1.5, 0, 0, real ? COL.pink2 : COL.violet, real ? 0.32 + UF.uPulse.value * 1.2 + bossHit * 0.6 : 0.2); });
+        else if (e.boss === 'carrier') put(m, 0, 1.1 + bob, bz, 1.5, 0, 0, tint, glow);
+        else put(m, 0, bob, bz, e.boss === 'vale' ? 1.3 : 1.5, 0, 0, tint, glow);
+        if (e.boss === 'warden') { const st = G.st, flick = st.warn ? 0.2 + 0.5 * Math.abs(Math.sin(t * 16)) : 0.42; put(mirror, st.side * RW * 0.62, 0, bz + 2.4, 1.3, 0, 0, '#CFE8FF', flick); }
+      }
     }
-    [picks, drones, swarm, bikers, crate, boss].forEach(end);
+    LIST.forEach(end);
+    for (let i = hi; i < hazQ.length; i++) hazQ[i].visible = false;
     // the next gate splits the road: your side lights up and the other dims, flipping as you cross the middle
     let split = null; const side = G.sx < 0 ? -1 : 1;
     for (const g of gates) {
@@ -543,7 +604,7 @@
     R.t = t; const oc = !!o.oc;
     UF.uS.value = G ? t : t % 50;
     if (rain) rain.visible = !o.reduced;
-    const tone = G ? (G.t < 12 * GR.BAR ? TONE[0] : G.t < 20 * GR.BAR ? TONE[1] : G.t < 28 * GR.BAR ? TONE[2] : TONE[0]) : TONE[0]; FOG.lerp(tone, 0.02);
+    const tone = G ? (G.t < 12 * GR.BAR ? TONE[0] : G.t < GR.DROP_T ? TONE[1] : G.t < GR.DROP_END ? TONE[2] : TONE[0]) : TONE[0]; FOG.lerp(tone, 0.02);
     UF.uCharge.value += ((G ? (G.oc.on || G.oc.done ? 1 : G.meter / 100) : 0.45) - UF.uCharge.value) * 0.05;
     if (oc && !o.reduced) { const b = Math.floor(t / GR.B); if (b !== lastBeat) { lastBeat = b; const s = b % 2 ? 1 : -1; R.burst(s * (2.6 + Math.random() * 1.2), 2.2 + Math.random() * 2, [COL.pink, COL.cyan, COL.gold, COL.green][b % 4], 34, 11, 14 + Math.random() * 6); } }
     UF.uT.value = t; UF.uPulse.value = o.pulse; UF.uOC.value += ((oc ? 1 : 0) - UF.uOC.value) * 0.08;
@@ -552,7 +613,7 @@
     punch *= 0.9; if (punch < 0.02) punch = 0; cam.fov = baseFov + punch; cam.updateProjectionMatrix();
     look.set(wx(sx) * 0.15, aspect > 1 ? 4.2 : 2.2, -11); cam.lookAt(look); cam.updateMatrixWorld();
     drawCity(t);
-    if (G) { R.motion = !o.reduced; drawEnts(G, t, oc); } else { [picks, drones, swarm, bikers, crate, boss, runners].forEach(begin); for (const q of gates) q.grp.visible = false; road.material.uniforms.uSqR.value = 0; road.material.uniforms.uSq.value.set(0, 900); }
+    if (G) { R.motion = !o.reduced; drawEnts(G, t, oc); } else { [picks, drones, swarm, bikers, crate, runners, pods, orbs, mirror].concat(BMS).forEach(begin); for (const q of hazQ) q.visible = false; for (const q of gates) q.grp.visible = false; road.material.uniforms.uSqR.value = 0; road.material.uniforms.uSq.value.set(0, 900); }
     drawFx(t); drawShocks(t);
     renderer.setRenderTarget(rtS); renderer.clear(); renderer.render(scene, cam);
     mats.out.uniforms.tS.value = rtS.texture;

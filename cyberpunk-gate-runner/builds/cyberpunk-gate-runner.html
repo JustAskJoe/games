@@ -71,6 +71,8 @@ textarea{min-height:80px} input.tx{min-height:44px;margin-top:8px}
 .mark{position:fixed;left:calc(8px + var(--sal));bottom:calc(4px + var(--sab));font-size:10px;color:rgba(242,239,230,.45);z-index:30;pointer-events:none}
 .gun{border-top:1px solid var(--line);padding:10px 0}.gun .gn{font-weight:700;font-size:16px;margin-bottom:2px}.gun p{margin:0 0 4px;font-size:14px}.ups{font-size:13px;color:var(--mute);line-height:1.45}.ups b{color:#fff}
 .gl{list-style:none;padding:0;margin:0 0 12px;font-size:14px;line-height:1.45;color:var(--mute)}.gl li{padding:7px 0;border-top:1px solid var(--line)}.gl b{display:block}
+.lv{display:flex;flex-direction:column;align-items:flex-start;width:100%;min-height:58px;padding:9px 14px;border-radius:14px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);font:700 16px 'Space Grotesk',system-ui,sans-serif;margin-top:8px;cursor:pointer;text-align:left}.lv small{font-weight:500;font-size:12px;color:var(--mute);margin-top:2px}.lv[disabled]{opacity:.45;cursor:default}.lv:focus-visible{outline:3px solid var(--cyan);outline-offset:2px}.lv .ok{color:var(--green)}
+#bossBar.armored #bossFill{background:linear-gradient(90deg,#6E7AA8,#AEB8D8)}
 .foot{font-size:11px;color:var(--dim);margin-top:14px;text-align:center}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 @media (max-width:340px){ .card{padding:16px} .card h1{font-size:32px} .big{font-size:52px} .stat b{font-size:17px} #hudL{max-width:52vw} }
@@ -82,7 +84,7 @@ textarea{min-height:80px} input.tx{min-height:44px;margin-top:8px}
   <canvas id="cv" aria-hidden="true"></canvas>
   <div class="hud" id="hudL"><div class="a" id="secName">Night Market</div><div class="b" id="secHint">Slide to grab runners</div></div>
   <div class="hud" id="hudR"><div class="n"><span id="squadN">3</span><small>squad</small></div><div class="oc" id="ocLbl">OVERCLOCK</div><div class="bar"><i id="ocBar"></i></div><div class="w" id="wpn">Pulse rifle</div></div>
-  <div id="bossBar" hidden><div class="t"><span>HUSH ENFORCER</span><b id="bossPct">100%</b></div><div class="track"><i id="bossTrail"></i><i id="bossFill"></i></div></div>
+  <div id="bossBar" hidden><div class="t"><span id="bossName">HUSH ENFORCER</span><b id="bossPct">100%</b></div><div class="track"><i id="bossTrail"></i><i id="bossFill"></i></div></div>
   <button id="muteBtn" type="button" aria-label="Music on" aria-pressed="false">♪</button>
   <button id="menuBtn" type="button" aria-label="Pause menu">≡</button>
   <p class="sr" id="live" aria-live="polite"></p>
@@ -101,20 +103,14 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
 </script>
 <script>
 /* Cyberpunk Gate Runner, Prototype 2: pure engine (no DOM). window.GR in the browser, module.exports in node.
-   One street, one 32-bar house loop at 122 BPM. Everything is placed on the beat grid, so gates, enemies and
-   the boss arrive on the music. Every player action goes through act(G, intent); hash(G) checksums a run.
+   Levels come from data: LEVELS holds the hand-tuned streets and levelDef(n) scales past them. Everything is placed on
+   the beat grid, so gates, enemies and the boss arrive on the music. newGame() sets the tempo and song shape for its level,
+   so run one game at a time. Every player action goes through act(G, intent); hash(G) checksums a run.
    © 2026 justaskjoe. All rights reserved. */
 (function (root) {
-  const BPM = 122, B = 60 / BPM, BAR = 4 * B, DT = 1 / 60;
-  const SEC = [ // bars
-    { id: 'intro', name: 'Night Market', hint: 'Slide to grab runners', b0: 0, b1: 4 },
-    { id: 'build', name: 'The build', hint: 'Steer left or right of the line to pick a gate', b0: 4, b1: 12 },
-    { id: 'riser', name: 'The riser', hint: 'Every gate fills Overclock: more damage at the drop', b0: 12, b1: 20 },
-    { id: 'drop', name: 'THE DROP', hint: 'Overclock! Melt the boss', b0: 20, b1: 28 },
-    { id: 'outro', name: 'Cash out', hint: 'Street cleared', b0: 28, b1: 31 }
-  ];
-  const END = 31 * BAR, DROP_T = 20 * BAR, DROP_END = 28 * BAR;
-  const RANGE = 1.7, BOSS_RANGE = 4 * BAR;            // seconds ahead the squad can shoot
+  const DT = 1 / 60, DROP_BAR = 20;   // every street reaches the drop on bar 20; what follows comes from its level
+  let BPM = 122, B = 60 / BPM, BAR = 4 * B, SEC = [], END = 0, DROP_T = 0, DROP_END = 0, BOSS_RANGE = 0;
+  const RANGE = 1.7;            // seconds ahead the squad can shoot (BOSS_RANGE is the boss fight, set per level)
   const AIM = 0.22;             // aim cone half-width (road units, road is -1..1)
   const SPEED = 2.6;            // squad steer speed (road units / s)
   const KIND = {
@@ -122,7 +118,44 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     drone: { hp: 12, bite: 3, w: 0.11, credits: 1 },
     biker: { hp: 110, bite: 9, w: 0.14, credits: 3, drift: 0.32 },
     crate: { hp: 30, bite: 0, w: 0.13, credits: 10 },
-    boss: { hp: 24500, bite: 0, w: 0.42, credits: 60 }
+    pod: { hp: 1, bite: 0, w: 0.08, credits: 5, far: true },
+    boss: { hp: 24500, bite: 0, w: 0.42, credits: 60, far: true }
+  };
+
+  // ================= the level table: add a street here and most of the game follows =================
+  // start [min, max]: the carried squad is clamped to this, so a great clear can't snowball and a poor one can't brick the next level.
+  // gates scale the gate pools, hp / bite / dens scale the street, walls is [bar, rows, across], boss is the fight (see BOSS), fight is its length
+  // in bars and drop the length of the drop. pal and track name a look in render.js and a song in ui.js.
+  const W0 = [[5, 4, 6], [7, 4, 7], [9, 6, 8], [11, 6, 9], [13, 8, 10], [15, 8, 11], [17, 10, 12], [19, 12, 13]];   // the road up to the drop
+  const LEVELS = [
+    { name: 'Night Market', bpm: 122, track: 'neon', pal: 'market', start: [3, 3], wlvCap: 2, fight: 4, drop: 8,
+      gates: { add: 0.4, mul: 1.25, trade: 1.5 }, hp: 0.5, bite: 0.6, dens: 0.8, walls: W0.concat([[20, 22, 18], [22, 22, 18]]),
+      boss: { id: 'enforcer', hp: 8750, contact: 60, loss: 0.15, slams: [1, 2, 3] } },
+  ];
+  const MAX_LEVEL = 1;   // the last street the game offers. levelDef() already makes streets past the table: raise this to open them
+  // past the table the streets cycle: same boss, look and song order, a key shift, and every number scaled by how far past the table you are
+  function levelDef(n) {
+    const i = n - 1; if (i < LEVELS.length) return Object.assign({ n }, LEVELS[i]);
+    const N = LEVELS.length, top = LEVELS[N - 1], base = LEVELS[i % N], k = n - N, up = Math.pow(1.16, k), lap = Math.floor(i / N) + 1, ROMAN = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
+    return Object.assign({}, base, { n, name: base.name + ' ' + (ROMAN[lap] || lap), transpose: (k * 2) % 7, start: top.start.map(v => Math.round(v * Math.pow(1.1, k))), wlvCap: top.wlvCap + k,
+      gates: top.gates, hp: top.hp * up, bite: Math.min(3, top.bite * Math.pow(1.05, k)), boss: Object.assign({}, base.boss, { hp: top.boss.hp * Math.pow(1.2, k), podHp: base.boss.podHp ? base.boss.podHp * up : undefined }) });
+  }
+  function setLevel(def) {
+    BPM = def.bpm; B = 60 / BPM; BAR = 4 * B; const db = DROP_BAR, de = db + def.drop;
+    SEC = [{ id: 'intro', name: def.name, hint: 'Slide to grab runners', b0: 0, b1: 4 }, { id: 'build', name: 'The build', hint: 'Steer left or right of the line to pick a gate', b0: 4, b1: 12 },
+      { id: 'riser', name: 'The riser', hint: 'Every gate fills Overclock: more damage at the drop', b0: 12, b1: db }, { id: 'drop', name: 'THE DROP', hint: BOSS[def.boss.id].tip, b0: db, b1: de }, { id: 'outro', name: 'Cash out', hint: 'Street cleared', b0: de, b1: de + 3 }];
+    END = (de + 3) * BAR; DROP_T = db * BAR; DROP_END = de * BAR; BOSS_RANGE = def.fight * BAR;
+    Object.assign(GR, { BPM, B, BAR, SEC, END, DROP_T, DROP_END, BOSS_RANGE, level: def });
+  }
+
+  // ================= the bosses: one script each. setup places its attacks on the beat grid, tick runs every step, hit decides what a shot does =================
+  // every boss is learned by reading something on the road. A hazard is an entity with a warning: x0..x1 is the part of the road it covers
+  const sideOf = G => G.sx < 0 ? -1 : 1;
+  const hurt = (G, frac, type) => { const lost = Math.max(1, Math.ceil(G.n * frac)); G.n = Math.max(0, G.n - lost); G.ev.push({ type: type || 'hurt', t: G.t, lost, x: G.sx }); };
+  const BOSS = {
+    // dodge: a fist comes down on one half of the road, and that half glows first
+    enforcer: { name: 'HUSH ENFORCER', tip: 'Dodge the glowing side. Melt the boss', lose: 'Step off the glowing side before the fist lands, and build Overclock for the drop.', win: 'The Enforcer melted on the drop.',
+      setup(S, b) { for (const k of b.slams) { const s = S.r() < 0.5 ? -1 : 1; S.add('haz', S.at(DROP_BAR + k, 0), 0, { x0: s < 0 ? -1 : 0, x1: s < 0 ? 0 : 1, warn: 1.1, loss: b.loss, style: 'slam' }); } } },
   };
   // one gate every 2 bars from bar 4 to 18. Each run deals the slots from these pools (seeded), so two different kinds
   // always face each other: +N beats x1.5 while the squad is small, fire rate beats both once it's big, Overclock trades
@@ -133,11 +166,12 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     late: [{ op: 'add', v: 30 }, { op: 'add', v: 40 }, { op: 'mul', v: 1.5 }, { op: 'rate', v: 0.25 }, { op: 'rate', v: 0.5 }, { op: 'oc', v: 30 }, { op: 'trade', lose: 10, v: 2 }]
   };
   const SLOTS = ['early', 'early', 'mid', 'weapon', 'mid', 'late', 'mod', 'late'];
-  function dealGates(r) {
+  function dealGates(r, def) {
+    const scale = g => g.op === 'add' ? Object.assign({}, g, { v: Math.max(1, Math.round(g.v * def.gates.add)) }) : g.op === 'mul' ? Object.assign({}, g, { v: def.gates.mul }) : g.op === 'trade' ? Object.assign({}, g, { lose: Math.max(1, Math.round(g.lose * def.gates.add)), v: def.gates.trade }) : g;
     return SLOTS.map(s => {
       if (s === 'weapon') return [{ op: 'weapon' }, { op: 'weapon' }];         // your one gun choice this run
       if (s === 'mod') return [{ op: 'mod', k: 0 }, { op: 'mod', k: 1 }];      // two ways to build that gun
-      const P = POOLS[s], grow = P.filter(g => g.op === 'add' || g.op === 'mul'), a = grow[Math.floor(r() * grow.length)], rest = P.filter(g => g.op !== a.op);
+      const P = POOLS[s].map(scale), grow = P.filter(g => g.op === 'add' || g.op === 'mul'), a = grow[Math.floor(r() * grow.length)], rest = P.filter(g => g.op !== a.op);
       return [a, rest[Math.floor(r() * rest.length)]];   // one side always grows the squad, so no deal is a dud
     });
   }
@@ -153,44 +187,53 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   const FINDS = ['arc', 'scatter', 'rail', 'rocket'], POWER = 0.3; // each weapon level adds 30% damage
   // a gun with its upgrade applied
   function gun(w, k) { const W = Object.assign({}, WEAPONS[w]), m = W.mods[k]; if (m) for (const f of ['mult', 'aim', 'pierce', 'splash', 'radius']) if (m[f]) W[f] = (W[f] || 0) + m[f]; return W; }
-  // [bar, rows, across]: 24 enemies early, up to 396 at the drop
-  const WALLS = [[5, 4, 6], [7, 4, 7], [9, 6, 8], [11, 6, 9], [13, 8, 10], [15, 8, 11], [17, 10, 12], [19, 12, 13], [20, 22, 18], [22, 22, 18]];
   const CHARGE = 10;            // Overclock % from any gate; charge gates add more, trades add none
 
   function rng(seed) { let s = (seed >>> 0) || 1; return () => { s ^= s << 13; s ^= s >>> 17; s ^= s << 5; return ((s >>> 0) % 1e9) / 1e9; }; }
 
-  function buildStreet(r) {
+  function buildStreet(r, def, ld) {
     const E = []; let id = 0;
     const at = (bar, beat) => (bar * 4 + beat) * B;
-    const add = (kind, ta, x, extra) => E.push(Object.assign({ id: id++, kind, ta, x, done: false }, KIND[kind] ? { hp: KIND[kind].hp, maxHp: KIND[kind].hp, w: KIND[kind].w } : {}, extra));
+    const add = (kind, ta, x, extra) => { const hp = KIND[kind] ? KIND[kind].hp * def.hp : 0, e = Object.assign({ id: id++, kind, ta, x, done: false }, KIND[kind] ? { hp, maxHp: hp, w: KIND[kind].w } : {}, extra); E.push(e); return e; };
     // intro: +1 runners zigzag on the beat (lesson 1: steer)
     const zz = [-0.5, 0, 0.5, 0, -0.5, 0.5, 0, -0.5, 0.5, 0];
     for (let i = 0; i < 10; i++) add('runner', at(1, 0) + i * B, zz[i], { w: 0.1 });
     // gates on the downbeat every 2 bars
-    const offer = FINDS.slice().sort(() => r() - 0.5); let oi = 0;
-    dealGates(r).forEach((pair, i) => { const sw = r() < 0.5, opts = pair.map(g => g.op === 'weapon' ? { op: 'weapon', w: offer[oi++ % offer.length] } : g); add('gate', at(4 + i * 2, 0), 0, { L: sw ? opts[1] : opts[0], R: sw ? opts[0] : opts[1] }); });
+    // once you carry a gun, the fork is keep it or switch, and guns you've owned come back with their upgrade
+    const offer = FINDS.slice().sort(() => r() - 0.5).filter(w => w !== ld.weapon); let oi = 0;
+    dealGates(r, def).forEach((pair, i) => { const keep = ld.weapon !== 'pulse', sw = r() < 0.5, opts = pair.map((g, k) => g.op !== 'weapon' ? g : keep && k === 0 ? { op: 'weapon', w: ld.weapon, keep: true } : { op: 'weapon', w: offer[oi++ % offer.length] }); add('gate', at(4 + i * 2, 0), 0, { L: sw ? opts[1] : opts[0], R: sw ? opts[0] : opts[1] }); });
     // horde walls fill the road on the odd bars, between gates. You carve a path; whatever's left reaches you.
     const wall = (bar, rows, across) => {
       for (let i = 0; i < rows; i++) for (let k = 0; k < across; k++) add('swarm', at(bar, 0) + i * 0.085, -0.92 + 1.84 * (k + 0.5) / across + (r() - 0.5) * 0.08);
     };
-    for (const [bar, rows, across] of WALLS) wall(bar, rows, across);
+    for (const [bar, rows, across] of def.walls) wall(bar, Math.max(1, Math.round(rows * def.dens)), across);
     // a few tough drones lead each wall
     for (let bar = 5; bar < 20; bar += 2) for (let k = 0; k < 2; k++) add('drone', at(bar, 2) + k * B / 2, r() * 1.4 - 0.7);
     // weapon crate (shoot it open) and bikers in the riser
     add('crate', at(13, 2), r() < 0.5 ? -0.55 : 0.55);
     for (const bar of [14, 15, 16, 17, 18, 19]) add('biker', at(bar, 3), r() * 1.4 - 0.7);
-    // the Enforcer appears on the drop and reaches you four bars later: an 8 second fight through the horde
-    add('boss', at(24, 0), 0);
-    return E.sort((a, b) => a.ta - b.ta);
+    // the boss appears on the drop and reaches you when the fight runs out
+    const S = { at, add, r, def }, b = def.boss, e = add('boss', at(DROP_BAR + def.fight, 0), 0, { hp: b.hp, maxHp: b.hp, boss: b.id });
+    if (BOSS[b.id].setup) BOSS[b.id].setup(S, b, e);
+    return E.sort((a, b) => a.ta - b.ta || a.id - b.id);
   }
 
   function newGame(o) {
     o = o || {};
-    const r = rng(o.seed || 1);
-    return { seed: o.seed || 1, t: 0, tick: 0, n: 3, sx: 0, tx: 0, rate: 1, weapon: 'pulse', mod: -1, wlv: 1,
-      meter: 0, oc: { on: false, done: false, mult: 1 }, ents: buildStreet(r), ei: 0, nextVolley: B / 2,
-      kills: 0, crates: 0, boss: null, bossKilled: false, gatesGood: 0, gatesBad: 0, peak: 3,
+    const def = o.def || levelDef(o.level || 1), ld = enter(def, o.loadout); setLevel(def);
+    const r = rng(o.seed || 1), ents = buildStreet(r, def, ld), boss = ents.find(e => e.kind === 'boss');
+    const G = { seed: o.seed || 1, def, t: 0, tick: 0, n: ld.n, sx: 0, tx: 0, rate: 1, weapon: ld.weapon, mod: ld.mod, wlv: ld.wlv, owned: Object.assign({}, ld.owned),
+      meter: 0, oc: { on: false, done: false, mult: 1 }, ents, ei: 0, nextVolley: B / 2, live: [], silenced: false,
+      kills: 0, crates: 0, boss, st: {}, bossKilled: false, gatesGood: 0, gatesBad: 0, peak: ld.n,
       over: false, won: false, ev: [], log: [] };
+    if (BOSS[def.boss.id].init) BOSS[def.boss.id].init(G, G.st, boss);
+    return G;
+  }
+  // what a run hands to the next level, and how a level takes it
+  function carryOut(G) { const owned = Object.assign({}, G.owned); if (G.weapon !== 'pulse') owned[G.weapon] = G.mod; return { n: G.n, weapon: G.weapon, mod: G.mod, wlv: G.wlv, owned }; }
+  function enter(def, ld) {
+    ld = ld || {}; const [lo, hi] = def.start;
+    return { n: Math.max(lo, Math.min(hi, ld.n || 0)), weapon: WEAPONS[ld.weapon] ? ld.weapon : 'pulse', mod: ld.mod == null ? -1 : ld.mod, wlv: Math.max(1, Math.min(def.wlvCap, ld.wlv || 1)), owned: ld.owned || {} };
   }
   const width = n => Math.min(0.42, 0.08 + Math.sqrt(Math.max(1, n)) * 0.03);
   const sectionAt = t => { const bar = t / BAR; for (const s of SEC) if (bar < s.b1) return s; return SEC[SEC.length - 1]; };
@@ -206,28 +249,34 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   function gateResult(G, g) {
     let n = G.n, rate = G.rate, c = CHARGE, weapon = G.weapon, wlv = G.wlv, mod = G.mod;
     if (g.op === 'add') n += g.v; else if (g.op === 'mul') n = Math.floor(n * g.v); else if (g.op === 'rate') rate += g.v;
-    else if (g.op === 'oc') c = g.v; else if (g.op === 'trade') { n = Math.max(0, n - g.lose) * g.v; c = 0; }
-    else if (g.op === 'weapon') weapon = g.w; else if (g.op === 'mod') mod = g.k;
+    else if (g.op === 'oc') c = g.v; else if (g.op === 'trade') { n = Math.floor(Math.max(0, n - g.lose) * g.v); c = 0; }
+    else if (g.op === 'weapon') { weapon = g.w; mod = G.owned[g.w] == null ? (g.w === G.weapon ? G.mod : -1) : G.owned[g.w]; } else if (g.op === 'mod') mod = g.k;
     return { n, rate, weapon, wlv, mod, meter: Math.min(100, G.meter + c) };
   }
   function applyGate(G, g) {
     const n0 = G.n, r = gateResult(G, g), good = g.op !== 'trade';
+    if (g.op === 'weapon' && G.weapon !== 'pulse') G.owned[G.weapon] = G.mod;
     G.n = r.n; G.rate = r.rate; G.weapon = r.weapon; G.mod = r.mod; if (G.t < DROP_T) G.meter = r.meter;
     if (good) G.gatesGood++; else G.gatesBad++;
     G.ev.push({ type: 'gate', t: G.t, g, good, n0, n: G.n });
-    if (g.op === 'weapon' || g.op === 'mod') G.ev.push({ type: 'weapon', t: G.t, w: G.weapon, lv: G.wlv, mod: g.op === 'mod' ? g.k : -1, pick: g.op === 'weapon' });
+    if (g.op === 'weapon' || g.op === 'mod') G.ev.push({ type: 'weapon', t: G.t, w: G.weapon, lv: G.wlv, mod: g.op === 'mod' ? g.k : -1, pick: g.op === 'weapon', keep: g.keep });
   }
 
   function volley(G) {
+    if (G.silenced) { G.ev.push({ type: 'volley', t: G.t, hits: [] }); return; }
     const W = gun(G.weapon, G.mod), sx = G.sx, aimW = AIM + W.aim + width(G.n) * 0.5;
     let pool = G.n * G.rate * W.mult * (1 + POWER * (G.wlv - 1)) * (G.oc.on ? G.oc.mult : 1), pierced = 0;
     const tg = [];
-    for (let i = G.ei; i < G.ents.length; i++) { const e = G.ents[i], dz = e.ta - G.t; if (dz >= BOSS_RANGE) break; if (e.kind !== 'boss' && dz >= RANGE) continue; if (!e.done && e.hp > 0 && KIND[e.kind] && dz > 0 && Math.abs(e.x - sx) < aimW + e.w) tg.push(e); }
+    for (let i = G.ei; i < G.ents.length; i++) { const e = G.ents[i], dz = e.ta - G.t; if (dz >= BOSS_RANGE) break; if (!(KIND[e.kind] && KIND[e.kind].far) && dz >= RANGE) continue; if (!e.done && e.hp > 0 && KIND[e.kind] && dz > 0 && Math.abs(e.x - sx) < aimW + e.w) tg.push(e); }
     if (W.pierce) tg.sort((p, q) => (q.kind === 'boss') - (p.kind === 'boss')); // a rail shot goes through the horde to the boss
     const hits = [];
     for (const e of tg) {
       if (pool <= 0) break;
       if (e.hp <= 0) continue; // already caught in a blast this volley
+      if (e.kind === 'boss') {
+        if (e.armor) { hits.push(e.id); G.ev.push({ type: 'blocked', t: G.t }); continue; }
+        const H = BOSS[e.boss].hit; if (H && !H(G, G.def.boss, e, G.st)) continue;
+      }
       const d = Math.min(pool, e.hp); e.hp -= d; hits.push(e.id);
       if (W.pierce) { if (++pierced >= W.pierce) pool = 0; } else pool -= d;
       if (W.splash) for (const o of tg) if (o !== e && o.hp > 0 && Math.abs(o.x - e.x) < W.radius && Math.abs(o.ta - e.ta) < 0.4) { o.hp -= d * W.splash; if (o.hp <= 0) kill(G, o); }
@@ -238,7 +287,8 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   function kill(G, e) {
     e.done = true; e.hp = 0;
     if (e.kind === 'crate') { G.crates++; G.wlv++; G.ev.push({ type: 'weapon', t: G.t, w: G.weapon, lv: G.wlv, mod: -1, x: e.x }); }
-    else if (e.kind === 'boss') { G.bossKilled = true; G.ev.push({ type: 'bossDown', t: G.t }); }
+    else if (e.kind === 'boss') { G.bossKilled = true; G.live = []; G.silenced = false; G.ev.push({ type: 'bossDown', t: G.t }); }
+    else if (e.kind === 'pod') { G.ev.push({ type: 'pod', t: G.t, x: e.x }); }
     else G.kills++;
     G.ev.push({ type: 'kill', t: G.t, kind: e.kind, x: e.x, id: e.id });
   }
@@ -248,10 +298,17 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     const w = width(G.n), hitX = Math.abs(e.x - G.sx) < w + (e.w || 0.08);
     if (e.kind === 'runner') { if (hitX) { G.n += 1; G.ev.push({ type: 'runner', t: G.t, x: e.x }); } return; }
     if (e.kind === 'gate') { applyGate(G, G.sx < 0 ? e.L : e.R); return; }
-    if (e.kind === 'crate') return; // missed the crate
+    if (e.kind === 'crate' || e.kind === 'pod') return; // missed the crate; pods go with the boss
+    if (e.kind === 'haz') { if (G.bossKilled) return; if (e.dur) G.live.push(e); else if (G.sx >= e.x0 && G.sx <= e.x1) hurt(G, e.loss); G.ev.push({ type: 'haz', t: G.t, style: e.style, x0: e.x0, x1: e.x1 }); return; }
+    if (e.kind === 'orb') {
+      if (G.bossKilled || !hitX) return;
+      if (!e.gold) { hurt(G, e.loss); return; }
+      const st = G.st, b = G.boss, def = G.def.boss; if (!b.armor) return;
+      G.ev.push({ type: 'orb', t: G.t, x: e.x }); if (--st.armor <= 0) { b.armor = false; st.until = G.t + def.open * BAR; G.ev.push({ type: 'armor', t: G.t, on: false }); } return;
+    }
     if (e.hp <= 0) return;
-    if (e.kind === 'boss') { const lost = Math.ceil(e.hp / 30); G.n = Math.max(0, G.n - lost); G.ev.push({ type: 'bossHit', t: G.t, lost }); return; }
-    if (hitX) { const lost = Math.max(1, Math.ceil(KIND[e.kind].bite * e.hp / e.maxHp)); G.n = Math.max(0, G.n - lost); G.ev.push({ type: 'hurt', t: G.t, lost, x: e.x }); }
+    if (e.kind === 'boss') { G.st.gone = true; for (const q of G.ents) if (q.kind === 'pod') q.done = true; const lost = Math.ceil(e.hp / G.def.boss.contact); G.n = Math.max(0, G.n - lost); G.ev.push({ type: 'bossHit', t: G.t, lost }); return; }
+    if (hitX) { const lost = Math.max(1, Math.ceil(KIND[e.kind].bite * G.def.bite * e.hp / e.maxHp)); G.n = Math.max(0, G.n - lost); G.ev.push({ type: 'hurt', t: G.t, lost, x: e.x }); }
   }
 
   function step(G) {
@@ -262,8 +319,13 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     // the drop
     if (!G.oc.on && !G.oc.done && G.t >= DROP_T) { G.oc.on = true; G.oc.mult = 1 + 2 * G.meter / 100; G.ev.push({ type: 'drop', t: G.t, mult: G.oc.mult, meter: G.meter }); }
     if (G.oc.on && G.t >= DROP_END) { G.oc.on = false; G.oc.done = true; G.ev.push({ type: 'ocEnd', t: G.t }); }
-    // bikers hunt the squad
-    for (let i = G.ei; i < G.ents.length; i++) { const e = G.ents[i]; if (e.ta - G.t > 2.6) break; if (e.kind !== 'biker' || e.done) continue; const dd = G.sx - e.x; e.x += Math.sign(dd) * Math.min(Math.abs(dd), KIND.biker.drift * DT); }
+    // bikers and diving drones hunt the squad
+    for (let i = G.ei; i < G.ents.length; i++) { const e = G.ents[i]; if (e.ta - G.t > 2.6) break; const dr = e.hunt || (e.kind === 'biker' && KIND.biker.drift); if (!dr || e.done) continue; const dd = G.sx - e.x; e.x += Math.sign(dd) * Math.min(Math.abs(dd), dr * DT); }
+    // the boss runs its script during the fight
+    const be = G.boss, BS = BOSS[be.boss];
+    if (!be.done && !G.st.gone && G.t >= DROP_T && BS.tick) BS.tick(G, G.def.boss, be, G.st);
+    if (G.live.length) G.live = G.live.filter(h => G.t < h.ta + h.dur);
+    G.silenced = G.live.some(h => G.sx >= h.x0 && G.sx <= h.x1);
     // volleys on every 8th note
     while (G.nextVolley <= G.t) { volley(G); G.nextVolley += B / 2; }
     while (G.ei < G.ents.length && G.ents[G.ei].ta <= G.t) { const e = G.ents[G.ei++]; if (!e.done) arrive(G, e); }
@@ -275,24 +337,41 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
 
   function results(G) {
     const credits = G.kills * 1 + G.crates * 10 + (G.bossKilled ? 60 : 0) + (G.won ? G.n : 0);
-    return { won: G.won, survivors: G.n, peak: G.peak, kills: G.kills, boss: G.bossKilled, weapon: G.weapon, mod: G.mod, wlv: G.wlv, crates: G.crates, meter: Math.round(G.meter), ocMult: Math.round(G.oc.mult * 100) / 100, gatesGood: G.gatesGood, gatesBad: G.gatesBad, credits, t: Math.round(G.t * 10) / 10, section: sectionAt(G.t).id };
+    return { level: G.def.n, won: G.won, cleared: G.won && G.bossKilled, survivors: G.n, peak: G.peak, kills: G.kills, boss: G.bossKilled, weapon: G.weapon, mod: G.mod, wlv: G.wlv, crates: G.crates, meter: Math.round(G.meter), ocMult: Math.round(G.oc.mult * 100) / 100, gatesGood: G.gatesGood, gatesBad: G.gatesBad, credits, t: Math.round(G.t * 10) / 10, section: sectionAt(G.t).id };
   }
   function hash(G) {
     let h = 2166136261 >>> 0; const mix = v => { h ^= (Math.round(v * 1000) | 0); h = Math.imul(h, 16777619) >>> 0; };
-    mix(G.t); mix(G.n); mix(G.sx); mix(G.rate); mix(G.meter); mix(G.kills); mix(G.wlv); mix(G.mod); for (const e of G.ents) mix(e.hp || 0);
+    mix(G.t); mix(G.n); mix(G.sx); mix(G.rate); mix(G.meter); mix(G.kills); mix(G.wlv); mix(G.mod); mix(G.def.n); for (const e of G.ents) mix(e.hp || 0);
     return h.toString(16);
   }
 
   // ---- bots, used by sim.js and the in-page tester ----
   function gateValue(G, g) { const r = gateResult(G, g), W = gun(r.weapon, r.mod); return r.n * r.rate * (1 + 2 * r.meter / 100) * W.mult * W.val * (1 + POWER * (r.wlv - 1)); }
+  // the counter to the boss on screen right now: where a player who has learned this fight wants to stand. null means nothing to do
+  function counter(G) {
+    const e = G.boss; if (GR.noCounter || e.done || G.st.gone || G.t < DROP_T - 0.5) return null;
+    const st = G.st, id = e.boss, inZone = h => G.sx >= h.x0 - 0.1 && G.sx <= h.x1 + 0.1;
+    let haz = null, orb = null;
+    for (let i = G.ei; i < G.ents.length; i++) { const q = G.ents[i], dz = q.ta - G.t; if (dz > 1.6) break; if (q.done) continue; if (q.kind === 'haz' && !haz && dz < 0.95) haz = q; if (q.kind === 'orb' && q.gold && !orb) orb = q; }
+    if (id === 'enforcer') return haz && inZone(haz) ? (haz.x0 < 0 ? 0.5 : -0.5) : null;
+    if (id === 'carrier') { if (!e.armor) return 0; const p = st.pods.filter(q => !q.done).sort((a, b) => Math.abs(a.x - G.sx) - Math.abs(b.x - G.sx))[0]; return p ? p.x * 0.8 : 0; }
+    if (id === 'warden') return (st.warn ? st.side : -st.side) * 0.5;
+    if (id === 'echo') return e.x;
+    if (id === 'vale') { for (const h of G.live) if (inZone(h)) return h.x0 < 0 ? 0.5 : -0.5; if (haz && inZone(haz)) return haz.x0 < 0 ? 0.5 : -0.5; if (orb && e.armor) return orb.x; return 0; }
+    return null;
+  }
   const BOTS = {
     smart: G => {
+      const c = counter(G); if (c != null) return c;
       const g = G.ents.find(e => !e.done && e.kind === 'gate' && z(G, e) < 1.6);
       if (g) return gateValue(G, g.L) >= gateValue(G, g.R) ? -0.5 : 0.5;
       const tg = G.ents.find(e => !e.done && (e.kind === 'crate' || e.kind === 'biker' || e.kind === 'drone' || e.kind === 'runner') && z(G, e) > 0.05 && z(G, e) < 2);
       return tg ? tg.x : 0;
     },
+    // a casual player has learned the fight but misses some of it: it re-decides once a bar whether it's paying attention
     casual: (G, r) => {
+      const bar = Math.floor(G.t / BAR); if (G._bar !== bar) { G._bar = bar; G._on = r() < SKILL; }
+      if (G._on) { const c = counter(G); if (c != null) return c; }
       const g = G.ents.find(e => !e.done && e.kind === 'gate' && z(G, e) < 1.2);
       if (g) { if (g._pick == null) g._pick = r() < 0.7 ? (gateValue(G, g.L) >= gateValue(G, g.R) ? -0.5 : 0.5) : (r() < 0.5 ? -0.5 : 0.5); return g._pick; }
       const tg = G.ents.find(e => !e.done && (e.kind === 'crate' || e.kind === 'biker' || e.kind === 'runner') && z(G, e) > 0.05 && z(G, e) < 1.4);
@@ -305,19 +384,36 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     },
     idle: () => 0.3
   };
-  function simulate(n, bot, seed) {
+  function playBot(o, bot) { const G = newGame(o), r = rng(G.seed * 31 + 5); let lag = 0; while (!G.over) { if (++lag % 6 === 0) act(G, { type: 'steer', x: BOTS[bot](G, r) }); step(G); } return G; }
+  function simulate(n, bot, seed, level, loadout) {
     const out = [];
-    for (let i = 0; i < n; i++) {
-      const G = newGame({ seed: (seed || 11) + i * 7919 }), r = rng(G.seed * 31 + 5);
-      let lag = 0;
-      while (!G.over) { if (++lag % 6 === 0) act(G, { type: 'steer', x: BOTS[bot](G, r) }); step(G); }
-      out.push(results(G));
-    }
+    for (let i = 0; i < n; i++) out.push(results(playBot({ seed: (seed || 11) + i * 7919, level: level || 1, loadout }, bot)));
     const avg = f => out.reduce((a, o) => a + f(o), 0) / out.length;
-    return { bot, runs: n, win: avg(o => o.won ? 1 : 0), boss: avg(o => o.boss ? 1 : 0), peak: Math.round(avg(o => o.peak)), survivors: Math.round(avg(o => o.survivors)), oc: Math.round(avg(o => o.ocMult) * 100) / 100, crate: avg(o => o.crates ? 1 : 0), credits: Math.round(avg(o => o.credits)), diedIn: out.filter(o => !o.won).reduce((m, o) => (m[o.section] = (m[o.section] || 0) + 1, m), {}) };
+    return { bot, runs: n, win: avg(o => o.won ? 1 : 0), cleared: avg(o => o.cleared ? 1 : 0), boss: avg(o => o.boss ? 1 : 0), peak: Math.round(avg(o => o.peak)), survivors: Math.round(avg(o => o.survivors)), oc: Math.round(avg(o => o.ocMult) * 100) / 100, crate: avg(o => o.crates ? 1 : 0), credits: Math.round(avg(o => o.credits)), diedIn: out.filter(o => !o.won).reduce((m, o) => (m[o.section] = (m[o.section] || 0) + 1, m), {}) };
   }
 
-  const GR = { BPM, B, BAR, DT, SEC, END, DROP_T, DROP_END, RANGE, KIND, width, sectionAt, BOSS_RANGE, WEAPONS, gun, newGame, gateResult, act, step, advance, results, hash, simulate, BOTS, rng };
+  // plays the whole campaign the way a player would: retry a street until it's beaten (or give up), carry what's left into the next one.
+  // Returns one row per level, so each level is judged against the squads bots really arrive with
+  function campaign(n, bot, seed, levels, tries) {
+    const rows = []; for (let L = 1; L <= (levels || MAX_LEVEL); L++) rows.push({ level: L, reached: 0, first: 0, beat: 0, tries: 0, entry: [], peak: [] });
+    for (let i = 0; i < n; i++) {
+      let ld = null;
+      for (let L = 1; L <= rows.length; L++) {
+        const row = rows[L - 1], def = levelDef(L); row.reached++; row.entry.push(enter(def, ld).n);
+        let done = null;
+        for (let k = 0; k < (tries || 12) && !done; k++) {
+          const G = playBot({ seed: (seed || 23) + i * 7919 + L * 104729 + k * 1299709, level: L, loadout: ld }, bot); row.tries++; row.peak.push(G.peak);
+          if (G.won && G.bossKilled) { done = G; if (k === 0) row.first++; }
+        }
+        if (!done) break;
+        row.beat++; ld = carryOut(done);
+      }
+    }
+    return rows;
+  }
+  const SKILL = 0.75;
+  const GR = { BPM, B, BAR, DT, SEC, END, DROP_T, DROP_END, DROP_BAR, RANGE, KIND, BOSS, LEVELS, MAX_LEVEL, levelDef, setLevel, carryOut, enter, counter, width, sectionAt, BOSS_RANGE, WEAPONS, gun, newGame, gateResult, act, step, advance, results, hash, simulate, campaign, BOTS, rng };
+  setLevel(levelDef(1));
   if (typeof module !== 'undefined' && module.exports) module.exports = GR; else root.GR = GR;
 })(typeof window !== 'undefined' ? window : globalThis);
 
@@ -335,7 +431,12 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   const R = { ok: false, quality: 2, locked: false, RW, ZS };
   const COL = { cyan: '#3DF0FF', pink: '#FF3DA8', pink2: '#FF7AD0', violet: '#8B5CFF', gold: '#FFB547', green: '#4BFFA5', red: '#FF4D6D', white: '#FFFFFF', steel: '#1B2148', ink: '#0B0E2C', plum: '#3A1050', bone: '#F2EFE6' };
   const FOG = new T.Color('#1C0B3E'), TONE = [new T.Color('#241038'), new T.Color('#160E44'), new T.Color('#2E1236')];   // market plum, canyon blue, the drop warm
-  const UF = { uFog: { value: FOG }, uFogR: { value: new T.Vector2(30, 60) }, uT: { value: 0 }, uPulse: { value: 0 }, uOC: { value: 0 }, uCharge: { value: 0 }, uS: { value: 0 } };
+  const UF = { uFog: { value: FOG }, uFogR: { value: new T.Vector2(30, 60) }, uT: { value: 0 }, uPulse: { value: 0 }, uOC: { value: 0 }, uCharge: { value: 0 }, uS: { value: 0 }, uA: { value: new T.Vector3(0.26, 0.11, 1) }, uB: { value: new T.Vector3(1, 0.46, 0.06) }, uFar: { value: 1 }, uBeat: { value: 4.9 } };
+  // each street's look, named by pal in the level table. fog, three tones for the song's sections, a and b are the city's two light colours (windows, sky,
+  // road accents), arch the street arches, far scales the skyline, rain thins the rain, haze pulls the fog closer. Nothing here rebuilds the city
+  const PALS = {
+    market: { fog: '#1C0B3E', tone: ['#241038', '#160E44', '#2E1236'], a: [0.26, 0.11, 1], b: [1, 0.46, 0.06], arch: [COL.violet, COL.gold], far: 1, rain: 1, haze: 1 },
+  };
 
   // ---------- geometry helpers: non-indexed parts merged into one mesh, with colour and glow per vertex ----------
   const M = (x, y, z, rx, ry, rz, sx, sy, sz) => new T.Matrix4().compose(new T.Vector3(x || 0, y || 0, z || 0), new T.Quaternion().setFromEuler(new T.Euler(rx || 0, ry || 0, rz || 0)), new T.Vector3(sx || 1, sy || sx || 1, sz || sx || 1));
@@ -428,22 +529,52 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       part(ring, COL.pink2, 1, M(0, 3.4, -0.9))
     ]);
   }
+  // Mute Carrier: a wide flying barge with a hull slot for each speaker pod and a pink core
+  function carrierGeo() {
+    const core = new T.CylinderGeometry(0.75, 0.75, 0.3, 14), ring = new T.TorusGeometry(1.15, 0.08, 5, 24);
+    return merge([box(6.4, 0.9, 2.6, 0, 3, 0, COL.violet), box(4.4, 0.6, 2, 0, 3.7, 0, COL.plum), box(6.8, 0.14, 2.8, 0, 2.5, 0, COL.pink, 1), box(6.8, 0.1, 2.8, 0, 3.5, 0, COL.pink2, 1), box(1.6, 1.3, 2, -2.6, 2.4, 0, COL.plum), box(1.6, 1.3, 2, 2.6, 2.4, 0, COL.plum), box(0.5, 0.5, 3.6, -1.6, 3.3, 0, COL.steel, 3), box(0.5, 0.5, 3.6, 1.6, 3.3, 0, COL.steel, 3), part(core, COL.pink, 1, M(0, 3, 1.4, Math.PI / 2)), part(ring, COL.pink2, 1, M(0, 3, 1.42))]);
+  }
+  function podGeo() {
+    const cone = new T.CylinderGeometry(0.72, 0.3, 0.5, 12), mag = new T.CylinderGeometry(0.26, 0.26, 0.2, 10), ring = new T.TorusGeometry(0.78, 0.06, 4, 18);
+    return merge([box(1.5, 1.5, 1, 0, 0, -0.3, COL.ink, 3), part(cone, COL.white, 0, M(0, 0, 0.35, -Math.PI / 2)), part(mag, COL.white, 1, M(0, 0, 0.55, Math.PI / 2)), part(ring, COL.white, 1, M(0, 0, 0.6))]);
+  }
+  // Mirror Warden: tall and thin, long legs, a narrow chest and one slit eye. The mirror is its own model so it can change sides
+  function wardenGeo() {
+    return merge([box(0.5, 4, 0.6, -0.8, 2, 0, COL.ink), box(0.5, 4, 0.6, 0.8, 2, 0, COL.ink), box(0.9, 0.3, 1.2, -0.8, 0.15, 0.1, COL.plum), box(0.9, 0.3, 1.2, 0.8, 0.15, 0.1, COL.plum), box(2.2, 3.4, 1, 0, 5.4, 0, COL.plum), box(2.5, 0.1, 1.1, 0, 3.9, 0, COL.pink, 1), box(1, 1.2, 0.9, 0, 7.8, 0, COL.ink), box(0.8, 0.12, 0.1, 0, 7.9, 0.48, COL.pink, 1), box(3, 0.5, 0.8, 0, 6.9, 0, COL.ink), box(0.14, 1.6, 0.14, 0, 9, 0, COL.pink, 1)]);
+  }
+  function mirrorGeo() {
+    return merge([box(2.5, 7.2, 0.2, 0, 3.8, 0, COL.white, 1), box(2.8, 0.2, 0.3, 0, 7.5, 0, COL.ink, 3), box(2.8, 0.2, 0.3, 0, 0.1, 0, COL.ink, 3), box(0.2, 7.6, 0.3, -1.35, 3.8, 0, COL.ink, 3), box(0.2, 7.6, 0.3, 1.35, 3.8, 0, COL.ink, 3)]);
+  }
+  // Echo: a hooded hologram with no legs, one thin ring around it
+  function echoGeo() {
+    const body = new T.ConeGeometry(1.5, 5.4, 6), head = new T.OctahedronGeometry(0.72, 0), ring = new T.TorusGeometry(1.9, 0.05, 4, 22);
+    return merge([part(body, COL.white, 1, M(0, 2.9, 0)), part(head, COL.white, 1, M(0, 6.2, 0)), part(ring, COL.white, 1, M(0, 3.4, 0, Math.PI / 2)), box(0.8, 0.1, 0.1, 0, 6.2, 0.62, COL.bone, 2)]);
+  }
+  // Director Vale: a slim figure on a floating stage, baton raised, with speaker stacks either side
+  function valeGeo() {
+    const arc = new T.TorusGeometry(3.6, 0.1, 5, 26, Math.PI);
+    return merge([box(7, 0.6, 3, 0, 0.9, 0, COL.ink), box(7.4, 0.1, 3.2, 0, 1.25, 0, COL.gold, 2), box(5, 0.1, 2.4, 0, 0.5, 0, COL.pink, 1), box(1.2, 3.6, 1.2, -3.1, 3, 0, COL.plum), box(1.2, 3.6, 1.2, 3.1, 3, 0, COL.plum), box(0.8, 0.8, 0.1, -3.1, 3.8, 0.62, COL.pink, 1), box(0.8, 0.8, 0.1, 3.1, 3.8, 0.62, COL.pink, 1),
+      box(0.4, 1.8, 0.4, -0.3, 2.2, 0, COL.ink), box(0.4, 1.8, 0.4, 0.3, 2.2, 0, COL.ink), box(1.4, 2.2, 0.8, 0, 4.1, 0, COL.bone, 3), box(0.5, 0.1, 0.1, 0, 5, 0.42, COL.pink, 1), box(0.7, 0.8, 0.7, 0, 5.6, 0, COL.ink), box(0.2, 1.6, 0.2, 1.1, 5.3, 0, COL.bone, 3, 0, 0, -0.7), box(0.05, 1.8, 0.05, 1.8, 6.6, 0, COL.white, 1, 0, 0, -0.5), part(arc, COL.pink2, 1, M(0, 3.2, -1))]);
+  }
+  function orbGeo() { const b = new T.SphereGeometry(0.42, 10, 8), r = new T.TorusGeometry(0.62, 0.04, 4, 14); return merge([part(b, COL.white, 1), part(r, COL.white, 1, M(0, 0, 0, Math.PI / 2))]); }
   function archGeo() {
     const w = RW * 1.32, h = 8;
     return merge([box(0.3, h, 0.3, -w, h / 2, 0, COL.ink), box(0.3, h, 0.3, w, h / 2, 0, COL.ink), box(w * 2 + 0.3, 0.3, 0.3, 0, h, 0, COL.ink), box(0.1, h, 0.34, -w + 0.2, h / 2, 0, COL.white, 1), box(0.1, h, 0.34, w - 0.2, h / 2, 0, COL.white, 1), box(w * 2, 0.1, 0.34, 0, h - 0.2, 0, COL.white, 1), box(0.86, 0.1, 0.36, -0.36, h - 0.46, 0, COL.bone, 2, 0, 0, 0.42), box(0.86, 0.1, 0.36, 0.36, h - 0.46, 0, COL.bone, 2, 0, 0, -0.42)]);
   }
 
   // ---------- towers: procedural gold, violet and bone windows, one violet line on the roof ----------
-  const towerMat = (fogR, scroll) => new T.ShaderMaterial({
-    defines: { SCROLL: (scroll ? ZS : 0).toFixed(2) }, uniforms: Object.assign({}, UF, { uFogR: { value: fogR } }),
-    vertexShader: `uniform float uS; attribute float aSeed; varying vec3 vP, vN, vW, vS; varying float vR;
-      void main(){ vS = vec3(length(instanceMatrix[0].xyz), length(instanceMatrix[1].xyz), length(instanceMatrix[2].xyz)); vP = position * vS; vN = normal; vR = aSeed;
-        vec4 w = modelMatrix * instanceMatrix * vec4(position, 1.); w.z += uS * SCROLL; vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }`,
-    fragmentShader: `uniform vec3 uFog; uniform vec2 uFogR; uniform float uPulse, uOC, uCharge; varying vec3 vP, vN, vW, vS; varying float vR;
+  const FOGR = [];    // fog ranges the haze setting pulls in, with their full values
+  const fogR = (a, b) => { const v = new T.Vector2(a, b); FOGR.push([v, a, b]); return v; };
+  const towerMat = (fr, scroll) => new T.ShaderMaterial({
+    defines: { SCROLL: (scroll ? ZS : 0).toFixed(2) }, uniforms: Object.assign({}, UF, { uFogR: { value: fr } }),
+    vertexShader: `uniform float uS, uFar; attribute float aSeed; varying vec3 vP, vN, vW, vS; varying float vR;
+      void main(){ float fy = SCROLL > 0. ? 1. : uFar; vS = vec3(length(instanceMatrix[0].xyz), length(instanceMatrix[1].xyz) * fy, length(instanceMatrix[2].xyz)); vP = position * vS; vN = normal; vR = aSeed;
+        vec4 w = modelMatrix * instanceMatrix * vec4(position * vec3(1., fy, 1.), 1.); w.z += uS * SCROLL; vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }`,
+    fragmentShader: `uniform vec3 uFog, uA, uB; uniform vec2 uFogR; uniform float uPulse, uOC, uCharge; varying vec3 vP, vN, vW, vS; varying float vR;
       float h(vec2 p){ return fract(sin(dot(p, vec2(41.3, 289.1))) * 43758.5); }
       void main(){ vec2 uv = abs(vN.x) > .5 ? vec2(vP.z, vP.y) : vec2(vP.x, vP.y); vec2 cell = vec2(.72, .98), id = floor(uv / cell), f = fract(uv / cell);
         float win = step(.18, f.x) * step(f.x, .82) * step(.25, f.y) * step(f.y, .75), r = h(id + floor(vR * 91. + .5)), on = step(.9 - .26 * uCharge - .12 * uOC, r) * win * step(abs(vN.y), .5);
-        float pick = h(id * 1.7 + floor(vR * 37. + .5)); const vec3 VIOLET = vec3(.26, .11, 1.), GOLD = vec3(1., .46, .06), BONE = vec3(.89, .86, .79);
+        float pick = h(id * 1.7 + floor(vR * 37. + .5)); vec3 VIOLET = uA, GOLD = uB; const vec3 BONE = vec3(.89, .86, .79);
         vec3 c = mix(vec3(.002, .0025, .012), vec3(.004, .005, .024), step(.5, abs(vN.x))) * (.7 + .6 * vP.y / vS.y), lit = pick < .55 ? GOLD : pick < .82 ? VIOLET : BONE;
         c += lit * on * (.22 + .22 * uCharge + .22 * uOC + .3 * uPulse * step(.8, r));
         c += mix(VIOLET, GOLD, uOC * step(.5, vR)) * (.5 + 1.1 * uCharge + .8 * uOC) * smoothstep(vS.y - .22, vS.y - .1, vP.y) * step(abs(vN.y), .5);
@@ -451,29 +582,29 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   });
 
   // ---------- state ----------
-  let renderer, scene, cam, rtS, rtA, rtB, fsScene, fsCam, fsQuad, mats = {}, W = 1, H = 1, DPR = 1, road, sky, runners, picks, drones, swarm, bikers, crate, boss, arches, rails, near, billboards, steam, rain, detail = [], gates = [], parts = [], bolts = [], blasts = [], flash = { t0: -9, life: 0.1, w: 1, h: 1, c: new T.Color(), m: null }, pts, beams, pi = 0;
+  let renderer, scene, cam, rtS, rtA, rtB, fsScene, fsCam, fsQuad, mats = {}, W = 1, H = 1, DPR = 1, road, sky, runners, picks, drones, swarm, bikers, crate, boss, BM = {}, BMS = [], pods, orbs, mirror, hazQ = [], arches, rails, near, billboards, steam, rain, detail = [], gates = [], parts = [], bolts = [], blasts = [], flash = { t0: -9, life: 0.1, w: 1, h: 1, c: new T.Color(), m: null }, pts, beams, pi = 0;
   const camBase = new T.Vector3(0, 6.6, 9.2), look = new T.Vector3(), PN = 1600, BN = 420, v3 = new T.Vector3(), v4 = new T.Vector3(), ZAX = new T.Vector3(0, 0, 1);
-  const ARCH0 = new T.Color(COL.violet), ARCH1 = new T.Color(COL.gold), archCol = new T.Color(), frameMs = [], shocks = []; let lastPerf = 0, slowCheck = 0, shockI = 0, lastBeat = -1, punch = 0, baseFov = 52, bossHp = 0, bossHit = 0;
+  const ARCH0 = new T.Color(COL.violet), ARCH1 = new T.Color(COL.gold), archCol = new T.Color(), frameMs = [], shocks = []; let lastPerf = 0, slowCheck = 0, shockI = 0, lastBeat = -1, punch = 0, baseFov = 52, bossHp = 0, bossHit = 0, rainK = 1;
 
   function buildRoad() {
     const m = new T.ShaderMaterial({
-      uniforms: Object.assign({ uSq: { value: new T.Vector2() }, uSqR: { value: 1 }, uSplit: { value: new T.Vector3() } }, UF), defines: { RW: RW.toFixed(2), ZS: ZS.toFixed(2), BEAT: (GR.B * ZS).toFixed(4) },
+      uniforms: Object.assign({ uSq: { value: new T.Vector2() }, uSqR: { value: 1 }, uSplit: { value: new T.Vector3() } }, UF), defines: { RW: RW.toFixed(2), ZS: ZS.toFixed(2), BEAT: 'uBeat' },
       vertexShader: `varying vec3 vW; void main(){ vec4 w = modelMatrix * vec4(position, 1.); vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }`,
-      fragmentShader: `uniform vec3 uFog; uniform vec2 uFogR, uSq; uniform vec3 uSplit; uniform float uT, uPulse, uOC, uSqR; varying vec3 vW;
+      fragmentShader: `uniform vec3 uFog, uA, uB; uniform vec2 uFogR, uSq; uniform vec3 uSplit; uniform float uT, uPulse, uOC, uSqR, uBeat; varying vec3 vW;
         void main(){ float x = vW.x, ax = abs(x), z = vW.z - uT * ZS, dist = length(cameraPosition - vW), on = 1. - smoothstep(RW * 1.03, RW * 1.05, ax);
           vec3 c = mix(vec3(.003, .003, .01), vec3(.006, .007, .024), on);
           float bz = abs(fract(z / BEAT + .5) - .5) * BEAT, bar = abs(fract(z / (BEAT * 4.) + .5) - .5) * BEAT * 4.;
-          vec3 acc = mix(vec3(.3, .14, 1.), vec3(1., .46, .06), uOC);
+          vec3 acc = mix(uA * 1.15, uB, uOC);
           c += on * acc * (smoothstep(.05, .0, bz) * (.05 + .14 * uPulse) + smoothstep(.1, .0, bar) * (.2 + .5 * uPulse));
-          float lane = abs(fract(x / (RW * .5) + .5) - .5) * RW * .5; c += on * vec3(.3, .15, .9) * smoothstep(.022, .0, lane) * .16;
+          float lane = abs(fract(x / (RW * .5) + .5) - .5) * RW * .5; c += on * uA * 1.1 * smoothstep(.022, .0, lane) * .16;
           float dash = step(fract(z / (BEAT * .5)), .5) * smoothstep(.07, .03, ax); c += vec3(.89, .86, .79) * dash * (.5 + .8 * uPulse);
           float cz = z - ax * .55, chev = min(abs(fract(cz / (BEAT * 8.)) - .5), abs(fract((cz + 1.1) / (BEAT * 8.)) - .5)) * BEAT * 8.; c += on * acc * smoothstep(.13, .07, chev) * step(ax, RW * .72) * (.3 + .4 * uPulse);
           c += vec3(.14, .9, 1.) * smoothstep(.16, .0, abs(ax - RW * 1.04)) * (.9 + 1.1 * uPulse);
           float wet = (sin(x * 1.7 + 1.) * .5 + .5) * (sin(x * 4.3) * .5 + .5) * (sin(z * .09 + x * .4) * .5 + .5);
           float pud = smoothstep(.55, .8, (sin(x * .9 + z * .13) * .5 + .5) * (sin(z * .31 - x * .7) * .5 + .5) + (sin(z * .07 + x * 2.1) * .5 + .5) * .35), edge = smoothstep(RW * .25, RW * .95, ax);
-          float smear = step(.5, fract(z * .023 + step(0., x) * .37)); float smear2 = step(.5, fract(z * .041 + x * .03)); vec3 glowC = mix(mix(vec3(.3, .1, 1.), vec3(1., .3, .03), smear), vec3(.2, 1., .3), smear2 * .55);
+          float smear = step(.5, fract(z * .023 + step(0., x) * .37)); float smear2 = step(.5, fract(z * .041 + x * .03)); vec3 glowC = mix(mix(uA * 1.15, uB * vec3(1., .65, .5), smear), mix(vec3(.2, 1., .3), uA, .4), smear2 * .55);
           c += glowC * pud * (.1 + .9 * edge) * (.03 + .03 * uPulse + .05 * uOC) * (1. + on); c += (1. - on) * vec3(.008, .007, .02) * (1. + pud);
-          float far = smoothstep(4., 46., dist); c += on * (mix(vec3(.3, .14, 1.), vec3(1., .46, .06), uOC) * wet * .16 * far + vec3(.34, .11, .48) * far * far * .22);
+          float far = smoothstep(4., 46., dist); c += on * (mix(uA * 1.15, uB, uOC) * wet * .16 * far + vec3(.34, .11, .48) * far * far * .22);
           vec2 q = (vW.xz - uSq) / vec2(uSqR + 1.2, (uSqR + 1.2) * .8); c += on * mix(vec3(.05, .7, .9), vec3(.5, .7, .8), uOC) * exp(-dot(q, q) * 1.5) * mix(.28, .12, uOC);
           float zone = step(uSplit.y, vW.z) * step(vW.z, 3.) * uSplit.z, mine = step(0., x * uSplit.x);
           if (zone > 0.) { float cv = fract((vW.z + abs(x - uSplit.x * RW * .5) * .9 + uT * 16.) / 3.4);
@@ -487,14 +618,14 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     const m = new T.ShaderMaterial({
       side: T.BackSide, depthWrite: false, uniforms: UF,
       vertexShader: `varying vec3 vD; void main(){ vD = normalize(position); gl_Position = projectionMatrix * viewMatrix * modelMatrix * vec4(position, 1.); }`,
-      fragmentShader: `uniform vec3 uFog; uniform float uPulse, uOC, uT; varying vec3 vD;
+      fragmentShader: `uniform vec3 uFog, uA, uB; uniform float uPulse, uOC, uT; varying vec3 vD;
         float h(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5); }
         void main(){ vec3 d = normalize(vD); float y = max(d.y, 0.);
-          vec3 c = mix(mix(uFog * 2.1, vec3(.05, .008, .08) + .1 * uOC * vec3(.26, .11, 1.), smoothstep(0., .1, y)), vec3(.008, .012, .05), smoothstep(.05, .5, y));
+          vec3 c = mix(mix(uFog * 2.1, vec3(.05, .008, .08) * .5 + uFog * .22 + .1 * uOC * uA, smoothstep(0., .1, y)), vec3(.008, .012, .05), smoothstep(.05, .5, y));
           vec2 sv = vec2(d.x, d.y) / max(-d.z, .05); vec2 s = sv - vec2(0., .24); float r = length(s) / .2, disc = 1. - smoothstep(.97, 1.03, r);
-          float cut = s.y > .03 ? 1. : smoothstep(-.06, .06, sin(s.y * 120. + uT * .7) + .9 + s.y * 8.); vec3 sun = mix(vec3(.26, .11, 1.), vec3(1., .46, .06), smoothstep(-.18, .18, s.y));
+          float cut = s.y > .03 ? 1. : smoothstep(-.06, .06, sin(s.y * 120. + uT * .7) + .9 + s.y * 8.); vec3 sun = mix(uA, uB, smoothstep(-.18, .18, s.y));
           c = mix(c, sun * (.34 + .34 * uOC + .16 * uPulse), disc * cut); c += sun * .035 * exp(-r * r * .42) * (.8 + .3 * uPulse);
-          for (float i = 0.; i < 3.; i += 1.) { float a = -.6 + i * .6 + sin(uT * .31 + i * 2.1) * .28, off = d.x - a * d.y * 1.6 - (i - 1.) * .38; c += mix(vec3(.26, .11, 1.), vec3(1., .46, .06), uOC) * smoothstep(.022 + y * .07, .0, abs(off)) * smoothstep(.0, .05, y) * (1. - smoothstep(.1, .62, y)) * (.05 + .09 * uOC); }
+          for (float i = 0.; i < 3.; i += 1.) { float a = -.6 + i * .6 + sin(uT * .31 + i * 2.1) * .28, off = d.x - a * d.y * 1.6 - (i - 1.) * .38; c += mix(uA, uB, uOC) * smoothstep(.022 + y * .07, .0, abs(off)) * smoothstep(.0, .05, y) * (1. - smoothstep(.1, .62, y)) * (.05 + .09 * uOC); }
           vec2 g = floor(d.xy * 190.); c += vec3(.9) * step(.994, h(g)) * smoothstep(.12, .4, y);
           gl_FragColor = vec4(c, 1.); }`
     });
@@ -528,7 +659,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     m.geometry.setAttribute('aTint', new T.InstancedBufferAttribute(tint, 3)); m.frustumCulled = false; scene.add(m); return m;
   }
   // the song's sections are places: a low night market, a stacked block, the tall canyon under the rails, the drop, and the way out
-  const place = a => { const bar = a / GR.BAR; return bar < 6 ? 'market' : bar < 12 ? 'blocks' : bar < 20 ? 'canyon' : bar < 28 ? 'drop' : 'out'; };
+  const STREET = 100, place = a => { const bar = a / GR.BAR; return bar < 6 ? 'market' : bar < 12 ? 'blocks' : bar < 20 ? 'canyon' : bar < 28 ? 'drop' : bar < 31 ? 'out' : bar < 40 ? 'canyon' : 'drop'; };   // seconds of street; the longest level sets it
   const SHAPE = { market: [8, 9, 3, 2, 0.7], blocks: [12, 16, 4, 2, 0.3], canyon: [26, 26, 5, 2, 0], drop: [18, 26, 4, 3, 0], out: [10, 10, 3, 2, 0.8] };
   function buildCity() {
     const fars = [[70, -150, 60, 175, 80, new T.Vector2(120, 340)], [46, -105, 24, 120, 46, new T.Vector2(60, 230)]];
@@ -538,7 +669,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     let id = 0;
     for (const s of [-1, 1]) {
       let a = -3.5;
-      while (a < GR.END + 11) {
+      while (a < STREET) {
         const k = id++, r = n => hash(k * 3 + n), P = SHAPE[place(a)], w = 3 + r(1) * 3, h = P[0] + r(2) * P[1], d = P[2] + r(3) * P[3], x = s * (RW * 1.55 + 2.4 + r(4) * 2.4), wall = x - s * w / 2, z = -a * ZS;
         T0.push({ x, h, w, d, z });
         if (h >= 12 && r(5) < 0.62) { const sw = Math.max(3.4, Math.min(7, (Math.abs(wall) - RW * 0.95) / Math.cos(SIGN_TILT))); signs.push({ x: wall - s * (0.06 + Math.cos(SIGN_TILT) * sw / 2), y: 9.4 + k % 4, z: z - Math.sin(SIGN_TILT) * sw / 2, ry: -s * SIGN_TILT, s: sw / 9, cell: k % 3 }); }
@@ -556,11 +687,11 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
         a += (d + 0.4 + P[4] * r(15) * 3) / ZS;
       }
     }
-    near = towerMesh(T0.length, towerMat(new T.Vector2(34, 96), true));
+    near = towerMesh(T0.length, towerMat(fogR(34, 96), true));
     T0.forEach((q, i) => { dm.position.set(q.x, 0, q.z); dm.rotation.set(0, 0, 0); dm.scale.set(q.w, q.h, q.d); dm.updateMatrix(); near.setMatrixAt(i, dm.matrix); }); scene.add(near);
     for (let bar = 1; bar < 12; bar += 2) L.cable.push({ x: 0, y: 12.5 + (bar % 3), a: bar * GR.BAR + 1, c: COL.gold });
-    for (let bar = 13; bar < 28; bar += 3) L.overpass.push({ x: 0, a: bar * GR.BAR + GR.BAR * 0.55, c: bar < 20 ? COL.violet : COL.gold });
-    for (let bar = 13; bar < 28; bar += 3) for (const sd of [-1, 1]) ads.push({ x: sd * 7.4, y: 10.25, z: -(bar * GR.BAR + GR.BAR * 0.55) * ZS + 1.68, ry: 0, w: 13.6, h: 1.55, cell: (bar + (sd > 0 ? 4 : 0)) % 16 });
+    for (let bar = 13; bar < 50; bar += 3) L.overpass.push({ x: 0, a: bar * GR.BAR + GR.BAR * 0.55, c: bar < 20 ? COL.violet : COL.gold });
+    for (let bar = 13; bar < 50; bar += 3) for (const sd of [-1, 1]) ads.push({ x: sd * 7.4, y: 10.25, z: -(bar * GR.BAR + GR.BAR * 0.55) * ZS + 1.68, ry: 0, w: 13.6, h: 1.55, cell: (bar + (sd > 0 ? 4 : 0)) % 16 });
     const meshes = {}; for (const k in L) if (L[k].length) meshes[k] = scen(k, L[k]);
     detail = [[meshes.crowd, L.crowd.length], [meshes.debris, L.debris.length], [meshes.escape, L.escape.length]];
     // hanging signs: Hush propaganda on the street towers, flipped to a liberated slogan at the drop
@@ -572,7 +703,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     const tex = new T.CanvasTexture(cv); tex.colorSpace = T.SRGBColorSpace; tex.anisotropy = 4;
     const pg = new T.PlaneGeometry(9, 2.25), cell = new Float32Array(signs.length); signs.forEach((q, i) => { cell[i] = q.cell; }); pg.setAttribute('aCell', new T.InstancedBufferAttribute(cell, 1));
     billboards = new T.InstancedMesh(pg, new T.ShaderMaterial({
-      side: T.DoubleSide, uniforms: Object.assign({ tMap: { value: tex } }, UF, { uFogR: { value: new T.Vector2(30, 92) } }), defines: { ZS: ZS.toFixed(2) },
+      side: T.DoubleSide, uniforms: Object.assign({ tMap: { value: tex } }, UF, { uFogR: { value: fogR(30, 92) } }), defines: { ZS: ZS.toFixed(2) },
       vertexShader: `attribute float aCell; uniform float uOC, uS; varying vec2 vU; varying vec3 vW; void main(){ vU = vec2(uv.x, (5. - (aCell + step(.5, uOC) * 3.) + uv.y) / 6.); vec4 w = modelMatrix * instanceMatrix * vec4(position, 1.); w.z += uS * ZS; vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }`,
       fragmentShader: `uniform sampler2D tMap; uniform vec3 uFog; uniform vec2 uFogR; uniform float uPulse, uOC, uCharge; varying vec2 vU; varying vec3 vW;
         void main(){ vec3 c = texture2D(tMap, vU).rgb * (1. + .5 * uPulse + 1.2 * uCharge * uOC); gl_FragColor = vec4(mix(c, uFog, smoothstep(uFogR.x, uFogR.y, length(cameraPosition - vW))), 1.); }`
@@ -592,7 +723,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     });
     const htex = new T.CanvasTexture(hc); htex.colorSpace = T.SRGBColorSpace; htex.anisotropy = 4;
     const adMat = new T.ShaderMaterial({
-      side: T.DoubleSide, uniforms: Object.assign({ tMap: { value: htex } }, UF, { uFogR: { value: new T.Vector2(24, 88) } }), defines: { ZS: ZS.toFixed(2) },
+      side: T.DoubleSide, uniforms: Object.assign({ tMap: { value: htex } }, UF, { uFogR: { value: fogR(24, 88) } }), defines: { ZS: ZS.toFixed(2) },
       vertexShader: `attribute float aCell; uniform float uS; varying vec2 vU; varying vec3 vW; varying float vC;
         void main(){ vC = aCell; vec2 q = aCell < 15.5 ? vec2(mod(aCell, 2.) * .5 + uv.x * .5, 1. - (floor(aCell * .5) + 1.) * .09375 + uv.y * .09375) : vec2((aCell - 16. + uv.x) * .125, uv.y * .25); vU = q;
           vec4 w = modelMatrix * instanceMatrix * vec4(position, 1.); w.z += uS * ZS; vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }`,
@@ -626,7 +757,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     const traffic = new T.LineSegments(fg, new T.ShaderMaterial({
       transparent: true, depthWrite: false, blending: T.AdditiveBlending, uniforms: UF,
       vertexShader: `attribute float aE, aK; uniform float uT; varying float vK; void main(){ vK = aK; vec3 p = position; float dir = aK > .5 ? 1. : -1.; p.x = dir * (mod(aK * 400. + uT * (9. + aK * 7.), 240.) - 120.) + aE * 2.6; gl_Position = projectionMatrix * viewMatrix * vec4(p, 1.); }`,
-      fragmentShader: `uniform float uOC; varying float vK; void main(){ gl_FragColor = vec4(mix(vec3(.26, .11, 1.), vec3(1., .46, .06), step(.5, fract(vK * 5.))) * (.55 + .4 * uOC), 1.); }`
+      fragmentShader: `uniform float uOC; uniform vec3 uA, uB; varying float vK; void main(){ gl_FragColor = vec4(mix(uA, uB, step(.5, fract(vK * 5.))) * (.55 + .4 * uOC), 1.); }`
     })); traffic.frustumCulled = false; scene.add(traffic);
     // light streaks rushing past: moved in the shader, so they cost nothing per frame
     const n = 150, pos = new Float32Array(n * 6), az = new Float32Array(n * 2), ae = new Float32Array(n * 2);
@@ -635,7 +766,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     const st = new T.LineSegments(lg, new T.ShaderMaterial({
       transparent: true, depthWrite: false, blending: T.AdditiveBlending, uniforms: UF, defines: { ZS: ZS.toFixed(2) },
       vertexShader: `attribute float aZ, aE; uniform float uT; varying float vA; void main(){ float z = mod(aZ + uT * ZS * 1.5, 90.) - 76. - aE * 2.8; vA = smoothstep(-76., -44., z) * .55; gl_Position = projectionMatrix * viewMatrix * vec4(position.xy, z, 1.); }`,
-      fragmentShader: `uniform float uOC; varying float vA; void main(){ gl_FragColor = vec4(mix(vec3(.3, .14, 1.), vec3(1., .46, .06), uOC) * vA, 1.); }`
+      fragmentShader: `uniform float uOC; uniform vec3 uA, uB; varying float vA; void main(){ gl_FragColor = vec4(mix(uA * 1.15, uB, uOC) * vA, 1.); }`
     }));
     st.frustumCulled = false; scene.add(st);
   }
@@ -673,7 +804,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     rtA = new T.WebGLRenderTarget(pw >> 2, ph >> 2, opt); rtB = new T.WebGLRenderTarget(pw >> 2, ph >> 2, opt);
     mats.blackout = mats.blackout || new T.DataTexture(new Uint8Array(4), 1, 1); mats.blackout.needsUpdate = true;
   }
-  function setQuality(q) { R.quality = q; if (rain) { rain.geometry.setDrawRange(0, q === 2 ? 840 : q === 1 ? 460 : 160); steam.visible = q > 0; for (const [m, n] of detail) if (m) m.count = q === 0 ? n >> 1 : n; } DPR = Math.min(window.devicePixelRatio || 1, q === 2 ? 2 : q === 1 ? 1.25 : 1); renderer.setPixelRatio(DPR); renderer.setSize(W, H, false); makeTargets(); }
+  function setQuality(q) { R.quality = q; if (rain) { rain.geometry.setDrawRange(0, Math.round((q === 2 ? 840 : q === 1 ? 460 : 160) * rainK / 2) * 2); steam.visible = q > 0; for (const [m, n] of detail) if (m) m.count = q === 0 ? n >> 1 : n; } DPR = Math.min(window.devicePixelRatio || 1, q === 2 ? 2 : q === 1 ? 1.25 : 1); renderer.setPixelRatio(DPR); renderer.setSize(W, H, false); makeTargets(); }
 
   // ---------- public ----------
   R.init = function (canvas) {
@@ -686,8 +817,11 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     cam = new T.PerspectiveCamera(55, 1, 0.1, 900);
     buildSky(); buildRoad(); buildCity(); buildFx(); buildPost();
     runners = inst(runnerGeo(), 240); picks = inst(runnerGeo(), 16); drones = inst(droneGeo(), 40); swarm = inst(swarmGeo(), 1000); bikers = inst(bikerGeo(), 12); crate = inst(crateGeo(), 2); boss = inst(bossGeo(), 1); arches = inst(archGeo(), 4);
+    BM = { enforcer: boss, carrier: inst(carrierGeo(), 1), warden: inst(wardenGeo(), 1), echo: inst(echoGeo(), 3), vale: inst(valeGeo(), 1) }; BMS = Object.values(BM); pods = inst(podGeo(), 2); orbs = inst(orbGeo(), 12); mirror = inst(mirrorGeo(), 1);
+    const hg = new T.PlaneGeometry(1, 1); hg.rotateX(-Math.PI / 2);
+    for (let i = 0; i < 4; i++) { const m = new T.Mesh(hg, new T.MeshBasicMaterial({ transparent: true, blending: T.AdditiveBlending, depthWrite: false, fog: false })); m.visible = false; m.frustumCulled = false; m.position.y = 0.06; scene.add(m); hazQ.push(m); }
     const railG = merge([box(0.1, 0.1, 110, 0, 0, 0, COL.white, 1)]); rails = inst(railG, 2);
-    [runners, picks, drones, swarm, bikers, crate, boss, arches, rails].forEach(o => scene.add(o));
+    [runners, picks, drones, swarm, bikers, crate, arches, rails, pods, orbs, mirror].concat(BMS).forEach(o => scene.add(o));
     R.ok = true; return true;
   };
   R.resize = function (w, h) {
@@ -711,6 +845,15 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     for (const [bw, bh, x, y] of [[w + 0.14, 0.14, 0, h + 0.2], [w + 0.14, 0.14, 0, 0.2], [0.14, h, -w / 2, h / 2 + 0.2], [0.14, h, w / 2, h / 2 + 0.2]]) { const b = new T.Mesh(new T.BoxGeometry(bw, bh, 0.14), frame); b.position.set(x, y, 0); grp.add(b); }
     grp.position.x = side * RW * 0.52; return grp;
   }
+  // a street's look. Only uniforms and colours change, so swapping levels costs nothing
+  R.setLevel = function (def) {
+    if (!R.ok) return; const P = PALS[def.pal] || PALS.market;
+    FOG.set(P.fog); P.tone.forEach((c, i) => TONE[i].set(c)); UF.uA.value.set(...P.a); UF.uB.value.set(...P.b); ARCH0.set(P.arch[0]); ARCH1.set(P.arch[1]); UF.uFar.value = P.far; UF.uBeat.value = GR.B * ZS;
+    for (const [v, a, b] of FOGR) v.set(a * P.haze, b * P.haze);
+    rainK = P.rain; setQuality(R.quality); R.pal = def.pal;
+  };
+  // a fight can last 20 seconds, too far to see through the fog, so a boss looms at this distance and closes in at the end. Draw only: the engine keeps the true distance
+  R.bossZ = z => Math.min(z, 3.5);
   R.setRun = function (G, text, note) { R.gates(G, text, note); parts = []; bolts = []; blasts = []; };
   R.gates = function (G, text, note) {
     if (!R.ok) return;
@@ -793,18 +936,32 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     begin(rails); for (const s of [-1, 1]) put(rails, s * RW * 1.05, 0.12, -38, 1, 0, 0, COL.cyan, 0.45 + UF.uPulse.value * 0.4); end(rails);
   }
   function drawEnts(G, t, oc) {
-    [picks, drones, swarm, bikers, crate, boss].forEach(begin);
+    const LIST = [picks, drones, swarm, bikers, crate, pods, orbs, mirror].concat(BMS); LIST.forEach(begin);
+    let hi = 0; const zone = (h, k) => { if (hi >= hazQ.length) return; const m = hazQ[hi++], x0 = Math.max(-1, h.x0), x1 = Math.min(1, h.x1); m.visible = true; m.position.set(wx((x0 + x1) / 2), 0.06, -14); m.scale.set((x1 - x0) * RW, 1, 34); m.material.color.set(h.style === 'beam' ? COL.bone : h.style === 'wave' ? COL.violet : COL.red).multiplyScalar(k); };
+    for (const h of G.live) zone(h, 0.9);
     for (let i = G.ei; i < G.ents.length; i++) {
-      const e = G.ents[i], z = e.ta - G.t; if (z > GR.BOSS_RANGE + 0.2) break; if (e.done || (z > AHEAD && e.kind !== 'boss')) continue;
+      const e = G.ents[i], z = e.ta - G.t; if (z > GR.BOSS_RANGE + 0.2) break;
+      if (e.kind === 'haz') { if (!e.done && z < e.warn && !G.bossKilled) zone(e, (0.25 + 0.75 * (1 - z / e.warn)) * (0.7 + 0.3 * Math.sin(t * 22))); continue; }
+      if (e.done || (z > AHEAD && e.kind !== 'boss' && e.kind !== 'pod')) continue;
       const x = wx(e.x), wZ = wz(z);
       if (e.kind === 'runner') put(picks, x, Math.abs(Math.sin(t * 5 + e.id)) * 0.2, wZ, 1.4, Math.PI + t * 2, 0, COL.cyan, 1.3);
       else if (e.kind === 'drone') put(drones, x, 1.1 + Math.sin(t * 5 + e.id) * 0.16, wZ, 1, Math.sin(t * 2 + e.id) * 0.3, 0, e.hp < e.maxHp ? bone : COL.pink, e.hp < e.maxHp ? 1.5 : 1);
       else if (e.kind === 'swarm') { if (swarm.count < 1000) put(swarm, x, 0.55 + Math.sin(t * 9 + e.id) * 0.1, wZ, 1, 0, Math.sin(t * 3 + e.id) * 0.22, e.hp < e.maxHp ? bone : COL.pink, e.hp < e.maxHp ? 1.3 : 0.62); }
       else if (e.kind === 'biker') put(bikers, x, 0, wZ, 1.15, 0, Math.sin(t * 7 + e.id) * 0.08, e.hp < e.maxHp * 0.5 ? COL.gold : COL.red, 1);
       else if (e.kind === 'crate') put(crate, x, 0.25 + Math.sin(t * 4) * 0.1, wZ, 1.1, t * 1.4, 0, COL.gold, 1 + UF.uPulse.value * 0.6);
-      else if (e.kind === 'boss') { if (e.hp < bossHp) bossHit = 1; bossHp = e.hp; bossHit *= 0.82; put(boss, 0, Math.abs(Math.sin(t * 3.2)) * 0.25, wZ, 1.5, 0, 0, bossHit > 0.3 ? '#FFD0EC' : COL.white, 1 + UF.uPulse.value * 0.3 + bossHit * 1.6); }
+      else if (e.kind === 'orb') { if (!G.bossKilled) put(orbs, x, 1 + Math.sin(t * 6 + e.id) * 0.12, wZ, 1.15, t * 2, 0, e.gold ? COL.gold : COL.red, 1.6); }
+      else if (e.kind === 'pod') put(pods, x, 3.4, wz(R.bossZ(z)) + 2.1, 1.25, 0, 0, e.hp < e.maxHp ? COL.gold : COL.pink, 1 + UF.uPulse.value * 0.5);
+      else if (e.kind === 'boss') {
+        if (e.hp < bossHp) bossHit = 1; bossHp = e.hp; bossHit *= 0.82;
+        const m = BM[e.boss] || boss, bz = wz(R.bossZ(z)), bob = Math.abs(Math.sin(t * 3.2)) * 0.25, armored = e.armor, tint = armored ? '#7C86B0' : bossHit > 0.3 ? '#FFD0EC' : COL.white, glow = armored ? 0.8 : 1 + UF.uPulse.value * 0.3 + bossHit * 1.6;
+        if (e.boss === 'echo') e.lanes.forEach((lx, i) => { const real = lx === e.x; put(m, wx(lx), 0.3 + bob, bz, 1.5, 0, 0, real ? COL.pink2 : COL.violet, real ? 0.32 + UF.uPulse.value * 1.2 + bossHit * 0.6 : 0.2); });
+        else if (e.boss === 'carrier') put(m, 0, 1.1 + bob, bz, 1.5, 0, 0, tint, glow);
+        else put(m, 0, bob, bz, e.boss === 'vale' ? 1.3 : 1.5, 0, 0, tint, glow);
+        if (e.boss === 'warden') { const st = G.st, flick = st.warn ? 0.2 + 0.5 * Math.abs(Math.sin(t * 16)) : 0.42; put(mirror, st.side * RW * 0.62, 0, bz + 2.4, 1.3, 0, 0, '#CFE8FF', flick); }
+      }
     }
-    [picks, drones, swarm, bikers, crate, boss].forEach(end);
+    LIST.forEach(end);
+    for (let i = hi; i < hazQ.length; i++) hazQ[i].visible = false;
     // the next gate splits the road: your side lights up and the other dims, flipping as you cross the middle
     let split = null; const side = G.sx < 0 ? -1 : 1;
     for (const g of gates) {
@@ -868,7 +1025,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     R.t = t; const oc = !!o.oc;
     UF.uS.value = G ? t : t % 50;
     if (rain) rain.visible = !o.reduced;
-    const tone = G ? (G.t < 12 * GR.BAR ? TONE[0] : G.t < 20 * GR.BAR ? TONE[1] : G.t < 28 * GR.BAR ? TONE[2] : TONE[0]) : TONE[0]; FOG.lerp(tone, 0.02);
+    const tone = G ? (G.t < 12 * GR.BAR ? TONE[0] : G.t < GR.DROP_T ? TONE[1] : G.t < GR.DROP_END ? TONE[2] : TONE[0]) : TONE[0]; FOG.lerp(tone, 0.02);
     UF.uCharge.value += ((G ? (G.oc.on || G.oc.done ? 1 : G.meter / 100) : 0.45) - UF.uCharge.value) * 0.05;
     if (oc && !o.reduced) { const b = Math.floor(t / GR.B); if (b !== lastBeat) { lastBeat = b; const s = b % 2 ? 1 : -1; R.burst(s * (2.6 + Math.random() * 1.2), 2.2 + Math.random() * 2, [COL.pink, COL.cyan, COL.gold, COL.green][b % 4], 34, 11, 14 + Math.random() * 6); } }
     UF.uT.value = t; UF.uPulse.value = o.pulse; UF.uOC.value += ((oc ? 1 : 0) - UF.uOC.value) * 0.08;
@@ -877,7 +1034,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     punch *= 0.9; if (punch < 0.02) punch = 0; cam.fov = baseFov + punch; cam.updateProjectionMatrix();
     look.set(wx(sx) * 0.15, aspect > 1 ? 4.2 : 2.2, -11); cam.lookAt(look); cam.updateMatrixWorld();
     drawCity(t);
-    if (G) { R.motion = !o.reduced; drawEnts(G, t, oc); } else { [picks, drones, swarm, bikers, crate, boss, runners].forEach(begin); for (const q of gates) q.grp.visible = false; road.material.uniforms.uSqR.value = 0; road.material.uniforms.uSq.value.set(0, 900); }
+    if (G) { R.motion = !o.reduced; drawEnts(G, t, oc); } else { [picks, drones, swarm, bikers, crate, runners, pods, orbs, mirror].concat(BMS).forEach(begin); for (const q of hazQ) q.visible = false; for (const q of gates) q.grp.visible = false; road.material.uniforms.uSqR.value = 0; road.material.uniforms.uSq.value.set(0, 900); }
     drawFx(t); drawShocks(t);
     renderer.setRenderTarget(rtS); renderer.clear(); renderer.render(scene, cam);
     mats.out.uniforms.tS.value = rtS.texture;
@@ -948,8 +1105,10 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   function envG(t, a, peak, dec, dest) { const gn = X().createGain(); gn.gain.setValueAtTime(0.0001, t); gn.gain.exponentialRampToValueAtTime(peak, t + a); gn.gain.exponentialRampToValueAtTime(0.0001, t + a + dec); gn.connect(dest || A.bus); return gn; }
   function noiseSrc(t, dur) { const s = X().createBufferSource(); s.buffer = A.noise; s.loop = true; s.start(t, Math.random() * 0.5); s.stop(t + dur); return s; }
   function osc(type, fr, t, dur, dest, det) { const o = X().createOscillator(); o.type = type; o.frequency.value = fr; if (det) o.detune.value = det; o.connect(dest); o.start(t); o.stop(t + dur + 0.05); return o; }
-  // A track is plain data, so each district can bring its own: chords (voiced notes in Hz), bass roots, an arp shape over the
-  // chord tones, a stab rhythm in beats, and a hook as [beat, semitones above the base note, beats long] for each chord.
+  // A track is plain data, so each street brings its own: chords (voiced notes in Hz), bass roots, an arp shape over the chord tones,
+  // a stab rhythm in beats, and a hook as [beat, semitones above the base note, beats long] for each chord. Optional: lead (the hook's
+  // voice), bass (offsets in a beat and octave), half (half-time clap), sparse (no 16th hats at the drop). All written for this game.
+  const Hz = m => 440 * Math.pow(2, (m - 69) / 12), HZ = a => a.map(Hz);
   const TRACKS = {
     neon: {
       chords: [[220, 261.6, 329.6, 440], [174.6, 220, 261.6, 349.2], [196, 261.6, 329.6, 392], [196, 246.9, 293.7, 392]],   // Am F C G: minor, but it keeps lifting
@@ -959,11 +1118,16 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
         [[0, 12, 0.75], [0.75, 8, 0.75], [1.5, 10, 0.5], [2, 12, 0.5], [3, 7, 1]],
         [[0, 7, 0.75], [0.75, 3, 0.75], [1.5, 7, 0.5], [2, 10, 0.5], [3, 12, 1]],
         [[0, 10, 1.5], [1.5, 7, 0.5], [2, 5, 1], [3, 2, 1]]]
-    }
+    },
   };
+  // streets past the table reuse a song in a new key
+  function trackFor(def) {
+    const T = TRACKS[def.track], k = Math.pow(2, (def.transpose || 0) / 12);
+    return k === 1 ? T : Object.assign({}, T, { chords: T.chords.map(c => c.map(f => f * k)), roots: T.roots.map(f => f * k), base: T.base * k });
+  }
   const semi = (f, n) => f * Math.pow(2, n / 12);
   // how far the song's filter is open at the start of a bar: soft intro, opening build, sweep up the riser, wide open drop
-  const cutAt = bar => bar < 4 ? 520 + bar * 90 : bar < 12 ? 950 + (bar - 4) * 240 : bar < 20 ? 2900 + (bar - 12) * 1400 : bar < 28 ? 16000 : 1000;
+  const cutAt = bar => bar < 4 ? 520 + bar * 90 : bar < 12 ? 950 + (bar - 4) * 240 : bar < GR.DROP_BAR ? 2900 + (bar - 12) * 1400 : bar < GR.DROP_BAR + GR.level.drop ? 16000 : 1000;
   const SND = {
     kick(t, v = 1) {
       const o = X().createOscillator(); o.type = 'sine'; o.frequency.setValueAtTime(150, t); o.frequency.exponentialRampToValueAtTime(46, t + 0.08); o.connect(envG(t, 0.001, 1.05 * v, 0.28, A.kick)); o.start(t); o.stop(t + 0.34);
@@ -996,9 +1160,10 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     },
     // the hook: a rounded square and a soft saw, a touch of glide, plenty of echo
     lead(t, fr, dur, v = 1) {
-      const gn = X().createGain(); gn.gain.setValueAtTime(0.0001, t); gn.gain.exponentialRampToValueAtTime(0.1 * v, t + 0.012); gn.gain.setValueAtTime(0.1 * v, t + Math.max(0.02, dur - 0.06)); gn.gain.exponentialRampToValueAtTime(0.0001, t + dur + 0.08); gn.connect(A.synth); gn.connect(A.wet);
-      const f = X().createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 3000; f.connect(gn);
-      for (const [type, det] of [['square', -5], ['sawtooth', 5]]) { const o = X().createOscillator(); o.type = type; o.detune.value = det; o.frequency.setValueAtTime(fr * 0.985, t); o.frequency.exponentialRampToValueAtTime(fr, t + 0.03); o.connect(f); o.start(t); o.stop(t + dur + 0.12); }
+      const L = U.T.lead || { osc: [['square', -5], ['sawtooth', 5]], cut: 3000, atk: 0.012, v: 1, glide: 0.985 }; v *= L.v;
+      const gn = X().createGain(); gn.gain.setValueAtTime(0.0001, t); gn.gain.exponentialRampToValueAtTime(0.1 * v, t + L.atk); gn.gain.setValueAtTime(0.1 * v, t + Math.max(0.02, dur - 0.06)); gn.gain.exponentialRampToValueAtTime(0.0001, t + dur + 0.08); gn.connect(A.synth); gn.connect(A.wet);
+      const f = X().createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = L.cut; f.connect(gn);
+      for (const [type, det] of L.osc) { const o = X().createOscillator(); o.type = type; o.detune.value = det; o.frequency.setValueAtTime(fr * L.glide, t); o.frequency.exponentialRampToValueAtTime(fr, t + 0.03); o.connect(f); o.start(t); o.stop(t + dur + 0.12); }
     },
     riser(t, dur) {
       const n = noiseSrc(t, dur), f = X().createBiquadFilter(); f.type = 'bandpass'; f.Q.value = 2; f.frequency.setValueAtTime(300, t); f.frequency.exponentialRampToValueAtTime(7000, t + dur);
@@ -1014,30 +1179,31 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   };
   function buildSong(T) {
     const ev = [], at = (b, fn, ...a) => ev.push({ t: b * GR.B, fn, a });
-    for (let bar = 0; bar < 31; bar++) {
+    const db = GR.DROP_BAR, de = db + GR.level.drop, last = de + 3, BS = T.bass || [[0.5, 1], [0.75, 2]];
+    for (let bar = 0; bar < last; bar++) {
       const s = GR.sectionAt(bar * GR.BAR + 0.001).id, ci = bar % 4, b0 = bar * 4, notes = T.chords[ci], rt = T.roots[ci];
       const drums = s === 'build' || s === 'riser' || s === 'drop', fill = bar === 19;  // the kick and bass drop out for the last bar of the riser
       at(b0, 'filt', cutAt(bar + 1), GR.BAR);
-      if (bar < 30 && !fill) for (let q = 0; q < 4; q++) at(b0 + q, 'kick', s === 'intro' ? 0.75 : s === 'outro' ? 0.8 : 1);
+      if (bar < last - 1 && !fill) for (let q = 0; q < 4; q++) at(b0 + q, 'kick', s === 'intro' ? 0.75 : s === 'outro' ? 0.8 : 1);
       if (s !== 'riser' || bar < 16) at(b0, 'pad', notes, GR.BAR, s === 'drop' ? 1.2 : 1);
       if (drums) for (let q = 0; q < 4; q++) {
         at(b0 + q + 0.5, 'hat', s === 'drop' ? 1.1 : 0.9, true);
-        if (s === 'drop') { at(b0 + q + 0.25, 'hat', 0.8); at(b0 + q + 0.75, 'hat', 0.8); }
-        if ((q === 1 || q === 3) && !(s === 'riser' && bar >= 18)) at(b0 + q, 'clap');
-        if (!fill) { at(b0 + q + 0.5, 'bass', rt, GR.B * 0.26); at(b0 + q + 0.75, 'bass', rt * (q === 3 ? 1.5 : 2), GR.B * 0.22); }
+        if (s === 'drop' && !T.sparse) { at(b0 + q + 0.25, 'hat', 0.8); at(b0 + q + 0.75, 'hat', 0.8); }
+        if ((T.half ? q === 2 : q === 1 || q === 3) && !(s === 'riser' && bar >= 18)) at(b0 + q, 'clap');
+        if (!fill) for (const [off, oc] of BS) at(b0 + q + off, 'bass', rt * (oc === 2 && q === 3 ? 1.5 : oc), GR.B * 0.24);
       }
       if (drums) for (const k of T.stabs) if (s !== 'build' || k === 1.5 || k === 3.5) at(b0 + k, 'stab', notes, s === 'drop' ? 1.2 : s === 'riser' ? 1 : 0.85);
       // arps: a hint in the intro, then rolling 16ths from the end of the build
       const arpOn = s === 'drop' || s === 'riser' || bar >= 8 && s === 'build';
       if (arpOn || (s === 'intro' && bar >= 2)) { const step = arpOn ? 0.25 : 0.5, v = s === 'drop' ? 1 : s === 'riser' ? 0.6 + (bar - 12) * 0.05 : 0.5; for (let k = 0; k * step < 4; k++) { const n = T.arp[k % T.arp.length], fr = n > 3 ? notes[0] * 4 : notes[n] * 2; at(b0 + k * step, 'pluck', fr, v, k % 2 ? 0.45 : -0.45); } }
-      if (s === 'drop') for (const [b, st, len] of T.hook[ci]) { at(b0 + b, 'lead', semi(T.base, st), len * GR.B, bar < 24 ? 0.9 : 1); if (bar >= 24) at(b0 + b, 'lead', semi(T.base, st + 12), len * GR.B, 0.3); }
-      if (bar === 28) for (const [b, st, len] of T.hook[0]) at(b0 + b, 'lead', semi(T.base, st), len * GR.B, 0.4);   // the hook once more, soft, on the way out
+      if (s === 'drop') for (const [b, st, len] of T.hook[ci]) { at(b0 + b, 'lead', semi(T.base, st), len * GR.B, bar < db + 4 ? 0.9 : 1); if (bar >= db + 4) at(b0 + b, 'lead', semi(T.base, st + 12), len * GR.B, 0.3); }
+      if (bar === de) for (const [b, st, len] of T.hook[0]) at(b0 + b, 'lead', semi(T.base, st), len * GR.B, 0.4);   // the hook once more, soft, on the way out
       if (bar === 18) for (let k = 0; k < 8; k++) at(b0 + k * 0.5, 'snare', 0.4 + k * 0.05);
       if (fill) for (let k = 0; k < 16; k++) at(b0 + k * 0.25, 'snare', 0.55 + k * 0.03);
-      if ([4, 12, 20, 28].includes(bar)) at(b0, 'crash');
+      if ([4, 12, db, de].includes(bar)) at(b0, 'crash');
     }
-    at(0, 'rain', GR.BAR * 4.5); at(28 * 4, 'rain', GR.BAR * 3);
-    at(12 * 4, 'riser', GR.BAR * 8); at(20 * 4, 'boom');
+    at(0, 'rain', GR.BAR * 4.5); at(de * 4, 'rain', GR.BAR * 3);
+    at(12 * 4, 'riser', GR.BAR * 8); at(db * 4, 'boom');
     ev.sort((a, b) => a.t - b.t); return ev;
   }
   function startClock(events, offset) {
@@ -1064,7 +1230,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   function sfx(kind, n) { try { sfx0(kind, n); } catch (e) {} }
   // every gun has its own shot, on the song's eighth notes and pitched to the chord playing now, so gunfire joins the track
   function shot(t, d, n) {
-    const w = U.G.weapon, M = U.G.mod, T = TRACKS.neon, ci = Math.floor(U.G.t / GR.BAR) % 4, notes = T.chords[ci], root = T.roots[ci], beat = n % 2 === 0, B = GR.B;
+    const w = U.G.weapon, M = U.G.mod, T = U.T, ci = Math.floor(U.G.t / GR.BAR) % 4, notes = T.chords[ci], root = T.roots[ci], beat = n % 2 === 0, B = GR.B;
     const sweep = (type, a, b, dur, v, cut, at) => { const s = at || t, o = X().createOscillator(), f = X().createBiquadFilter(); o.type = type; o.frequency.setValueAtTime(a, s); o.frequency.exponentialRampToValueAtTime(b, s + dur); f.type = 'lowpass'; f.frequency.value = cut || 6000; o.connect(f); f.connect(envG(s, 0.002, v, dur, d)); o.start(s); o.stop(s + dur + 0.04); };
     const hiss = (type, fr, q, dur, v) => { const s = noiseSrc(t, dur + 0.04), f = X().createBiquadFilter(); f.type = type; f.frequency.value = fr; f.Q.value = q; s.connect(f); f.connect(envG(t, 0.002, v, dur, d)); };
     if (w === 'pulse') { const fr = notes[0] * 2; sweep('square', fr * 2.5, fr, 0.05, 0.09, 3200); sweep('square', fr * 2.5, fr, 0.05, 0.06, 3200, t + B / 4); }
@@ -1087,7 +1253,11 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     else if (kind === 'shot') shot(t, A.shots, n);
     else if (kind === 'runner') osc('triangle', 1318.5, t, 0.08, envG(t, 0.002, 0.06, 0.08, d));
     else if (kind === 'hurt') { const n = noiseSrc(t, 0.15), f = X().createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 500; n.connect(f); f.connect(envG(t, 0.002, 0.25, 0.14, d)); }
-    else if (kind === 'weapon') { const nt = TRACKS.neon.chords[Math.floor(U.G.t / GR.BAR) % 4], ty = { arc: 'sawtooth', scatter: 'square', rail: 'sine', rocket: 'triangle' }[U.G.weapon] || 'square'; [nt[0] * 2, nt[1] * 2, nt[2] * 2, nt[3] * 2].forEach((fr, i) => osc(ty, fr, t + i * 0.06, 0.11, envG(t + i * 0.06, 0.003, 0.09, 0.11, d))); }
+    else if (kind === 'weapon') { const nt = U.T.chords[Math.floor(U.G.t / GR.BAR) % 4], ty = { arc: 'sawtooth', scatter: 'square', rail: 'sine', rocket: 'triangle' }[U.G.weapon] || 'square'; [nt[0] * 2, nt[1] * 2, nt[2] * 2, nt[3] * 2].forEach((fr, i) => osc(ty, fr, t + i * 0.06, 0.11, envG(t + i * 0.06, 0.003, 0.09, 0.11, d))); }
+    else if (kind === 'armorOff') { const nt = U.T.chords[Math.floor(U.G.t / GR.BAR) % 4]; nt.forEach((fr, i) => osc('triangle', fr * 2, t + i * 0.04, 0.2, envG(t + i * 0.04, 0.003, 0.1, 0.2, d))); }
+    else if (kind === 'armorOn') { const o = X().createOscillator(); o.type = 'square'; o.frequency.setValueAtTime(420, t); o.frequency.exponentialRampToValueAtTime(160, t + 0.2); const f = X().createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 1500; o.connect(f); f.connect(envG(t, 0.004, 0.12, 0.2, d)); o.start(t); o.stop(t + 0.28); }
+    else if (kind === 'slam') { const o = X().createOscillator(); o.type = 'sine'; o.frequency.setValueAtTime(120, t); o.frequency.exponentialRampToValueAtTime(40, t + 0.25); o.connect(envG(t, 0.002, 0.42, 0.28, d)); o.start(t); o.stop(t + 0.34); }
+    else if (kind === 'swap') { const n = noiseSrc(t, 0.14), f = X().createBiquadFilter(); f.type = 'highpass'; f.frequency.value = 3200; n.connect(f); f.connect(envG(t, 0.002, 0.16, 0.12, d)); }
     else if (kind === 'bossDown') { [220, 329.6, 440, 659.3].forEach(fr => osc('sawtooth', fr, t, 1, envG(t, 0.01, 0.03, 1.1, d))); }
     else if (kind === 'lose') { const o = X().createOscillator(); o.type = 'sawtooth'; o.frequency.setValueAtTime(330, t); o.frequency.exponentialRampToValueAtTime(55, t + 1.2); const f = X().createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 1200; o.connect(f); f.connect(envG(t, 0.01, 0.2, 1.2, d)); o.start(t); o.stop(t + 1.4); }
   }
@@ -1117,7 +1287,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   function label(txt, x, y, size, col) { g.font = `700 ${Math.max(9, size)}px ${FONT}`; g.textAlign = 'center'; g.fillStyle = col; g.fillText(txt, x, y); }
   function gateText(o) { return o.op === 'add' ? '+' + o.v : o.op === 'mul' ? '×' + o.v : o.op === 'trade' ? '−' + o.lose + ' ×' + o.v : o.op === 'oc' ? 'OVERCLOCK +' + o.v + '%' : o.op === 'weapon' ? GR.WEAPONS[o.w].name.toUpperCase() : o.op === 'mod' ? GR.WEAPONS[U.G.weapon].mods[o.k].name.toUpperCase() : 'FIRE +' + Math.round(o.v * 100) + '%'; }
   // the small line under each gate says what it does in plain words
-  function gateNote(o) { return o.op === 'add' ? 'more runners' : o.op === 'mul' ? 'multiply squad' : o.op === 'trade' ? 'lose ' + o.lose + ', then double' : o.op === 'oc' ? 'stronger drop' : o.op === 'weapon' ? GR.WEAPONS[o.w].note : o.op === 'mod' ? GR.WEAPONS[U.G.weapon].mods[o.k].note : 'shoot faster'; }
+  function gateNote(o) { return o.op === 'add' ? 'more runners' : o.op === 'mul' ? 'multiply squad' : o.op === 'trade' ? 'lose ' + o.lose + ', then double' : o.op === 'oc' ? 'stronger drop' : o.op === 'weapon' ? (o.keep ? 'keep your gun' : GR.WEAPONS[o.w].note) : o.op === 'mod' ? GR.WEAPONS[U.G.weapon].mods[o.k].note : 'shoot faster'; }
   function hpBar(x, y, w, fr) { g.fillStyle = 'rgba(0,0,0,.55)'; g.fillRect(x - w / 2, y, w, 4); g.fillStyle = '#4BFFA5'; g.fillRect(x - w / 2, y, w * Math.max(0, fr), 4); }
   // labels and health bars sit over the 3D models, sized by how close the thing is
   function drawLabels(G) {
@@ -1125,9 +1295,11 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     const ng = G.ents.find(e => e.kind === 'gate' && !e.done && e.ta > G.t);
     if (ng && ng.ta - G.t < 4.2) { const sd = G.sx < 0 ? -1 : 1, z = ng.ta - G.t, k = 1 / (1 + z * 0.4), p = R.project(sd * 0.52, z, 4.1); label('▼', p.x, p.y - Math.abs(Math.sin(G.t * 7)) * 5, 34 * k + 8, '#3DF0FF'); }
     for (let i = G.ei; i < G.ents.length; i++) {
-      const e = G.ents[i], z = e.ta - G.t; if (z > GR.BOSS_RANGE + 0.2) break; if (e.done || (z > 4.6 && e.kind !== 'boss')) continue;
+      const e = G.ents[i], z = e.ta - G.t; if (z > GR.BOSS_RANGE + 0.2) break; if (e.done || (z > 4.6 && e.kind !== 'boss' && e.kind !== 'pod')) continue;
       const k = 1 / (1 + Math.max(0, z) * 0.55), fr = e.hp / e.maxHp;
       if (e.kind === 'runner' && z < 3) { const p = R.project(e.x, z, 2.1); label('+1', p.x, p.y, 15 * k + 4, '#BFF8FF'); }
+      else if (e.kind === 'pod') { const zz = R.bossZ(z), q = 1 / (1 + zz * 0.3), p = R.project(e.x, zz, 5); label('SHOOT', p.x, p.y - 6, 18 * q + 6, '#FFB547'); hpBar(p.x, p.y, 70 * q, fr); }
+      else if (e.kind === 'orb' && z < 3.2) { const p = R.project(e.x, z, 2.2); label(e.gold ? 'CATCH' : 'DODGE', p.x, p.y, 15 * k + 5, e.gold ? '#FFB547' : '#FF4D6D'); }
       else if (e.kind === 'crate') { const p = R.project(e.x, z, 2.1); label('SHOOT IT', p.x, p.y - 6, 14 * k + 3, '#FFB547'); hpBar(p.x, p.y, 60 * k, fr); }
       else if (e.kind === 'biker' && fr < 1) { const p = R.project(e.x, z, 2.3); hpBar(p.x, p.y, 54 * k, fr); }
       else if (e.kind === 'drone' && fr < 1) { const p = R.project(e.x, z, 1.9); hpBar(p.x, p.y, 34 * k, fr); }
@@ -1151,7 +1323,8 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     $('hudR').classList.toggle('on', G.oc.on);
     const bs = U.boss, on = bs && !G.over && !bs.done && bs.ta - G.t < GR.BOSS_RANGE;
     $('bossBar').hidden = !on;
-    if (on) { const fr = Math.max(0, bs.hp / bs.maxHp), pct = Math.ceil(fr * 100); $('bossFill').style.width = fr * 100 + '%'; $('bossTrail').style.width = fr * 100 + '%'; $('bossPct').textContent = pct + '%'; }
+    $('bossBar').classList.toggle('armored', !!(on && bs.armor));
+    if (on) { const fr = Math.max(0, bs.hp / bs.maxHp), pct = Math.ceil(fr * 100); $('bossFill').style.width = fr * 100 + '%'; $('bossTrail').style.width = fr * 100 + '%'; $('bossPct').textContent = bs.armor ? 'ARMOR' : pct + '%'; }
     const wp = GR.WEAPONS[G.weapon]; $('wpn').textContent = (G.mod >= 0 ? wp.mods[G.mod].name + ' ' + wp.short : wp.name) + (G.wlv > 1 ? ' Lv ' + G.wlv : '');
   }
   function hint(txt) { $('secHint').textContent = txt; }
@@ -1165,12 +1338,12 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       const sq = R.project(G.sx, 0), sx = sq.x, sy = sq.y;
       if (e.type === 'volley') {
         if (e.hits.length) {
-          const tg = []; for (const id of e.hits.slice(0, 8)) { const en = G.ents.find(q => q.id === id); if (en) tg.push({ x: en.x, z: Math.max(0.05, en.ta - G.t), y: en.kind === 'boss' ? 3.8 : 1.1 }); }
+          const tg = []; for (const id of e.hits.slice(0, 8)) { const en = G.ents.find(q => q.id === id); if (en) tg.push({ x: en.x, z: Math.max(0.05, en.kind === 'boss' || en.kind === 'pod' ? R.bossZ(en.ta - G.t) : en.ta - G.t), y: en.kind === 'boss' || en.kind === 'pod' ? 3.8 : 1.1 }); }
           const n = Math.round(e.t / (GR.B / 2));
           sfx('shot', n); R.volley({ weapon: G.weapon, mod: G.mod, lv: G.wlv, col: GR.WEAPONS[G.weapon].col, oc: G.oc.on, x: G.sx, w: GR.width(G.n), t: tg, n, B: GR.B });
         }
       } else if (e.type === 'kill') {
-        sfx('kill'); const en = G.ents.find(q => q.id === e.id), z = en ? en.ta - G.t : 1;
+        sfx('kill'); const en = G.ents.find(q => q.id === e.id), z = en ? (en.kind === 'boss' || en.kind === 'pod' ? R.bossZ(en.ta - G.t) : en.ta - G.t) : 1;
         const c = e.kind === 'crate' ? '#FFB547' : e.kind === 'boss' ? '#FFFFFF' : '#FF3DA8', nP = RM ? 2 : e.kind === 'boss' ? 160 : e.kind === 'swarm' ? 4 : 10;
         R.burst(e.x, z, c, nP, e.kind === 'boss' ? 16 : e.kind === 'swarm' ? 5 : 7, e.kind === 'boss' ? 4 : 1.1);
         if (e.kind === 'biker' || e.kind === 'crate') { R.shock(e.x, z, c, 3.5, 1); U.shake = Math.max(U.shake, 3); }
@@ -1181,8 +1354,15 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
         if (e.g.op === 'oc' && G.t < GR.DROP_T) U.popups.push({ t0: t + 0.15, txt: 'Stronger drop', x: W - 70, y: 110, c: '#FF7AD0' });
         say('Gate ' + gateText(e.g) + '. Squad ' + e.n);
       } else if (e.type === 'runner') { sfx('runner'); U.popups.push({ t0: t, txt: '+1', x: sx, y: sy - 60, c: '#BFF8FF' }); }
+      else if (e.type === 'haz') { sfx('slam'); U.shake = Math.max(U.shake, 9); R.punch(2); R.burst((e.x0 + e.x1) / 2, 0.6, e.style === 'beam' ? '#F2EFE6' : '#FF4D6D', RM ? 4 : 30, 9, 0.6); }
+      else if (e.type === 'armor') { sfx(e.on ? 'armorOn' : 'armorOff'); U.popups.push({ t0: t, txt: e.on ? 'ARMOR BACK' : 'ARMOR DOWN!', x: W / 2, y: H * 0.34, c: e.on ? '#AEB8D8' : '#4BFFA5', big: true, life: 1.3 }); say(e.on ? 'Armor back' : 'Armor down. Hit the boss'); }
+      else if (e.type === 'pod') { sfx('good'); R.shock(e.x, R.bossZ(U.boss.ta - G.t), '#FFB547', 5, 3.8); U.popups.push({ t0: t, txt: 'POD DOWN', x: W / 2, y: H * 0.34, c: '#FFB547', big: true }); }
+      else if (e.type === 'orb') { sfx('good'); R.pickup(G.sx, '#FFB547'); U.popups.push({ t0: t, txt: 'ARMOR CRACKED', x: W / 2, y: H * 0.34, c: '#FFB547', big: true }); }
+      else if (e.type === 'swap' || e.type === 'shuffle') { sfx('swap'); }
+      else if (e.type === 'blocked') { if (!firstSeen.blocked) { firstSeen.blocked = 1; hint(GR.BOSS[U.boss.boss].tip); } }
+      else if (e.type === 'reflect') { sfx('hurt'); U.shake = Math.max(U.shake, 4); U.popups.push({ t0: t, txt: 'REFLECTED −' + e.lost, x: sx, y: sy - 70, c: '#FF4D6D' }); }
       else if (e.type === 'hurt' || e.type === 'bossHit') { sfx('hurt'); U.shake = e.type === 'bossHit' ? 16 : 6; U.popups.push({ t0: t, txt: '−' + e.lost, x: sx, y: sy - 70, c: '#FF4D6D', big: e.type === 'bossHit' }); }
-      else if (e.type === 'weapon') { sfx('weapon'); const wp = GR.WEAPONS[e.w], md = wp.mods[e.mod], up = md ? md.name.toUpperCase() : e.pick ? wp.name.toUpperCase() : wp.short.toUpperCase() + ' LV ' + e.lv; U.popups.push({ t0: t, txt: up + '!', x: W / 2, y: H * 0.45, c: wp.col, big: true, life: 1.4 }); const tip = md ? md.tip : e.pick ? wp.tip : ''; if (tip) hint(tip); if (e.pick || md) { R.pickup(G.sx, wp.col); if (!RM) { U.flash = 0.34; U.flashRGB = wp.col.slice(1).match(/../g).map(h => parseInt(h, 16)).join(','); } } if (e.pick) R.gates(G, gateText, gateNote); say('Weapon: ' + up); }
+      else if (e.type === 'weapon') { sfx('weapon'); const wp = GR.WEAPONS[e.w], md = wp.mods[e.mod], up = md ? md.name.toUpperCase() : e.pick ? wp.name.toUpperCase() : wp.short.toUpperCase() + ' LV ' + e.lv; U.popups.push({ t0: t, txt: up + '!', x: W / 2, y: H * 0.45, c: wp.col, big: true, life: 1.4 }); const tip = md ? md.tip : e.pick ? wp.tip : ''; if (tip) hint(tip); if (e.pick || md) { R.pickup(G.sx, wp.col); if (!RM) { U.flash = 0.34; U.flashRGB = wp.col.slice(1).match(/../g).map(h => parseInt(h, 16)).join(','); } } if (e.pick) R.gates(G, gateText, gateNote); if (e.keep) hint(wp.short + ' kept'); say('Weapon: ' + up); }
       else if (e.type === 'drop') { U.flashRGB = null; U.flash = 0.8; U.shake = 12; R.punch(9); R.shock(G.sx, 0, '#FFFFFF', 26, 0.4); U.popups.push({ t0: t, txt: 'OVERCLOCK ×' + e.mult.toFixed(1), x: W / 2, y: H * 0.42, c: '#FFFFFF', big: true, life: 1.6 }); say('The drop. Overclock times ' + e.mult.toFixed(1)); }
       else if (e.type === 'bossDown') { sfx('bossDown'); U.flashRGB = null; U.flash = 0.6; U.shake = 22; R.punch(7); U.popups.push({ t0: t, txt: 'BOSS DOWN', x: W / 2, y: H * 0.4, c: '#FFB547', big: true, life: 1.6 }); say('Boss down'); }
       else if (e.type === 'lost') { sfx('lose'); stopClock(true); U.endAt = performance.now() + 1100; }
@@ -1191,7 +1371,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     U.queue = U.queue.filter(q => { if (t < q.at) return true; R.burst(q.x, q.z - (t - G.t), q.c, 70, 13, q.y); R.shock(q.x, q.z, q.c, 9, q.y); U.shake = Math.max(U.shake, 9); return false; });
     // teaching hints the first time things show up
     if (!firstSeen.crate && G.ents.some(e => e.kind === 'crate' && !e.done && e.ta - G.t < 2.4)) { firstSeen.crate = 1; hint('Gold crate: shoot it to power up your weapon'); }
-    if (!firstSeen.boss && G.ents.some(e => e.kind === 'boss' && e.ta - G.t < GR.BOSS_RANGE)) { firstSeen.boss = 1; hint('Boss incoming. Overclock melts it'); }
+    if (!firstSeen.boss && G.ents.some(e => e.kind === 'boss' && e.ta - G.t < GR.BOSS_RANGE)) { firstSeen.boss = 1; $('bossName').textContent = GR.BOSS[U.boss.boss].name; hint(GR.BOSS[U.boss.boss].tip); }
   }
 
   // ================= input: one thumb, drag anywhere =================
@@ -1207,14 +1387,30 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   function keySteer(dt) { const d = (keys.right || keys.d ? 1 : 0) - (keys.left || keys.a ? 1 : 0); if (d && U.G) steer(U.G.tx + d * 2.4 * dt); }
 
   // ================= run lifecycle =================
-  let SONG = null;
-  function startRun(fromBar) {
+  // progress lives in this browser: unlocked streets, and what each street starts with. The Lab serves every game from one origin, so the key is namespaced
+  const SAVE_KEY = 'gr.save.v1', blank = () => ({ v: 1, unlocked: 1, beaten: {}, loads: {} });
+  function loadSave() {
+    try { const s = JSON.parse(localStorage.getItem(SAVE_KEY)); if (s && s.v === 1 && s.unlocked >= 1 && s.loads && s.beaten) { s.unlocked = Math.min(GR.MAX_LEVEL, Math.floor(s.unlocked)); return s; } } catch (e) {}
+    return blank();
+  }
+  function writeSave() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(U.save)); } catch (e) {} }   // private modes can refuse; the run still works
+  U.save = loadSave(); U.lv = U.save.unlocked;
+  // a clear unlocks the next street. Replays keep your best squad, and the street's start limits stop that being farmed
+  function bankClear(G) {
+    const S = U.save, L = G.def.n, next = L + 1, c = GR.carryOut(G), old = S.loads[next];
+    S.beaten[L] = true; S.loads[next] = old && old.n > c.n ? Object.assign(c, { n: old.n }) : c;
+    S.unlocked = Math.max(S.unlocked, Math.min(next, GR.MAX_LEVEL)); writeSave();
+  }
+  const SONGS = {};
+  function startRun(level, fromBar) {
     const ctx = audioInit(); U.noAudio = !ctx;
     if (ctx && ctx.state !== 'running') ctx.resume();
-    SONG = SONG || (ctx ? buildSong(TRACKS.neon) : []);
-    U.G = GR.newGame({ seed: (Math.random() * 1e9) | 0 }); R.setRun(U.G, gateText, gateNote); U.boss = U.G.ents.find(e => e.kind === 'boss'); U.evi = 0; U.popups = []; U.queue = []; U.lastSent = null; U.endAt = 0; hud.sec = null;
+    U.lv = level || U.lv; const def = GR.levelDef(U.lv);
+    U.G = GR.newGame({ seed: U.seedFix || (Math.random() * 1e9) | 0, def, loadout: U.save.loads[U.lv] }); U.T = trackFor(def);
+    const SONG = SONGS[U.lv] = SONGS[U.lv] || (ctx ? buildSong(U.T) : []);
+    R.setLevel(def); R.setRun(U.G, gateText, gateNote); $('bossName').textContent = GR.BOSS[def.boss.id].name; U.boss = U.G.ents.find(e => e.kind === 'boss'); U.evi = 0; U.popups = []; U.queue = []; U.lastSent = null; U.endAt = 0; hud.sec = null;
     for (const k in firstSeen) delete firstSeen[k];
-    U.test = !!fromBar;
+    U.test = !!fromBar; U.popups.push({ t0: 0.2, txt: 'LEVEL ' + U.lv, x: W / 2, y: H * 0.36, c: '#FFFFFF', big: true, life: 2 });
     if (fromBar) { // tester jump: the smart bot plays the street up to that bar, then you take over
       const r = GR.rng(5); let k = 0; while (U.G.t < fromBar * GR.BAR) { if (++k % 6 === 0) GR.act(U.G, { type: 'steer', x: GR.BOTS.smart(U.G, r) }); GR.step(U.G); }
       U.G.test = true; U.evi = U.G.ev.length; R.gates(U.G, gateText, gateNote);
@@ -1229,20 +1425,23 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     if (A.ctx) A.ctx.suspend(); U.pausedAt = performance.now();
     showSheet(`<h2>Paused</h2><button class="btn pri" data-act="resume" type="button">Resume</button>
       <button class="btn" data-act="restart" type="button">Restart</button>
-      <div class="fq"><div class="q">Tester tools</div><div class="row"><button class="btn" data-act="jumpRiser" type="button">Jump to riser</button><button class="btn" data-act="jumpDrop" type="button">Jump to drop</button></div>
+      <div class="fq"><div class="q">Tester tools</div><div class="row"><button class="btn" data-act="jumpRiser" type="button">Jump to riser</button><button class="btn" data-act="jumpDrop" type="button">Jump to boss</button></div>
       <p class="foot">A bot plays up to that point for a fair squad. Tester runs are tagged in feedback.</p></div>
       <button class="btn" data-act="title" type="button">Quit to title</button>`);
   }
   function resume() { if (!U.paused) return; U.paused = false; if (A.ctx) A.ctx.resume(); else U.clock0 += performance.now() - U.pausedAt; hideSheet(); }
   function finish() {
     const G = U.G, r = GR.results(G); U.playing = false; U.lastRes = r;
-    const verdict = r.won ? (r.boss ? 'Street cleared' : 'You made it') : 'Squad down';
-    const sub = r.won ? (r.boss ? 'The Enforcer melted on the drop.' : 'The Enforcer walked through you, but your squad survived.') : (r.section === 'drop' ? 'The Enforcer was too much. Build a bigger squad or charge Overclock higher.' : 'Line up with enemies to shoot them before they reach you.');
-    showSheet(`<span class="tag">${U.test ? 'TESTER RUN · ' : ''}Prototype 2</span><h2>${verdict}</h2>
+    const BS = GR.BOSS[G.def.boss.id], L = G.def.n, more = r.cleared && L < GR.MAX_LEVEL;
+    if (r.cleared && !U.test) bankClear(G);
+    const verdict = r.cleared ? 'Street cleared' : r.won ? 'Boss got away' : 'Squad down';
+    const sub = r.cleared ? BS.win + (more ? ` You carry ${Math.min(r.survivors, GR.levelDef(L + 1).start[1])} runners and your gun to level ${L + 1}.` : ' That\'s every street for now. More are coming.') : (r.section === 'drop' || r.won) ? BS.lose : 'Line up with enemies to shoot them before they reach you.';
+    showSheet(`<span class="tag">${U.test ? 'TESTER RUN · ' : ''}Level ${L} · ${G.def.name}</span><h2>${verdict}</h2>
       <div class="big">${r.survivors}</div><p>${sub}</p>
       <div class="stats"><div class="stat"><b>${r.peak}</b><span>peak squad</span></div><div class="stat"><b>${r.kills}</b><span>kills</span></div><div class="stat"><b>×${r.ocMult.toFixed(1)}</b><span>overclock</span></div>
       <div class="stat"><b>${r.gatesGood}/${r.gatesGood + r.gatesBad}</b><span>good gates</span></div><div class="stat"><b>${GR.WEAPONS[r.weapon].short}${r.wlv > 1 ? ' ' + r.wlv : ''}</b><span>weapon</span></div><div class="stat"><b>${r.credits}</b><span>credits</span></div></div>
-      <button class="btn pri" data-act="play" type="button">Run it back</button>
+      ${more ? `<button class="btn pri" data-act="next" type="button">Next: level ${L + 1}</button>` : ''}
+      <button class="btn${more ? '' : ' pri'}" data-act="play" type="button">Run it back</button>
       <button class="btn" data-act="feedback" type="button">Give feedback</button>
       <button class="btn" data-act="title" type="button">Title</button>`);
   }
@@ -1253,12 +1452,24 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   function hideSheet() { sheet.hidden = true; }
   function titleScreen() {
     U.playing = false; U.G = null; $('bossBar').hidden = true; stopClock(true); game.classList.add('idle');
-    showSheet(`<span class="tag">Prototype 2 · one street</span><h1><span class="c">OVER</span><span class="p">CLOCK</span></h1>
+    U.lv = U.save.unlocked; R.setLevel(GR.levelDef(U.lv));
+    showSheet(`<span class="tag">Prototype 2 · ${GR.MAX_LEVEL} streets</span><h1><span class="c">OVER</span><span class="p">CLOCK</span></h1>
       <p>Neon City, 2089. Hush banned music. Your squad brings the beat back.</p>
-      <button class="btn pri" data-act="play" type="button">Run</button>
+      <button class="btn pri" data-act="play" type="button">Run level ${U.lv}: ${GR.levelDef(U.lv).name}</button>
+      <button class="btn" data-act="levels" type="button">Level select</button>
       <button class="btn" data-act="how" type="button">How to play</button>
       <button class="btn" data-act="arsenal" type="button">Weapons and gates</button>
       <p class="foot">Sound on, silent mode off. About one minute per run.</p>`);
+  }
+  function levelScreen() {
+    const S = U.save, rows = []; for (let L = 1; L <= GR.MAX_LEVEL; L++) { const d = GR.levelDef(L), open = L <= S.unlocked, ld = GR.enter(d, S.loads[L]), wp = GR.WEAPONS[ld.weapon];
+      rows.push(open ? `<button class="lv" type="button" data-lv="${L}"><span>${L}. ${d.name}${S.beaten[L] ? ' <span class="ok">✓</span>' : ''}</span><small>${GR.BOSS[d.boss.id].name} · start ${ld.n} runners, ${wp.short}${ld.wlv > 1 ? ' Lv ' + ld.wlv : ''}</small></button>` : `<button class="lv" type="button" disabled><span>${L}. Locked</span><small>Beat level ${L - 1}'s boss</small></button>`); }
+    showSheet(`<h2>Level select</h2><p>Beat a boss to open the next street. Your squad and guns carry over.</p>${rows.join('')}
+      <button class="btn" data-act="reset" type="button">Reset progress</button><button class="btn" data-act="title" type="button">Back</button>`);
+  }
+  function resetScreen() {
+    showSheet(`<h2>Reset progress?</h2><p>This locks every street again and clears your carried squad and guns. It can't be undone.</p>
+      <button class="btn" data-act="resetYes" type="button">Yes, reset</button><button class="btn pri" data-act="levels" type="button">Keep my progress</button>`);
   }
   function howScreen() {
     showSheet(`<h2>How to play</h2><ol class="steps">
@@ -1266,7 +1477,8 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       <li><b class="gr">Steer left or right of the line</b> to pick a gate. The ▼ shows your pick. Flat numbers suit a small squad, multipliers a big one. <b class="r">Red</b> trades runners now for double later.</li>
       <li><b class="p">Your squad fires on its own.</b> Hordes fill the road. Carve a path through them, because whatever reaches you eats runners.</li>
       <li><b class="g">Pick your gun</b> at the weapon fork, then an upgrade for it later. Shoot gold crates to level it up.</li>
-      <li><b class="p">Gates fill Overclock.</b> It multiplies your damage during the drop, up to ×3. Overclock gates fill it fastest. Red gates fill none.</li></ol>
+      <li><b class="p">Gates fill Overclock.</b> It multiplies your damage during the drop, up to ×3. Overclock gates fill it fastest. Red gates fill none.</li>
+      <li><b class="r">Every boss has a trick.</b> Kill it to open the next street, and take your squad and guns with you. The hint at the top tells you what to do.</li></ol>
       <button class="btn pri" data-act="play" type="button">Run</button><button class="btn" data-act="title" type="button">Back</button>`);
   }
   function arsenalScreen() {
@@ -1300,7 +1512,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     U.fb.note = ($('fbNote') || {}).value || ''; U.fb.name = ($('fbName') || {}).value || '';
     if (!FQ.some(f => U.fb[f.id])) { $('fbErr').textContent = 'Tap at least one answer first.'; return; }
     const r = U.lastRes || {};
-    const body = { answers: Object.fromEntries(FQ.map(f => [f.id, U.fb[f.id] || null])), notes: U.fb.note, name: U.fb.name, result: r, tester: U.test, version: 'p2', at: new Date().toISOString() };
+    const body = { answers: Object.fromEntries(FQ.map(f => [f.id, U.fb[f.id] || null])), notes: U.fb.note, name: U.fb.name, result: r, tester: U.test, level: U.lv, version: 'p3', at: new Date().toISOString() };
     let ok = false;
     try { const db = window.claude && window.claude.use ? await window.claude.use('db') : null; if (db) { await db.collection('feedback').add(body); ok = true; } } catch (e) {}
     if (!ok && location.protocol !== 'file:') { try { const res = await fetch('/forge/api/feedback', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(Object.assign({ game: 'cyberpunk-gate-runner' }, body)) }); ok = res.ok; } catch (e) {} }
@@ -1311,14 +1523,19 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   card.addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
     if (b.dataset.fq) { U.fb[b.dataset.fq] = b.dataset.fv; card.querySelectorAll(`[data-fq="${b.dataset.fq}"]`).forEach(x => x.setAttribute('aria-pressed', x === b)); return; }
+    if (b.dataset.lv) { startRun(+b.dataset.lv); return; }
     const a = b.dataset.act;
-    if (a === 'play' || a === 'restart') startRun(0);
+    if (a === 'play' || a === 'restart') startRun(U.lv);
+    else if (a === 'next') startRun(U.lv + 1);
+    else if (a === 'levels') levelScreen();
+    else if (a === 'reset') resetScreen();
+    else if (a === 'resetYes') { U.save = blank(); writeSave(); titleScreen(); }
     else if (a === 'how') howScreen();
     else if (a === 'arsenal') arsenalScreen();
     else if (a === 'title') titleScreen();
     else if (a === 'resume') resume();
-    else if (a === 'jumpRiser') startRun(12);
-    else if (a === 'jumpDrop') startRun(19);
+    else if (a === 'jumpRiser') startRun(U.lv, 12);
+    else if (a === 'jumpDrop') startRun(U.lv, 19);
     else if (a === 'feedback') feedbackScreen();
     else if (a === 'fbSend') sendFeedback();
     else if (a === 'back') finish();
