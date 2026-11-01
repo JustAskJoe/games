@@ -2,7 +2,7 @@
 
 © 2026 justaskjoe. All rights reserved.
 
-status: draft
+status: approved, on hold (placeholder art first, $0)
 updated: 2026-11-01
 generations: 6 (first tries)
 estimate: about $0.54 first tries (4 × 2K at $0.101, 2 × 1K at $0.067)

@@ -2,7 +2,7 @@
 
 © 2026 justaskjoe. All rights reserved.
 
-status: draft
+status: approved
 updated: 2026-11-01
 camera: 2d
 release_target: steam
@@ -15,7 +15,7 @@ money_estimate: about $0.54 first tries, about $2-3 with retries (Gemini, Hunter
 team_needed: lead-artist, artist, ui-vector, tech-artist
 team_later: marketing-artist
 
-Written by the Lead Artist (`kit/agents/lead-artist.md`, JOB: plan) for `design/v3-design.md`. It adds to the approved `art/lead-plan.md` and `art/lead-plan-v2.md` and changes nothing in them. Rules are from `kit/art/art-rules.md` (R1, R2, …). The exact generation list is in [`v3-shotlist.md`](v3-shotlist.md).
+Written by the Lead Artist (`kit/agents/lead-artist.md`, JOB: plan) for `design/v3-design.md`. **Approved by Hunter on Nov 1, 2026, with one change: build v3 with placeholder art first, at $0.** The 6 paint rows ship as code-drawn placeholders (the room, product and crate shapes in CSS/SVG; the new bad actors as species-colored stand-ins). The shot list stays approved and ready to run later. It adds to the approved `art/lead-plan.md` and `art/lead-plan-v2.md` and changes nothing in them. Rules are from `kit/art/art-rules.md` (R1, R2, …). The exact generation list is in [`v3-shotlist.md`](v3-shotlist.md).
 
 ---
 

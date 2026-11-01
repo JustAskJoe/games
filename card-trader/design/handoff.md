@@ -23,6 +23,10 @@ This is the list of decisions as they stand. Change it when a decision changes. 
 - **The Lead Artist plans v2's art.** Paintings wait for Hunter's approval of `art/lead-plan-v2.md`.
 - Parked for v3: trust per species, a rival stall, customs, a campaign across several weeks, a second hub.
 
+## v3 decisions (Hunter, Nov 1, 2026)
+- **v3 scope approved** (`design/v3-design.md`): the Back Room (storage, display case, rack, binders, bulk bin, shelves, safe, inbox), gear and a sleeving policy with gentle wear, products and crate deliveries, and 5 new bad actors (the Scale Gang, Sticky, a Trimmer, the Switcher, a Resealer).
+- **Placeholder art first, $0.** The Lead Artist's v3 plan is approved, but its 6 Gemini images wait; v3 ships with code-drawn placeholders.
+
 ## Still open
 - Final title (Intergalactic Card Trader is a working title).
 - Whether the art direction holds after the crew sees it.
