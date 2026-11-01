@@ -2,7 +2,7 @@
 
 © 2026 justaskjoe. All rights reserved.
 
-**Status:** hired Nov 1, 2026 (Hunter). Tier A (scripted personas) is built for `card-trader` and runs free. Tier B (Claude plays as a persona) has two routes. The **no-API route** runs on Hunter's Claude plan in a Claude Code session and is live (first two runs Nov 1, 2026). The **API route** (Haiku 5.5 on its own $5/month key) is designed, not built, and its first real run needs Hunter's OK.
+**Status:** hired Nov 1, 2026 (Hunter). Tier A (scripted personas) is built for `card-trader` and runs free. Tier B (Claude plays as a persona) has two routes. The **no-API route** runs on Hunter's Claude plan in a Claude Code session and is live (first two runs Nov 1, 2026). The **API route** (Haiku 5.5 on its own $5/month key) is built but has never run for real; its first real run needs Hunter's OK.
 
 You give a game the same feedback human playtesters give, in the same shape, so humans and agents land on one results page. You do not decide what the game should be; you report what a kind of player ran into, quoting what happened. Humans tell us how it feels. Agents tell us, cheaply and repeatably, where a player hits a wall, misses a system or runs out of money.
 
@@ -91,12 +91,12 @@ It can: which refusals players hit, which systems a play style never touches, wh
 ## Tier B: Claude plays as a persona (two routes)
 Tier A bots find walls and money trouble; they can't read. Tier B has Claude play the game as a persona, reading only what a player sees, and write the questionnaire in that persona's own words. It catches unclear wording, contradictions between screens, and stale or wrong lines. There are two routes. Both write the same schema; only who pays differs.
 
-| | **No-API route** (free to run, live) | **API route** (Hunter's API credits; designed, not built) |
+| | **No-API route** (free to run, live) | **API route** (Hunter's API credits; built, never run) |
 | --- | --- | --- |
 | Who plays | An on-demand Claude Code session | A script calling the Anthropic API |
 | Pays with | Hunter's Claude plan usage (no per-token bill; counts against the plan's usage limits) | Prepaid API credits in a separate Console workspace with a $5/month hard limit. This is real money. |
 | `source` | `agent-claude` | `agent-llm` |
-| Plays through | `card-trader/prototype/play-driver.js` (the engine, player-visible text only), or the built page in the desktop app's browser pane or Playwright | The same driver, called by a runner script |
+| Plays through | `card-trader/prototype/play-driver.js` (the engine, player-visible text only), or the built page in the desktop app's browser pane or Playwright | The same driver, called by `card-trader/prototype/playtest-llm.js` |
 | Speed | One run is a long session (each run here took roughly 40-60 tool calls with standing orders) | Unattended; 8 personas in one batch |
 | Trigger | Someone pastes the session prompt below | GitHub Action, `workflow_dispatch` only |
 | Needs | Nothing new | Hunter's OK for the first real run, after the key exists |
@@ -118,7 +118,7 @@ Driver caveats:
 >
 > At the end, write one run in the questionnaire schema in `kit/agents/playtester.md`, with `source: 'agent-claude'`, `persona`, `seed` and your notes. The free-text answers (`contra`, `confused`, `best`, `worst`, `change`, `bugs`) are in the persona's voice and cite days and numbers from the run. Add it to `card-trader/playtests/claude-<date>.json` and an ArtifactData batch file (doc `agent-claude-<persona>`), but **do not write to the artifact** and make **no API calls**. Add findings to the patch notes' Watch out, commit on a branch and open a pull request. Never merge.
 
-### API route (designed, not built)
+### API route (built Nov 1, 2026; never run for real)
 Hunter's decisions (Nov 1, 2026):
 - **Model:** `claude-haiku-5-5` for all 8 personas, one run each per round. A `--model` flag lets 2-3 "lead" personas use `claude-sonnet-5-5` later.
 - **Key:** an org Actions secret, `PLAYTEST_ANTHROPIC_API_KEY`, from its own Console workspace with a **$5/month hard spend limit** (Hunter is creating it). Not the Artist's `ANTHROPIC_API_KEY`. The runner reads it only from the environment and never prints or logs it.
@@ -127,9 +127,11 @@ Hunter's decisions (Nov 1, 2026):
 - **Output:** the same answer format, with `source: 'agent-llm'` and `persona`.
 - **First real run:** only after the key exists and Hunter OKs it. A dry-run in CI or locally is fine anytime.
 
+**Files:** `card-trader/prototype/playtest-llm.js` (the runner) and `.github/workflows/playtest-llm.yml` (the Action). `--mock` plays every run with a scripted stand-in instead of the API: no key, no cost. It's how the loop was tested (8 personas, all reached day 10, caps and the missing-key stop checked). Refusals (`stop_reason: refusal`) count as a skipped decision and the game is nudged on; no server-side fallback is set.
+
 **How it plays.** The runner wraps `play-driver.js`: each stop's printed state is one user turn. The system prompt holds the persona, the rules and the schema (fixed text, cached). The model answers with moves as structured output, which the runner validates and applies. Standing orders keep the call count down. At the end, one call turns the notes and the day log into the questionnaire JSON, validated before it's kept.
 
-**Prompt caching.** The persona, rules and schema go first and stay byte-identical across turns, with a `cache_control` breakpoint after them. *Check that the prefix is long enough to cache on the chosen model:* the minimum cacheable prefix depends on the model (512-4,096 tokens), and a ~3K prefix may not cache on every model. Confirm with `usage.cache_read_input_tokens` on a one-call test.
+**Prompt caching.** The persona, rules and schema go first and stay byte-identical across turns, with a `cache_control` breakpoint after them. The rules prefix is about 1.5K tokens; the minimum cacheable prefix on the 5.5 models is 512 (per Anthropic's caching docs as of Oct 2026), so it should cache. Confirm with the logged `cached` count on the first real run.
 
 **Cost per run (estimate).** Prices from Anthropic's model table cached Oct 6, 2026:
 - Haiku 5.5: $0.10 input / $0.50 output per million tokens, for prompts up to 100K.
@@ -137,7 +139,7 @@ Hunter's decisions (Nov 1, 2026):
 
 *Haiku 5.5's cache-read price isn't in that table: unverified.* Check live prices before the first run.
 
-Assumptions: about 140 decisions a run (the no-API runs had roughly 100-150 real decision stops with standing orders), about 4K input and 300 output tokens per decision, plus one questionnaire call of about 20K in and 2K out.
+Assumptions: about 140 decisions a run, about 4K input and 300-500 output tokens per decision, plus one questionnaire call of about 20K in and 2K out. The mock runs needed only 60-70 decisions of about 900 input tokens each (standing orders do most visits), so this is a cautious estimate; real replies with thinking will be longer than the mock's.
 
 | Model | Tokens per run (in / out) | Per run | 8 personas | Runs under the $5 cap |
 | --- | --- | --- | --- | --- |
@@ -147,13 +149,13 @@ Assumptions: about 140 decisions a run (the no-API runs had roughly 100-150 real
 
 So a Haiku round of all 8 personas fits the $5 cap about 7 times a month, and one Sonnet lead persona costs about ten Haiku runs. Replace this table with logged `usage` after the first real run.
 
-**Running it (once built):**
+**Running it:**
 
 ```bash
 node card-trader/prototype/playtest-llm.js --personas all --max-runs 8 --max-tokens 6000000
 ```
 
-That prints the estimate and stops (dry-run). Add `--go` only with Hunter's OK. In CI: Actions → Playtest (LLM) → Run workflow, with `go: false` for an estimate.
+That prints the estimate and stops (dry-run). `--mock` tests the loop for free. Add `--go` only with Hunter's OK. In CI: Actions → Playtest (LLM) → Run workflow, with `go: false` for an estimate. Results come back as the `playtest-llm` workflow artifact (`llm-<date>.json` with per-run `usage`, plus an ArtifactData batch); review them, then the main session pushes the batch.
 
 ## Recruiting human playtesters at scale
 The questionnaire artifact is private to the org, so outside testers need a public route to the game and to the questions. Verify each before relying on it; uncertain points are marked.

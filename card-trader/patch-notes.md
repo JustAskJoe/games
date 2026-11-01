@@ -29,7 +29,8 @@ Agents now fill in the same playtest questionnaire as human testers. Eight scrip
 ### Next up
 - [ ] @Hunter: OK pushing `playtests/agents-2026-11-01-batch.json` to the questionnaire artifact (8 docs `agent-<persona>` in `playtests`). The main session pushes it with ArtifactData after your yes.
 - [ ] @Hunter: OK pushing `playtests/claude-2026-11-01-batch.json` (2 docs `agent-claude-<persona>`).
-- [ ] Build the Tier B API runner (`playtest-llm.js`, dry-run by default, `--go`, `--max-runs`, `--max-tokens`) and the manual `playtest-llm.yml` workflow on `PLAYTEST_ANTHROPIC_API_KEY` (Haiku 5.5, $5/month workspace cap). Designed in `kit/agents/playtester.md`; not built. First real run needs @Hunter's OK after the key exists.
+- [x] Build the Tier B API runner (`card-trader/prototype/playtest-llm.js`: dry-run by default, `--go` to spend, `--max-runs`, `--max-tokens`, `--mock` for a free test) and the manual `.github/workflows/playtest-llm.yml` on `PLAYTEST_ANTHROPIC_API_KEY` (Haiku 5.5). Claude, Nov 1, 2026.
+- [ ] @Hunter: create the `PLAYTEST_ANTHROPIC_API_KEY` org secret (own Console workspace, $5/month hard limit), then OK the first real run (estimate for all 8 personas on Haiku: about $0.75, cautious).
 - [ ] Balance agent: add an "always sell to the scalper" bot, and check whether rep loss should cost something.
 - [ ] Fix the review lines so they only mention what the shop actually has, and say why the rating moved each morning.
 - [ ] Results page: show `source: 'agent'` docs apart from human ones (or behind a filter) so bot answers don't drown out people.
@@ -47,6 +48,9 @@ Agents now fill in the same playtest questionnaire as human testers. Eight scrip
 - [ ] Possible bug, not verified in the browser: card names come out `undefined` after a save is loaded, because `CT.load()` doesn't rebuild the card universe until something calls `uni(G)`. Reproduced in Node via the driver ("I'm looking for undefined"). `frontend.js` loads saves on continue; check there. The driver works around it.
 - [ ] Day 8's close repeats "Wave 3 reprint list is out" on the eve of Wave 4, and Card Night with no packs says "the crowd still bought some packs".
 - [ ] Claude's two runs are one seed each, played by the same model that wrote the code, and it played the min-maxer knowing the newbie run's lesson that sealed pays. Treat them as two careful testers, not a sample.
+- [ ] The API runner has only run on `--mock`. Untested against the real API: the JSON-schema output format, `effort: low` on Haiku 5.5, refusal handling and the cache hit. Check the first real run's logged `usage` and replace the estimate.
+- [ ] The workflow pins `@anthropic-ai/sdk@^0.136.0` without checking that version exists on npm, and the workflow has never run. Try a `go: false` run first (it calls nothing).
+- [ ] The new workflow touches `.github/`, so Guard needs another teammate's approval on this PR.
 - [ ] Standing orders made routine visits automatic, so some lines (for example Quill's "Glyphsmiths' workshop, I mean") went unread in the moment. A human would read every line.
 
 ---

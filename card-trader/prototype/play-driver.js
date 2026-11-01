@@ -68,10 +68,10 @@ function advance(S) {
   return G.phase;
 }
 
-function show(S) {
+function view(S) {
   const G = S.G, D = G.week[G.dayIdx], L = [];
   if (S.out.length) { L.push('--- what happened'); L.push(...S.out.slice(-40)); S.out = []; }
-  if (G.phase === 'end') { L.push('=== END: ' + JSON.stringify(G.final) + ' rating ' + G.rating.stars); return console.log(L.join('\n')); }
+  if (G.phase === 'end') { L.push('=== END: ' + JSON.stringify(G.final) + ' rating ' + G.rating.stars); return L.join('\n'); }
   L.push('=== Day ' + (G.dayIdx + 1) + '/10 ' + (D ? D.name : '') + ' · ' + G.phase.toUpperCase() + ' · cash ' + Math.round(G.cash) + '₵ · rent tonight ' + (D ? D.rent : '-') + '₵' + (G.tab ? ' · TAB ' + Math.round(G.tab) : '') + ' · rep ' + G.rep + (G.rating && G.rating.stars != null ? ' · ' + G.rating.stars.toFixed(2) + '★' : ''));
   if (D) L.push('Demand: ' + Object.keys(G.demand || D.demand).map(g => CT.GAMES[g].name + ' ×' + (G.demand || D.demand)[g]).join(', ') + (D.release ? ' · RELEASE DAY' : ''));
   if (G.phase === 'morning' || G.phase === 'close') {
@@ -105,14 +105,18 @@ function show(S) {
     if (N.auc) L.push('Auction: ' + N.auc.clues.join('; ') + ' · price ' + N.auc.price + ' high ' + N.auc.high);
     if (N.dig) L.push('Dig: flips ' + N.dig.flips + ' · ' + N.dig.cards.map((c, i) => i + (c.flipped ? '=' + nm(G, c) : c.hint.glint ? '*' : '')).join(' '));
     if (N.swaps) L.push('Swaps: ' + N.swaps.map((s, i) => i + ': their ' + nm(G, s.theirs) + ' ~' + Math.round(est(G, s.theirs)) + ' for your ' + (s.want ? nm(G, CT.findThing(G, s.want) || { t: null, type: 'box' }) : 'nothing')).join(' | ')); }
-  console.log(L.join('\n'));
+  return L.join('\n');
 }
+function show(S) { console.log(view(S)); }
+function newSession(seed, answers) {
+  const S = { G: CT.newGame(+seed), seed: +seed, moves: 0, refusals: [], notes: [], orders: {}, out: [], stopAll: false };
+  step(S, { t: 'start', answers }); return S;
+}
+module.exports = { newSession, apply, advance, view, kindOf };
 
-if (cmd === 'new') {
-  const [seed, focus, split, home] = rest, G = CT.newGame(+seed);
-  const S = { G, seed: +seed, moves: 0, refusals: [], notes: [], orders: {}, out: [], stopAll: false };
-  step(S, { t: 'start', answers: { focus, split, home } }); advance(S); show(S); save(S);
-} else if (cmd === 'do') { const S = loadS(); apply(S, JSON.parse(rest[0] || '[]')); advance(S); show(S); save(S); }
+if (require.main !== module) { /* used as a module by playtest-llm.js */ }
+else if (cmd === 'new') { const [seed, focus, split, home] = rest, S = newSession(seed, { focus, split, home }); advance(S); show(S); save(S); }
+else if (cmd === 'do') { const S = loadS(); apply(S, JSON.parse(rest[0] || '[]')); advance(S); show(S); save(S); }
 else if (cmd === 'order') { const S = loadS(); if (rest[1]) S.orders[rest[0]] = JSON.parse(rest[1]); else delete S.orders[rest[0]]; save(S); console.log('orders:', JSON.stringify(S.orders)); }
 else if (cmd === 'note') { const S = loadS(); S.notes.push({ day: S.G.dayIdx + 1, phase: S.G.phase, text: rest[0] }); save(S); console.log('noted'); }
 else if (cmd === 'look') { const S = loadS(); show(S); save(S); }
