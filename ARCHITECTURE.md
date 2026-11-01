@@ -6,7 +6,7 @@ Written Oct 28, 2026, when the collective's game work moved from One Fifty Labs 
 
 ## In one paragraph
 
-The crew's front door is **Studio HQ** (https://jaj-forge.huntefl.workers.dev), one signed-in page drawn as a village of department buildings that shows what needs someone, every game, the pitch pipeline, the agents and recent changes. It has three painted looks, and every building and agent house opens into a painted room with its agents standing in it. Game ideas start in **Forge** (`/forge` on the same site), a small website where everyone answers a pitch questionnaire on their own. When the crew approves a pitch, Forge opens a pull request that adds the game's folder to **`JustAskJoe/games`**, the public repo where all game work lives. Playable builds in that repo show up in the **Lab** (on the same site as Forge, behind the same email sign-in), including a "play this branch" link on every pull request. Art requests for any of the studio's games go to the **Artist**, a Claude agent that drafts free concept sheets as pull requests, and reports to the **Art Cottage**, a claude.ai page where the crew picks and votes (its door is the Art Cottage building in the village; until Oct 30 this page was called Studio HQ). The studio's XR apps live in a separate **private XR repo** in the same org; the village shows them in the Arcade's XR Lab for signed-in crew. GitHub is the record of truth; everything else is a view or a helper.
+The crew's front door is **Studio HQ** (https://jaj-forge.huntefl.workers.dev), one signed-in page drawn as a village of department buildings that shows what needs someone, every game, the pitch pipeline, the agents and recent changes. It has three painted looks, and every building and agent house opens into a painted room with its agents standing in it. Game ideas start in **Forge** (`/forge` on the same site), a small website where everyone answers a pitch questionnaire on their own. When the crew approves a pitch, Forge opens a pull request that adds the game's folder to **`JustAskJoe/games`**, the public repo where all game work lives. Playable builds in that repo show up in the **Lab** (on the same site as Forge, behind the same email sign-in), including a "play this branch" link on every pull request. Art requests for any of the studio's games go to the **Artist**, a Claude agent that drafts free concept sheets as pull requests, and reports to the **Art Cottage**, a room in the village where the crew asks for art, votes on her concept sheets and Hunter makes the final pick. It works entirely through GitHub. The studio's XR apps live in a separate **private XR repo** in the same org; the village shows them in the Arcade's XR Lab for signed-in crew. GitHub is the record of truth; everything else is a view or a helper.
 
 ## In review right now (Oct 31, 2026)
 
@@ -31,8 +31,8 @@ These pull requests change what's described below. When one merges, move its lin
 | **Lab** | Plays builds from the games repo, plus branch previews | https://jaj-forge.huntefl.workers.dev/lab (same Worker as Forge) | Same as Forge |
 | **Forge database** | Pitches, everyone's answers, briefs, in-game feedback | Cloudflare D1 `jaj-forge` | Hunter's Cloudflare account |
 | **Sign-in** | Email one-time code; only listed emails get in | Cloudflare Zero Trust (free plan), policy "Forge crew" | Hunter's Cloudflare account |
-| **Art Cottage** (was "Studio HQ") | The Artist's room, in the village's painted look: her desk, art inbox, picks and votes, and an ask box for every game in the org | https://claude.ai/artifact/BcRVpMGrpV3JKJzPSPBLqb | Hunter's claude.ai account |
-| **Artist: Concepts** | Free concept sheets for art requests, for every game in the org | Scheduled task "JustAskJoe Artist: Concepts (Mon + Wed)"; **schedule off since Oct 31**, so she runs only when Hunter sends a request, a pick or a wake from the Art Cottage | Hunter's claude.ai plan |
+| **Art Cottage** | The Artist's room in the village: an ask box for every game in the org, her concept sets to vote on, Hunter's Pick buttons, what's waiting for her, and a **Run her now** button | Inside Studio HQ (`/api/art*` in `JustAskJoe/forge`, `src/art.js`). Moved there Oct 31; the old claude.ai page is retired | Same as Studio HQ |
+| **Artist: Concepts** | Free concept sheets for art requests, for every game in the org | Scheduled task "JustAskJoe Artist: Concepts (Mon + Wed)": Mon + Wed 8:17am Central, or **Run her now** in the Art Cottage | Hunter's claude.ai plan |
 | **Artist: Finals** | Final art for approved requests (spends credits) | Scheduled task "JustAskJoe Artist: Finals" (Run now only) | Hunter's claude.ai plan + PixelLab/Canva credits |
 | **CI** | Build and test, secret scan, preview links, Guard | `.github/workflows/checks.yml`, `guard.yml` | GitHub Actions |
 | **Producer** (in review, games#16) | Monday digest issue: reviews waiting, stuck agents, art, bugs, what merged | `.github/workflows/weekly-digest.yml` | GitHub Actions; no AI, no cost |
@@ -117,29 +117,29 @@ test/                Offline tests (npm test): sign-in checks, approve → PR, L
 ```mermaid
 sequenceDiagram
   actor P as Crew member
-  participant HQ as Art Cottage (claude.ai)
+  participant HQ as Art Cottage (Studio HQ)
+  participant GH as The game's repo
   participant T as Artist task (scheduled)
-  participant GH as JustAskJoe/games
-  P->>HQ: Ask for art (queued) or Hunter clicks "Send"/"Wake"
-  T->>HQ: Reads queued requests (Mon/Wed 8:17am Central, or when woken)
-  T->>GH: Opens an issue, writes brief + SVG concept sheets, opens a PR
-  T->>HQ: Posts the options to the inbox, updates the desk and log
-  P->>HQ: Votes; Hunter sends the pick
-  T->>GH: Posts "Pick: X" on the PR
+  P->>HQ: Ask for art
+  HQ->>GH: Opens an "Art request: …" issue (agent:art + game:<folder>)
+  T->>GH: Mon/Wed 8:17am Central or "Run her now": brief + SVG concept sheets, one PR per issue (branch art/…)
+  HQ->>GH: Reads her open art/ PRs and shows the sheets
+  P->>HQ: Votes (kept in Forge's database)
+  HQ->>GH: Hunter's Pick posts "Pick: X" on the PR
   Note over GH: Hunter adds art-approved → runs Finals by hand (spends credits)
 ```
 
 - **Instructions:** `kit/agents/artist.md` in this repo for this repo's games (the XR repo has its own copy), plus each game's `art/art-direction.md`. Since Oct 31 the Concepts prompt's `PROJECTS:` lists every game in the org: the five here and the XR repo's apps. A game with no `art/art-direction.md` yet gets a draft one in its first concepts pull request, for the crew to review. Nothing from the private XR repo is ever copied here.
-- **Concepts task:** Mon + Wed 8:17am Central when its schedule is on; **off since Oct 31** (Hunter's call), so it runs only when Hunter sends something from the Art Cottage. Connectors: Canva, Slack, Claude Code Remote. **No PixelLab**, so it cannot spend credits.
+- **Concepts task:** Mon + Wed 8:17am Central, plus **Run her now** in the Art Cottage (anyone signed in; once per 15 minutes for the whole crew). The button uses the task's API trigger; its key is the Worker secret `ARTIST_RUN_TOKEN` and can start only this task. Connectors: Canva, Slack, Claude Code Remote. **No PixelLab**, so it cannot spend credits.
 - **Finals task:** no schedule, Run now only. Connectors: PixelLab, Canva, Slack. Acts only on issues labeled `art-approved` and stops if over the estimate. Its prompt still lists Tower Defense only.
-- **Art Cottage data** (the page's own database; the Artist's instructions and task prompts still call this page "Studio HQ", which is the same page): `desks` (the Artist's status), `inbox` (things to pick), `requests` (crew asks), `log`, `votes`. Crew members with "can use" access can ask and vote; only Hunter can wake the Artist or send picks, because those buttons use his claude.ai account.
-- **Adding a game to the Artist:** add it to `PROJECTS:` in the task prompts and to the Art Cottage's game list (`GAMES` in its page code). The Artist drafts `art/art-direction.md` on its first request if it has none, and GitHub creates the `game:<folder>` label the first time she uses it.
+- **How the Art Cottage works** (moved from a claude.ai page into Studio HQ on Oct 31, because the Artist's scheduled runs couldn't reach that page's data): everything goes through GitHub. A request is an issue labeled `agent:art` + `game:<folder>` in the game's own repo (10 a day per person). A concept set is one of her open pull requests on an `art/…` branch, with sheets at `<folder>/art/concepts/<issue>-<A|B|C>.svg` and labels from the brief's `- A: Label: blurb` lines. Votes are kept in Forge's database (`art_votes`). Only emails in the Worker secret `ART_PICKERS` (Hunter) see the Pick buttons; a pick is a "Pick: X" comment on the pull request. The Studio's GitHub key needs Issues: write for requests and picks.
+- **Adding a game to the Artist:** nothing to do for a browser game: the Concepts prompt and the Art Cottage both read `games.json`, which Forge's Approve adds new games to. An XR app goes in `XR_APPS` in `JustAskJoe/forge` and in the task prompts. The Artist drafts `art/art-direction.md` on its first request if it has none, and GitHub creates the `game:<folder>` label the first time she uses it.
 
 ### All agents (Oct 31, 2026)
 
 | Agent | Kind | Status | When it runs |
 | --- | --- | --- | --- |
-| Artist: Concepts | Claude, scheduled task | Live, schedule off | When Hunter sends from the Art Cottage (Mon + Wed 8:17am Central when switched back on) |
+| Artist: Concepts | Claude, scheduled task | Live | Mon + Wed 8:17am Central, or Run her now in the Art Cottage |
 | Artist: Finals | Claude, scheduled task | Live | Run now only (spends credits) |
 | Guard, Checks | GitHub Actions, no AI | Live | Every pull request |
 | Producer | GitHub Actions, no AI (stage 1) | In review (games#16) | Monday 8am Central |
@@ -155,7 +155,7 @@ sequenceDiagram
 | GitHub org `JustAskJoe` | Hunter and Zach (owners); crew via the **games** team | games (public), forge (private; team access); studio-private (owners only) |
 | GitHub account `onefiftylabs` | Hunter (One Fifty Labs) | village-engine (private), plus One Fifty Labs' own repos |
 | Cloudflare | Hunter's personal account | Forge + Lab Worker, Forge database, sign-in |
-| claude.ai | Hunter's personal account | Art Cottage, both Artist tasks, the skills |
+| claude.ai | Hunter's personal account | Both Artist tasks, the skills |
 | Canva, PixelLab | Hunter | Art credits (ask before spending) |
 | Everyone's own Claude | Each person | Day-to-day work in this repo |
 
@@ -163,11 +163,11 @@ This is fine for now ("Where do the shared accounts live?" in HOW-WE-WORK). It m
 
 ## 7. What the crew can and can't do today
 
-**Can:** sign in to Forge and the Lab (if on the list), pitch, answer, paste briefs, approve pitches, push branches and open PRs, review and approve each other's PRs (needed for Guard), file art requests for any game (GitHub issue with `agent:art` + `game:<folder>`, or the Art Cottage ask box; asks from the crew wait for Hunter to send them while the Artist's schedule is off), vote on art, play every browser game from its Arcade cabinet, and try the emulator-ready XR apps on the headset maker's free emulator (the Arcade links each one's test guide; headset testing is Hunter's for now).
+**Can:** sign in to Forge and the Lab (if on the list), pitch, answer, paste briefs, approve pitches, push branches and open PRs, review and approve each other's PRs (needed for Guard), file art requests for any game (GitHub issue with `agent:art` + `game:<folder>`, or the Art Cottage ask box), start the Artist with Run her now, vote on art, play every browser game from its Arcade cabinet, and try the emulator-ready XR apps on the headset maker's free emulator (the Arcade links each one's test guide; headset testing is Hunter's for now).
 
 **Zach, as an org owner, can also:** manage GitHub members, teams, repo settings and rules, so the org keeps running if Hunter's account is unavailable.
 
-**Can't (only Hunter, today):** deploy Forge/Lab changes, add people to the sign-in list, wake the Artist or send picks from the Art Cottage, run Finals, spend art credits, change Cloudflare or claude.ai settings.
+**Can't (only Hunter, today):** deploy Forge/Lab changes, add people to the sign-in list, make the final art pick, run Finals, spend art credits, change Cloudflare or claude.ai settings.
 
 ## 8. Known gaps and risks
 
@@ -178,7 +178,6 @@ This is fine for now ("Where do the shared accounts live?" in HOW-WE-WORK). It m
 - **Free painted roughs** (open PR #11) would call an endpoint on the One Fifty Labs website and need an `ART_KEY` secret here.
 - **The deck and prototype kit also exist in Hunter's claude.ai Project "AI Games".** The repo's `kit/` is the copy the crew uses; the two can drift.
 - **The Artist has no automated tests.** Each real run is the test.
-- **The Artist's schedule is off,** so crew art requests wait until Hunter sends them.
 - **The XR Lab depends on the token.** If `GITHUB_TOKEN` loses access to the private XR repo, the Workshop says so and the XR pull requests disappear; nothing else breaks.
 - **Agents that share a house share a figure.** The village draws one painted character per house, so the four Engineers look alike until each gets their own art.
 
@@ -186,7 +185,7 @@ This is fine for now ("Where do the shared accounts live?" in HOW-WE-WORK). It m
 
 | I want to... | Do this |
 | --- | --- |
-| Add a person | Hunter: invite their GitHub username to the **games** team; add their email to the "Forge crew" policy; share the Art Cottage with them ("can use"). They don't see `studio-private` unless an owner adds them there (repo Settings → Collaborators and teams). |
+| Add a person | Hunter: invite their GitHub username to the **games** team; add their email to the "Forge crew" policy. Point them (and their Claude) at `ONBOARDING.md`. They don't see `studio-private` unless an owner adds them there (repo Settings → Collaborators and teams). |
 | Review an agreement before signing | In `studio-private`: put it in `legal/agreements/`, then ask Claude Code "Use the legal-reviewer agent on <file>. It's for: <one line>." See `legal/README.md` there for when a real lawyer is needed. |
 | Add a game to the Lab | After games#15 and forge#5: one entry in `games.json` here, nothing else. Until then: PR in `JustAskJoe/forge`: one line in `GAMES` (`src/lab.js`) and a card in `src/pages/lab.html`; deploy. PR here: add it to the `LAB` map in `.github/workflows/checks.yml` (Guard needs a second approver). |
 | Change Forge or the Lab | Branch + PR in `JustAskJoe/forge`, `npm test` and `npm run check` pass, merge, deploy. |
