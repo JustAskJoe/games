@@ -6,6 +6,25 @@ Newest on top. See the repo's CLAUDE.md for how patch notes work.
 
 ---
 
+## v3.0.1 balance · 2026-11-01 · Balance agent for Hunter (with Claude): why repacks never sell
+No game change. A write-up of why repacks are dead and a proposed fix for Hunter to approve. Details: the "Repacks" section of `design/balance-report-2026-11-01.md`.
+
+### What's new
+- Nothing player-facing.
+
+### Next up
+- [ ] @Hunter: answer question 5 in the balance report (value repacks by their sign plus a gamble premium, or make them pay another way).
+- [ ] Once approved: change the repack value in `goodValue`, let the sim's careful bot build small repacks early, and add a repack-payoff line to `sim.js` and the band.
+
+### Watch out
+- [ ] Buyers value a repack by its hidden contents (`engine.js:1236`), so only hit packs ever sell. Every one of 204 repacks sold in an early-repack scratch run was a hit pack, and repacks earned 83% less than selling the same cards loose. The design says buyers judge repacks by the sign.
+- [ ] The sim's careful bot only builds repacks at day 10's close, so the sim never shows a repack on a shelf. Any repack fix needs a bot change to be measured.
+- [ ] No honest sign-based value tested beats selling loose: the best was about break-even with a 1.3× gamble premium and a 30₵ sign. Repacks also lowered careful's gain in every variant (196–212% vs 231%). The "+20% over loose" target needs a design call, not a constant.
+- [ ] Shelf space caps repacks too: about 160 of the early-repack runs hit "no room for 4 repacks".
+- [ ] All of this is from scratch sim copies; nothing was checked in a real playthrough.
+
+---
+
 ## v3.0.1 · 2026-11-01 · Hunter (with Claude): continuing a save
 ### What's new
 - **Fix:** continuing a saved run on a freshly opened page showed card names as "undefined" until something rebuilt the card universe. Loading a save now rebuilds it from the run's seed. The agent playtesters found it; the fix was checked by loading a save in a fresh node process and through the full walkthrough.
@@ -44,7 +63,7 @@ The Balance agent's first pass: a report, then tuning at Hunter's request. Full 
 - [ ] @Hunter: Loupe upgrades are now worth +21 (no ceiling in the band). Their value is very sensitive to when the Spectrometer is bought: at 140₵ it fell to +37 from +60 before tuning, at 210₵ to +3.
 - [ ] Greedy now loses 13% to theft, near the band's 15% ceiling. A future change that makes cases hold more could tip it over.
 - [ ] Paranoid still ends on a tab in 32% of runs. That follows from 20 wrong calls a run, which is intended, but check it doesn't feel like a debt spiral.
-- [ ] Repacks are dead in the sim. The sorter is bought in 2% of careful runs, and a forced repack bot sold 0 of 48 repacks. A repack's value counts its bulk at 0.4₵ a card, below loose bulk's 1₵. Cause not confirmed; the "+20% over loose" target can't be measured.
+- [x] (Balance agent, Nov 1: cause found, see the repack section of the report) Repacks are dead in the sim. The sorter is bought in 2% of careful runs, and a forced repack bot sold 0 of 48 repacks. A repack's value counts its bulk at 0.4₵ a card, below loose bulk's 1₵. Cause not confirmed; the "+20% over loose" target can't be measured.
 - [ ] Vintage is 23% of incoming cards and 52% of value (target 10% / 35%). Lowering estate vintage weights to 25/45/30 gives 15% / 42% but costs careful 49 points. The target fights the 150% careful floor. Not tuned.
 - [ ] The schemer bounty is 18₵ vs a ~70–90₵ day (target: about a day's profit). A 60₵ bounty adds 40–60 points to every honest bot. Not tuned.
 - [ ] Not measured: floor-only full by day 4, fetch-everything loses ~15%. Proxies are in the report.
