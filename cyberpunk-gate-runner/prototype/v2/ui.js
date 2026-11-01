@@ -1,4 +1,4 @@
-/* Cyberpunk Gate Runner, Prototype 2: house loop synth, steering input, screens. render.js draws the street.
+/* Cyberpunk Gate Runner, Prototype 2: melodic house synth, steering input, screens. render.js draws the street.
    The game clock IS the song clock: the engine advances to "song time as heard", so gates land on the beat.
    Audio clock pattern (getOutputTimestamp, lookahead scheduler, per-run bus) adapted from Neon Surf v1.
    © 2026 justaskjoe. All rights reserved. */
@@ -12,7 +12,7 @@
   window.GRUI = { U, A: null };
   try { U.muted = localStorage.getItem('grMuted') === '1'; } catch (e) {}
 
-  // ================= audio: an original 122 BPM house loop =================
+  // ================= audio: original melodic house at 122 BPM, every sound synthesized here =================
   const A = { ctx: null, out: null, music: null, sfx: null, bus: null, noise: null, events: [], ptr: 0, timer: null, t0: 0 };
   function audioInit() {
     if (A.ctx) return A.ctx;
@@ -22,100 +22,129 @@
     const comp = A.ctx.createDynamicsCompressor(); comp.threshold.value = -14; comp.ratio.value = 8; comp.attack.value = 0.004; comp.release.value = 0.12;
     A.out = A.ctx.createGain(); A.out.gain.value = U.muted ? 0 : 0.7; A.out.connect(comp); comp.connect(A.ctx.destination);
     A.sfx = A.ctx.createGain(); A.sfx.gain.value = 1; A.sfx.connect(A.out);
-    A.shots = A.ctx.createGain(); A.shots.gain.value = 1.8; A.shots.connect(A.sfx);   // one dial for how loud gunfire sits against the song
+    A.shots = A.ctx.createGain(); A.shots.gain.value = 1.3; A.shots.connect(A.sfx);   // one dial for how loud gunfire sits against the song
     const len = A.ctx.sampleRate, b = A.ctx.createBuffer(1, len, A.ctx.sampleRate), d = b.getChannelData(0);
     for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
     A.noise = b; return A.ctx;
   }
   window.GRUI.A = A; window.GRUI.audioErrs = [];
   const X = () => A.ctx;
+  // kick -> bus stays clean and on top. Everything else goes through one filter that opens across the song, and pumps with the kick
   function newBus() {
     if (A.bus) { try { A.bus.disconnect(); } catch (e) {} }
-    A.bus = A.ctx.createGain(); A.bus.connect(A.out);
-    A.kick = A.ctx.createGain(); A.kick.connect(A.bus);                 // kick stays clean and on top
-    A.synth = A.ctx.createGain(); const drive = A.ctx.createWaveShaper(); // synths share grit and duck under the kick
-    drive.curve = DRIVE(); drive.oversample = '2x'; A.synth.connect(drive); drive.connect(A.bus);
+    const c = A.ctx;
+    A.bus = c.createGain(); A.bus.connect(A.out);
+    A.kick = c.createGain(); A.kick.connect(A.bus);
+    A.synth = c.createGain(); A.filt = c.createBiquadFilter(); A.filt.type = 'lowpass'; A.filt.Q.value = 0.7; A.synth.connect(A.filt); A.filt.connect(A.bus);
+    A.wet = c.createGain();                                              // plucks and the lead send here: echo plus a soft room
+    const echo = c.createDelay(1), fb = c.createGain(), tone = c.createBiquadFilter(), room = c.createConvolver(), rg = c.createGain();
+    echo.delayTime.value = GR.B * 0.75; fb.gain.value = 0.34; tone.type = 'lowpass'; tone.frequency.value = 2800;
+    A.wet.connect(echo); echo.connect(tone); tone.connect(fb); fb.connect(echo); tone.connect(A.synth);
+    room.buffer = roomIR(); rg.gain.value = 0.5; A.wet.connect(room); room.connect(rg); rg.connect(A.synth);
   }
-  let driveCurve = null;
-  function DRIVE() { if (driveCurve) return driveCurve; const n = 1024, c = new Float32Array(n); for (let i = 0; i < n; i++) { const x = i / (n - 1) * 2 - 1; c[i] = Math.tanh(x * 2.6) / Math.tanh(2.6); } return (driveCurve = c); }
+  function roomIR() {
+    if (A.ir) return A.ir; const c = A.ctx, n = Math.floor(c.sampleRate * 1.4), b = c.createBuffer(2, n, c.sampleRate);
+    for (let ch = 0; ch < 2; ch++) { const d = b.getChannelData(ch); let lp = 0; for (let i = 0; i < n; i++) { lp += (Math.random() * 2 - 1 - lp) * 0.3; d[i] = lp * Math.pow(1 - i / n, 3) * 0.5; } }
+    return (A.ir = b);
+  }
+  const pan = (p, dest) => { if (!X().createStereoPanner) return dest; const n = X().createStereoPanner(); n.pan.value = p; n.connect(dest); return n; };
   function envG(t, a, peak, dec, dest) { const gn = X().createGain(); gn.gain.setValueAtTime(0.0001, t); gn.gain.exponentialRampToValueAtTime(peak, t + a); gn.gain.exponentialRampToValueAtTime(0.0001, t + a + dec); gn.connect(dest || A.bus); return gn; }
   function noiseSrc(t, dur) { const s = X().createBufferSource(); s.buffer = A.noise; s.loop = true; s.start(t, Math.random() * 0.5); s.stop(t + dur); return s; }
   function osc(type, fr, t, dur, dest, det) { const o = X().createOscillator(); o.type = type; o.frequency.value = fr; if (det) o.detune.value = det; o.connect(dest); o.start(t); o.stop(t + dur + 0.05); return o; }
-  // chords: Am · F · Dm · E, one per bar, with a distorted synth bus that ducks under every kick
-  const CH = [[220, 261.6, 329.6, 440], [174.6, 220, 261.6, 349.2], [146.8, 220, 293.7, 349.2], [164.8, 207.7, 246.9, 329.6]];
-  const ROOT = [55, 43.65, 36.71, 41.2];
-  // 16-step acid line and the 8-step drop riff, as notes above the chord root (semitones)
-  const ACID = [0, 0, 12, 0, 3, 0, 15, 0, 0, 7, 0, 12, 10, 0, 3, 7], RIFF = [12, 12, 15, 12, 19, 17, 15, 10];
-  const semi = (f, n) => f * Math.pow(2, n / 12);
-  const SND = {
-    kick(t, v = 1) {
-      const o = X().createOscillator(); o.type = 'sine'; o.frequency.setValueAtTime(190, t); o.frequency.exponentialRampToValueAtTime(44, t + 0.09); o.connect(envG(t, 0.001, 1.15 * v, 0.3, A.kick)); o.start(t); o.stop(t + 0.36);
-      const c = X().createOscillator(); c.type = 'square'; c.frequency.value = 2400; c.connect(envG(t, 0.001, 0.09 * v, 0.012, A.kick)); c.start(t); c.stop(t + 0.03);
-      const d = A.synth.gain; d.cancelScheduledValues(t); d.setValueAtTime(0.28, t); d.linearRampToValueAtTime(1, t + 0.3); // sidechain pump
-    },
-    clap(t, v = 1) { for (const [dt, pk] of [[0, 0.5], [0.012, 0.4], [0.024, 0.45]]) { const n = noiseSrc(t + dt, 0.2), f = X().createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 1800; f.Q.value = 1.1; n.connect(f); f.connect(envG(t + dt, 0.001, pk * v, 0.13)); } },
-    hat(t, v = 1, open) { const n = noiseSrc(t, open ? 0.3 : 0.06), f = X().createBiquadFilter(); f.type = 'highpass'; f.frequency.value = open ? 6500 : 8500; n.connect(f); f.connect(envG(t, 0.001, (open ? 0.13 : 0.08) * v, open ? 0.2 : 0.03)); },
-    crash(t) { const n = noiseSrc(t, 2), f = X().createBiquadFilter(); f.type = 'highpass'; f.frequency.value = 3500; n.connect(f); f.connect(envG(t, 0.002, 0.28, 1.8)); },
-    boom(t) { const o = X().createOscillator(); o.type = 'sine'; o.frequency.setValueAtTime(120, t); o.frequency.exponentialRampToValueAtTime(28, t + 1.1); o.connect(envG(t, 0.004, 1.1, 1.4, A.kick)); o.start(t); o.stop(t + 1.6); },
-    // reese bass: two detuned saws and a sub, with the filter snapping shut
-    bass(t, ci, dur, cut = 1100) {
-      const gn = X().createGain(); gn.gain.setValueAtTime(0.0001, t); gn.gain.exponentialRampToValueAtTime(0.6, t + 0.008); gn.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-      const f = X().createBiquadFilter(); f.type = 'lowpass'; f.Q.value = 5; f.frequency.setValueAtTime(cut, t); f.frequency.exponentialRampToValueAtTime(160, t + dur); f.connect(gn); gn.connect(A.synth);
-      osc('sawtooth', ROOT[ci] * 2, t, dur, f, -14); osc('sawtooth', ROOT[ci] * 2, t, dur, f, 14); osc('sine', ROOT[ci], t, dur, gn);
-    },
-    // acid line: a resonant saw with the filter opened by the section
-    acid(t, fr, dur, cut, v = 1) {
-      const gn = envG(t, 0.003, 0.14 * v, dur, A.synth), f = X().createBiquadFilter(); f.type = 'lowpass'; f.Q.value = 16; f.frequency.setValueAtTime(cut, t); f.frequency.exponentialRampToValueAtTime(Math.max(180, cut * 0.22), t + dur); f.connect(gn);
-      osc('sawtooth', fr, t, dur, f);
-    },
-    stab(t, ci, cut, v = 1) {
-      const gn = envG(t, 0.003, 0.075 * v, 0.2, A.synth), f = X().createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = cut; f.Q.value = 4; f.connect(gn);
-      for (const fr of CH[ci]) { osc('sawtooth', fr, t, 0.26, f, -9); osc('sawtooth', fr, t, 0.26, f, 9); }
-    },
-    pad(t, ci, dur, cut) {
-      const gn = X().createGain(); gn.gain.setValueAtTime(0.0001, t); gn.gain.exponentialRampToValueAtTime(0.04, t + 0.4); gn.gain.setValueAtTime(0.04, t + dur - 0.3); gn.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-      const f = X().createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = cut; f.connect(gn); gn.connect(A.synth);
-      for (const fr of CH[ci]) osc('sawtooth', fr / 2, t, dur, f, 6);
-    },
-    // hoover lead for the drop: stacked saws that scoop up into the note
-    hoover(t, fr, dur) {
-      const gn = envG(t, 0.012, 0.085, dur, A.synth), f = X().createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 3400; f.Q.value = 2; f.connect(gn);
-      for (const det of [-16, 0, 16]) { const o = X().createOscillator(); o.type = 'sawtooth'; o.detune.value = det; o.frequency.setValueAtTime(fr * 0.8, t); o.frequency.exponentialRampToValueAtTime(fr, t + 0.05); o.connect(f); o.start(t); o.stop(t + dur + 0.05); }
-    },
-    riser(t, dur) {
-      const n = noiseSrc(t, dur), f = X().createBiquadFilter(); f.type = 'bandpass'; f.Q.value = 3; f.frequency.setValueAtTime(240, t); f.frequency.exponentialRampToValueAtTime(8000, t + dur);
-      const gn = X().createGain(); gn.gain.setValueAtTime(0.0001, t); gn.gain.exponentialRampToValueAtTime(0.3, t + dur); n.connect(f); f.connect(gn); gn.connect(A.bus);
+  // A track is plain data, so each district can bring its own: chords (voiced notes in Hz), bass roots, an arp shape over the
+  // chord tones, a stab rhythm in beats, and a hook as [beat, semitones above the base note, beats long] for each chord.
+  const TRACKS = {
+    neon: {
+      chords: [[220, 261.6, 329.6, 440], [174.6, 220, 261.6, 349.2], [196, 261.6, 329.6, 392], [196, 246.9, 293.7, 392]],   // Am F C G: minor, but it keeps lifting
+      roots: [55, 43.65, 65.41, 49], base: 440,
+      arp: [0, 1, 2, 3, 4, 3, 2, 1], stabs: [0.5, 1.5, 2.75, 3.5],
+      hook: [[[0, 12, 0.75], [0.75, 7, 0.75], [1.5, 10, 0.5], [2, 12, 0.5], [3, 15, 1]],
+        [[0, 12, 0.75], [0.75, 8, 0.75], [1.5, 10, 0.5], [2, 12, 0.5], [3, 7, 1]],
+        [[0, 7, 0.75], [0.75, 3, 0.75], [1.5, 7, 0.5], [2, 10, 0.5], [3, 12, 1]],
+        [[0, 10, 1.5], [1.5, 7, 0.5], [2, 5, 1], [3, 2, 1]]]
     }
   };
-  function buildSong() {
-    const ev = [], B = GR.B, at = (b, fn, ...a) => ev.push({ t: b * B, fn, a });
+  const semi = (f, n) => f * Math.pow(2, n / 12);
+  // how far the song's filter is open at the start of a bar: soft intro, opening build, sweep up the riser, wide open drop
+  const cutAt = bar => bar < 4 ? 520 + bar * 90 : bar < 12 ? 950 + (bar - 4) * 240 : bar < 20 ? 2900 + (bar - 12) * 1400 : bar < 28 ? 16000 : 1000;
+  const SND = {
+    kick(t, v = 1) {
+      const o = X().createOscillator(); o.type = 'sine'; o.frequency.setValueAtTime(150, t); o.frequency.exponentialRampToValueAtTime(46, t + 0.08); o.connect(envG(t, 0.001, 1.05 * v, 0.28, A.kick)); o.start(t); o.stop(t + 0.34);
+      const c = X().createOscillator(); c.type = 'triangle'; c.frequency.value = 1800; c.connect(envG(t, 0.001, 0.06 * v, 0.01, A.kick)); c.start(t); c.stop(t + 0.03);
+      const d = A.synth.gain; d.cancelScheduledValues(t); d.setValueAtTime(0.34, t); d.linearRampToValueAtTime(1, t + 0.32);  // the pump
+    },
+    clap(t, v = 1) { for (const [dt, pk] of [[0, 0.3], [0.011, 0.26], [0.023, 0.32]]) { const n = noiseSrc(t + dt, 0.2), f = X().createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 1600; f.Q.value = 0.9; n.connect(f); f.connect(envG(t + dt, 0.001, pk * v, 0.12)); } },
+    snare(t, v = 1) { const n = noiseSrc(t, 0.12), f = X().createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 2400; f.Q.value = 0.7; n.connect(f); f.connect(envG(t, 0.001, 0.2 * v, 0.08)); osc('triangle', 210, t, 0.07, envG(t, 0.001, 0.14 * v, 0.07)); },
+    hat(t, v = 1, open) { const n = noiseSrc(t, open ? 0.2 : 0.05), f = X().createBiquadFilter(); f.type = 'highpass'; f.frequency.value = open ? 7000 : 9000; n.connect(f); f.connect(envG(t, 0.001, (open ? 0.11 : 0.05) * v, open ? 0.14 : 0.03)); },
+    crash(t) { const n = noiseSrc(t, 2), f = X().createBiquadFilter(); f.type = 'highpass'; f.frequency.value = 4500; n.connect(f); f.connect(envG(t, 0.002, 0.16, 1.8)); },
+    boom(t) { const o = X().createOscillator(); o.type = 'sine'; o.frequency.setValueAtTime(90, t); o.frequency.exponentialRampToValueAtTime(36, t + 0.9); o.connect(envG(t, 0.004, 0.7, 1.1, A.kick)); o.start(t); o.stop(t + 1.3); },
+    // warm and round: a soft triangle over a sine sub, no distortion
+    bass(t, fr, dur) {
+      const gn = envG(t, 0.006, 0.34, dur, A.synth), f = X().createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 620; f.connect(gn);
+      osc('triangle', fr * 2, t, dur, f); osc('sine', fr, t, dur, gn);
+    },
+    // wide detuned saws, one pair panned hard apart
+    stab(t, notes, v = 1) {
+      const gn = envG(t, 0.005, 0.06 * v, 0.24, A.synth), l = pan(-0.7, gn), r = pan(0.7, gn);
+      for (const fr of notes) { osc('sawtooth', fr, t, 0.3, l, -11); osc('sawtooth', fr, t, 0.3, r, 11); }
+    },
+    pad(t, notes, dur, v = 1) {
+      const gn = X().createGain(); gn.gain.setValueAtTime(0.0001, t); gn.gain.exponentialRampToValueAtTime(0.035 * v, t + 0.5); gn.gain.setValueAtTime(0.035 * v, t + dur - 0.3); gn.gain.exponentialRampToValueAtTime(0.0001, t + dur); gn.connect(A.synth);
+      const l = pan(-0.8, gn), r = pan(0.8, gn); for (const fr of notes) { osc('sawtooth', fr / 2, t, dur, l, -8); osc('sawtooth', fr / 2, t, dur, r, 8); }
+    },
+    // glassy: a sine and a quiet octave triangle with a fast fall, sent to the echo
+    pluck(t, fr, v, side) {
+      const gn = envG(t, 0.002, 0.075 * v, 0.2, pan(side, A.synth)); gn.connect(A.wet);
+      osc('sine', fr, t, 0.24, gn); osc('triangle', fr * 2, t, 0.1, envG(t, 0.001, 0.02 * v, 0.08, gn));
+    },
+    // the hook: a rounded square and a soft saw, a touch of glide, plenty of echo
+    lead(t, fr, dur, v = 1) {
+      const gn = X().createGain(); gn.gain.setValueAtTime(0.0001, t); gn.gain.exponentialRampToValueAtTime(0.1 * v, t + 0.012); gn.gain.setValueAtTime(0.1 * v, t + Math.max(0.02, dur - 0.06)); gn.gain.exponentialRampToValueAtTime(0.0001, t + dur + 0.08); gn.connect(A.synth); gn.connect(A.wet);
+      const f = X().createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 3000; f.connect(gn);
+      for (const [type, det] of [['square', -5], ['sawtooth', 5]]) { const o = X().createOscillator(); o.type = type; o.detune.value = det; o.frequency.setValueAtTime(fr * 0.985, t); o.frequency.exponentialRampToValueAtTime(fr, t + 0.03); o.connect(f); o.start(t); o.stop(t + dur + 0.12); }
+    },
+    riser(t, dur) {
+      const n = noiseSrc(t, dur), f = X().createBiquadFilter(); f.type = 'bandpass'; f.Q.value = 2; f.frequency.setValueAtTime(300, t); f.frequency.exponentialRampToValueAtTime(7000, t + dur);
+      const gn = X().createGain(); gn.gain.setValueAtTime(0.0001, t); gn.gain.exponentialRampToValueAtTime(0.14, t + dur); n.connect(f); f.connect(gn); gn.connect(A.bus);
+    },
+    // light rain and a little vinyl crackle for the quiet ends of the song
+    rain(t, dur) {
+      const n = noiseSrc(t, dur), hi = X().createBiquadFilter(), lo = X().createBiquadFilter(), gn = X().createGain(); hi.type = 'highpass'; hi.frequency.value = 1500; lo.type = 'lowpass'; lo.frequency.value = 7000;
+      gn.gain.setValueAtTime(0.0001, t); gn.gain.exponentialRampToValueAtTime(0.022, t + 1); gn.gain.setValueAtTime(0.022, t + dur - 1); gn.gain.exponentialRampToValueAtTime(0.0001, t + dur); n.connect(hi); hi.connect(lo); lo.connect(gn); gn.connect(A.bus);
+      for (let i = 0; i < dur * 5; i++) { const at = t + Math.random() * dur, c = noiseSrc(at, 0.01), f = X().createBiquadFilter(); f.type = 'highpass'; f.frequency.value = 2500; c.connect(f); f.connect(envG(at, 0.0005, 0.02 + Math.random() * 0.03, 0.006)); }
+    },
+    filt(t, to, dur) { const f = A.filt.frequency; f.setValueAtTime(f.value, t); f.exponentialRampToValueAtTime(to, t + dur); }
+  };
+  function buildSong(T) {
+    const ev = [], at = (b, fn, ...a) => ev.push({ t: b * GR.B, fn, a });
     for (let bar = 0; bar < 31; bar++) {
-      const s = GR.sectionAt(bar * GR.BAR + 0.001).id, ci = bar % 4, b0 = bar * 4;
-      const cut = s === 'intro' ? 600 : s === 'build' ? 1200 : s === 'riser' ? 1200 + (bar - 12) * 480 : s === 'drop' ? 4800 : 800;
-      const kickOn = !(bar === 19) && bar < 30;
-      for (let q = 0; q < 4; q++) {
-        const b = b0 + q;
-        if (kickOn) at(b, 'kick', s === 'intro' ? 0.8 : 1);
-        if (s !== 'intro' && s !== 'outro') { at(b + 0.5, 'hat', s === 'drop' ? 1.2 : 0.9, true); at(b + 0.25, 'hat', 0.55); at(b + 0.75, 'hat', 0.55); }
-        else if (bar < 30) at(b + 0.5, 'hat', 0.6);
-        if ((q === 1 || q === 3) && (s === 'build' || s === 'drop' || (s === 'riser' && bar < 18))) at(b, 'clap', 1);
-        if ((s === 'build' || s === 'riser') && bar !== 19) at(b + 0.5, 'bass', ci, B * 0.44, cut + 300);
-        if (s === 'drop') for (const k of [0.25, 0.5, 0.75]) at(b + k, 'bass', ci, B * 0.22, 1700);
+      const s = GR.sectionAt(bar * GR.BAR + 0.001).id, ci = bar % 4, b0 = bar * 4, notes = T.chords[ci], rt = T.roots[ci];
+      const drums = s === 'build' || s === 'riser' || s === 'drop', fill = bar === 19;  // the kick and bass drop out for the last bar of the riser
+      at(b0, 'filt', cutAt(bar + 1), GR.BAR);
+      if (bar < 30 && !fill) for (let q = 0; q < 4; q++) at(b0 + q, 'kick', s === 'intro' ? 0.75 : s === 'outro' ? 0.8 : 1);
+      if (s !== 'riser' || bar < 16) at(b0, 'pad', notes, GR.BAR, s === 'drop' ? 1.2 : 1);
+      if (drums) for (let q = 0; q < 4; q++) {
+        at(b0 + q + 0.5, 'hat', s === 'drop' ? 1.1 : 0.9, true);
+        if (s === 'drop') { at(b0 + q + 0.25, 'hat', 0.8); at(b0 + q + 0.75, 'hat', 0.8); }
+        if ((q === 1 || q === 3) && !(s === 'riser' && bar >= 18)) at(b0 + q, 'clap');
+        if (!fill) { at(b0 + q + 0.5, 'bass', rt, GR.B * 0.26); at(b0 + q + 0.75, 'bass', rt * (q === 3 ? 1.5 : 2), GR.B * 0.22); }
       }
-      if ((s === 'build' || s === 'riser' || s === 'drop') && bar !== 19) for (let k = 0; k < 16; k++) { const st = ACID[k]; if (st || k % 4 === 0) at(b0 + k * 0.25, 'acid', semi(ROOT[ci] * 2, st), B * 0.2, Math.min(5200, cut * 1.1 + (k % 3 === 0 ? 700 : 0)), s === 'drop' ? 0.8 : 1); }
-      if (s === 'drop') for (let k = 0; k < 8; k++) at(b0 + k * 0.5, 'hoover', semi(ROOT[ci] * 4, RIFF[k]), B * 0.4);
-      if (bar < 30 && s !== 'drop') { at(b0 + 1.5, 'stab', ci, cut, 1); at(b0 + 3.5, 'stab', ci, cut, 0.8); }
-      if (s === 'intro' || s === 'outro') at(b0, 'pad', ci, GR.BAR, s === 'outro' ? 1000 : 800);
-      if (bar === 18) for (let k = 0; k < 8; k++) at(b0 + k * 0.5, 'clap', 0.5 + k * 0.05);
-      if (bar === 19) for (let k = 0; k < 16; k++) at(b0 + k * 0.25, 'clap', 0.6 + k * 0.04);
+      if (drums) for (const k of T.stabs) if (s !== 'build' || k === 1.5 || k === 3.5) at(b0 + k, 'stab', notes, s === 'drop' ? 1.2 : s === 'riser' ? 1 : 0.85);
+      // arps: a hint in the intro, then rolling 16ths from the end of the build
+      const arpOn = s === 'drop' || s === 'riser' || bar >= 8 && s === 'build';
+      if (arpOn || (s === 'intro' && bar >= 2)) { const step = arpOn ? 0.25 : 0.5, v = s === 'drop' ? 1 : s === 'riser' ? 0.6 + (bar - 12) * 0.05 : 0.5; for (let k = 0; k * step < 4; k++) { const n = T.arp[k % T.arp.length], fr = n > 3 ? notes[0] * 4 : notes[n] * 2; at(b0 + k * step, 'pluck', fr, v, k % 2 ? 0.45 : -0.45); } }
+      if (s === 'drop') for (const [b, st, len] of T.hook[ci]) { at(b0 + b, 'lead', semi(T.base, st), len * GR.B, bar < 24 ? 0.9 : 1); if (bar >= 24) at(b0 + b, 'lead', semi(T.base, st + 12), len * GR.B, 0.3); }
+      if (bar === 28) for (const [b, st, len] of T.hook[0]) at(b0 + b, 'lead', semi(T.base, st), len * GR.B, 0.4);   // the hook once more, soft, on the way out
+      if (bar === 18) for (let k = 0; k < 8; k++) at(b0 + k * 0.5, 'snare', 0.4 + k * 0.05);
+      if (fill) for (let k = 0; k < 16; k++) at(b0 + k * 0.25, 'snare', 0.55 + k * 0.03);
       if ([4, 12, 20, 28].includes(bar)) at(b0, 'crash');
     }
-    at(12 * 4, 'riser', GR.BAR * 8);
-    at(20 * 4, 'boom'); at(30 * 4, 'pad', 0, GR.BAR * 1.5, 1400);
+    at(0, 'rain', GR.BAR * 4.5); at(28 * 4, 'rain', GR.BAR * 3);
+    at(12 * 4, 'riser', GR.BAR * 8); at(20 * 4, 'boom');
     ev.sort((a, b) => a.t - b.t); return ev;
   }
   function startClock(events, offset) {
-    newBus(); A.events = events; A.ptr = 0;
+    newBus(); A.filt.frequency.value = cutAt(Math.floor(offset / GR.BAR)); A.events = events; A.ptr = 0;
     while (A.ptr < events.length && events[A.ptr].t < offset - 0.01) A.ptr++;
     A.t0 = A.ctx.currentTime + 0.45 - offset;
     clearInterval(A.timer); A.timer = setInterval(sched, 25); sched();
@@ -282,7 +311,7 @@
   function startRun(fromBar) {
     const ctx = audioInit(); U.noAudio = !ctx;
     if (ctx && ctx.state !== 'running') ctx.resume();
-    SONG = SONG || (ctx ? buildSong() : []);
+    SONG = SONG || (ctx ? buildSong(TRACKS.neon) : []);
     U.G = GR.newGame({ seed: (Math.random() * 1e9) | 0 }); R.setRun(U.G, gateText, gateNote); U.boss = U.G.ents.find(e => e.kind === 'boss'); U.evi = 0; U.popups = []; U.queue = []; U.lastSent = null; U.endAt = 0; hud.sec = null;
     for (const k in firstSeen) delete firstSeen[k];
     U.test = !!fromBar;
