@@ -6,6 +6,41 @@ Newest on top. Each entry covers **what's new** for players, **next up** for the
 
 ---
 
+## P3.0 · Nov 1, 2026 · Zach (with Claude)
+
+### What's new
+- **Five levels:** Night Market, Signal Yards, Glass Canyon, Static District and The Conservatory. Each has its own boss, its own track and its own colors and skyline.
+- **Five bosses, five tricks:** dodge the Hush Enforcer's slam, shoot the Mute Carrier's pods to open its core, stay off the Mirror Warden's mirror side, find the real Echo pulsing on the kick, and catch gold orbs to crack Director Vale's armor.
+- **Your squad and guns carry over.** Kill a boss to open the next street and take your runners, gun, upgrade and weapon level with you. Your squad grows more slowly now, and every level is tuned around that.
+- **Progress saves** in your browser, so a refresh doesn't wipe it. Level select shows what's open and what each street starts you with, and you can reset.
+- **Killing the boss now counts.** Surviving it finishes the run, but the street isn't beaten until the boss is dead.
+
+### Next up
+- [ ] @Zach: play all five with the kids using `design/playtest-5-levels.md`, starting with whether Level 1 still feels as hard but doable.
+- [ ] @Zach: listen to all five tracks and say if any needs another pass.
+- [ ] Raise `MAX_LEVEL` and tune Level 6 and up, once the first five feel right.
+- [ ] Turn the end-of-run `Give feedback` numbers into per-level notes after the playtest. Feedback now records the level.
+
+### Watch out
+- [ ] **Nobody has played this.** All difficulty is bot-tuned, and bots know every counter from the first second. A first-time player will do worse than these numbers until they learn each boss. Level 1's 65% was matched to bots, not to how it felt for you.
+- [ ] **Level 1 changed more than anything else you liked.** Squad growth, enemy HP and boss HP all moved, the Enforcer gained a slam, and only a kill counts. Controls and speed are unchanged. Your feel check is the real test.
+- [ ] **Frame rate on a real phone is unverified, and this adds to it.** The street is about 40% longer (100 seconds of city, built once at load), there are 5 more boss models, and later levels have squads of 200 to 350. Only 180 runners are ever drawn. Load time wasn't measured.
+- [ ] Not tested on a real phone. Checked in headless Chromium at 390 and 320 px on software graphics, from stills, not in motion.
+- [ ] **Nobody at Claude can hear the four new tracks.** They ran with no audio errors. Whether they sound good, or are too similar, is unknown. The hooks were written for this game but nobody has compared them against real songs.
+- [ ] Bosses are drawn closer than they really are (`R.bossZ`), so one can look nearly in reach for much of the fight, then get drawn at true distance only in the last 3.5 seconds. Check that it reads as natural.
+- [ ] Level 2 is the most sensitive level: 36,000 boss HP gave a 57% clear, 39,000 gave 43%. About 3% of casual bot campaigns still failed it 12 times in a row. Those had the weakest squads, so a player in that spot should replay Level 1 for a bigger squad. Nothing in the game says so yet.
+- [ ] A squad at a level's minimum clears only 16 to 21% for the casual bot. That's deliberately tough but it may feel harsh.
+- [ ] Guns aren't equal on every boss. Scatter is strongest for the casual bot on Levels 2 and 4 (about 80% and 68% at a full squad, against about 45 to 73% for the others). No gun is a trap, but a scatter-heavy run will find those two easier.
+- [ ] Gold and red orbs have labels, but no colorblind check was done. Echo's real and fake also rely on pink against violet plus the pulse.
+- [ ] Level 4's heavy fog applies to scenery, not to enemies or the boss. Check it reads as a mood and doesn't hide the road.
+- [ ] Level 6 and up run without errors through Level 12, but their difficulty is untuned: scaling numbers are first guesses, and bots starting from the minimum squad clear almost none of them. `MAX_LEVEL` is 5, so players can't reach them.
+- [ ] Saves are per browser and per device, and clearing site data wipes them. The key is `gr.save.v1`, namespaced because the Lab serves all games from one origin. Tester jumps don't save.
+- [ ] Replaying an old level updates your gun for the level after it, keeping your best squad. Check that a replay can't quietly swap a gun you liked.
+- [ ] Level 1 always restarts with 3 runners and the Pulse rifle, even after later levels, and earlier owned guns aren't offered there.
+- [ ] The `Jump to drop` button is now `Jump to boss`. On later levels it starts from your saved squad and gun.
+- [ ] `games.json` still says build P2 and describes one boss on the drop. Not changed here, because it's what the Lab reads.
+- [ ] CI doesn't run this game, so run the build, sim and test by hand. On Windows, `python3` may not exist (use `python`), and `kit/open-notes.py` crashes reading patch notes unless `PYTHONUTF8=1` is set. Not fixed here because it's in `kit/`.
+
 ## P2.4 · Nov 1, 2026 · Zach (with Claude)
 
 ### What's new
@@ -41,7 +76,7 @@ Newest on top. Each entry covers **what's new** for players, **next up** for the
 - [ ] Frame rate on a real phone is unverified. Open the game with `#fps` during the drop and note the number.
 - [ ] Not tested on a real phone. Effects were judged from frozen stills, not in motion, and Claude can't hear the sounds.
 - [ ] The rhythms are visual only: damage still lands every eighth note, so Rail's thin shots hit as hard as its big beam. No balance change: sim before and after is 96 / 84 / 12 / 17.
-- [ ] test.py failed once in 5 runs on this branch and the failure text was lost. The likely cause is the smart bot losing a random-seed run, which the test treats as a failure and the sim says happens about 4% of the time, but that isn't confirmed. Re-run it if it fails, and read the reason.
+- [x] (Zach with Claude, Nov 1: the test now uses a fixed seed in P3.0) test.py failed once in 5 runs on this branch and the failure text was lost. The likely cause is the smart bot losing a random-seed run, which the test treats as a failure and the sim says happens about 4% of the time, but that isn't confirmed. Re-run it if it fails, and read the reason.
 - [ ] The muzzle flash fires on every shot. It's off with reduced motion, but check it doesn't get tiring in a full run.
 - [ ] Smoke trails and hit bursts share the 1600 particle limit, so heavy moments may drop some.
 
@@ -53,7 +88,7 @@ Newest on top. Each entry covers **what's new** for players, **next up** for the
 
 ### Next up
 - [ ] @Zach: listen through. Is the hook catchy enough to hum, and does the drop lift? Tune it in the `neon` entry of `TRACKS` in `ui.js`.
-- [ ] Each district gets its own track: add an entry to `TRACKS` with new chords, roots, arp and hook. Only one street exists so far, so only one track does.
+- [x] Each district gets its own track: add an entry to `TRACKS` with new chords, roots, arp and hook. Only one street exists so far, so only one track does. (Zach with Claude, Nov 1: five tracks in P3.0)
 
 ### Watch out
 - [ ] Nobody at Claude can hear this. Levels and audio errors were checked; the actual sound wasn't.
