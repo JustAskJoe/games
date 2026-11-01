@@ -37,7 +37,7 @@ with sync_playwright() as p:
     benign = ('net::', 'fonts.g', 'Failed to load resource')  # offline webfonts; missing optional art falls back to drawn color
     pg.on('console', lambda m: errs.append('console: ' + m.text) if m.type == 'error' and not any(x in m.text for x in benign) else None)
     # front end: opening (let the effects play), title, save slots, new game in slot 1
-    pg.goto(build.as_uri()); pg.wait_for_timeout(3800)
+    pg.goto(build.as_uri()); pg.wait_for_timeout(5300)
     pg.screenshot(path=str(shots / 'f1_opening.png'))
     pg.click('[data-act=fe-press]'); pg.wait_for_timeout(700); pg.screenshot(path=str(shots / 'f2_title.png'))
     pg.click('[data-act=fe-settings]'); pg.wait_for_timeout(300); pg.screenshot(path=str(shots / 'f3_settings.png')); pg.click('[data-act=fe-title]')
