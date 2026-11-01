@@ -6,6 +6,7 @@ For Steam's AI disclosure. One row per file or batch, newest on top.
 
 | Date | File(s) | Made with | Status | Issue / PR |
 | --- | --- | --- | --- | --- |
+| Nov 1, 2026 | `prototype/v2/render.js` and `ui.js` (weapon projectiles, flashes, hit effects and gun sounds, built in code) | Claude (code) | Placeholder | zach/gate-runner-weapon-looks |
 | Nov 1, 2026 | `prototype/v2/ui.js` (original melodic house track at 122 BPM, synthesized in code, no samples) | Claude (code) | Placeholder | zach/gate-runner-melodic-house |
 | Oct 31, 2026 | `prototype/v2/ui.js` and `render.js` (gun sound effects and weapon fire effects, built in code) | Claude (code) | Placeholder | zach/gate-runner-weapon-fx, zach/gate-runner-sfx |
 | Oct 31, 2026 | `prototype/v2/render.js` (City A and Squad A rebuilt from the picked concept sheets #24, #25: models, towers, road, sky, signs) | Claude (code) | Placeholder | zach/gate-runner-city-art, zach/gate-runner-squad-art |
