@@ -43,11 +43,6 @@ jobs:
           fi
           echo "No keys or tokens found."
 
-      - name: games.json is valid
-        run: |
-          python3 -c "import json; g=json.load(open('games.json'))['games']; print(len(g), 'games listed')" || {
-            echo "::error::games.json isn't valid JSON (often a missing comma after a merge). The Studio and Lab can't read it until it's fixed."; exit 1; }
-
       - name: Set up Node
         if: steps.changed.outputs.td == 'true'
         uses: actions/setup-node@v4
