@@ -14,12 +14,12 @@ This list is for Steam's AI disclosure. Every image below was made with Canva's 
 | 2026-10-31 | `builds/img/p-klik.webp` | Klik (Zekk), first try: grittier than the key art | MAHZoXqw04M | key art | placeholder, to redo |
 | 2026-10-31 | `builds/img/cards-shell.jpg` | Shellstorm card art sheet, 2×2 (kelp sprite, lantern eel, maelstrom tortoise, tide queen) | MAHZoUVyiLc | key art | prototype art |
 | 2026-10-31 | `builds/img/cards-hive.jpg` | Hive Gambit card art sheet, 2×2 (drone bee, mantis knight, hornet mech, queen mech) | MAHZoUR6gGc | key art | prototype art |
+| 2026-10-31 | `builds/img/cards-star.jpg` | Starweave card art sheet, 2×2 (star puff, aurora koi, eclipse lion, celestial weaver) | MAHZoa9wZjw | key art | prototype art |
 | 2026-10-31 | (not used) | Klik cut-out test for `remove-background` | MAHZoXDCym8 | | test only |
 
 **Drawn in code, not AI:** card frames, alien scripts, UV watermarks, wear marks, slabs, every UI element. The music is an original synth loop written in code (`prototype/music.js`).
 
 **Still to make:**
-- The Starweave card sheet.
 - The Card Night and grader office scenes.
 - Portraits for Tumbo, Sheelo, Vrrz, Zazza, Mimbo, Floss and Nubb, plus a cuter Klik.
 
