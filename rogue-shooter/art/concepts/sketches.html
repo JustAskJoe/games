@@ -1,0 +1,160 @@
+<title>Rogue Shooter Sketches</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Rajdhani:wght@500;600;700&display=swap">
+<style>
+/* Layout: a wooden field journal. One sheet per group, sprites on grass at 4x with the in-game 2x size beside them. */
+:root {
+  --bg: #1a1612; --panel: #2a2218; --panel-2: #231c14; --wood: #6b4c22; --wood-light: #a08050;
+  --fg: #f0e4c8; --dim: #b4a27e; --gold: #ffcc44; --gold-deep: #5a3a00; --grass: #3d6b25; --grass-2: #467a2e;
+  --night: #15202a; --red: #e06655;
+  --display: 'Press Start 2P', 'Courier New', monospace;
+  --body: 'Rajdhani', 'Segoe UI', system-ui, sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { background: var(--bg); color: var(--fg); }
+body { font-family: var(--body); font-size: 16px; line-height: 1.45; margin: 0; }
+.wrap { max-width: 1120px; margin: 0 auto; padding-block: 28px 56px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 28px; }
+header { display: grid; gap: 10px; }
+.eyebrow { font-family: var(--display); font-size: 9px; letter-spacing: 2px; color: var(--dim); text-transform: uppercase; }
+h1 { font-family: var(--display); font-size: clamp(18px, 3.4vw, 28px); color: var(--gold); text-shadow: 2px 2px 0 var(--gold-deep); margin: 0; letter-spacing: 1px; line-height: 1.4; text-wrap: balance; }
+.lede { max-width: 62ch; color: var(--dim); font-weight: 600; margin: 0; }
+.stamp { justify-self: start; font-family: var(--display); font-size: 9px; letter-spacing: 1.5px; color: var(--red); border: 2px solid var(--red); padding: 6px 10px; transform: rotate(-1.5deg); }
+
+.controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.controls span { font-family: var(--display); font-size: 9px; color: var(--dim); letter-spacing: 1px; margin-right: 4px; }
+.chip { font-family: var(--display); font-size: 9px; letter-spacing: 1px; color: var(--fg); background: var(--panel); border: 2px solid var(--wood); padding: 8px 10px; cursor: pointer; }
+.chip[aria-pressed="true"] { border-color: var(--gold); color: var(--gold); }
+.chip:focus-visible, .copy:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+section.sheet { background: var(--panel-2); border: 2px solid var(--wood); box-shadow: inset 0 1px 0 rgba(255,255,255,0.04), 0 4px 16px rgba(0,0,0,0.4); padding: 20px; display: grid; gap: 16px; }
+.sheet-head { display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: baseline; justify-content: space-between; }
+h2 { font-family: var(--display); font-size: 12px; color: var(--gold); letter-spacing: 1.5px; margin: 0; text-shadow: 1px 1px 0 var(--gold-deep); }
+.sheet-head p { margin: 0; color: var(--dim); font-weight: 600; font-size: 14px; max-width: 60ch; }
+
+.grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); }
+.tile { background: var(--panel); border: 2px solid var(--wood); display: grid; grid-template-rows: auto 1fr; min-width: 0; }
+.stage { position: relative; display: flex; align-items: center; justify-content: center; min-height: 196px; padding: 14px; background: var(--grass); background-image: repeating-linear-gradient(45deg, rgba(255,255,255,0.025) 0 8px, transparent 8px 16px); border-bottom: 2px solid var(--wood); }
+body.night .stage { background-color: var(--night); }
+.stage canvas { image-rendering: pixelated; max-width: 100%; }
+.real { position: absolute; right: 8px; bottom: 8px; display: grid; justify-items: center; gap: 4px; background: rgba(0,0,0,0.28); padding: 6px; }
+.real small { font-family: var(--display); font-size: 7px; color: var(--fg); letter-spacing: 1px; }
+.info { padding: 12px 14px 14px; display: grid; gap: 6px; align-content: start; }
+.name-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.name { font-family: var(--display); font-size: 10px; letter-spacing: 0.5px; }
+.dims { font-family: var(--display); font-size: 7px; color: var(--dim); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.note { color: var(--dim); font-weight: 600; font-size: 14px; margin: 0; }
+.copy { justify-self: start; font-family: var(--display); font-size: 7px; letter-spacing: 1px; color: var(--wood-light); background: none; border: 1px solid var(--wood); padding: 5px 8px; cursor: pointer; margin-top: 4px; }
+.copy:hover { color: var(--gold); border-color: var(--gold); }
+.tag { font-family: var(--display); font-size: 7px; letter-spacing: 1px; padding: 3px 6px; color: var(--gold); background: rgba(255,204,68,0.12); white-space: nowrap; }
+
+.lineup { display: flex; flex-wrap: wrap; gap: 18px; align-items: flex-end; justify-content: center; padding: 18px; background: var(--grass); border: 2px solid var(--wood); }
+body.night .lineup { background-color: var(--night); }
+.lineup figure { margin: 0; display: grid; justify-items: center; gap: 6px; }
+.lineup figcaption { font-family: var(--display); font-size: 7px; color: var(--fg); letter-spacing: 1px; text-shadow: 1px 1px 0 #000; }
+.lineup canvas { image-rendering: pixelated; }
+
+footer { color: var(--dim); font-size: 13px; font-weight: 600; display: grid; gap: 6px; }
+footer code { font-family: var(--display); font-size: 8px; color: var(--fg); }
+@media (prefers-reduced-motion: no-preference) { .tile { transition: border-color 0.15s; } .tile:hover { border-color: var(--wood-light); } }
+@media (max-width: 480px) { section.sheet { padding: 14px; } .grid { grid-template-columns: 1fr 1fr; gap: 10px; } .stage { min-height: 150px; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Rogue Shooter · Art sketches · Nov 1, 2026</div>
+    <h1>Heroes and monsters</h1>
+    <p class="lede">Pixel concept sketches for the five classes and every enemy, plus three new monster ideas. Each one is drawn in the game's own sprite format, so a pick can drop straight into <code>SPR</code>. Big views are 4x; the small inset is the true in-game size (2x).</p>
+    <div class="stamp">ROUGH · NOT SHIPPED</div>
+  </header>
+
+  <div class="controls" role="group" aria-label="View options">
+    <span>VIEW</span>
+    <button class="chip" id="t-sil" aria-pressed="false">Silhouettes</button>
+    <button class="chip" id="t-night" aria-pressed="false">Night ground</button>
+  </div>
+
+  <section class="sheet" aria-labelledby="h-heroes">
+    <div class="sheet-head"><h2 id="h-heroes">The hero, five ways</h2><p>One chibi body shared by every class. Hats, helms and held items carry the class, so each reads by shape alone.</p></div>
+    <div class="grid" id="g-heroes"></div>
+  </section>
+
+  <section class="sheet" aria-labelledby="h-line">
+    <div class="sheet-head"><h2 id="h-line">Lineup at game size</h2><p>Everything at 2x, the scale the game draws at, on one patch of ground. This is the size that has to read mid-fight.</p></div>
+    <div class="lineup" id="lineup"></div>
+  </section>
+
+  <section class="sheet" aria-labelledby="h-mon">
+    <div class="sheet-head"><h2 id="h-mon">Current enemies, redrawn</h2><p>Same five enemies the waves already spawn, with outlines and clearer faces. Spawn order: slime, bat, skeleton, demon, then the boss at wave 10.</p></div>
+    <div class="grid" id="g-current"></div>
+  </section>
+
+  <section class="sheet" aria-labelledby="h-new">
+    <div class="sheet-head"><h2 id="h-new">New monster ideas</h2><p>Proposals only. Each one is built to push a different build: splash, ranged and burst damage.</p></div>
+    <div class="grid" id="g-fresh"></div>
+  </section>
+
+  <section class="sheet" aria-labelledby="h-var">
+    <div class="sheet-head"><h2 id="h-var">Slime colorways</h2><p>Palette swaps for later biomes or elite variants. Same grid, new palette, no new art.</p></div>
+    <div class="grid" id="g-var"></div>
+  </section>
+
+  <footer>
+    <div>Grids use the build's format: rows joined by commas, one character per pixel, <code>.</code> is empty. "Copy grid" gives the string and its palette.</div>
+    <div>Drawn by Claude in code; logged in <code>design/ai-assets.md</code>. © 2026 justaskjoe. All rights reserved.</div>
+  </footer>
+</div>
+
+<script>
+const DATA = {"heroes":[{"id":"knight","name":"Knight","note":"Full helm, plume, kite shield, short sword. Widest silhouette of the five, so it reads as the tank.","grid":["........OTTO........",".......OTTTTO.......","........OTO.........","......OOOOOOOO......",".....OWWWWWWWWO.....",".....OWWWWWWWWO.....",".....OWWWWWWWWO.....",".....OwGwwwwGwO..O..",".....OWWWWWWWWO.OWO.",".....OWWwWWwWWO.OWO.",".....OOWWWWWWOO.OWO.",".....OSSSSSSSSO.OWO.","......OssssssO..OWO.","OOOOOOAAAAAAAAO.OTTO","OTTTOAOAATTAAOAO.wO.","OTATOSOAAAAAAOSO.O..","OAAAOOaAAAAAAaO.....","OTATOOaaaaaaaaO.....",".OAO..OBO..OBO......","..O...OBO..OBO......",".....OBBO..OBBO.....",".....OOOO..OOOO....."],"pal":{"O":"#2a1a12","A":"#cc8833","a":"#8a5520","T":"#ffcc44","W":"#c8ccd4","w":"#7a7f8c","G":"#ffcc44","S":"#f0c4a8","s":"#d4a888","E":"#553311","H":"#8b5e2b","B":"#6b3e1b"}},{"id":"mage","name":"Mage","note":"Tall pointed hat and a staff with a frost-blue orb. Tallest silhouette; the orb echoes the magic-orb bullets.","grid":["..........OO........",".........OAAO.......","........OAAAO.......","........OAATO.......",".......OAAAAO.......",".......OAAAAAO......","......OAAAAAAO..OOO.","....OOTTTTTTTTOOGgGO","....OaaaaaaaaaaOgGgO",".....OHHHHHHHHO.OOO.",".....OSEsSSsESO..O..",".....OSSSSSSSSO.OwO.","......OssssssO..OwO.",".....OAAAAAAAAO.OwO.","....OAOAATTAAOAOOwO.","....OSOAAAAAAOSOOwO.",".....OaAAAAAAaO.OwO.",".....OaaaaaaaaO.OwO.","......OBO..OBO..OwO.","......OBO..OBO...O..",".....OBBO..OBBO.....",".....OOOO..OOOO....."],"pal":{"O":"#1e1430","A":"#7755bb","a":"#4a3388","T":"#ffcc44","W":"#c8ccd4","w":"#8a6a44","G":"#aaddff","g":"#66aaee","S":"#f0c4a8","s":"#d4a888","E":"#221144","H":"#443388","B":"#2a1855"}},{"id":"marksman","name":"Marksman","note":"Hood and crossbow. Narrow, hunched shape; the crossbow points the way the bolts fly.","grid":["....................","....................","....................","......OOOOOOOO......",".....OAAAAAAAAO.....","....OAAAAAAAAAAO....","....OAaHHHHHHaAO....","....OAaHHHHHHaAO....","....OAOSSSSSSOAO....","....OAOEsSSsEOAO....","....OaOSSSSSSOaO....",".....OOssssssOO.....","......OssssssO......",".....OAAAAAAAAO.....","....OAOAATTAAOAO....","....OSOAAAAAOOSO....",".....OaAAAAAWOO.....",".....OaaaaaaOWO.....","......OBO..OOwwwwwwO","......OBO..OOWO..T..",".....OBBO..OWOO.....",".....OOOO..OOOO....."],"pal":{"O":"#16222a","A":"#4488aa","a":"#2e5e77","T":"#ffcc44","W":"#c8ccd4","w":"#8a6a44","S":"#f0c4a8","s":"#d4a888","E":"#223344","H":"#446677","B":"#2a4455"}},{"id":"rogue","name":"Rogue","note":"Bandana mask with a red tail and twin daggers. Smallest head shape, arms out, built to look quick.","grid":["....................","....................","....................","......OOOOOOOO......",".....OHHHHHHHHO..O..",".....OHHHHHHHHOOTO..",".....OAAAAAAAAOTO...",".....OAAAAAAAAOO....",".....OSEsSSsESO.....",".....OSSSSSSSSO.....",".....OaaaaaaaaO.....",".....OOaaaaaaOO.....",".O....OssssssO....O.",".WO..OAAAAAAAAO..OW.",".WO.OAOAATTAAOAO.OW.",".OT.OSOAAAAAAOSO.TO.","..O..OaAAAAAAaO..O..",".....OaaaaaaaaO.....","......OBO..OBO......","......OBO..OBO......",".....OBBO..OBBO.....",".....OOOO..OOOO....."],"pal":{"O":"#13221a","A":"#55aa66","a":"#336644","T":"#cc3344","W":"#e0e4ea","S":"#f0c4a8","s":"#d4a888","E":"#112233","H":"#2a1a12","B":"#224433"}},{"id":"witch","name":"Witch","note":"Wide bent-tip hat, orange hair, broom behind. The brim gives it a flat, wide top unlike the Mage.","grid":[".............OO.....","............OAAO....","...........OAAO.....","..........OAAAO.....",".........OAAAO......","........OAAAAO......","......OOATTTTAO.....","..OOOOOOAAAAAAOOOO..","..OaaaaaaaaaaaaaaO..","...OOOHHHHHHHHOOOO..",".....OSEsSSsESOOwO..",".....OSSSSSSSSOwO...","......OssssssOwO....",".....OAAAAAAAAO.....","....OAOAATTAAOAO....","..OOOSOAAAAAAOSO....","..OTTOaAAAAAAaO.....","..OTTOaaaaaaaaO.....","...OTTOBOO.OBO......","....OOOBO..OBO......",".....OBBO..OBBO.....",".....OOOO..OOOO....."],"pal":{"O":"#1c1022","A":"#aa55bb","a":"#6a2e7a","T":"#ffcc44","w":"#8a6a44","S":"#f0c4a8","s":"#d4a888","E":"#221133","H":"#ee7733","B":"#2a1133"}}],"current":[{"id":"slime","name":"Slime","note":"Wave 1 fodder. Bigger white eyes so it reads as a creature, not a puddle, at 2x.","grid":[".......OOOO.......",".....OO1111OO.....","....O11112221O....","...O1111112221O...","..O111111111111O..","..O11OO1111OO11O..",".O111OeO11OeO111O.",".O111OOO11OOO111O.",".O11111mmmm11111O.","O11111111111111110","O1111111111111111O",".OOmmmmmmmmmmmmOO.","...OOOOOOOOOOOO..."],"pal":{"O":"#1f3312","1":"#6baa42","2":"#aedd77","e":"#ffffff","m":"#3d6622","0":"#1f3312"}},{"id":"bat","name":"Bat","note":"Fast swarm. Wide flat wings make a shape nothing else has; red eyes stay visible mid-flap.","grid":["O..................O","OO......O..O......OO","OWO.....OOOO.....OWO","OWWO...OBBBBO...OWWO","OWWWO.OBBBBBBO.OWWWO","OWwWWOBBeBBeBBOWWwWO",".OwWWOBBBBBBBBOWWwO.","..OwWWOBFBBFBOWWwO..","...OwWOBBBBBBOWwO...","....OOO.OBBO.OOO....",".........OO........."],"pal":{"O":"#1a1028","W":"#6644aa","w":"#4a3377","B":"#4a3377","e":"#ff4444","F":"#eeeedd"}},{"id":"skeleton","name":"Skeleton","note":"Tanky walker. Skull and ribcage pop on green grass; carries a bone club.","grid":["....OOOOOO....","...OCCCCCCO...","..OCCCCCCCCO..","..OCddCCddCO..","..OCdxCCdxCO..","..OCCCCdCCCO..","...OCtCtCtO...","....OOOOOO....","..O..OCCO..O..",".OCOOCCCCOOCO.",".OC.OCtCtO.CO.","..O.OCCCCO.WO.","....OCtCtO.WO.",".....OCCO..WO.","....OC..CO.WO.","....OC..CO.OO.","...OCC..CCO...","...OOO..OOO..."],"pal":{"O":"#22201a","C":"#e8e2cc","d":"#1a1a11","x":"#ff4433","t":"#a8a290","W":"#8a6a44"}},{"id":"demon","name":"Demon","note":"Ranged heavy. Curled horns and batwings; the mouth is where projectiles come from.","grid":["..OO..........OO...","..OhO........OhO...","...OhO......OhO....","...OhhOOOOOOhhO....","....ORRRRRRRRO.....","...ORRRRRRRRRRO....","OO.ORREERRREERRO.OO","OWO.ORRRRRRRRRO.OWO","OWWOORMMMMMMRROOWWO","OWWWORRMMMMRRROWWWO",".OWWORRRRRRRRROWWO.","..OWORrRRRRRrROWO..","...OORrRRRRRrROO...","....ORRRRRRRRRO....",".....ORRO.ORRO.....",".....OCCO.OCCO.....","....OCCCO.OCCCO...."],"pal":{"O":"#1a0806","R":"#cc3322","r":"#992211","h":"#e8d8b0","E":"#ffcc44","M":"#330000","C":"#331100","W":"#7a2218"}},{"id":"boss","name":"Demon King","note":"Wave 10 boss. Crown, curled horns, fangs and claws; same family as the Demon at twice the mass.","grid":["......O..O...O..O.......",".....OGO.OGOOGO.OGO.....",".....OGGOGGGGGGOGGO.....",".....OGGGGEGGGGGGGO.....","..OO..OOOOOOOOOOOO..OO..","..OhO.ORRRRRRRRRRO.OhO..","..OhhORRRRRRRRRRRROhhO..","...OhRRRRRRRRRRRRRRhO...","...ORRREEERRRRREEERRO...","...ORRREeERRRRREeERRO...","...ORRRRRRRRRRRRRRRRO...","..ORRRRMMMMMMMMMMRRRRO..","..ORRRRMWMWMMWMWMRRRRO..","..ORRRRRMMMMMMMMRRRRRO..",".OrORRRRRRRRRRRRRRRROrO.","OrrOORRRRRRRRRRRRRROOrrO","OrrO.OrRRRRRRRRRRrO.OrrO",".OO..OrRRRRRRRRRRrO..OO.",".....ORRRRRRRRRRRRO.....","......ORRRO..ORRRO......","......OCCCO..OCCCO......",".....OCCCCO..OCCCCO....."],"pal":{"O":"#120404","R":"#bb2211","r":"#771100","h":"#e8d8b0","E":"#ffcc44","e":"#ff5500","M":"#220000","W":"#f0e4c8","C":"#330800","G":"#ffcc44"}}],"fresh":[{"id":"wisp","name":"Wisp","note":"New idea: phases through other enemies, dies to splash. Teal glow reads at night.","grid":["......OOOO......","....OOggggOO....","...OgggGGgggO...","..OggGGGGGGggO..","..OgGGGGGGGGgO..",".OgGGOOGGOOGGgO.",".OgGGOeGGOeGGgO.",".OgGGGGGGGGGGgO.",".OgGGGGOOGGGGgO.","..OgGGGGGGGGgO..","..OggGGgGGgGgO..","...OgOgGgOgGO...","....O.OgO.OgO...","........O...O..."],"pal":{"O":"#0e2430","g":"#66ccaa","G":"#bff5e4","e":"#0e2430"}},{"id":"shroom","name":"Shroomling","note":"New idea: bursts into a slowing spore cloud on death. Good counter to melee builds.","grid":[".....OOOOOO.....","...OORRRRRROO...","..ORRwwRRRRwwRO.",".ORRRwwRRRRwwRRO",".ORRRRRRwwRRRRRO","ORRwwRRRwwRRRRRO","OOOOOOOOOOOOOOOO","...OccccccccO...","...OcOecceOcO...","...OccccccccO...","...OccmmmmccO...","....OccccccO....","...OcO....OcO...","...OO......OO..."],"pal":{"O":"#2a1010","R":"#cc4444","w":"#f5ecd4","c":"#e8d0a8","e":"#2a1010","m":"#8a5544"}},{"id":"golem","name":"Moss Golem","note":"New idea: slow mini-boss for waves 6 to 9. Glowing moss marks the weak spot.","grid":["......OOOOOOOO......",".....OSSSSSSSSO.....","....OSSssSSSSsSO....","....OSsOOSSOOssO....","....OSSOeSSOeSSO....",".OOOOSSSSSSSSSSOOOO.","OSSSOOSSmmmmSSOOSSSO","OSsSOSSSSSSSSSSOSsSO","OSSSOSSgSSSSgSSOSSSO","OSSsOSSSgggSSSSOsSSO","OSSSOSsSSSSSSsSOSSSO",".OOOOSSSSSSSSSSOOOO.",".OSSO.OSSSSSSO.OSSO.",".OSsO.OSsOOSSO.OsSO.","..OO..OSSOOSSO..OO..","......OSSO.OSSO.....",".....OSSSO.OSSSO....",".....OOOOO.OOOOO...."],"pal":{"O":"#1e1a14","S":"#8a8270","s":"#5e5848","g":"#66ccaa","e":"#ffcc44","m":"#2a2418"}}],"variants":[{"name":"Ember","grid":[".......OOOO.......",".....OO1111OO.....","....O11112221O....","...O1111112221O...","..O111111111111O..","..O11OO1111OO11O..",".O111OeO11OeO111O.",".O111OOO11OOO111O.",".O11111mmmm11111O.","O11111111111111110","O1111111111111111O",".OOmmmmmmmmmmmmOO.","...OOOOOOOOOOOO..."],"pal":{"1":"#dd6633","2":"#ffbb66","m":"#882211","O":"#2a0e06","0":"#2a0e06","e":"#ffffff"}},{"name":"Frost","grid":[".......OOOO.......",".....OO1111OO.....","....O11112221O....","...O1111112221O...","..O111111111111O..","..O11OO1111OO11O..",".O111OeO11OeO111O.",".O111OOO11OOO111O.",".O11111mmmm11111O.","O11111111111111110","O1111111111111111O",".OOmmmmmmmmmmmmOO.","...OOOOOOOOOOOO..."],"pal":{"1":"#66aadd","2":"#cceeff","m":"#2a5577","O":"#0e1e2e","0":"#0e1e2e","e":"#ffffff"}},{"name":"Venom","grid":[".......OOOO.......",".....OO1111OO.....","....O11112221O....","...O1111112221O...","..O111111111111O..","..O11OO1111OO11O..",".O111OeO11OeO111O.",".O111OOO11OOO111O.",".O11111mmmm11111O.","O11111111111111110","O1111111111111111O",".OOmmmmmmmmmmmmOO.","...OOOOOOOOOOOO..."],"pal":{"1":"#9955cc","2":"#ddaaff","m":"#4a2266","O":"#1e0e2a","0":"#1e0e2a","e":"#ccff66"}}]};
+function draw(grid, pal, scale, sil) {
+  const h = grid.length, w = Math.max(...grid.map(r => r.length));
+  const c = document.createElement('canvas'); c.width = w * scale; c.height = h * scale;
+  const x = c.getContext('2d');
+  grid.forEach((row, j) => [...row].forEach((ch, i) => {
+    const col = pal[ch]; if (!col || ch === '.') return;
+    x.fillStyle = sil ? '#120e0a' : col; x.fillRect(i * scale, j * scale, scale, scale);
+  }));
+  c.setAttribute('role', 'img');
+  return c;
+}
+let SIL = false;
+function tile(item, tag) {
+  const t = document.createElement('article'); t.className = 'tile';
+  const st = document.createElement('div'); st.className = 'stage';
+  const big = item.grid.length > 20 ? 4 : 5;
+  const cv = draw(item.grid, item.pal, big, SIL); cv.setAttribute('aria-label', item.name + ' at 4x');
+  st.appendChild(cv);
+  const r = document.createElement('div'); r.className = 'real';
+  const sm = draw(item.grid, item.pal, 2, SIL); sm.setAttribute('aria-label', item.name + ' at game size');
+  r.appendChild(sm); const lb = document.createElement('small'); lb.textContent = '2x'; r.appendChild(lb);
+  st.appendChild(r);
+  const w = Math.max(...item.grid.map(s => s.length));
+  const info = document.createElement('div'); info.className = 'info';
+  info.innerHTML = '<div class="name-row"><span class="name"></span>' + (tag ? '<span class="tag">' + tag + '</span>' : '<span class="dims">' + w + '×' + item.grid.length + '</span>') + '</div><p class="note"></p>';
+  info.querySelector('.name').textContent = item.name;
+  info.querySelector('.note').textContent = item.note || (w + '×' + item.grid.length + ' px, slime grid with a new palette.');
+  const b = document.createElement('button'); b.className = 'copy'; b.textContent = 'COPY GRID';
+  b.addEventListener('click', () => {
+    const text = "'" + item.grid.join(',') + "'\n" + JSON.stringify(item.pal);
+    const done = () => { b.textContent = 'COPIED'; setTimeout(() => b.textContent = 'COPY GRID', 1400); };
+    try { navigator.clipboard.writeText(text).then(done, () => { b.textContent = 'COPY FAILED'; }); } catch (e) { b.textContent = 'COPY FAILED'; }
+  });
+  info.appendChild(b);
+  t.append(st, info); return t;
+}
+function render() {
+  const fill = (id, list, tag) => { const g = document.getElementById(id); g.innerHTML = ''; list.forEach(it => g.appendChild(tile(it, tag))); };
+  fill('g-heroes', DATA.heroes); fill('g-current', DATA.current); fill('g-fresh', DATA.fresh, 'NEW'); fill('g-var', DATA.variants);
+  const L = document.getElementById('lineup'); L.innerHTML = '';
+  [...DATA.heroes, ...DATA.current, ...DATA.fresh].forEach(it => {
+    const f = document.createElement('figure'); const c = draw(it.grid, it.pal, it.id === 'boss' ? 3 : 2, SIL); c.setAttribute('aria-label', it.name);
+    const cap = document.createElement('figcaption'); cap.textContent = it.name.toUpperCase();
+    f.append(c, cap); L.appendChild(f);
+  });
+}
+function toggle(btn, fn) { btn.addEventListener('click', () => { const on = btn.getAttribute('aria-pressed') !== 'true'; btn.setAttribute('aria-pressed', on); fn(on); }); }
+toggle(document.getElementById('t-sil'), on => { SIL = on; render(); });
+toggle(document.getElementById('t-night'), on => document.body.classList.toggle('night', on));
+render();
+</script>

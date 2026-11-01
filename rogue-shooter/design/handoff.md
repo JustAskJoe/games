@@ -16,6 +16,8 @@ Single HTML file, pure Canvas + vanilla JS. No libraries, no build step.
 - **Isometric projection:** `toScreen(wx,wy) = {x: wx-wy, y: (wx+wy)*0.5}`, inverse `toWorld(sx,sy) = {x: sx*0.5+sy, y: -sx*0.5+sy}`.
 - **Depth sorting** by `entity.x + entity.y`.
 - **State machine:** `start | playing | levelup | stats | dead | won`.
+- **Menus:** class select uses keyboard (←/→, Enter, 1-5) or click; level-up uses 1/2/3 or ←/→ + Enter, with a 0.35 s input guard after the cards appear. The class-select previews are drawn with the in-game `renderSprite()`, so `buildCharSelect()` runs after `SPR` is defined, at the bottom of the script.
+- **Art concepts:** `art/concepts/sketches.html` (not yet adopted).
 - **Lateral movement boost:** `1.4×` on all directions so the player doesn't feel slow on the iso grid.
 - **Google Fonts:** Press Start 2P (headings/HUD), Rajdhani (body).
 - **Pixel art system:** sprites defined as comma-separated string rows, palette-mapped and rendered to offscreen canvases via `renderSprite()`. Cached by data+palette+scale key. `stamp()` draws them centered at a world position with optional horizontal flip. `tileHash()` gives deterministic per-tile decoration.

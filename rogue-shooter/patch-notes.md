@@ -6,6 +6,28 @@ Newest on top. Each entry covers **what's new** for players, **next up** for the
 
 ---
 
+## P1.1 · Nov 1, 2026 · Joe (with Claude)
+Concept sketches for the heroes and monsters, and new class-select and level-up menus.
+
+### What's new
+- **Class select:** each class card shows its pixel sprite on a patch of grass (the picked one walks), four stat bars (HP, power, speed, range, scaled against the other classes) and its two favored weapons. Pick with ← → (or A/D), Enter or Space to start, or 1-5 to jump straight in. Click still starts a run.
+- **Level-up cards:** number badges with 1/2/3 hotkeys, ← → plus Enter, a **NEW** tag on weapons you don't have yet and "LV 1 → 2" on upgrades. Cards slide in, and clicks and keys are ignored for the first 0.35 s so a held key or stray click can't pick a card by accident.
+- **Art sketches:** `art/concepts/sketches.html` has pixel concepts for all five classes, redraws of the five current enemies, three new monster ideas (Wisp, Shroomling, Moss Golem) and slime colorways. Each sprite is in the build's string-grid format with a "Copy grid" button. Not in the game yet.
+
+### Next up
+- [ ] @Joe: pick which sketches to adopt, then swap the chosen grids into `SPR`. The hero sketches are 20×22 against the current 10×14, so check the hitbox and shadow sizes when they go in.
+- [ ] Decide whether the Wisp, Shroomling or Moss Golem are worth building (each needs its own behavior code).
+
+### Watch out
+- [ ] Menus were checked in headless Chrome at 1280×800 and 400 px wide only. Not checked in a real desktop browser or by a player.
+- [ ] Google Fonts didn't load in the test browser, so the screenshots used fallback fonts. Spacing may shift slightly with Press Start 2P loaded.
+- [ ] The stat bars are relative to the five classes; a new class with bigger numbers will rescale every bar.
+- [ ] The README lists the classes as Knight, Mage, Rogue, Ranger, Cleric, but the build has Knight, Mage, Marksman, Rogue, Witch. Not fixed here.
+- [ ] The README and handoff say the boss comes at wave 10; in the code it spawns at 3:00 of game time.
+- [ ] No sketch has a Lead Artist plan (`art/lead-plan.md`) or `art-direction.md` yet; the art team doc expects one before concepts become finals.
+
+---
+
 ## P1-art · Nov 1, 2026 · Joe (with Claude)
 Stardew Valley pixel art upgrade — complete visual overhaul.
 
