@@ -6,6 +6,19 @@ Newest on top. Each entry covers **what's new** for players, **next up** for the
 
 ---
 
+## P2.1 · Oct 31, 2026 · Zach (with Claude)
+
+### What's new
+- **Every gun fires differently:** Arc throws jagged lightning, Scatter sprays pellets, Rail fires a solid beam, and Rockets lob shells that burst.
+- **Upgrades show on screen:** Overcharge adds a second strand, Forked branches out, Buckshot fires fat pellets, Wide Choke fans wider, Capacitor thickens the beam, Overpierce fires twin beams, Warheads hit bigger, and Cluster splits into small blasts.
+- **Gun colours:** Arc is violet, Rail is off-white and Rockets are gold, so no gun uses the enemy pink.
+### Next up
+
+### Watch out
+- [ ] Weapon effects were judged from frozen stills, not in motion. Fire effects could feel busy with a big squad on a phone.
+- [ ] Overclock no longer turns shots white, so each gun keeps its identity at the drop. They get thicker instead.
+- [ ] Frame rate with Scatter or Arc at the drop isn't measured. Each shot segment is one instance (420 max).
+
 ## P2 art · Oct 31, 2026 · Zach (with Claude)
 
 ### What's new

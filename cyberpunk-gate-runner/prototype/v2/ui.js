@@ -215,8 +215,10 @@
       const e = G.ev[U.evi++];
       const sq = R.project(G.sx, 0), sx = sq.x, sy = sq.y;
       if (e.type === 'volley') {
-        const col = G.oc.on ? '#FFFFFF' : GR.WEAPONS[G.weapon].col;
-        for (const id of e.hits.slice(0, 6)) { const en = G.ents.find(q => q.id === id); if (en) R.tracer(G.sx + (Math.random() - 0.5) * GR.width(G.n), en.x, en.ta - G.t, col, en.kind === 'boss' ? 3.8 : 1.1); }
+        if (e.hits.length) {
+          const tg = []; for (const id of e.hits.slice(0, 8)) { const en = G.ents.find(q => q.id === id); if (en) tg.push({ x: en.x, z: Math.max(0.05, en.ta - G.t), y: en.kind === 'boss' ? 3.8 : 1.1 }); }
+          R.volley({ weapon: G.weapon, mod: G.mod, lv: G.wlv, col: GR.WEAPONS[G.weapon].col, oc: G.oc.on, x: G.sx, w: GR.width(G.n), t: tg });
+        }
       } else if (e.type === 'kill') {
         sfx('kill'); const en = G.ents.find(q => q.id === e.id), z = en ? en.ta - G.t : 1;
         const c = e.kind === 'crate' ? '#FFB547' : e.kind === 'boss' ? '#FFFFFF' : '#FF3DA8', nP = RM ? 2 : e.kind === 'boss' ? 160 : e.kind === 'swarm' ? 4 : 10;

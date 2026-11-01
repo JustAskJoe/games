@@ -139,10 +139,10 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   // splash hits neighbours of each target. val is how much the bots value the extras.
   const WEAPONS = {
     pulse: { name: 'Pulse rifle', short: 'Pulse', mult: 1, aim: 0, val: 1, col: '#3DF0FF', tip: '', mods: [{ name: 'Hot Rounds', mult: 0.3, tip: 'Hot Rounds: more damage' }, { name: 'Long Barrel', aim: 0.1, tip: 'Long Barrel: a wider stream' }] },
-    arc: { name: 'Arc gun', short: 'Arc', mult: 1.5, aim: 0, val: 1, col: '#FFB547', tip: 'Arc gun: heavy damage, tight stream', mods: [{ name: 'Overcharge', mult: 0.45, tip: 'Overcharge: far more damage' }, { name: 'Forked', mult: 0.25, aim: 0.1, tip: 'Forked: the arc spreads wider' }] },
+    arc: { name: 'Arc gun', short: 'Arc', mult: 1.5, aim: 0, val: 1, col: '#8B5CFF', tip: 'Arc gun: heavy damage, tight stream', mods: [{ name: 'Overcharge', mult: 0.45, tip: 'Overcharge: far more damage' }, { name: 'Forked', mult: 0.25, aim: 0.1, tip: 'Forked: the arc spreads wider' }] },
     scatter: { name: 'Scatter', short: 'Scatter', mult: 1.35, aim: 0.24, val: 1.15, col: '#4BFFA5', tip: 'Scatter: a wide cone, less aiming', mods: [{ name: 'Buckshot', mult: 0.4, tip: 'Buckshot: more damage per blast' }, { name: 'Wide Choke', mult: 0.3, aim: 0.14, tip: 'Wide Choke: covers most of the road' }] },
-    rail: { name: 'Railgun', short: 'Rail', mult: 1.45, aim: 0.04, pierce: 24, val: 1.05, col: '#C9B8FF', tip: 'Railgun: pierces a whole line', mods: [{ name: 'Capacitor', mult: 0.4, tip: 'Capacitor: harder hits' }, { name: 'Overpierce', mult: 0.2, pierce: 24, aim: 0.03, tip: 'Overpierce: twice as many targets' }] },
-    rocket: { name: 'Rockets', short: 'Rockets', mult: 1.5, aim: 0, splash: 0.5, radius: 0.35, val: 1.1, col: '#FF7AD0', tip: 'Rockets: blasts hit nearby enemies', mods: [{ name: 'Warheads', mult: 0.3, splash: 0.35, tip: 'Warheads: bigger blast damage' }, { name: 'Cluster', mult: 0.25, radius: 0.25, tip: 'Cluster: a wider blast' }] }
+    rail: { name: 'Railgun', short: 'Rail', mult: 1.45, aim: 0.04, pierce: 24, val: 1.05, col: '#F2EFE6', tip: 'Railgun: pierces a whole line', mods: [{ name: 'Capacitor', mult: 0.4, tip: 'Capacitor: harder hits' }, { name: 'Overpierce', mult: 0.2, pierce: 24, aim: 0.03, tip: 'Overpierce: twice as many targets' }] },
+    rocket: { name: 'Rockets', short: 'Rockets', mult: 1.5, aim: 0, splash: 0.5, radius: 0.35, val: 1.1, col: '#FFB547', tip: 'Rockets: blasts hit nearby enemies', mods: [{ name: 'Warheads', mult: 0.3, splash: 0.35, tip: 'Warheads: bigger blast damage' }, { name: 'Cluster', mult: 0.25, radius: 0.25, tip: 'Cluster: a wider blast' }] }
   };
   const FINDS = ['arc', 'scatter', 'rail', 'rocket'], POWER = 0.3; // each weapon level adds 30% damage
   // a gun with its upgrade applied
@@ -445,8 +445,8 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   });
 
   // ---------- state ----------
-  let renderer, scene, cam, rtS, rtA, rtB, fsScene, fsCam, fsQuad, mats = {}, W = 1, H = 1, DPR = 1, road, sky, runners, picks, drones, swarm, bikers, crate, boss, arches, rails, near, billboards, towerData = [], gates = [], parts = [], tracers = [], pts, lines, pi = 0;
-  const camBase = new T.Vector3(0, 6.6, 9.2), look = new T.Vector3(), PN = 1600, TN = 90, v3 = new T.Vector3();
+  let renderer, scene, cam, rtS, rtA, rtB, fsScene, fsCam, fsQuad, mats = {}, W = 1, H = 1, DPR = 1, road, sky, runners, picks, drones, swarm, bikers, crate, boss, arches, rails, near, billboards, towerData = [], gates = [], parts = [], bolts = [], blasts = [], pts, beams, pi = 0;
+  const camBase = new T.Vector3(0, 6.6, 9.2), look = new T.Vector3(), PN = 1600, BN = 420, v3 = new T.Vector3(), v4 = new T.Vector3(), ZAX = new T.Vector3(0, 0, 1);
   const ARCH0 = new T.Color(COL.violet), ARCH1 = new T.Color(COL.gold), archCol = new T.Color(), frameMs = [], shocks = []; let lastPerf = 0, slowCheck = 0, shockI = 0, lastBeat = -1, punch = 0, baseFov = 52, bossHp = 0, bossHit = 0;
 
   function buildRoad() {
@@ -531,16 +531,15 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     st.frustumCulled = false; scene.add(st);
   }
   function buildFx() {
+    beams = inst(merge([box(1, 1, 1, 0, 0, 0, COL.white, 1)]), BN); scene.add(beams);
     const g = new T.BufferGeometry(); g.setAttribute('position', new T.BufferAttribute(new Float32Array(PN * 3), 3).setUsage(T.DynamicDrawUsage)); g.setAttribute('aC', new T.BufferAttribute(new Float32Array(PN * 3), 3).setUsage(T.DynamicDrawUsage)); g.setAttribute('aS', new T.BufferAttribute(new Float32Array(PN), 1).setUsage(T.DynamicDrawUsage));
     pts = new T.Points(g, new T.ShaderMaterial({
       transparent: true, depthWrite: false, blending: T.AdditiveBlending, uniforms: { uPx: { value: 500 } },
       vertexShader: `attribute vec3 aC; attribute float aS; uniform float uPx; varying vec3 vC; void main(){ vC = aC; vec4 v = modelViewMatrix * vec4(position, 1.); gl_PointSize = aS * uPx / -v.z; gl_Position = projectionMatrix * v; }`,
       fragmentShader: `varying vec3 vC; void main(){ float d = length(gl_PointCoord - .5) * 2.; gl_FragColor = vec4(vC * pow(max(1. - d, 0.), 1.6) * 2.5, 1.); }`
     })); pts.frustumCulled = false; scene.add(pts);
-    const l = new T.BufferGeometry(); l.setAttribute('position', new T.BufferAttribute(new Float32Array(TN * 6), 3).setUsage(T.DynamicDrawUsage)); l.setAttribute('color', new T.BufferAttribute(new Float32Array(TN * 6), 3).setUsage(T.DynamicDrawUsage));
     const rg = new T.RingGeometry(0.86, 1, 40);
     for (let i = 0; i < 6; i++) { const m = new T.Mesh(rg, new T.MeshBasicMaterial({ transparent: true, blending: T.AdditiveBlending, depthWrite: false, side: T.DoubleSide, fog: false })); m.visible = false; m.frustumCulled = false; scene.add(m); shocks.push({ m, c: new T.Color(), t0: null, life: 1, size: 8, z: 0 }); }
-    lines = new T.LineSegments(l, new T.LineBasicMaterial({ vertexColors: true, transparent: true, blending: T.AdditiveBlending, depthWrite: false })); lines.frustumCulled = false; scene.add(lines);
   }
 
   // ---------- post: bloom, tone curve, vignette ----------
@@ -601,7 +600,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     for (const [bw, bh, x, y] of [[w + 0.14, 0.14, 0, h + 0.2], [w + 0.14, 0.14, 0, 0.2], [0.14, h, -w / 2, h / 2 + 0.2], [0.14, h, w / 2, h / 2 + 0.2]]) { const b = new T.Mesh(new T.BoxGeometry(bw, bh, 0.14), frame); b.position.set(x, y, 0); grp.add(b); }
     grp.position.x = side * RW * 0.52; return grp;
   }
-  R.setRun = function (G, text) { R.gates(G, text); parts = []; tracers = []; };
+  R.setRun = function (G, text) { R.gates(G, text); parts = []; bolts = []; blasts = []; };
   R.gates = function (G, text) {
     if (!R.ok) return;
     for (const g of gates) { scene.remove(g.grp); g.grp.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) { if (o.material.map) o.material.map.dispose(); o.material.dispose(); } }); }
@@ -616,7 +615,35 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     const s = shocks[shockI]; shockI = (shockI + 1) % shocks.length; s.t0 = R.t; s.life = 0.55; s.size = size || 8; s.z = wz(z); s.c.set(col); s.m.position.set(wx(x), y == null ? 1 : y, s.z);
   };
   R.punch = function (v) { punch = Math.max(punch, v); };
-  R.tracer = function (x0, x1, z1, col, y1) { if (tracers.length < TN) tracers.push({ t0: R.t, x0: wx(x0), x1: wx(x1), z1: wz(z1), y1: y1 == null ? 1 : y1, c: new T.Color(col) }); };
+  // ---------- weapon fire: every gun and upgrade has its own shape. t = [{ x, z, y }] in road units, up to 8 ----------
+  // head 0 draws the whole line and thins it out, otherwise head is the length of a bolt flying along it. lob arcs it upward
+  function bolt(ax, ay, bz0, bx, by, bz, w, c, life, head, lob, delay) { if (bolts.length < BN) bolts.push({ t0: R.t + (delay || 0), life, ax, ay, az: bz0, bx, by, bz, w, c, head: head || 0, lob: lob || 0 }); }
+  const AY = 0.72, AZ = -0.5;
+  function jag(ax, ay, az, bx, by, bz, w, c, life, n, amp) {
+    let px = ax, py = ay, pz = az;
+    for (let i = 1; i <= n; i++) { const k = i / n, off = i === n ? 0 : (Math.random() - 0.5) * amp, x = ax + (bx - ax) * k + off, y = ay + (by - ay) * k + off * 0.5, z = az + (bz - az) * k; bolt(px, py, pz, x, y, z, w, c, life); px = x; py = y; pz = z; }
+    return { x: px, y: py, z: pz };
+  }
+  R.volley = function (o) {
+    const c = new T.Color(o.col), t = o.t, sx = wx(o.x), sq = wx(o.w) * 0.8, k = (1 + (o.lv - 1) * 0.12) * (o.oc ? 1.3 : 1), M = o.mod, from = () => sx + (Math.random() - 0.5) * sq * 2;
+    if (o.weapon === 'pulse') for (const q of t.slice(0, 6)) bolt(from(), AY, AZ, wx(q.x), q.y, wz(q.z), 0.13 * k, c, 0.17, 0.36, 0, Math.random() * 0.05);
+    else if (o.weapon === 'arc') for (const q of t.slice(0, 3)) {
+      const bx = wx(q.x), bz = wz(q.z), ax = from(), w = (M === 0 ? 0.18 : 0.1) * k, end = jag(ax, AY, AZ, bx, q.y, bz, w, c, 0.2, 7, 0.9);
+      if (M === 0) jag(ax, AY, AZ, bx, q.y, bz, 0.08 * k, new T.Color(COL.bone), 0.2, 7, 0.7);
+      if (M === 1) for (const s of [-1, 1]) jag(end.x, end.y, end.z, end.x + s * (1.6 + Math.random()), q.y * 0.6, end.z - 1.4, 0.08 * k, c, 0.2, 4, 0.6);
+    } else if (o.weapon === 'scatter') {
+      const n = M === 1 ? 16 : M === 0 ? 6 : 10, fan = M === 1 ? 5.4 : M === 0 ? 2.2 : 3, w = (M === 0 ? 0.3 : 0.14) * k, cx = t.length ? wx(t[0].x) : sx;
+      for (let i = 0; i < n; i++) bolt(from(), AY, AZ, cx + (i / (n - 1) - 0.5) * fan + (Math.random() - 0.5) * 0.4, 0.5 + Math.random() * 0.9, -13 - Math.random() * 5, w, c, 0.24, M === 0 ? 0.3 : 0.22, 0, Math.random() * 0.04);
+    } else if (o.weapon === 'rail') {
+      const far = t.reduce((m, q) => q.z > m.z ? q : m, t[0] || { x: o.x, z: 1.7, y: 1 }), bx = wx(far.x), by = far.y, bz = Math.min(wz(far.z), -18), bone = new T.Color(COL.cyan);
+      for (const s of M === 1 ? [-0.36, 0.36] : [0]) { bolt(sx + s, AY, AZ, bx + s * 0.4, by, bz, (M === 0 ? 0.36 : 0.16) * k, c, 0.3); bolt(sx + s, AY, AZ, bx + s * 0.4, by, bz, (M === 0 ? 0.62 : 0.3) * k, bone, 0.1); }
+      for (const q of t.slice(0, 6)) R.burst(q.x, q.z, o.col, M === 1 ? 5 : 3, 5, q.y);
+    } else if (o.weapon === 'rocket') for (const q of t.slice(0, M === 1 ? 2 : 3)) {
+      const life = 0.3, bx = wx(q.x), bz = wz(q.z), ax = from();
+      bolt(ax, AY, AZ, bx, q.y, bz + life * ZS, 0.2 * k, c, life, 0.16, 1.5); bolt(ax, AY, AZ, bx, q.y, bz + life * ZS, 0.09 * k, new T.Color(COL.bone), life, 0.34, 1.5);
+      blasts.push({ at: R.t + life, x: q.x, z: q.z, y: q.y, c: o.col, m: M, big: k });
+    }
+  };
 
   function drawCity(t) {
     const L = 135, N = towerData.length; billboards.count = 0;
@@ -679,11 +706,24 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       pa.setXYZ(n, p.x + p.vx * a, Math.max(0.05, p.y + p.vy * a - 7 * a * a), p.z + p.vz * a); const f = 1 - k; ca.setXYZ(n, p.c.r * f, p.c.g * f, p.c.b * f); sa.setX(n, p.s); n++;
     }
     pts.geometry.setDrawRange(0, n); pa.needsUpdate = ca.needsUpdate = sa.needsUpdate = true;
-    tracers = tracers.filter(q => t - q.t0 < 0.1 && t >= q.t0);
-    const lp = lines.geometry.attributes.position, lc = lines.geometry.attributes.color;
-    tracers.forEach((q, i) => { const f = 1 - (t - q.t0) / 0.1, j = i * 2; lp.setXYZ(j, q.x0, 0.7, 0); lp.setXYZ(j + 1, q.x1, q.y1, q.z1 + ZS * (t - q.t0)); lc.setXYZ(j, q.c.r * f * 3, q.c.g * f * 3, q.c.b * f * 3); lc.setXYZ(j + 1, q.c.r * f, q.c.g * f, q.c.b * f); });
-    lines.geometry.setDrawRange(0, tracers.length * 2); lp.needsUpdate = lc.needsUpdate = true;
+    bolts = bolts.filter(q => t - q.t0 < q.life);
+    begin(beams);
+    for (const q of bolts) {
+      const a = t - q.t0; if (a < 0) continue; const k = a / q.life, sc = ZS * a, beam = !q.head, f = beam ? 0 : Math.max(0, k - q.head), n = beam ? 1 : Math.min(1, k + q.head * 0.5), lobA = q.lob * Math.sin(Math.PI * f), lobB = q.lob * Math.sin(Math.PI * n);
+      v3.set(q.ax + (q.bx - q.ax) * f, q.ay + (q.by - q.ay) * f + lobA, q.az + (q.bz + sc * 0 - q.az) * f); v4.set(q.ax + (q.bx - q.ax) * n, q.ay + (q.by - q.ay) * n + lobB, q.az + (q.bz - q.az) * n);
+      if (beam) { v3.z += sc; v4.z += sc; }
+      const mx = (v3.x + v4.x) / 2, my = (v3.y + v4.y) / 2, mz = (v3.z + v4.z) / 2; v4.sub(v3); const len = v4.length(); if (len < 0.01) continue; v4.divideScalar(len);
+      const w = q.w * (beam ? 1 - k * k : 1), i = beams.count++; dm.position.set(mx, my, mz); dm.quaternion.setFromUnitVectors(ZAX, v4); dm.scale.set(w, w, len); dm.updateMatrix(); beams.setMatrixAt(i, dm.matrix); beams.tint.setXYZ(i, q.c.r * 0.8, q.c.g * 0.8, q.c.b * 0.8);
+    }
+    end(beams);
+    let blastRing = false; blasts = blasts.filter(b => {
+      if (t < b.at) return true; const z = b.z - (t - b.at), N = RMQ() ? 4 : 1;
+      if (b.m === 1) for (const s of [-0.16, 0, 0.16]) R.burst(b.x + s, z + s, b.c, 8 / N, 6, b.y);
+      else { R.burst(b.x, z, b.c, (b.m === 0 ? 26 : 12) / N, b.m === 0 ? 9 : 6, b.y); if (b.m === 0 && !blastRing) { blastRing = true; R.shock(b.x, z, b.c, 1.4, b.y); } }
+      return false;
+    });
   }
+  const RMQ = () => !R.motion;
   function autoQuality(now) {
     if (R.locked) return; if (lastPerf) { frameMs.push(now - lastPerf); if (frameMs.length > 60) frameMs.shift(); } lastPerf = now;
     if (R.quality === 0 || frameMs.length < 60 || now < slowCheck) return;
@@ -936,8 +976,10 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       const e = G.ev[U.evi++];
       const sq = R.project(G.sx, 0), sx = sq.x, sy = sq.y;
       if (e.type === 'volley') {
-        const col = G.oc.on ? '#FFFFFF' : GR.WEAPONS[G.weapon].col;
-        for (const id of e.hits.slice(0, 6)) { const en = G.ents.find(q => q.id === id); if (en) R.tracer(G.sx + (Math.random() - 0.5) * GR.width(G.n), en.x, en.ta - G.t, col, en.kind === 'boss' ? 3.8 : 1.1); }
+        if (e.hits.length) {
+          const tg = []; for (const id of e.hits.slice(0, 8)) { const en = G.ents.find(q => q.id === id); if (en) tg.push({ x: en.x, z: Math.max(0.05, en.ta - G.t), y: en.kind === 'boss' ? 3.8 : 1.1 }); }
+          R.volley({ weapon: G.weapon, mod: G.mod, lv: G.wlv, col: GR.WEAPONS[G.weapon].col, oc: G.oc.on, x: G.sx, w: GR.width(G.n), t: tg });
+        }
       } else if (e.type === 'kill') {
         sfx('kill'); const en = G.ents.find(q => q.id === e.id), z = en ? en.ta - G.t : 1;
         const c = e.kind === 'crate' ? '#FFB547' : e.kind === 'boss' ? '#FFFFFF' : '#FF3DA8', nP = RM ? 2 : e.kind === 'boss' ? 160 : e.kind === 'swarm' ? 4 : 10;
