@@ -10,12 +10,29 @@ errs = []
 
 # A small in-page bot that plays whatever is on screen through the UI's own buttons, so every screen gets drawn.
 BOT = """() => {
-  const G = CTUI.G, q = s => document.querySelector(s), click = s => { const e = q(s); if (e && !e.disabled) { e.click(); return true; } return false; };
-  if (G.phase === 'morning') return click('[data-act=open]');
+  const G = CTUI.G, q = s => document.querySelector(s), click = s => { const e = [...document.querySelectorAll(s)].find(e => !e.disabled); if (e) { e.click(); return true; } return false; };
+  if (G.phase === 'morning') {
+    // v3: visit the back room each morning: unpack the crate, open boxes onto the rack, put a card in the display case
+    if (window._rd !== G.dayIdx) {
+      if (!CTUI.room) return click('#hud [data-act=room]');
+      if (G.store.crate) return click('[data-act=unpack]');
+      if (click('[data-act=openBox]')) return true;
+      const c = G.stock.find(c => c.loc === 'inbox' && !c.know.fake && CT.estimate(G, c).value >= 5);
+      if (c) { click('[data-act=rsel][data-uid="' + c.uid + '"]'); if (!c.graded && c.prot !== 'hard' && c.prot !== 'mag') click('[data-act=sleeve][data-p=hard]'); click('[data-act=placeTo][data-to=case]'); }
+      if (G.dayIdx === 1) click('[data-act=pol][data-k=penny][data-d="1"]');
+      window._rd = G.dayIdx; return true;
+    }
+    if (CTUI.room) return click('#room [data-act=room]');
+    return click('[data-act=open]');
+  }
   if (G.phase === 'shop') { if (G.packs.star > 2) return click('[data-act=crack][data-game=star]'); return click('[data-act=next]'); }
   if (G.phase === 'visit') {
     const v = G.visit;
     if (v.role === 'scalp') return click('[data-act=pass]');
+    if (v.role === 'weigh') return click('[data-act=sellBehind]') || click('[data-act=pass]');
+    if (v.role === 'thief') return click('[data-act=watch]');
+    if (v.role === 'switch') return (!v.watched && click('[data-act=watch]')) || click('#deal [data-act=show]') || click('[data-act=pass]');
+    if (v.role === 'reseal') return (!v.knowSeal && click('[data-act=inspectPacks]')) || (!v.resealed && click('[data-act=accept]')) || click('[data-act=pass]');
     if (v.cards.length) {
       const c = v.cards.find(c => !c.know.uv);
       if (c && v.patience > 4) { q('#mat .card[data-uid="' + c.uid + '"]').click(); click('[data-tool=uv]'); click('[data-tool=loupe]'); return click('[data-act=closeLoupe]'); }
@@ -26,6 +43,7 @@ BOT = """() => {
     if (!v.showing) return click('[data-act=show]') || click('[data-act=pass]');
     return click('[data-act=accept]');
   }
+  if (G.phase === 'close' && G.dayIdx === 0 && !G.store.lock) { if (!CTUI.catalog) return click('[data-act=catalog]'); click('[data-act=order][data-item=lock]'); click('[data-act=order][data-item=poster]'); return click('#loupe [data-act=catalog]'); }
   if (G.phase === 'close') { click('[data-act=grade][data-co=halo]'); if (G.dayIdx === 0) click('[data-act=upgrade][data-k=lens]'); if (G.dayIdx === 1) click('[data-act=policy]'); return click('[data-act=endDay]'); }
   if (G.phase === 'night') {
     const N = G.night;
@@ -67,7 +85,8 @@ with sync_playwright() as p:
             pg.click('[data-act=fe-menu]'); pg.wait_for_timeout(200); pg.screenshot(path=str(shots / 'f5_pause.png')); pg.click('[data-act=fe-resume]')
         ph = pg.evaluate('CTUI.G.phase')
         if ph == 'end': break
-        key = ph + str(pg.evaluate('CTUI.G.dayIdx')) + (('_' + str(pg.evaluate('CTUI.G.night && CTUI.G.night.pick'))) if ph == 'night' else '')
+        key = ph + str(pg.evaluate('CTUI.G.dayIdx')) + (('_' + str(pg.evaluate('CTUI.G.night && CTUI.G.night.pick'))) if ph == 'night' else '') + ('_room' if pg.evaluate('CTUI.room') else '') + ('_catalog' if pg.evaluate('CTUI.catalog') else '')
+        if ph == 'visit' and pg.evaluate('CTUI.G.visit.role') in ('weigh', 'thief', 'switch', 'reseal'): key += '_' + pg.evaluate('CTUI.G.visit.role')
         if key not in seen:
             seen.add(key); pg.wait_for_timeout(250); pg.screenshot(path=str(shots / f'd2_{key}.png'))
         if ph == 'visit' and 'loupe' not in seen and pg.evaluate('CTUI.G.visit.cards.length') > 0:

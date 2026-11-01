@@ -6,6 +6,55 @@ Newest on top. See the repo's CLAUDE.md for how patch notes work.
 
 ---
 
+## v3 · 2026-11-01 · Hunter (with Claude): "the Back Room"
+Running the shop now matters as much as trading. Scope: `design/v3-design.md`. All v3 art is placeholder, drawn in code ($0). The Lead Artist's approved shot list (`art/v3-shotlist.md`) is on hold.
+
+### What's new
+- **The Back Room**, a second screen (BACK ROOM button or B). Everything you own has a place:
+  - a display case (12×4 grid, lockable, price tags)
+  - a wall rack (16 hooks)
+  - binders (54 pockets each)
+  - back shelves (24 slots)
+  - a safe (6 slots)
+  - an inbox tray where new stock lands
+
+  Tap a card, then tap where it goes, or drag it on desktop.
+- **The display case sells on its own.** Between customers a browser may buy from it, if the tag is fair against today's value. Raw cards need a hard sleeve or mag case to go in.
+- **Gear and a sleeving policy.** Penny sleeves (100 for 4₵), hard sleeves (25 for 6₵) and mag cases (5 for 10₵, display buyers pay +10%). You set the thresholds (penny at X₵+, hard at Y₵+, mag at Z₵+), and new stock is sleeved automatically while gear lasts.
+- **Gentle wear.** Unsleeved cards lose a condition point now and then, faster loose in the tray or case than in binder pockets. Showing a card to a buyer adds a little.
+- **Distributor catalog and crates.** You order at close: booster boxes, collector boxes (a promo and 3 packs), posters, playmats, deck boxes, gear, binders, a shelf unit and a case lock. Orders arrive as a crate the next morning; cut it open and everything goes where it belongs. Merch on the rack sells to walk-ins overnight.
+- **Five new bad actors**, each with a tell and a counter:
+  - **The Scale Gang** (day 2 and 5) feels your packs for the hits. Counter: sell from behind the counter, or put up a "no touching" sign.
+  - **Sticky** (days 3 and 5) lifts from an unlocked case or the rack. Counter: watch them, lock the case, use the safe.
+  - **Snip the trimmer** (day 3) sells "perfect 10s". Counter: the Loupe shows edges that are too perfect and a card 0.4 mm short, and graders stamp them ALTERED.
+  - **Flick the switcher** (day 4) swaps your card for a fake. Counter: watch their hands, or show only hard-sleeved, mag-cased or slabbed cards.
+  - **Gloss the resealer** (day 4) sells "sealed" packs under retail. Counter: check the seams for glue shine. Resealed and searched packs are dead: their rare slot is a common.
+- **Saves** move to new v3 slots. v1 and v2 saves are left alone.
+- **Balance** (200 random weeks per bot):
+  - careful +195% median, careful without upgrades +173%, sloppy −32%; careful beats sloppy 96%
+  - lazy (never sleeves, no case, ignores bad actors) +123%
+  - greedy (grails in an unlocked case) +134%, and loses 13% of its final value to theft
+  - the case makes 38% of the careful bot's single sales
+  - `build-and-test.py` now checks the v3 band too: organized beats lazy by 30+ points, greedy theft 5–15%, case share 25–45%.
+- **Fix:** buyers paid full price for fakes after the v3 rework, which made the Spectrometer worthless. Buyers pay nothing for fakes again; only trims fool them.
+
+### Next up
+- [ ] @Hunter: playtest the Back Room and confirm the build calls in `design/handoff.md` (binder wear, delayed boxes, Sticky, switcher, trims).
+- [ ] @Hunter: say when to spend on v3 art (6 Gemini images, about $0.40, in `art/v3-shotlist.md`). Until then the room, crates and new customers are placeholders.
+- [ ] Portraits for Zekk crew, Sticky, Snip, Flick and Gloss (they show a letter for now).
+- [ ] Crate unboxing animation (cut, lift, place) is a single button for now.
+
+### Watch out
+- [ ] Wear is gentler than the scope's target. A lazy player loses about 3% of stock value to wear, not 10–15%. Organized still beats lazy by 50 points, mostly from theft, dead packs, the switcher and the display case. Raise `WEAR_DAY` and `WEAR_BINDER` in `engine.js` if wear should hurt more.
+- [ ] The gear cost target (2–4% of protected value) isn't measured in the sim yet.
+- [ ] v3 is about 30 points harder than v2 for the careful bot, because boxes now arrive the next day.
+- [ ] Drag and drop is desktop only (HTML5 drag). On phones and touch it's tap a card, then tap a spot. Not tested on a real touch device.
+- [ ] The UI test bot plays badly (it sometimes runs a tab). It's there to draw every screen, not to score.
+- [ ] Day 4 now has 10 visitors (8 regulars plus 2 new bad actors). Check that it doesn't drag.
+- [ ] Rack labels cut off long game names ("SHELLSTO…") at this size.
+
+---
+
 ## v2 · 2026-11-01 · Hunter (with Claude): "the market fights back"
 A full 5-day week where the market pushes back. The design is in `design/v2-design.md`; the Lead Artist's v2 art plan is in `art/lead-plan-v2.md` (draft) with a shot list in `art/v2-shotlist.md`.
 

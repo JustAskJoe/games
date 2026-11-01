@@ -378,8 +378,8 @@ function resolveGrades(G, all) {
   for (const p of G.grading) {
     if (!all && p.due > G.dayIdx) { keep.push(p); continue; }
     const c = p.card;
-    if (c.fake) { c.loc = 'inbox'; c.know.uv = true; c.know.fake = true; G.stats.fakesCaught++; event(G, { t: 'grade', uid: c.uid, co: p.co, fake: true }); G.stock.push(c); continue; }
-    c.loc = 'inbox';
+    if (c.fake) { c.loc = inboxFree(G) > 0 ? 'inbox' : 'binder'; c.know.uv = true; c.know.fake = true; G.stats.fakesCaught++; event(G, { t: 'grade', uid: c.uid, co: p.co, fake: true }); G.stock.push(c); continue; }
+    c.loc = inboxFree(G) > 0 ? 'inbox' : safeFree(G) > 0 ? 'safe' : 'binder';
     if (c.trim) { c.graded = { co: p.co, grade: 1, altered: true }; Object.assign(c.know, { loupe: true, uv: true, read: true, print: true }); G.store.stats.trimsCaught++; event(G, { t: 'grade', uid: c.uid, co: p.co, altered: true }); G.stock.push(c); continue; }
     let g = trueGrade(c);
     if (p.co === 'quik') { const x = p.roll; g = clamp(g + (x < 0.25 ? -1 : x > 0.75 ? 1 : 0), 1, 10); }
@@ -1158,6 +1158,7 @@ function v3Act(G, it) {
     case 'sign': S.noTouch = !!it.noTouch; return ok();
     case 'sleevePolicy': for (const k of ['penny', 'hard', 'mag']) if (it[k] != null) S.sleeve[k] = Math.max(0, +it[k]); return ok();
     case 'autoStore': autoStore(G); return ok();
+    case 'applyPolicy': { let n = 0; for (const c of G.stock) if (c.loc !== 'case') { const was = c.prot; protect(G, c); if (c.prot !== was) n++; } return ok({ n }); }
     case 'order': if (G.phase !== 'close') return err('order at close'); return order(G, it.item, it.game, it.qty);
     case 'unpack': if (['morning', 'shop', 'close'].indexOf(G.phase) < 0) return err('not now'); return unpack(G);
     case 'openBox': if (['morning', 'shop', 'close'].indexOf(G.phase) < 0) return err('not now'); return openBox(G, it.game);

@@ -2,7 +2,7 @@
 
 © 2026 justaskjoe. All rights reserved.
 
-**Status:** draft scope for Hunter's approval (Nov 1, 2026). It builds on `v3-ideas.md` (Hunter's decisions) and on merged v2. The art plan is the Lead Artist's addendum, `art/lead-plan-v3.md` (draft), with its shot list in `art/v3-shotlist.md`.
+**Status:** approved by Hunter (Nov 1, 2026), with placeholder art first ($0); built in v3. It builds on `v3-ideas.md` (Hunter's decisions) and on merged v2. The art plan is the Lead Artist's addendum, `art/lead-plan-v3.md` (draft), with its shot list in `art/v3-shotlist.md`.
 
 **The question v3 answers:** is *running the shop* fun? That means where stock lives, how you protect it, what you put on display, and who's trying to rip you off, on top of v2's trading.
 **Pass bar:** testers rearrange their display case or change their sleeving policy without being told to, and they finish the week.
