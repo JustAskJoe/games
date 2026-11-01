@@ -6,6 +6,26 @@ Newest on top. Each entry covers **what's new** for players, **next up** for the
 
 ---
 
+## P2.3 · Nov 1, 2026 · Zach (with Claude)
+
+### What's new
+- **Name the gun by its shots:** Pulse fires paired double-taps on 16ths, Arc lightning jumps from enemy to enemy and crackles on them, Scatter pellets stay separate and hit hardest on the beat, Rail fires thin shots with one big charged beam and a lingering trail on each bar, and Rockets fire left and right in turn with smoke trails and shockwaves.
+- **Muzzle flashes and hit effects:** every gun has its own flash and its own hit, like sparks, shards or a spark at each enemy along the rail.
+- **Gun sounds in key:** shots are pitched to the chord playing now, Rail whines up into its big shot, and Rockets boom on the root note.
+- **Pickup moment:** picking a gun or upgrade flashes the screen in its colour, rings the squad and plays a short sting in key.
+- **`#fps`:** add it to the game's URL for a live frame rate and quality tier on any device.
+
+### Next up
+- [ ] @Zach: on your phone, name each gun from its shots alone, then give a verdict before the city work (`zach/gate-runner-city-depth`) starts.
+
+### Watch out
+- [ ] Frame rate on a real phone is unverified. Open the game with `#fps` during the drop and note the number.
+- [ ] Not tested on a real phone. Effects were judged from frozen stills, not in motion, and Claude can't hear the sounds.
+- [ ] The rhythms are visual only: damage still lands every eighth note, so Rail's thin shots hit as hard as its big beam. No balance change: sim before and after is 96 / 84 / 12 / 17.
+- [ ] test.py failed once in 5 runs on this branch and the failure text was lost. The likely cause is the smart bot losing a random-seed run, which the test treats as a failure and the sim says happens about 4% of the time, but that isn't confirmed. Re-run it if it fails, and read the reason.
+- [ ] The muzzle flash fires on every shot. It's off with reduced motion, but check it doesn't get tiring in a full run.
+- [ ] Smoke trails and hit bursts share the 1600 particle limit, so heavy moments may drop some.
+
 ## P2.2 · Nov 1, 2026 · Zach (with Claude)
 
 ### What's new

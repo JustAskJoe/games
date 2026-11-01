@@ -164,30 +164,33 @@
     return c.currentTime - (c.outputLatency || c.baseLatency || 0) + (perfMs - performance.now()) / 1000 - A.t0;
   }
   // sound effects play right away on the sfx bus (gates already land on the beat)
-  function sfx(kind) { try { sfx0(kind); } catch (e) {} }
-  // every gun has its own shot, on the same eighth notes as the song. Quieter than a gate, and under the kick
-  function shot(t, d) {
-    const w = U.G.weapon, M = U.G.mod, sweep = (type, a, b, dur, v, cut) => { const o = X().createOscillator(), f = X().createBiquadFilter(); o.type = type; o.frequency.setValueAtTime(a, t); o.frequency.exponentialRampToValueAtTime(b, t + dur); f.type = 'lowpass'; f.frequency.value = cut || 6000; o.connect(f); f.connect(envG(t, 0.002, v, dur, d)); o.start(t); o.stop(t + dur + 0.04); };
-    const hiss = (type, fr, q, dur, v) => { const n = noiseSrc(t, dur + 0.04), f = X().createBiquadFilter(); f.type = type; f.frequency.value = fr; f.Q.value = q; n.connect(f); f.connect(envG(t, 0.002, v, dur, d)); };
-    if (w === 'pulse') sweep('square', 1500, 420, 0.06, 0.1);
-    else if (w === 'arc') { hiss('bandpass', M === 1 ? 5200 : 3400, 6, 0.08, 0.3); sweep('sawtooth', 2400, 900, 0.07, M === 0 ? 0.11 : 0.07); }
-    else if (w === 'scatter') { hiss('lowpass', M === 1 ? 4200 : 2600, 0.7, M === 0 ? 0.09 : 0.06, M === 0 ? 0.3 : 0.22); sweep('square', 240, 90, 0.05, 0.1); }
-    else if (w === 'rail') { sweep('sawtooth', M === 0 ? 1500 : 2600, 130, 0.17, 0.13, 4200); hiss('highpass', 5000, 0.7, 0.05, 0.1); }
-    else if (w === 'rocket') { sweep('sine', 210, 50, 0.16, 0.34); hiss('bandpass', M === 1 ? 2200 : 1100, 1.2, 0.14, 0.14); }
+  function sfx(kind, n) { try { sfx0(kind, n); } catch (e) {} }
+  // every gun has its own shot, on the song's eighth notes and pitched to the chord playing now, so gunfire joins the track
+  function shot(t, d, n) {
+    const w = U.G.weapon, M = U.G.mod, T = TRACKS.neon, ci = Math.floor(U.G.t / GR.BAR) % 4, notes = T.chords[ci], root = T.roots[ci], beat = n % 2 === 0, B = GR.B;
+    const sweep = (type, a, b, dur, v, cut, at) => { const s = at || t, o = X().createOscillator(), f = X().createBiquadFilter(); o.type = type; o.frequency.setValueAtTime(a, s); o.frequency.exponentialRampToValueAtTime(b, s + dur); f.type = 'lowpass'; f.frequency.value = cut || 6000; o.connect(f); f.connect(envG(s, 0.002, v, dur, d)); o.start(s); o.stop(s + dur + 0.04); };
+    const hiss = (type, fr, q, dur, v) => { const s = noiseSrc(t, dur + 0.04), f = X().createBiquadFilter(); f.type = type; f.frequency.value = fr; f.Q.value = q; s.connect(f); f.connect(envG(t, 0.002, v, dur, d)); };
+    if (w === 'pulse') { const fr = notes[0] * 2; sweep('square', fr * 2.5, fr, 0.05, 0.09, 3200); sweep('square', fr * 2.5, fr, 0.05, 0.06, 3200, t + B / 4); }
+    else if (w === 'arc') { const fr = notes[beat ? 1 : 2] * 3; hiss('bandpass', M === 1 ? 5200 : 3400, 6, 0.07, beat ? 0.24 : 0.14); sweep('sawtooth', fr * 1.4, fr, 0.07, M === 0 ? 0.1 : 0.06, 4200); }
+    else if (w === 'scatter') { if (beat) { hiss('lowpass', M === 1 ? 4200 : 2600, 0.7, M === 0 ? 0.1 : 0.07, M === 0 ? 0.28 : 0.2); sweep('triangle', root * 4, root * 2, 0.08, 0.26); } else hiss('highpass', 3000, 0.7, 0.03, 0.07); }
+    else if (w === 'rail') {
+      if (n % 8 === 7) sweep('sine', notes[0], notes[0] * 4, B / 2, 0.08, 5000);      // the whine climbing into the big shot
+      if (n % 8 === 0) { sweep('sawtooth', notes[3] * (M === 0 ? 2 : 3), root * 2, 0.2, 0.14, 4200); hiss('highpass', 4500, 0.7, 0.07, 0.16); } else hiss('highpass', 6000, 0.7, 0.02, 0.05);
+    } else if (w === 'rocket') { sweep('sine', root * 4, root * 2, 0.12, 0.22); hiss('bandpass', M === 1 ? 2200 : 1100, 1.2, 0.1, 0.09); sweep('sine', root * 2, root, 0.22, M === 0 ? 0.34 : 0.24, 900, t + 0.3); }
   }
   // the song dips for a moment so a gate is always heard
   function duck(t) { if (!A.bus) return; const g = A.bus.gain; g.cancelScheduledValues(t); g.setValueAtTime(1, t); g.linearRampToValueAtTime(0.55, t + 0.02); g.linearRampToValueAtTime(1, t + 0.32); }
-  function sfx0(kind) {
+  function sfx0(kind, n) {
     if (!A.ctx || A.ctx.state !== 'running') return;
     const t = A.ctx.currentTime + 0.01, d = A.sfx;
     if (kind === 'good' || kind === 'bad') duck(t);
     if (kind === 'good') { const n = noiseSrc(t, 0.22), f = X().createBiquadFilter(); f.type = 'bandpass'; f.Q.value = 1.2; f.frequency.setValueAtTime(700, t); f.frequency.exponentialRampToValueAtTime(5200, t + 0.18); n.connect(f); f.connect(envG(t, 0.01, 0.22, 0.2, d)); [659.3, 880, 1318.5].forEach((fr, i) => osc('square', fr, t + i * 0.055, 0.14, envG(t + i * 0.055, 0.003, 0.13, 0.15, d))); }
     else if (kind === 'bad') { const o = X().createOscillator(); o.type = 'sawtooth'; o.frequency.setValueAtTime(220, t); o.frequency.exponentialRampToValueAtTime(90, t + 0.3); const f = X().createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 1400; o.connect(f); f.connect(envG(t, 0.005, 0.3, 0.3, d)); o.start(t); o.stop(t + 0.4); }
     else if (kind === 'kill') { if (t - (A.lastKill || 0) < 0.05) return; A.lastKill = t; osc('square', [880, 1046.5, 1318.5, 1568][(Math.random() * 4) | 0], t, 0.05, envG(t, 0.002, 0.04, 0.05, d)); }
-    else if (kind === 'shot') shot(t, A.shots);
+    else if (kind === 'shot') shot(t, A.shots, n);
     else if (kind === 'runner') osc('triangle', 1318.5, t, 0.08, envG(t, 0.002, 0.06, 0.08, d));
     else if (kind === 'hurt') { const n = noiseSrc(t, 0.15), f = X().createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 500; n.connect(f); f.connect(envG(t, 0.002, 0.25, 0.14, d)); }
-    else if (kind === 'weapon') [659.3, 880, 1046.5, 1318.5].forEach((fr, i) => osc('square', fr, t + i * 0.06, 0.1, envG(t + i * 0.06, 0.003, 0.05, 0.1, d)));
+    else if (kind === 'weapon') { const nt = TRACKS.neon.chords[Math.floor(U.G.t / GR.BAR) % 4], ty = { arc: 'sawtooth', scatter: 'square', rail: 'sine', rocket: 'triangle' }[U.G.weapon] || 'square'; [nt[0] * 2, nt[1] * 2, nt[2] * 2, nt[3] * 2].forEach((fr, i) => osc(ty, fr, t + i * 0.06, 0.11, envG(t + i * 0.06, 0.003, 0.09, 0.11, d))); }
     else if (kind === 'bossDown') { [220, 329.6, 440, 659.3].forEach(fr => osc('sawtooth', fr, t, 1, envG(t, 0.01, 0.03, 1.1, d))); }
     else if (kind === 'lose') { const o = X().createOscillator(); o.type = 'sawtooth'; o.frequency.setValueAtTime(330, t); o.frequency.exponentialRampToValueAtTime(55, t + 1.2); const f = X().createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 1200; o.connect(f); f.connect(envG(t, 0.01, 0.2, 1.2, d)); o.start(t); o.stop(t + 1.4); }
   }
@@ -212,7 +215,7 @@
     for (const p of U.popups) { const k = (t - p.t0) / (p.life || 0.9); if (k >= 1 || k < 0) continue; g.globalAlpha = 1 - k * k; g.fillStyle = p.c; g.font = `700 ${p.big ? 30 : 20}px ${FONT}`; const hw = g.measureText(p.txt).width / 2 + 8; g.fillText(p.txt, Math.max(hw, Math.min(W - hw, p.x)), p.y - k * 40); g.globalAlpha = 1; }
     U.popups = U.popups.filter(p => t - p.t0 < (p.life || 0.9) && t >= p.t0 - 1);
     if (oc) { g.fillStyle = `rgba(255,61,168,${0.03 + 0.04 * pulse})`; g.fillRect(0, 0, W, H); }
-    if (U.flash > 0) { g.fillStyle = `rgba(255,255,255,${U.flash})`; g.fillRect(0, 0, W, H); U.flash *= Math.pow(RM ? 0.5 : 0.88, U.fdt * 60); if (U.flash < 0.02) U.flash = 0; }
+    if (U.flash > 0) { g.fillStyle = `rgba(${U.flashRGB || '255,255,255'},${U.flash})`; g.fillRect(0, 0, W, H); U.flash *= Math.pow(RM ? 0.5 : 0.88, U.fdt * 60); if (U.flash < 0.02) U.flash = 0; }
   }
   function label(txt, x, y, size, col) { g.font = `700 ${Math.max(9, size)}px ${FONT}`; g.textAlign = 'center'; g.fillStyle = col; g.fillText(txt, x, y); }
   function gateText(o) { return o.op === 'add' ? '+' + o.v : o.op === 'mul' ? '×' + o.v : o.op === 'trade' ? '−' + o.lose + ' ×' + o.v : o.op === 'oc' ? 'OVERCLOCK +' + o.v + '%' : o.op === 'weapon' ? GR.WEAPONS[o.w].name.toUpperCase() : o.op === 'mod' ? GR.WEAPONS[U.G.weapon].mods[o.k].name.toUpperCase() : 'FIRE +' + Math.round(o.v * 100) + '%'; }
@@ -265,9 +268,9 @@
       const sq = R.project(G.sx, 0), sx = sq.x, sy = sq.y;
       if (e.type === 'volley') {
         if (e.hits.length) {
-          sfx('shot');
           const tg = []; for (const id of e.hits.slice(0, 8)) { const en = G.ents.find(q => q.id === id); if (en) tg.push({ x: en.x, z: Math.max(0.05, en.ta - G.t), y: en.kind === 'boss' ? 3.8 : 1.1 }); }
-          R.volley({ weapon: G.weapon, mod: G.mod, lv: G.wlv, col: GR.WEAPONS[G.weapon].col, oc: G.oc.on, x: G.sx, w: GR.width(G.n), t: tg });
+          const n = Math.round(e.t / (GR.B / 2));
+          sfx('shot', n); R.volley({ weapon: G.weapon, mod: G.mod, lv: G.wlv, col: GR.WEAPONS[G.weapon].col, oc: G.oc.on, x: G.sx, w: GR.width(G.n), t: tg, n, B: GR.B });
         }
       } else if (e.type === 'kill') {
         sfx('kill'); const en = G.ents.find(q => q.id === e.id), z = en ? en.ta - G.t : 1;
@@ -282,9 +285,9 @@
         say('Gate ' + gateText(e.g) + '. Squad ' + e.n);
       } else if (e.type === 'runner') { sfx('runner'); U.popups.push({ t0: t, txt: '+1', x: sx, y: sy - 60, c: '#BFF8FF' }); }
       else if (e.type === 'hurt' || e.type === 'bossHit') { sfx('hurt'); U.shake = e.type === 'bossHit' ? 16 : 6; U.popups.push({ t0: t, txt: '−' + e.lost, x: sx, y: sy - 70, c: '#FF4D6D', big: e.type === 'bossHit' }); }
-      else if (e.type === 'weapon') { sfx('weapon'); const wp = GR.WEAPONS[e.w], md = wp.mods[e.mod], up = md ? md.name.toUpperCase() : e.pick ? wp.name.toUpperCase() : wp.short.toUpperCase() + ' LV ' + e.lv; U.popups.push({ t0: t, txt: up + '!', x: W / 2, y: H * 0.45, c: wp.col, big: true, life: 1.4 }); const tip = md ? md.tip : e.pick ? wp.tip : ''; if (tip) hint(tip); if (e.pick) R.gates(G, gateText, gateNote); say('Weapon: ' + up); }
-      else if (e.type === 'drop') { U.flash = 0.8; U.shake = 12; R.punch(9); R.shock(G.sx, 0, '#FFFFFF', 26, 0.4); U.popups.push({ t0: t, txt: 'OVERCLOCK ×' + e.mult.toFixed(1), x: W / 2, y: H * 0.42, c: '#FFFFFF', big: true, life: 1.6 }); say('The drop. Overclock times ' + e.mult.toFixed(1)); }
-      else if (e.type === 'bossDown') { sfx('bossDown'); U.flash = 0.6; U.shake = 22; R.punch(7); U.popups.push({ t0: t, txt: 'BOSS DOWN', x: W / 2, y: H * 0.4, c: '#FFB547', big: true, life: 1.6 }); say('Boss down'); }
+      else if (e.type === 'weapon') { sfx('weapon'); const wp = GR.WEAPONS[e.w], md = wp.mods[e.mod], up = md ? md.name.toUpperCase() : e.pick ? wp.name.toUpperCase() : wp.short.toUpperCase() + ' LV ' + e.lv; U.popups.push({ t0: t, txt: up + '!', x: W / 2, y: H * 0.45, c: wp.col, big: true, life: 1.4 }); const tip = md ? md.tip : e.pick ? wp.tip : ''; if (tip) hint(tip); if (e.pick || md) { R.pickup(G.sx, wp.col); if (!RM) { U.flash = 0.34; U.flashRGB = wp.col.slice(1).match(/../g).map(h => parseInt(h, 16)).join(','); } } if (e.pick) R.gates(G, gateText, gateNote); say('Weapon: ' + up); }
+      else if (e.type === 'drop') { U.flashRGB = null; U.flash = 0.8; U.shake = 12; R.punch(9); R.shock(G.sx, 0, '#FFFFFF', 26, 0.4); U.popups.push({ t0: t, txt: 'OVERCLOCK ×' + e.mult.toFixed(1), x: W / 2, y: H * 0.42, c: '#FFFFFF', big: true, life: 1.6 }); say('The drop. Overclock times ' + e.mult.toFixed(1)); }
+      else if (e.type === 'bossDown') { sfx('bossDown'); U.flashRGB = null; U.flash = 0.6; U.shake = 22; R.punch(7); U.popups.push({ t0: t, txt: 'BOSS DOWN', x: W / 2, y: H * 0.4, c: '#FFB547', big: true, life: 1.6 }); say('Boss down'); }
       else if (e.type === 'lost') { sfx('lose'); stopClock(true); U.endAt = performance.now() + 1100; }
       else if (e.type === 'won') { stopClock(true); U.endAt = performance.now() + 900; }
     }
@@ -432,8 +435,12 @@
 
   // ================= main loop =================
   let lastF = performance.now();
+  // add #fps to the URL for a live frame rate and quality tier on a real device
+  const fpsOn = /fps/.test(location.hash), fpsEl = fpsOn ? Object.assign(document.createElement('div'), { id: 'fps' }) : null; let fpsN = 0, fpsT = performance.now();
+  if (fpsEl) { fpsEl.style.cssText = 'position:fixed;left:8px;bottom:26px;z-index:30;font:700 13px monospace;color:#4BFFA5;background:rgba(0,0,0,.6);padding:2px 6px;border-radius:6px;pointer-events:none'; document.body.appendChild(fpsEl); }
   function frame(now) {
     requestAnimationFrame(frame);
+    if (fpsOn) { fpsN++; if (now - fpsT >= 1000) { fpsEl.textContent = Math.round(fpsN * 1000 / (now - fpsT)) + ' fps · tier ' + R.quality; fpsN = 0; fpsT = now; } }
     const dt = Math.min(0.05, (now - lastF) / 1000); lastF = now; U.fdt = Math.max(0.001, (now - (U.lastDraw || now)) / 1000) || 0.016; U.lastDraw = now;
     let t;
     if (U.G && U.playing && !U.paused) {

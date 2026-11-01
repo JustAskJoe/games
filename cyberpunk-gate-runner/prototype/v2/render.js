@@ -126,7 +126,7 @@
   });
 
   // ---------- state ----------
-  let renderer, scene, cam, rtS, rtA, rtB, fsScene, fsCam, fsQuad, mats = {}, W = 1, H = 1, DPR = 1, road, sky, runners, picks, drones, swarm, bikers, crate, boss, arches, rails, near, billboards, towerData = [], gates = [], parts = [], bolts = [], blasts = [], pts, beams, pi = 0;
+  let renderer, scene, cam, rtS, rtA, rtB, fsScene, fsCam, fsQuad, mats = {}, W = 1, H = 1, DPR = 1, road, sky, runners, picks, drones, swarm, bikers, crate, boss, arches, rails, near, billboards, towerData = [], gates = [], parts = [], bolts = [], blasts = [], flash = { t0: -9, life: 0.1, w: 1, h: 1, c: new T.Color(), m: null }, pts, beams, pi = 0;
   const camBase = new T.Vector3(0, 6.6, 9.2), look = new T.Vector3(), PN = 1600, BN = 420, v3 = new T.Vector3(), v4 = new T.Vector3(), ZAX = new T.Vector3(0, 0, 1);
   const ARCH0 = new T.Color(COL.violet), ARCH1 = new T.Color(COL.gold), archCol = new T.Color(), frameMs = [], shocks = []; let lastPerf = 0, slowCheck = 0, shockI = 0, lastBeat = -1, punch = 0, baseFov = 52, bossHp = 0, bossHit = 0;
 
@@ -213,6 +213,8 @@
   }
   function buildFx() {
     beams = inst(merge([box(1, 1, 1, 0, 0, 0, COL.white, 1)]), BN); scene.add(beams);
+    const fc = document.createElement('canvas'); fc.width = fc.height = 64; const fg = fc.getContext('2d'), gr = fg.createRadialGradient(32, 32, 0, 32, 32, 32); gr.addColorStop(0, '#fff'); gr.addColorStop(0.4, 'rgba(255,255,255,.35)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); fg.fillStyle = gr; fg.fillRect(0, 0, 64, 64);
+    flash.m = new T.Mesh(new T.PlaneGeometry(1, 1), new T.MeshBasicMaterial({ map: new T.CanvasTexture(fc), transparent: true, blending: T.AdditiveBlending, depthWrite: false, depthTest: false, fog: false })); flash.m.visible = false; flash.m.frustumCulled = false; flash.m.renderOrder = 5; scene.add(flash.m);
     const g = new T.BufferGeometry(); g.setAttribute('position', new T.BufferAttribute(new Float32Array(PN * 3), 3).setUsage(T.DynamicDrawUsage)); g.setAttribute('aC', new T.BufferAttribute(new Float32Array(PN * 3), 3).setUsage(T.DynamicDrawUsage)); g.setAttribute('aS', new T.BufferAttribute(new Float32Array(PN), 1).setUsage(T.DynamicDrawUsage));
     pts = new T.Points(g, new T.ShaderMaterial({
       transparent: true, depthWrite: false, blending: T.AdditiveBlending, uniforms: { uPx: { value: 500 } },
@@ -298,33 +300,63 @@
   R.punch = function (v) { punch = Math.max(punch, v); };
   // ---------- weapon fire: every gun and upgrade has its own shape. t = [{ x, z, y }] in road units, up to 8 ----------
   // head 0 draws the whole line and thins it out, otherwise head is the length of a bolt flying along it. lob arcs it upward
-  function bolt(ax, ay, bz0, bx, by, bz, w, c, life, head, lob, delay) { if (bolts.length < BN) bolts.push({ t0: R.t + (delay || 0), life, ax, ay, az: bz0, bx, by, bz, w, c, head: head || 0, lob: lob || 0 }); }
+  function bolt(ax, ay, bz0, bx, by, bz, w, c, life, head, lob, delay, smoke) { if (bolts.length < BN) bolts.push({ t0: R.t + (delay || 0), life, ax, ay, az: bz0, bx, by, bz, w, c, head: head || 0, lob: lob || 0, smoke }); }
   const AY = 0.72, AZ = -0.5;
   function jag(ax, ay, az, bx, by, bz, w, c, life, n, amp) {
     let px = ax, py = ay, pz = az;
     for (let i = 1; i <= n; i++) { const k = i / n, off = i === n ? 0 : (Math.random() - 0.5) * amp, x = ax + (bx - ax) * k + off, y = ay + (by - ay) * k + off * 0.5, z = az + (bz - az) * k; bolt(px, py, pz, x, y, z, w, c, life); px = x; py = y; pz = z; }
     return { x: px, y: py, z: pz };
   }
+  // lightning that jumps from target to target, the way a chain of arcs should
+  function chain(from, t, w, c, life, amp, fork) {
+    let p = from;
+    t.forEach((q, i) => {
+      const bx = wx(q.x), bz = wz(q.z), e = jag(p.x, p.y, p.z, bx, q.y, bz, w * (1 - i * 0.18), c, life, i ? 4 : 7, amp);
+      for (let k = 0; k < 2; k++) jag(e.x, e.y, e.z, e.x + (Math.random() - 0.5) * 1.1, e.y + 0.5 + Math.random() * 0.4, e.z + (Math.random() - 0.5) * 0.9, w * 0.55, c, life * 1.4, 2, 0.4);   // crackle stays on the target
+      if (fork) for (const s of [-1, 1]) jag(e.x, e.y, e.z, e.x + s * (1.5 + Math.random()), q.y * 0.6, e.z - 1.3, w * 0.6, c, life, 4, 0.6);
+      p = e;
+    });
+  }
+  // n counts eighth notes from the start of the song, so every gun can sit on the beat in its own way
   R.volley = function (o) {
-    const c = new T.Color(o.col), t = o.t, sx = wx(o.x), sq = wx(o.w) * 0.8, k = (1 + (o.lv - 1) * 0.12) * (o.oc ? 1.3 : 1), M = o.mod, from = () => sx + (Math.random() - 0.5) * sq * 2;
-    if (o.weapon === 'pulse') for (const q of t.slice(0, 6)) bolt(from(), AY, AZ, wx(q.x), q.y, wz(q.z), 0.13 * k, c, 0.17, 0.36, 0, Math.random() * 0.05);
-    else if (o.weapon === 'arc') for (const q of t.slice(0, 3)) {
-      const bx = wx(q.x), bz = wz(q.z), ax = from(), w = (M === 0 ? 0.18 : 0.1) * k, end = jag(ax, AY, AZ, bx, q.y, bz, w, c, 0.2, 7, 0.9);
-      if (M === 0) jag(ax, AY, AZ, bx, q.y, bz, 0.08 * k, new T.Color(COL.bone), 0.2, 7, 0.7);
-      if (M === 1) for (const s of [-1, 1]) jag(end.x, end.y, end.z, end.x + s * (1.6 + Math.random()), q.y * 0.6, end.z - 1.4, 0.08 * k, c, 0.2, 4, 0.6);
+    const c = new T.Color(o.col), t = o.t, sx = wx(o.x), sq = wx(o.w) * 0.8, k = (1 + (o.lv - 1) * 0.12) * (o.oc ? 1.3 : 1), M = o.mod, n = o.n, beat = n % 2 === 0, bar = n % 8 === 0, from = () => sx + (Math.random() - 0.5) * sq * 2, front = AZ - sq;
+    if (o.weapon === 'pulse') {
+      for (const tap of [0, o.B / 4]) for (const q of t.slice(0, 3)) { const ax = from(); for (const d of [-0.09, 0.09]) bolt(ax + d, AY, front, wx(q.x) + d, q.y, wz(q.z), 0.09 * k, c, 0.16, 0.3, 0, tap); }
+      muzzle(sx, front, 1.5 + sq, 1.1, c, 0.07);
+      for (const q of t.slice(0, 3)) R.burst(q.x, q.z, o.col, 2, 4, q.y);
+    } else if (o.weapon === 'arc') {
+      const w = (M === 0 ? 0.17 : 0.1) * k * (beat ? 1.35 : 0.85), T3 = t.slice(0, 4), start = { x: from(), y: AY, z: front };
+      if (T3.length) { chain(start, T3, w, c, 0.2, 0.9, M === 1); if (M === 0) chain(start, T3, w * 0.45, new T.Color(COL.bone), 0.2, 0.7, false); }
+      muzzle(sx, front, 1.2 + sq, 2.2, c, beat ? 0.11 : 0.06);
     } else if (o.weapon === 'scatter') {
-      const n = M === 1 ? 16 : M === 0 ? 6 : 10, fan = M === 1 ? 5.4 : M === 0 ? 2.2 : 3, w = (M === 0 ? 0.3 : 0.14) * k, cx = t.length ? wx(t[0].x) : sx;
-      for (let i = 0; i < n; i++) bolt(from(), AY, AZ, cx + (i / (n - 1) - 0.5) * fan + (Math.random() - 0.5) * 0.4, 0.5 + Math.random() * 0.9, -13 - Math.random() * 5, w, c, 0.24, M === 0 ? 0.3 : 0.22, 0, Math.random() * 0.04);
+      const heavy = beat, cnt = M === 1 ? 18 : M === 0 ? 7 : 12, N = heavy ? cnt : Math.ceil(cnt / 3), fan = (M === 1 ? 6.4 : M === 0 ? 2.6 : 4) * (heavy ? 1 : 0.7), w = (M === 0 ? 0.26 : 0.1) * k * (heavy ? 1 : 0.7), cx = t.length ? wx(t[0].x) : sx;
+      for (let i = 0; i < N; i++) bolt(from(), AY, front, cx + (N > 1 ? i / (N - 1) - 0.5 : 0) * fan + (Math.random() - 0.5) * 0.3, 0.4 + Math.random(), -14 - Math.random() * 6, w, c, 0.26, M === 0 ? 0.14 : 0.1, 0, Math.random() * 0.05);
+      muzzle(sx, front, (M === 1 ? 7 : 4.6) * (heavy ? 1 : 0.6) + sq, 1, c, heavy ? 0.12 : 0.06);
+      if (heavy) for (const q of t.slice(0, 4)) shards(q, o.col);
     } else if (o.weapon === 'rail') {
-      const far = t.reduce((m, q) => q.z > m.z ? q : m, t[0] || { x: o.x, z: 1.7, y: 1 }), bx = wx(far.x), by = far.y, bz = Math.min(wz(far.z), -18), bone = new T.Color(COL.cyan);
-      for (const s of M === 1 ? [-0.36, 0.36] : [0]) { bolt(sx + s, AY, AZ, bx + s * 0.4, by, bz, (M === 0 ? 0.36 : 0.16) * k, c, 0.3); bolt(sx + s, AY, AZ, bx + s * 0.4, by, bz, (M === 0 ? 0.62 : 0.3) * k, bone, 0.1); }
-      for (const q of t.slice(0, 6)) R.burst(q.x, q.z, o.col, M === 1 ? 5 : 3, 5, q.y);
-    } else if (o.weapon === 'rocket') for (const q of t.slice(0, M === 1 ? 2 : 3)) {
-      const life = 0.3, bx = wx(q.x), bz = wz(q.z), ax = from();
-      bolt(ax, AY, AZ, bx, q.y, bz + life * ZS, 0.2 * k, c, life, 0.16, 1.5); bolt(ax, AY, AZ, bx, q.y, bz + life * ZS, 0.09 * k, new T.Color(COL.bone), life, 0.34, 1.5);
-      blasts.push({ at: R.t + life, x: q.x, z: q.z, y: q.y, c: o.col, m: M, big: k });
+      const far = t.reduce((m, q) => q.z > m.z ? q : m, t[0] || { x: o.x, z: 1.7, y: 1 }), bx = wx(far.x), by = far.y, bz = Math.min(wz(far.z), -18), core = new T.Color(COL.cyan), big = bar;
+      for (const d of M === 1 ? [-0.36, 0.36] : [0]) {
+        const W = (big ? (M === 0 ? 0.5 : 0.28) : 0.07) * k;
+        bolt(sx + d, AY, front, bx + d * 0.4, by, bz, W, c, big ? 0.34 : 0.13);
+        if (big) { bolt(sx + d, AY, front, bx + d * 0.4, by, bz, W * 1.8, core, 0.1); bolt(sx + d, AY, front, bx + d * 0.4, by, bz, 0.05, core, 0.75); }   // the trail that lingers
+      }
+      if (n % 8 === 7 && R.motion) muzzle(sx, front, 1.4, 1.4, core, 0.24);                // charging up, the eighth before the big shot
+      if (big) { muzzle(sx, front, 3 + sq, 3, c, 0.12); if (R.motion) R.shock(o.x, 0.2, COL.cyan, 1.3, AY); }
+      for (const q of t.slice(0, big ? 8 : 3)) R.burst(q.x, q.z, big ? COL.cyan : o.col, big ? (M === 1 ? 6 : 4) : 1, big ? 6 : 3, q.y);
+    } else if (o.weapon === 'rocket') {
+      const side = n % 2 ? 1 : -1, life = 0.3;
+      for (const q of t.slice(0, M === 1 ? 1 : 2)) {
+        const bx = wx(q.x), bz = wz(q.z), ax = sx + side * (sq + 0.3);
+        bolt(ax, AY, front, bx, q.y, bz + life * ZS, 0.26 * k, c, life, 0.14, 1.6, 0, true); bolt(ax, AY, front, bx, q.y, bz + life * ZS, 0.1 * k, new T.Color(COL.bone), life, 0.3, 1.6);
+        blasts.push({ at: R.t + life, x: q.x, z: q.z, y: q.y, c: o.col, m: M, big: k });
+      }
+      muzzle(sx + side * (sq + 0.3), front, 1.8, 1.6, c, 0.09);
     }
   };
+  function shards(q, col) { R.burst(q.x, q.z, col, 5, 8, q.y); }
+  function muzzle(x, z, w, h, c, life) { if (!R.motion) return; flash.t0 = R.t; flash.life = life; flash.w = w; flash.h = h; flash.c.copy(c); flash.m.position.set(x, 0.9, z); }
+  // pickup moment: a ring around the squad in the gun's colour
+  R.pickup = function (x, col) { R.shock(x, 0, col, 9, 0.5); if (R.motion) R.burst(x, 0.2, col, 40, 9, 1); };
 
   function drawCity(t) {
     const L = 135, N = towerData.length; billboards.count = 0;
@@ -387,12 +419,15 @@
       pa.setXYZ(n, p.x + p.vx * a, Math.max(0.05, p.y + p.vy * a - 7 * a * a), p.z + p.vz * a); const f = 1 - k; ca.setXYZ(n, p.c.r * f, p.c.g * f, p.c.b * f); sa.setX(n, p.s); n++;
     }
     pts.geometry.setDrawRange(0, n); pa.needsUpdate = ca.needsUpdate = sa.needsUpdate = true;
+    const fk = (t - flash.t0) / flash.life; flash.m.visible = fk >= 0 && fk < 1;
+    if (flash.m.visible) { flash.m.quaternion.copy(cam.quaternion); flash.m.scale.set(flash.w * (1 + fk * 0.3), flash.h * (1 - fk * 0.4), 1); flash.m.material.color.copy(flash.c).multiplyScalar(1.5 * (1 - fk)); }
     bolts = bolts.filter(q => t - q.t0 < q.life);
     begin(beams);
     for (const q of bolts) {
       const a = t - q.t0; if (a < 0) continue; const k = a / q.life, sc = ZS * a, beam = !q.head, f = beam ? 0 : Math.max(0, k - q.head), n = beam ? 1 : Math.min(1, k + q.head * 0.5), lobA = q.lob * Math.sin(Math.PI * f), lobB = q.lob * Math.sin(Math.PI * n);
       v3.set(q.ax + (q.bx - q.ax) * f, q.ay + (q.by - q.ay) * f + lobA, q.az + (q.bz + sc * 0 - q.az) * f); v4.set(q.ax + (q.bx - q.ax) * n, q.ay + (q.by - q.ay) * n + lobB, q.az + (q.bz - q.az) * n);
       if (beam) { v3.z += sc; v4.z += sc; }
+      if (q.smoke && R.motion) R.burst(v3.x / RW, -v3.z / ZS, '#6E6288', 1, 0.8, v3.y);
       const mx = (v3.x + v4.x) / 2, my = (v3.y + v4.y) / 2, mz = (v3.z + v4.z) / 2; v4.sub(v3); const len = v4.length(); if (len < 0.01) continue; v4.divideScalar(len);
       const w = q.w * (beam ? 1 - k * k : 1), i = beams.count++; dm.position.set(mx, my, mz); dm.quaternion.setFromUnitVectors(ZAX, v4); dm.scale.set(w, w, len); dm.updateMatrix(); beams.setMatrixAt(i, dm.matrix); beams.tint.setXYZ(i, q.c.r * 0.8, q.c.g * 0.8, q.c.b * 0.8);
     }
@@ -400,7 +435,7 @@
     let blastRing = false; blasts = blasts.filter(b => {
       if (t < b.at) return true; const z = b.z - (t - b.at), N = RMQ() ? 4 : 1;
       if (b.m === 1) for (const s of [-0.16, 0, 0.16]) R.burst(b.x + s, z + s, b.c, 8 / N, 6, b.y);
-      else { R.burst(b.x, z, b.c, (b.m === 0 ? 26 : 12) / N, b.m === 0 ? 9 : 6, b.y); if (b.m === 0 && !blastRing) { blastRing = true; R.shock(b.x, z, b.c, 1.4, b.y); } }
+      else { R.burst(b.x, z, b.c, (b.m === 0 ? 30 : 16) / N, b.m === 0 ? 10 : 7, b.y); if (!blastRing) { blastRing = true; R.shock(b.x, z, b.c, b.m === 0 ? 1.8 : 1.1, b.y); } }
       return false;
     });
   }
