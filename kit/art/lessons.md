@@ -24,6 +24,20 @@ What we learned making art, for every game. This is how the studio's art rules (
 
 ---
 
+### L8. If the player inspects it, it can't be baked into the picture (Oct 31, 2026, card-trader)
+- What happened: the first lead plan found that the Loupe needs every copy of a card to differ (wear, centering, holo, fake tells). That's impossible with one generated image per card, and unaffordable with one per copy.
+- Why: a gameplay read needs variation and control; a generated image gives neither.
+- Next time: anything the player inspects or compares becomes a code layer over a clean illustration.
+- Source: `card-trader/art/lead-plan.md` (first Lead Artist run)
+- Rule: P5 (proposed; seen once, but it shapes a whole game's art budget)
+
+### L7. Invented scripts are text too (Oct 31, 2026, card-trader)
+- What happened: Card Trader's alien scripts are on cards, signs and packs, and reading them is a mechanic. Image models make garbled pseudo-letters that change in every image.
+- Why: R1 was written for real words; an invented alphabet has the same problem and matters more when players decode it.
+- Next time: design each alphabet once as an SVG glyph set and let the game render it.
+- Source: `card-trader/art/lead-plan.md` (first Lead Artist run)
+- Rule: P4 (proposed, as an extension of R1)
+
 ### L6. Research: Steam disclosure covers what ships, not dev tools (Oct 31, 2026, studio)
 - What happened: Valve rewrote the Content Survey in January 2026.
 - Why: "Pre-Generated" covers AI content that ships and is consumed by players; tools used only for development efficiency are exempt.

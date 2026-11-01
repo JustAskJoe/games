@@ -111,3 +111,11 @@ The Lead Artist adds proposals here, each with a lesson behind it. A person adop
 
 **P3. Record the recipe.** Each manifest row stores the full prompt, the seed (where the tool has one), the model and the anchors, so a near-miss can be redone the same way.
 - *Status:* proposed Oct 31, 2026.
+
+**P4. Invented scripts are text (extends R1).** Alien alphabets, runes and made-up lettering follow R1: design each once as an SVG glyph set and let the game render it. Never let a model paint one.
+- *Why:* models make a different garbled alphabet in every image, and when players decode a script, it has to be consistent.
+- *Status:* proposed Oct 31, 2026, from lesson L7 (Card Trader).
+
+**P5. If the player inspects it, it's a layer.** Anything the player inspects, compares or tells apart in gameplay (wear, damage, holo, fakes, upgrade marks) is a code layer over a clean illustration, not painted in.
+- *Why:* gameplay needs variation and control; one baked image per variant multiplies the art and can't be tuned.
+- *Status:* proposed Oct 31, 2026, from lesson L8 (Card Trader).
