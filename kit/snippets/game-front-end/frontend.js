@@ -7,7 +7,7 @@
 (function (root) {
 'use strict';
 const C = Object.assign({ id: 'game', presenter: 'JustAskJoe', title1: 'GAME', title2: 'TITLE', tagline: '', keyart: '', slotsBg: '', settingsBg: '', creditsBg: '',
-  colors: ['#FF2E93', '#19D3F0', '#A6F01E', '#FFD21F', '#8B5CF6'], ticker: [], tickerLabel: 'ON AIR', credits: '', load: null,
+  colors: ['#FF2E93', '#19D3F0', '#A6F01E', '#FFD21F', '#8B5CF6'], hold: 1.4, ticker: [], tickerLabel: 'ON AIR', credits: '', load: null,
   slotLine: G => ({ top: 'SAVED GAME', name: '', stats: [], done: false }) }, root.FE_CONFIG || {});
 const KEY = n => C.id + '.slot' + n, SETTINGS = C.id + '.settings';
 const store = {
@@ -36,15 +36,15 @@ function storageOK() { try { const k = C.id + '.test'; root.localStorage.setItem
 const esc = s => String(s).replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
 function logo(big) {
   const word = (w, cls, base) => w.split('').map((ch, i) => `<span class="lt ${cls}" style="animation-delay:${(big ? base : 0) + i * 0.045}s">${ch === ' ' ? '&nbsp;' : esc(ch)}</span>`).join('');
-  return `<div class="logo ${big ? 'big' : ''}"><div class="l1">${word(C.title1, 'a', 1.95)}</div><div class="l2">${word(C.title2, 'b', 2.55)}</div>
+  return `<div class="logo ${big ? 'big' : ''}"><div class="l1">${word(C.title1, 'a', 1.95 + C.hold)}</div><div class="l2">${word(C.title2, 'b', 2.55 + C.hold)}</div>
     ${C.tagline ? `<div class="l3 tag">${esc(C.tagline)}</div>` : ''}<div class="sweep"></div></div>`;
 }
 function flyingCards() {
-  let s = ''; for (let i = 0; i < 9; i++) s += `<div class="flycard" style="top:${8 + (i * 37) % 80}%;animation-delay:${3.0 + i * 0.35}s;animation-duration:${3.2 + (i % 3)}s;--rot:${(i % 2 ? 1 : -1) * (200 + i * 40)}deg;background:${C.colors[i % C.colors.length]}"></div>`;
+  let s = ''; for (let i = 0; i < 9; i++) s += `<div class="flycard" style="top:${8 + (i * 37) % 80}%;animation-delay:${3.0 + C.hold + i * 0.35}s;animation-duration:${3.2 + (i % 3)}s;--rot:${(i % 2 ? 1 : -1) * (200 + i * 40)}deg;background:${C.colors[i % C.colors.length]}"></div>`;
   return s;
 }
 function opening() {
-  return `<div class="fe opening" data-act="fe-press">
+  return `<div class="fe opening" data-act="fe-press" style="--hold:${C.hold}s">
     <div class="par" data-depth="14"><div class="bg pan" style="background-image:url(${C.keyart})"></div></div>
     <div class="speed"></div><div class="vignette"></div>
     <div class="halftone-wipe"></div><div class="rgb-flash"></div>
@@ -137,9 +137,11 @@ function afterRender() {
   const calm = FE.settings.calm;
   if (CTUI.screen === 'opening' && !calm && !FE.played) {
     FE.played = true; FX.mount(st);
-    fxTimers.push(setTimeout(() => FX.spray(470, 320, 340, C.colors), 120));
-    fxTimers.push(setTimeout(() => FX.burst(640, 330, 60, C.colors, 10), 1300));
-    fxTimers.push(setTimeout(() => { FX.burst(640, 380, 150, C.colors, 17); FX.shake(st); FX.ring(640, 380); }, 2700));
+    const H = C.hold * 1000;
+    fxTimers.push(setTimeout(() => FX.spray(440, 320, 400, C.colors, 26), 150));   // paint follows the tag as it sprays in
+    fxTimers.push(setTimeout(() => FX.burst(640, 345, 40, C.colors, 6), 1450));    // a little pop as "presents" lands
+    fxTimers.push(setTimeout(() => FX.burst(640, 330, 60, C.colors, 10), 1300 + H));
+    fxTimers.push(setTimeout(() => { FX.burst(640, 380, 150, C.colors, 17); FX.shake(st); FX.ring(640, 380); }, 2700 + H));
   }
   FX.parallax((CTUI.screen === 'opening' || CTUI.screen === 'title') && !calm ? st : null);
 }
