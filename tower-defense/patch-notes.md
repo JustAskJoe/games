@@ -8,6 +8,19 @@ Say **"add to patch notes"** to Claude any time to add to the top entry. Claude 
 
 ---
 
+## 1.1 · Oct 31, 2026 · Hunter (with Claude)
+Art only, no build change.
+
+### What's new
+- Nothing player-facing.
+
+### Next up
+- [x] `art/art-direction.md` listed `final_art_source` twice (`undecided`, then `canva`). Kept `canva`, the Oct 28 pick. (Hunter with Claude, Oct 31, 2026)
+- [ ] Give Tower Defense a Lead Artist plan (`art/lead-plan.md`, see `kit/agents/lead-artist.md`) before its next concepts run. New studio rule: every game needs an approved lead plan first.
+
+### Watch out
+- [ ] `canva_roughs: on` in the settings block isn't read by the Artist agent; `roughs:` is the setting that counts.
+
 ## 1.1 · Oct 31, 2026 · Artist agent (with Claude)
 Art only, no build change.
 
@@ -26,7 +39,7 @@ Art only, no build change.
 - [ ] The prototype's Spark tower uses copper colors (`#B07A3C`, `#8E5F2C`) and a pale bolt (`#DCEFFF`) that aren't in `art/art-direction.md`, so the sheets use timber, stone and Frost instead. If copper matters to the look, add it to the palette.
 - [ ] Direction C's blue crystal and Frost-colored glow sit close to the Frost tower's ice crystal; check them side by side before picking C.
 - [ ] Direction B (a cottage) is wider than the other towers and might read as the keep.
-- [ ] `art/art-direction.md` lists `final_art_source` twice (`undecided`, then `canva`). The agent read it as `canva` (the Oct 28 decision) but didn't edit it; someone should delete the stale line.
+- [x] `art/art-direction.md` lists `final_art_source` twice (`undecided`, then `canva`). The agent read it as `canva` (the Oct 28 decision) but didn't edit it; someone should delete the stale line. (Hunter with Claude, Oct 31, 2026: deleted, kept `canva`)
 - [ ] No dollar or credit estimate: Canva's cost per generation is still blank in the cost table. Count only: about 5 generations (4 images + 25%).
 - [ ] Brief reference links (Wikimedia Commons categories) weren't opened by the agent; check they still resolve.
 

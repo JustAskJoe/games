@@ -82,12 +82,14 @@ The studio's rules for making game art with AI. They apply to every game and eve
 - *From:* lesson L5.
 
 **R16. Stay under the throttle.** At most 6 parallel Canva jobs. On "credit usage is cooling down", wait 60 seconds and double the wait each retry, up to 5 minutes.
-- *From:* lesson L3.
+- *Also:* cooldowns grow longer as a session goes on. Spread big jobs across sessions, or use Headless Finals (Gemini) for volume.
+- *From:* lessons L3, L11.
 
 ### Rights and honesty
 
 **R17. Original only.** Prompts say "Original design, not resembling any existing franchise." Never name a living artist, a studio or a franchise in a prompt. Reference art is for inspiration only: never copy, trace or reproduce it, and never commit it (links only).
-- *From:* `kit/art/README.md`; `kit/agents/artist.md`; `CLAUDE.md`.
+- *Check:* every new character gets a look-alike check against famous franchise characters at review. Log rejects in `design/ai-assets.md`.
+- *From:* `kit/art/README.md`; `kit/agents/artist.md`; `CLAUDE.md`. Lesson L9.
 
 **R18. Log every AI file, and every human edit.** Every AI-made file gets a row in `design/ai-assets.md`. Every human change to it is noted in the manifest's `human_edit`.
 - *Why:* Steam's AI disclosure, and copyright: human changes are the part that's ours.
@@ -97,17 +99,29 @@ The studio's rules for making game art with AI. They apply to every game and eve
 
 **R20. Money needs Hunter's OK.** Canva uses plan credits. Every other tool that costs money waits for Hunter's approval, per tool and per budget.
 
+### Adopted Oct 31, 2026 (Hunter: "approve all")
+
+**R21. Leave room for UI.** Backgrounds keep a calm area (no faces or busy detail) where the HUD and text sit, as marked in `art-direction.md`.
+- *Why:* busy art under text fails R8 and makes R1's game-drawn text hard to read.
+
+**R22. One light direction per game.** Each `art-direction.md` names the key light (for example "top-left, warm") and every prompt says it.
+- *Why:* mixed light directions are the fastest giveaway that a set came from separate generations.
+
+**R23. Record the recipe.** Each manifest row (or `design/ai-assets.md` row, until a game has a manifest) stores the tool's media id, the style references, and where possible the full prompt, seed and model, so a near-miss can be redone the same way.
+
+**R24. Invented scripts are text (extends R1).** Alien alphabets, runes and made-up lettering follow R1: design each once as an SVG/code glyph set and let the game render it. Never let a model paint one.
+- *Why:* models make a different garbled alphabet in every image, and when players decode a script, it has to be consistent.
+- *From:* lesson L7 (Card Trader).
+
+**R25. If the player inspects it, it's a layer.** Anything the player inspects, compares or tells apart in gameplay (wear, damage, holo, fakes, upgrade marks) is a code layer over a clean illustration, not painted in.
+- *Why:* gameplay needs variation and control; one baked image per variant multiplies the art and can't be tuned.
+- *From:* lesson L8 (Card Trader; v1 already works this way).
+
 ## Proposed
 
 The Lead Artist adds proposals here, each with a lesson behind it. A person adopts, edits or deletes them in review.
 
-**P1. Leave room for UI.** Backgrounds keep a calm area (no faces or busy detail) where the HUD and text sit, as marked in `art-direction.md`.
-- *Why:* busy art under text fails R8 and makes R1's game-drawn text hard to read.
-- *Status:* proposed Oct 31, 2026; no lesson yet. Test on Card Trader.
-
-**P2. One light direction per game.** Each `art-direction.md` names the key light (for example "top-left, warm") and every prompt says it.
-- *Why:* mixed light directions are the fastest giveaway that a set came from separate generations.
-- *Status:* proposed Oct 31, 2026.
-
-**P3. Record the recipe.** Each manifest row stores the full prompt, the seed (where the tool has one), the model and the anchors, so a near-miss can be redone the same way.
-- *Status:* proposed Oct 31, 2026.
+**P6 → R26 if adopted. Paint groups, cut in code.** When several characters or cards must match (a species' regulars, one card set), paint them together in one picture (a lineup, a 2×2 sheet) and crop them apart in code.
+- *Why:* one generation shares one light, palette and hand. Card Trader v1's lineups and card sheets held together, while a solo character drifted (Klik's first try came out grittier than the key art).
+- *Check:* each crop still reads at portrait or card size (R8); leave enough space between figures to crop cleanly.
+- *Status:* proposed Oct 31, 2026, from lesson L10 (Card Trader).

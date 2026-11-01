@@ -24,6 +24,41 @@ What we learned making art, for every game. This is how the studio's art rules (
 
 ---
 
+### L11. Canva's cooldowns grow through a session (Oct 31, 2026, card-trader)
+- What happened: making Card Trader v1's art, Canva throttled after about 8 jobs, and the cooldowns grew to several minutes as the session went on.
+- Why: Canva rate-limits AI credit use in bursts.
+- Next time: small batches spread over sessions; Gemini for release volume.
+- Source: `card-trader/patch-notes.md` v1 watch-out
+- Rule: R16 (updated)
+
+### L10. Painting a group together keeps it consistent (Oct 31, 2026, card-trader)
+- What happened: in v1, each species' regulars were one lineup painting cut into portraits in code, and each card game's art was one 2×2 sheet. Both held together. A solo try at Klik came out grittier than the key art and was replaced by the lineup.
+- Why: one generation shares one light, palette and hand.
+- Next time: paint lineups and sheets, then crop them apart in code.
+- Source: `card-trader/design/ai-assets.md`
+- Rule: P6 (proposed as R26)
+
+### L9. Characters drift toward famous franchise looks (Oct 31, 2026, card-trader)
+- What happened: the first grader office appraiser came out looking like a famous big-eared green franchise character, even with "original design" in the prompt and the key art as a style reference. It was rejected and redone as a boxy robot.
+- Why: models fall back on the most famous character that matches a description ("grumpy little old appraiser").
+- Next time: check every new character for look-alikes at review; describe characters by shapes and materials unlike famous ones.
+- Source: `card-trader/design/ai-assets.md`; `card-trader/patch-notes.md` v1
+- Rule: R17 (check added)
+
+### L8. If the player inspects it, it can't be baked into the picture (Oct 31, 2026, card-trader)
+- What happened: the first lead plan found that the Loupe needs every copy of a card to differ (wear, centering, holo, fake tells). That's impossible with one generated image per card, and unaffordable with one per copy.
+- Why: a gameplay read needs variation and control; a generated image gives neither.
+- Next time: anything the player inspects or compares becomes a code layer over a clean illustration.
+- Source: `card-trader/art/lead-plan.md` (first Lead Artist run)
+- Rule: R25 (adopted Oct 31, 2026)
+
+### L7. Invented scripts are text too (Oct 31, 2026, card-trader)
+- What happened: Card Trader's alien scripts are on cards, signs and packs, and reading them is a mechanic. Image models make garbled pseudo-letters that change in every image.
+- Why: R1 was written for real words; an invented alphabet has the same problem and matters more when players decode it.
+- Next time: design each alphabet once as an SVG glyph set and let the game render it.
+- Source: `card-trader/art/lead-plan.md` (first Lead Artist run)
+- Rule: R24 (adopted Oct 31, 2026)
+
 ### L6. Research: Steam disclosure covers what ships, not dev tools (Oct 31, 2026, studio)
 - What happened: Valve rewrote the Content Survey in January 2026.
 - Why: "Pre-Generated" covers AI content that ships and is consumed by players; tools used only for development efficiency are exempt.

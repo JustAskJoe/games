@@ -2,7 +2,7 @@
 
 © 2026 justaskjoe. All rights reserved.
 
-**Status:** draft roster, Oct 31, 2026. It goes with `pipeline-upgrade.md` (the plan) and assumes the **AI-only release path**: no paid human artist, with studio members directing and curating. Nothing here exists yet except the Artist. Each new agent needs its own pull request: a file in `kit/agents/`, a row in `kit/agents/README.md`, and a row in `ARCHITECTURE.md` §5 "All agents". How the roster shows up in Studio HQ is scoped in [Art team in Studio HQ](#art-team-in-studio-hq).
+**Status:** approved by Hunter, Oct 31, 2026. It goes with `pipeline-upgrade.md` (the plan) and assumes the **AI-only release path**: no paid human artist, with studio members directing and curating. The Artist and the Lead Artist (`kit/agents/lead-artist.md`) exist; the other new roles still need their agent files. Each new agent needs its own pull request: a file in `kit/agents/`, a row in `kit/agents/README.md`, and a row in `ARCHITECTURE.md` §5 "All agents". How the roster shows up in Studio HQ is scoped in [Art team in Studio HQ](#art-team-in-studio-hq).
 
 ## How to read this
 
@@ -32,7 +32,7 @@
 ### 1. Lead Artist (one per game)
 - **Why first:** in AI-only work, the lead's judgment *is* the quality bar. Models don't fail at single images; they fail at sets. Every game also needs someone to say up front what AI can and can't do *for this game*, before anyone spends hours.
 - **Keeper of the house rules.** The Lead Artist applies `kit/art/art-rules.md` (for example R1: no text in generated images; the game draws all text), logs what the studio learns in `kit/art/lessons.md`, proposes new rules when a lesson repeats, and researches best practices with cited sources. People adopt rules; the agent only proposes them.
-- **One agent file, one instance per game.** `kit/agents/lead-artist.md` (drafted, not hired yet) is written once. Each game gets its own plan at `<game>/art/lead-plan.md` and is assigned the same way the Artist is (`GAMES:` / `PROJECTS:`).
+- **One agent file, one instance per game.** `kit/agents/lead-artist.md` (hired Oct 31, 2026; first plan: Card Trader) is written once. Each game gets its own plan at `<game>/art/lead-plan.md` and is assigned the same way the Artist is (`GAMES:` / `PROJECTS:`).
 - **When it runs:**
   - **First draft:** when a game gets its first art request, or right after Forge's Approve adds the game. It opens a PR with `<game>/art/lead-plan.md` (and a draft `art-direction.md` if there isn't one), for the crew to review.
   - **Again:** when the game's genre, camera (2D/3D) or release target changes, or someone asks.
@@ -184,10 +184,10 @@ In the **Art Cottage**, a new **"Art team"** panel next to requests and votes, i
 - `ARCHITECTURE.md` §5 (agents table and Art Cottage paragraph) is updated in the games repo in the same change set.
 
 ## Decisions for Hunter
-- [ ] OK the team for now: the Lead Artist (one per game), the UI & Vector Designer and the Tech Artist as on-demand agents, plus the Artist upgrade.
-- [ ] Should every new game need an approved lead plan before its first concepts run?
-- [ ] Is the Lead Artist's drift review required before every `Pick:`, or only for anchors and full sets?
-- [ ] Pilot game: Card Trader?
-- [ ] Studio HQ: build Phase 1 (roster only) now, or wait and build Phases 1 and 2 together?
-- [ ] The trigger for Headless Finals: about 30 assets, or something else?
-- [ ] For each team-for-later role: confirm the trigger, or move it up.
+- [x] OK the team for now: the Lead Artist (one per game), the UI & Vector Designer and the Tech Artist as on-demand agents, plus the Artist upgrade. (Hunter, Oct 31, 2026)
+- [x] Every new game needs an approved lead plan before its first concepts run. (Hunter, Oct 31, 2026)
+- [x] The Lead Artist's drift review is required for anchors and full sets. (Hunter, Oct 31, 2026)
+- [x] Pilot game: Card Trader. (Hunter, Oct 31, 2026)
+- [x] Studio HQ: Phase 1 now (JustAskJoe/forge#25). (Hunter, Oct 31, 2026)
+- [x] Headless Finals trigger: about 30 assets. (Hunter, Oct 31, 2026)
+- [x] Team-for-later triggers confirmed as written. (Hunter, Oct 31, 2026)

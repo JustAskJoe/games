@@ -8,7 +8,7 @@ Agents are written once here and assigned to games. Each game keeps only what's 
 | --- | --- | --- | --- |
 | Artist | `artist.md` | Two Claude scheduled tasks: Concepts (scheduled, free) and Finals (button only, paid) | `tower-defense` |
 | Producer | `producer.md` | Stage 1: the Weekly digest workflow (`digest.js`), Mondays, free, no AI. Stage 2 (playtest summaries) is designed but off. | The whole studio |
-| Lead Artist | `lead-artist.md` | Planned, not hired yet: on demand in a Claude Code session. Writes each game's `art/lead-plan.md`, reviews sets, and keeps `kit/art/art-rules.md` and `kit/art/lessons.md`. Never makes images or spends. | None yet (pilot: `card-trader`) |
+| Lead Artist | `lead-artist.md` | Hired Oct 31, 2026: on demand in a Claude Code session. Writes each game's `art/lead-plan.md`, reviews sets, and keeps `kit/art/art-rules.md` and `kit/art/lessons.md`. Never makes images or spends. | `card-trader` |
 
 ## Artist setup
 
