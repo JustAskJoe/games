@@ -106,3 +106,25 @@
 .drawer { display: flex; flex-wrap: wrap; gap: 5px; max-height: 250px; overflow: hidden; }
 .drawer .mini { width: 46px; min-height: 44px; }
 .drawer .mini .fetch { position: absolute; right: -4px; top: -6px; font-size: 10px; font-weight: 800; background: var(--sun); border: 1.5px solid var(--ink); border-radius: 6px; padding: 0 3px; z-index: 3; }
+
+/* v3.1 grader box: slabs come back face down; flip each to see the grade against your read */
+#gbox { position: absolute; inset: 0; z-index: 40; background: rgba(10, 6, 30, .72); display: grid; place-items: center; }
+.gbox-panel { background: var(--ink, #1b1030); color: #fff; border: 3px solid var(--sun, #ffd23f); border-radius: 18px; padding: 18px 22px; width: min(1100px, 94vw); max-height: 90vh; overflow: auto; }
+.gbox-tape { display: block; width: 100%; min-height: 220px; margin-top: 12px; border: 3px dashed var(--sun, #ffd23f); border-radius: 14px; background: repeating-linear-gradient(90deg, #c9a46a 0 40px, #b8925a 40px 80px); color: var(--ink, #1b1030); font-family: var(--display); font-size: 26px; cursor: pointer; }
+.gbox-tape:hover { filter: brightness(1.08); }
+.gbox-foam { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 12px; padding: 14px; border-radius: 12px; background: #2b2b38; }
+.slab { width: 170px; min-height: 250px; border-radius: 12px; perspective: 800px; }
+.slab.down { border: 3px solid #9aa; background: linear-gradient(160deg, #dfe6ea, #b9c4cc); color: #334; font-family: var(--display); font-size: 18px; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; transition: transform .15s; }
+.slab.down:hover { transform: translateY(-4px) rotate(-1deg); }
+.slab.flipped { animation: slabflip .55s ease-out both; }
+@keyframes slabflip { from { transform: rotateY(90deg); } to { transform: rotateY(0); } }
+.slabface { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px; border-radius: 12px; background: linear-gradient(160deg, #f4f7f9, #cfd8de); color: var(--ink, #1b1030); }
+.slabface .slablabel { font-family: var(--display); font-size: 13px; padding: 2px 8px; border-radius: 6px; background: #e33; color: #fff; }
+.slabface .slabvs { font-size: 12px; font-weight: 800; text-align: center; }
+.slabface .slabvs.up { color: #138a36; } .slabface .slabvs.down { color: #c41d1d; }
+.slabface.black { background: linear-gradient(160deg, #222 0%, #000 60%, #333 100%); color: #f5d77a; box-shadow: 0 0 0 3px #d4af37, 0 0 28px #d4af37; animation: blglow 1.6s ease-in-out infinite alternate; }
+.slabface.black .slablabel { background: #000; color: #f5d77a; border: 1.5px solid #d4af37; letter-spacing: 2px; }
+@keyframes blglow { from { box-shadow: 0 0 0 3px #d4af37, 0 0 12px #d4af37; } to { box-shadow: 0 0 0 3px #d4af37, 0 0 36px #f5d77a; } }
+.bl-txt { background: #000; color: #f5d77a; padding: 0 4px; border-radius: 3px; letter-spacing: 1px; }
+.gbox-tile { border: 3px solid var(--sun, #ffd23f); border-radius: 12px; background: #c9a46a; color: var(--ink, #1b1030); font-weight: 800; padding: 10px 14px; cursor: pointer; font-size: 15px; }
+.slabface.black .card { color: var(--ink, #1b1030); }

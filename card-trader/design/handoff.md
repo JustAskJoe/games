@@ -51,6 +51,23 @@ This is the list of decisions as they stand. Change it when a decision changes. 
   - Trimmed cards are worth ×0.3. The Loupe shows them; graders stamp them ALTERED.
   - Buyers still won't pay for fakes (as in v2), but trims fool buyers. Selling a trim gets a complaint and a refund the next morning.
 
+## v3.1 grading rework (Hunter, Nov 1, 2026: "Grading rework" first)
+From the v3.1 beta plan (`design/v3.1-beta-plan.md` on branch `hunter/playtester-agents`, PR #70), sections 1–3.
+- **You're an informed card owner:** every card's name, set and rarity is known. No unreadable scripts, decoding, translator or fluency.
+- **Condition is a range:**
+  - A loupe look reads each subgrade as a range (±2 at the start), and the grade and value show as ranges.
+  - Before any look, a card shows the range its source suggests.
+  - Your eye is never certain; only a slab is.
+- **Eye track** (Loupe upgrades at close): Centering Card 25₵, Edge Light 30₵ and Surface Lamp 35₵ each narrow one subgrade to ±1. The Trained Eye (90₵, needs the other three) narrows all three and lands on the truth more often. A new tool lets you re-read a card.
+- **Graders tell the truth:** Halo is exact; QuikSlab can be one off. The grading form shows what a card is worth at each grade in your range.
+- **Black Label 10:** Halo only. The card must be perfect (all three subgrades a true 10) and pass Halo's second look (about 1 in 3). Worth 2.5× a normal Halo 10.
+- **Getting slabs back:** a grader box each morning that slabs return (and on Grade Day). Tap to slit the tape, then flip each slab to see the grade against your read. A Black Label glows.
+- **Q1–Q4, confirmed by Hunter on Nov 1, 2026 ("Keep defaults"):**
+  - Q1: the "game you grew up on" opening question stays, with no new perk yet.
+  - Q2: Lens, Spectrometer and Steady Hands stay; the Eye track is added rather than replacing them.
+  - Q3: QuikSlab keeps its ±1.
+  - Q4: Black Label comes from Halo only.
+
 ## Still open
 - Final title (Intergalactic Card Trader is a working title).
 - Whether the art direction holds after the crew sees it.

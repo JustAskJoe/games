@@ -72,7 +72,7 @@ function badgeFor(c) {
   if (c.know.fake) return 'FAKE';
   if (c.graded) return null;
   if (c.trim && c.know.loupe) return 'TRIM';
-  if (c.know.loupe) return 'G' + CT.trueGrade(c);
+  if (c.know.loupe) { const r = CT.gradeRange(c); return r ? 'G' + r[0] + '–' + r[1] : null; }
   return null;
 }
 function findAny(uid) {
@@ -84,9 +84,13 @@ function card(c, o) { o = o || {}; return ART.cardHTML(c, Object.assign({ readab
 function estText(c) {
   const e = CT.estimate(UI.G, c);
   if (e.fake) return '0₵ (fake)';
-  const unsure = e.rarity == null || e.grade == null;
-  return (unsure ? '~' : '') + money(e.value) + (unsure ? '?' : '');
+  if (c.graded) return (e.black ? '★ ' : '') + money(e.value);
+  // v3.1: condition is a range until it's slabbed; before a loupe look the range is only what the source suggests
+  return (c.know.loupe ? '' : '~') + money(e.lo) + '–' + money(e.hi).replace('₵', '') + '₵' + (c.know.loupe ? '' : '?');
 }
+// Did your read find a flaw worth pointing out? (Your read, not the truth: the seller can still say it looks clean.)
+const flawSeen = c => !!(c.eye && Math.min(c.eye.cen[0], c.eye.edg[0], c.eye.sur[0]) <= 6);
+const rng = r => r[0] === r[1] ? '' + r[0] : r[0] + '–' + r[1];
 const isPump = c => UI.G.pump && UI.G.pump.t === c.t;
 
 // ---------- coach: one hint at a time, tied to what's on the counter ----------
@@ -115,7 +119,7 @@ function hint() {
   if (v.who === 'hype') return 'Hype price today. Who\'s docking tomorrow? Check the close-up report before you believe a rumor.';
   if (v.role === 'sell' || v.role === 'lot' || v.role === 'bulk') {
     if (!looked) return v.role === 'lot' ? 'A whole binder page for one price! Old binders hide First Runs, vintage and misprints. Tap cards to inspect.' : 'Tap a card to put it under the Loupe. Look for mirror foil, stamps and serial numbers too.';
-    if (v.cards.some(c => c.know.loupe && !c.flawUsed && Math.min(c.cen, c.edg, c.sur) <= 6)) return G.up.lens ? 'You found a flaw! POINT OUT FLAW knocks their price down, unless the Print Lens says it\'s a factory misprint. Then keep quiet and buy it.' : 'You found a flaw! POINT OUT FLAW knocks their price down. (Is it damage, or a misprint? Only the Print Lens can tell.)';
+    if (v.cards.some(c => c.know.loupe && !c.flawUsed && flawSeen(c))) return G.up.lens ? 'You found a flaw! POINT OUT FLAW knocks their price down, unless the Print Lens says it\'s a factory misprint. Then keep quiet and buy it.' : 'You found a flaw! POINT OUT FLAW knocks their price down. (Is it damage, or a misprint? Only the Print Lens can tell.)';
     return v.species === 'mollu' ? 'Mollu love round numbers. They pay extra for First Runs and vintage when they buy.' : v.species === 'zekk' ? 'Zekk split the difference fast. As buyers they love serial numbers and misprints.' : 'Puffi care about condition and pay up for full-art and alt-art.';
   }
   if (v.role === 'sealed') return v.showing ? 'Name your price for the packs, or take their bid.' : 'They want sealed packs. SHOW PACKS to hear an offer.' + (G.week[G.dayIdx].release ? ' Release Day: every 3rd pack sold earns you a release promo.' : '');
@@ -140,6 +144,7 @@ function render() {
   if (UI.catalog) html += catalogHTML();
   if (UI.board) html += boardHTML();
   if (UI.sel) html += loupeScreen();
+  if (UI.box && UI.box.show) html += boxScreen();
   html += FE.overlay();
   st.innerHTML = html; FE.afterRender(); UI.react = null;
   const sl = $('#offer'); if (sl) sl.addEventListener('input', e => { UI.offer = +e.target.value; const o = $('#offerv'); if (o) o.textContent = money(UI.offer); const b = $('[data-act=offer]'); if (b) b.textContent = (G.visit && (G.visit.showing) ? 'ASK ' : 'OFFER ') + money(UI.offer); });
@@ -148,13 +153,36 @@ function render() {
 function demandBars(demand) {
   return `<div class="bars">${Object.keys(CT.GAMES).map(g => { const d = demand[g]; return `<div class="bar"><span>${CT.GAMES[g].name}</span><div class="track"><div class="fill" style="width:${Math.min(100, d / 1.8 * 100)}%;background:${GAME_COLOR[g]}"></div></div><span>×${d.toFixed(2)}</span></div>`; }).join('')}</div>`;
 }
+function gradeOdds(c) {
+  const G = UI.G, r = CT.gradeRange(c); if (!r || c.know.fake) return '';
+  const gs = []; for (let g = Math.max(r[0], 7); g <= r[1]; g++) gs.push(g);
+  return `<div style="font-size:10.5px;line-height:1.25">raw ${money(CT.estimate(G, c).value)}${gs.map(g => ` · ${g}: ${money(CT.valueAt(G, c, 'halo', g))}`).join('')}${r[1] >= 10 ? ` · <b class="bl-txt">BL</b> ${money(CT.valueAt(G, c, 'halo', 10, true))}` : ''}</div>`;
+}
+// Slabs that came back today, kept until you've opened the box (one box per morning, and one on Grade Day).
+function gradeBox(evts) { const G = UI.G; return evts.filter(e => e.t === 'grade' && e.uid && G.stock.find(x => x.uid === e.uid)); }
+function slabFace(e) {
+  const G = UI.G, c = G.stock.find(x => x.uid === e.uid), g = e.guess;
+  const verdict = e.fake ? 'FAKE!' : e.altered ? 'ALTERED' : e.grade;
+  const vs = g ? (e.fake || e.altered ? `you read ${rng(g)}` : e.grade >= g[0] && e.grade <= g[1] ? `you read ${rng(g)}: spot on` : e.grade > g[1] ? `you read ${rng(g)}: better than you thought!` : `you read ${rng(g)}: ouch`) : 'sent unlooked';
+  return `<div class="slabface ${e.black ? 'black' : ''}">${card(c, { size: 'sm' })}<div class="slablabel">${e.black ? 'BLACK LABEL' : esc(CT.GRADERS[e.co].name.toUpperCase())}</div><div class="stamp" style="font-size:${e.fake || e.altered ? 30 : 46}px">${verdict}</div><div class="slabvs ${g && !e.fake && !e.altered ? (e.grade >= g[0] ? 'up' : 'down') : ''}">${vs}</div>${c.graded ? `<div style="font-weight:800">${money(CT.estimate(G, c).value)}</div>` : ''}</div>`;
+}
+function boxScreen() {
+  const G = UI.G, slabs = gradeBox(G.events), B = UI.box;
+  if (!slabs.length) { UI.box = null; return ''; }
+  const left = slabs.filter(e => !B.flipped[e.uid]).length;
+  return `<div id="gbox"><div class="gbox-panel">
+    <div class="h" style="font-size:30px;color:var(--sun)">${B.open ? 'THE GRADER BOX' : 'A BOX FROM THE GRADERS'}</div>
+    ${B.open ? `<div class="gbox-foam">${slabs.map(e => B.flipped[e.uid] ? `<div class="slab flipped">${slabFace(e)}</div>` : `<button class="slab down" data-act="flipSlab" data-uid="${e.uid}" aria-label="Flip this slab"><span>${esc(CT.GRADERS[e.co].name.toUpperCase())}</span><small>tap to flip</small></button>`).join('')}</div>
+      <div class="row" style="justify-content:flex-end;margin-top:12px">${left ? `<button class="btn white" data-act="flipAll">FLIP ALL (${left})</button>` : ''}<button class="btn pink" data-act="closeBox">${left ? 'LATER' : 'DONE'}</button></div>`
+    : `<button class="gbox-tape" data-act="openBox"><b>${slabs.length} slab${slabs.length > 1 ? 's' : ''}</b> · taped shut<br><small>tap to slit the tape</small></button>`}
+  </div></div>`;
+}
 function eventsHTML(evts) {
-  const G = UI.G, out = [];
+  const G = UI.G, out = [], slabs = gradeBox(evts);
+  if (slabs.length) out.push(`<button class="gbox-tile" data-act="showBox">📦 <b>Grader box</b><br><small>${slabs.length} slab${slabs.length > 1 ? 's' : ''} · ${slabs.every(e => UI.box && UI.box.flipped && UI.box.flipped[e.uid]) ? 'opened' : 'tap to open'}</small></button>`);
   for (const e of evts) {
-    if (e.t === 'grade') {
-      const c = G.stock.find(x => x.uid === e.uid); if (!c) continue;
-      out.push(`<div style="display:flex;flex-direction:column;align-items:center;gap:4px">${card(c, { size: 'sm' })}<div class="stamp" style="font-size:${e.fake || e.altered ? 30 : 46}px">${e.fake ? 'FAKE!' : e.altered ? 'ALTERED' : e.grade}</div><div class="chip">${CT.GRADERS[e.co].name}</div></div>`);
-    } else if (e.t === 'complaint') out.push(`<div class="chip" style="background:var(--coral)">${esc(e.who)} found a fake: refunded ${money(e.price)}, rep −8</div>`);
+    if (e.t === 'grade') continue;
+    else if (e.t === 'complaint') out.push(`<div class="chip" style="background:var(--coral)">${esc(e.who)} found a fake: refunded ${money(e.price)}, rep −8</div>`);
   }
   return out.join('') + v3EventsHTML(evts);
 }
@@ -233,7 +261,7 @@ function dealBuyHTML(v) {
   let est = 0, unsure = false; for (const c of v.cards) { const e = CT.estimate(G, c); est += e.value; if (!e.fake && (e.rarity == null || e.grade == null)) unsure = true; }
   const max = Math.max(10, Math.round(Math.max(v.ask, est) * 1.1));
   if (!UI.offer || UI.offer > max || UI._for !== v) { UI.offer = Math.max(1, Math.round(v.ask * 0.6 / (v.species === 'mollu' ? 10 : 1)) * (v.species === 'mollu' ? 10 : 1)); UI._for = v; }
-  const flawable = v.cards.some(c => c.know.loupe && !c.flawUsed && (Math.min(c.cen, c.edg, c.sur) <= 6 || c.know.fake));
+  const flawable = v.cards.some(c => c.know.loupe && !c.flawUsed && (flawSeen(c) || c.know.fake));
   const pumped = v.cards.some(isPump);
   return `${G.store ? fakeDecisionHTML(v) : ''}<div class="h" style="font-size:20px">${v.role === 'lot' ? 'BINDER LOT' : v.role === 'bulk' ? 'SHOEBOX' : 'THEY\'RE SELLING'} · ${v.cards.length} CARD${v.cards.length > 1 ? 'S' : ''}</div>
     <div class="price-row"><span>Their price</span><span class="big">${money(v.ask)}</span></div>
@@ -288,7 +316,7 @@ function printLines(c) {
     if (v.signed) st.push('Signed' + (k.print ? ' ✓' : ' (unverified)'));
     out.push(['Stamps', st.length ? st.join(' · ') : 'none']);
   } else out.push(['Stamps', '?']);
-  out.push(['Set', k.print ? CT.SETS[v.set || 'core'] : G.up.lens ? '? (use Condition)' : '<span class="muted">needs Print Lens</span>']);
+  out.push(['Print run', k.print ? CT.SETS[v.set || 'core'] : G.up.lens ? '? (use Condition)' : '<span class="muted">needs Print Lens</span>']);
   out.push(['Misprint', k.print ? (v.err ? '<b style="color:#0a8a3e">' + CT.ERRORS[v.err] + ': worth ×3, and now you can prove it to buyers!</b>' : 'none') : G.up.lens ? '?' : '<span class="muted">needs Print Lens</span>']);
   return out;
 }
@@ -304,8 +332,7 @@ function loupeScreen() {
   if (!c) { UI.sel = null; return ''; }
   const atCounter = !!(G.visit && G.visit.cards.indexOf(c) >= 0), tm = CT.tmpl(c.t), rd = CT.readable(G, c), e = CT.estimate(G, c);
   const cost = atCounter ? (G.up.hands && !c.know.free ? ' · free' : ' · 1 patience') : '';
-  const [cl, cr] = CT.centerRatio(c);
-  const flawy = c.know.loupe && Math.min(c.cen, c.edg, c.sur) <= 6;
+  const flawy = c.know.loupe && flawSeen(c), gr = CT.gradeRange(c), eyeLv = CT.eyeLevel(G), reread = c.know.loupe && !c.graded && (c.eyeLv || 0) < eyeLv;
   const rescan = c.know.uv && G.up.spec && !c.know.spec;
   const relens = c.know.loupe && G.up.lens && !c.know.print;
   const inStock = !!G.stock.find(x => x.uid === c.uid);
@@ -313,21 +340,19 @@ function loupeScreen() {
     <div class="side">
       <div class="h" style="font-size:30px;color:var(--sun)">THE LOUPE</div>
       <div class="tools">
-        <button class="btn ${c.know.loupe && !relens ? 'lime' : ''}" data-act="tool" data-tool="loupe">🔍 ${relens ? 'PRINT LENS' : 'CONDITION'}${c.know.loupe && !relens ? ' ✓' : cost}</button>
+        <button class="btn ${c.know.loupe && !relens && !reread ? 'lime' : ''}" data-act="tool" data-tool="loupe">🔍 ${relens ? 'PRINT LENS' : reread ? 'RE-READ (NEW EYE TOOL)' : 'CONDITION'}${c.know.loupe && !relens && !reread ? ' ✓' : cost}</button>
         <button class="btn ${c.know.uv && !rescan ? 'lime' : ''}" data-act="tool" data-tool="uv">🟣 ${rescan ? 'RE-SCAN' : 'UV LAMP'}${c.know.uv && !rescan ? ' ✓' : cost}</button>
-        <button class="btn ${rd ? 'lime' : ''}" data-act="tool" data-tool="read" ${rd ? 'disabled' : ''}>🔤 DECODE${rd ? ' ✓' : cost}</button>
-        <button class="btn cyan" data-act="tool" data-tool="translate" ${rd ? 'disabled' : ''}>TRANSLATOR ${CT.TRANSLATE_FEE}₵</button>
       </div>
       <div class="read"><dl>
-        <dt>Card</dt><dd>${rd ? esc(tm.name) + ' · ' + CT.RARITY_NAME[tm.rarity] : '??? <span class="muted">(' + CT.GAMES[tm.game].script + ' script)</span>'}</dd>
-        <dt>Condition</dt><dd>${c.know.loupe ? `centering ${cl}/${cr} · edges ${c.edg} · surface ${c.sur}${c.fake === 'stock' ? ' · <b style="color:#c41d1d">wrong card stock!</b>' : ''}${c.trim && !c.graded ? ' · <b style="color:#c41d1d">edges too perfect, and it\'s 0.4 mm short: TRIMMED (worth about a third; graders stamp ALTERED)</b>' : ''}` : '?'}</dd>
+        <dt>Card</dt><dd>${esc(tm.name) + ' · ' + CT.RARITY_NAME[tm.rarity]}${tm.set ? ' · ' + esc(CT.setName(G, tm.set)) : ''}</dd>
+        <dt>Condition</dt><dd>${c.graded ? 'sealed in the slab' : c.know.loupe && c.eye ? `centering ${rng(c.eye.cen)} · edges ${rng(c.eye.edg)} · surface ${rng(c.eye.sur)} <span class="muted">(your read, Eye ${c.eyeLv || 0}/4)</span>${c.fake === 'stock' ? ' · <b style="color:#c41d1d">wrong card stock!</b>' : ''}${c.trim && !c.graded ? ' · <b style="color:#c41d1d">edges too perfect, and it\'s 0.4 mm short: TRIMMED (worth about a third; graders stamp ALTERED)</b>' : ''}` : '?'}</dd>
         ${inStock && G.store ? `<dt>Kept</dt><dd>${c.loc} · ${c.graded ? 'slab' : PROT_NAME[c.prot || 'none']}</dd>` : ''}
-        <dt>Grade</dt><dd>${c.graded ? CT.GRADERS[c.graded.co].name + ' ' + c.graded.grade : e.grade != null ? '~' + e.grade : '?'}</dd>
+        <dt>Grade</dt><dd>${c.graded ? CT.GRADERS[c.graded.co].name + ' ' + c.graded.grade + (c.graded.black ? ' <b class="bl-txt">BLACK LABEL</b>' : '') : gr ? (c.know.loupe ? 'somewhere in ' : 'unlooked: its source suggests ') + rng(gr) + ' <span class="muted">(only a slab is certain)</span>' : '?'}</dd>
         ${printLines(c).map(([a, b]) => `<dt>${a}</dt><dd>${b}</dd>`).join('')}
         <dt>UV</dt><dd>${uvLine(c)}</dd>
         <dt>Worth</dt><dd><b>${estText(c)}</b> today${isPump(c) ? (G.dayIdx === 3 ? ' <b style="color:#c41d1d">(rumor hype ×1.8)</b>' : G.dayIdx >= 4 ? ' <b style="color:#c41d1d">(reprinted ×0.5)</b>' : '') : ''}</dd>
       </dl></div>
-      ${!rd && G.fluency[tm.game] < CT.FLUENT_AT ? `<div style="font-size:13px">Decode ${CT.FLUENT_AT - G.fluency[tm.game]} more ${CT.GAMES[tm.game].name} cards and you'll read the script for free.</div>` : ''}
+      ${c.know.loupe && !c.graded && eyeLv < 4 ? '<div style="font-size:12.5px">Eye tools at close (Centering Card, Edge Light, Surface Lamp, then the Trained Eye) narrow these ranges. Your eye is never certain: only a slab is.</div>' : ''}
       <div class="row">
         ${atCounter && flawy && !c.flawUsed ? '<button class="btn cyan" data-act="flaw" data-uid="' + c.uid + '">POINT OUT FLAW</button>' : ''}
         ${inStock && (G.phase === 'shop' || G.phase === 'close') && !c.graded ? '<button class="btn white" data-act="toBulk">TOSS TO BULK</button>' : ''}
@@ -336,7 +361,7 @@ function loupeScreen() {
     </div>
     <div style="position:relative;display:grid;place-items:center">
       <div style="position:relative">${card(c, { size: 'lg', loupe: c.know.loupe, uv: UI.uvView && c.know.uv })}
-        ${c.know.loupe ? `<div class="chip" style="position:absolute;left:50%;top:-16px;transform:translateX(-50%);background:var(--sun)">centering ${cl}/${cr}</div>` : ''}</div>
+        ${c.know.loupe && gr ? `<div class="chip" style="position:absolute;left:50%;top:-16px;transform:translateX(-50%);background:var(--sun)">grade ${rng(gr)}?</div>` : ''}</div>
       ${c.know.uv ? `<button class="btn sm white" style="margin-top:14px" data-act="uvview">${UI.uvView ? 'LAMP OFF' : 'LAMP ON'}</button>` : ''}
     </div></div>`;
 }
@@ -364,8 +389,8 @@ function closeScreen() {
   </div>
   <div class="panel" style="left:376px;top:76px;width:500px;height:520px;padding:14px;display:flex;flex-direction:column;gap:8px">
     <div class="h" style="font-size:22px">SEND TO A GRADER</div>
-    <div style="font-size:12.5px"><b>QuikSlab</b> ${CT.GRADERS.quik.fee}₵, back tomorrow, ±1. <b>Halo</b> ${CT.GRADERS.halo.fee}₵, 2 days, exact. Slabs pay at grade 9–10. Graders also catch every fake.${!next ? ' <b>Tonight is Grade Day: everything comes home.</b>' : ''}</div>
-    <div style="flex:1;overflow:auto"><div class="stocklist">${gradeable.map(c => `<div style="text-align:center">${card(c, { size: 'xs', act: 'loupe' })}<div style="font-size:12px;font-weight:800">${estText(c)}</div>
+    <div style="font-size:12.5px">Your read is a range; the slab is the truth. <b>QuikSlab</b> ${CT.GRADERS.quik.fee}₵, back tomorrow, can be one off. <b>Halo</b> ${CT.GRADERS.halo.fee}₵, 2 days, exact, and the only one that issues the <b class="bl-txt">BLACK LABEL</b> (a perfect card that passes their second look). Slabs pay at grade 9–10. Graders also catch every fake.${!next ? ' <b>Tonight is Grade Day: everything comes home.</b>' : ''}</div>
+    <div style="flex:1;overflow:auto"><div class="stocklist">${gradeable.map(c => `<div style="text-align:center">${card(c, { size: 'xs', act: 'loupe' })}<div style="font-size:12px;font-weight:800">${estText(c)}</div>${gradeOdds(c)}
       <div class="row" style="gap:4px;margin-top:4px"><button class="btn sm cyan" data-act="grade" data-co="quik" data-uid="${c.uid}" style="padding:2px 6px">QUIK</button><button class="btn sm" data-act="grade" data-co="halo" data-uid="${c.uid}" style="padding:2px 6px">HALO</button></div></div>`).join('')}</div>
     ${G.store && G.goods.some(o => CT.GOODS[o.type].packs || CT.GOODS[o.type].vintage) ? `<div class="h" style="font-size:14px;margin-top:6px">SEALED GRADING <small style="font-family:var(--body)">(double fee; proves it was never opened)</small></div><div class="row" style="flex-wrap:wrap;gap:6px">${G.goods.filter(o => !o.sgrade && (CT.GOODS[o.type].packs || CT.GOODS[o.type].vintage)).slice(0, 6).map(o => `<div style="text-align:center">${goodTile(o, 80, 46)}<div class="row" style="gap:3px"><button class="btn sm cyan" style="padding:2px 6px" data-act="gradeSealed" data-co="quik" data-uid="${o.uid}">Q</button><button class="btn sm" style="padding:2px 6px" data-act="gradeSealed" data-co="halo" data-uid="${o.uid}">H</button></div></div>`).join('')}</div>` : ''}
     ${G.grading.length ? `<div style="margin-top:8px;font-size:12.5px">At the graders: ${G.grading.map(p => p.good ? CT.GOODS[p.good.type].name : (CT.readable(G, p.card) ? CT.tmpl(p.card.t).name : 'a card') + ' (' + CT.GRADERS[p.co].name + ')').join(', ')}</div>` : ''}</div>
@@ -890,11 +915,16 @@ function onClick(e) {
     case 'next': UI.lastPull = null; UI.lastResult = null; UI.drawer = false; r = act({ t: 'next' }); UI.offer = 0; break;
     case 'loupe': UI.sel = uid; UI.uvView = false; UI.stock = false; break;
     case 'closeLoupe': UI.sel = null; break;
+    case 'showBox': UI.box = Object.assign(UI.box && UI.box.day === UI.G.dayIdx ? UI.box : { day: UI.G.dayIdx, open: false, flipped: {} }, { show: true }); break;
+    case 'openBox': UI.box.open = true; break;
+    case 'flipSlab': UI.box.flipped[el.dataset.uid] = true; break;
+    case 'flipAll': for (const e of gradeBox(UI.G.events)) UI.box.flipped[e.uid] = true; break;
+    case 'closeBox': UI.box.show = false; break;
     case 'uvview': UI.uvView = !UI.uvView; break;
     case 'tool': { const t = el.dataset.tool; r = act({ t: 'inspect', uid: UI.sel, tool: t }); if (t === 'uv' && r.ok) UI.uvView = true;
       const c = findAny(UI.sel); if (t === 'uv' && c && c.know.fake) sting('fake');
       if (!G.visit && v) UI.sel = null; break; }
-    case 'flaw': { const target = el.dataset.uid || (v && (v.cards.find(c => c.know.loupe && !c.flawUsed && (Math.min(c.cen, c.edg, c.sur) <= 6 || c.know.fake)) || {}).uid); r = act({ t: 'flaw', uid: target }); UI.sel = null; if (r.ok) UI.react = 'wobble'; break; }
+    case 'flaw': { const target = el.dataset.uid || (v && (v.cards.find(c => c.know.loupe && !c.flawUsed && (flawSeen(c) || c.know.fake)) || {}).uid); r = act({ t: 'flaw', uid: target }); UI.sel = null; if (r.ok) UI.react = 'wobble'; break; }
     case 'offer': r = act({ t: 'offer', price: UI.offer }); break;
     case 'accept': r = act({ t: 'accept' }); break;
     case 'pass': r = act({ t: 'pass' }); break;
