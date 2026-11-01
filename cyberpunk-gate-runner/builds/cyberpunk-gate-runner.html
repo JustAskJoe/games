@@ -122,7 +122,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     drone: { hp: 12, bite: 3, w: 0.11, credits: 1 },
     biker: { hp: 110, bite: 9, w: 0.14, credits: 3, drift: 0.32 },
     crate: { hp: 30, bite: 0, w: 0.13, credits: 10 },
-    boss: { hp: 23000, bite: 0, w: 0.42, credits: 60 }
+    boss: { hp: 24500, bite: 0, w: 0.42, credits: 60 }
   };
   // one gate every 2 bars from bar 4 to 18. Each run deals the slots from these pools (seeded), so two different kinds
   // always face each other: +N beats x1.5 while the squad is small, fire rate beats both once it's big, Overclock trades
@@ -137,8 +137,8 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     return SLOTS.map(s => {
       if (s === 'weapon') return [{ op: 'weapon' }, { op: 'weapon' }];         // your one gun choice this run
       if (s === 'mod') return [{ op: 'mod', k: 0 }, { op: 'mod', k: 1 }];      // two ways to build that gun
-      const P = POOLS[s], a = P[Math.floor(r() * P.length)], rest = P.filter(g => g.op !== a.op);
-      return [a, rest[Math.floor(r() * rest.length)]];
+      const P = POOLS[s], grow = P.filter(g => g.op === 'add' || g.op === 'mul'), a = grow[Math.floor(r() * grow.length)], rest = P.filter(g => g.op !== a.op);
+      return [a, rest[Math.floor(r() * rest.length)]];   // one side always grows the squad, so no deal is a dud
     });
   }
   // mult scales damage. aim widens or narrows the cone, pierce hits a line of targets at full damage,

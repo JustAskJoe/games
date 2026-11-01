@@ -19,19 +19,19 @@ A real-time **runner shooter** on the beat. Start here for any lane runner, crow
 ## How the clock works
 The engine's time **is** song time as heard (`songAt()` from `AudioContext.getOutputTimestamp()`, adapted from Neon Surf). Each frame, the UI advances the engine to that time, so a gate placed on bar 4 beat 1 crosses your squad exactly when that kick plays. Pausing suspends the audio context, which freezes the game too.
 
-## Sim (300 runs per bot, Oct 31, full P2)
+## Sim (300 runs per bot, Oct 31, random gates)
 | Bot | Plays like | Win | Boss killed | Peak squad | Pass band |
 |---|---|---|---|---|---|
-| Smart | best gate every time, aims at targets | 99% | 85% | 100 | ≥ 90% |
-| Casual | right gate 70% of the time, chases crates and bikers | 89% | 54% | 100 | ≥ 75% |
-| Random | coin flip on gates, never aims | 10% | 5% | 48 | 5–40% |
-| Idle | never steers | 12% | 6% | 57 | ≤ 25% |
+| Smart | best gate every time, aims at targets | 96% | 74% | 142 | ≥ 90% |
+| Casual | right gate 70% of the time, chases crates and bikers | 84% | 60% | 128 | ≥ 75% |
+| Random | coin flip on gates, never aims | 12% | 4% | 67 | 5–40% |
+| Idle | never steers | 17% | 8% | 76 | ≤ 25% |
 
 You can win without killing the Enforcer by surviving its contact, which costs runners equal to its remaining HP / 30.
 
 `results()` reports `weapon` and `mod`, so group wins by them after any balance change and check every fork stays viable.
 
-**Levers, if it's too easy or too hard:** boss HP (23000, the strongest lever), the horde list in `WALLS`, swarm HP and bite (8 / 1), `RANGE` (1.7 seconds), the `GATES` list, and each gun and upgrade's `mult` in `WEAPONS`. Run `node sim.js` after any change, check win rate per weapon too, and put before and after in the PR.
+**Levers, if it's too easy or too hard:** boss HP (24500, the strongest lever: 27000 fails the bands), the horde list in `WALLS`, swarm HP and bite (8 / 1), `RANGE` (1.7 seconds), the `GATES` list, and each gun and upgrade's `mult` in `WEAPONS`. Run `node sim.js` after any change, check win rate per weapon too, and put before and after in the PR.
 
 ## Lessons
 - **Place content on the beat grid and drive the sim with song time.** Sync comes for free; no per-object timing code.

@@ -16,7 +16,7 @@ Newest on top. Each entry covers **what's new** for players, **next up** for the
 - **"Charge" is gone:** those gates now read OVERCLOCK +30%, "stronger drop", and the meter shows your actual damage at the drop, like ×1.6.
 - **Clearer path choice:** a bouncing ▼ sits over the gate you're heading for, and the other gate dims much further.
 - **Weapons and gates screen:** a new start-menu button lists every gun, both of its upgrades and what each gate does.
-- **Random gates:** every run deals a new set of gates. The weapon fork and the upgrade fork stay in the same places, and the four guns on offer still change.
+- **Random gates:** every run deals a new set of gates. The weapon fork and the upgrade fork stay in the same places, and the guns on offer still change. One side of every normal gate always grows your squad.
 ### Next up
 
 ### Watch out
@@ -25,6 +25,8 @@ Newest on top. Each entry covers **what's new** for players, **next up** for the
 - [ ] Frame rate with Scatter or Arc at the drop isn't measured. Each shot segment is one instance (420 max).
 - [ ] The ▼ is a small mark above the gate, which is close to the floating text you removed earlier. If it feels like clutter, remove it from `drawLabels`.
 - [ ] Gate notes are about 10 px on a 390 px phone until the gate gets close. Check they're readable in time.
+- [ ] Sim before random gates: 99 / 89 / 10 / 12, casual boss kills 54%. After: 96 / 84 / 12 / 17, casual boss kills 60%, with boss HP 23000 to 24500 to keep the difficulty you liked. Bands still pass and weren't changed. Peak squads rose to about 130.
+- [ ] Boss HP is a very sharp lever: 27000 fails the smart and casual bands.
 - [ ] Random gates make some runs luckier than others. A deal with few squad gates can be rough before the drop. Sim results are averages, so note any run that feels unfair.
 
 ## P2 art · Oct 31, 2026 · Zach (with Claude)
