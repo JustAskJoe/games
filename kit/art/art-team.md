@@ -31,7 +31,8 @@
 
 ### 1. Lead Artist (one per game)
 - **Why first:** in AI-only work, the lead's judgment *is* the quality bar. Models don't fail at single images; they fail at sets. Every game also needs someone to say up front what AI can and can't do *for this game*, before anyone spends hours.
-- **One agent file, one instance per game.** `kit/agents/lead-artist.md` is written once. Each game gets its own plan at `<game>/art/lead-plan.md` and is assigned the same way the Artist is (`GAMES:` / `PROJECTS:`).
+- **Keeper of the house rules.** The Lead Artist applies `kit/art/art-rules.md` (for example R1: no text in generated images; the game draws all text), logs what the studio learns in `kit/art/lessons.md`, proposes new rules when a lesson repeats, and researches best practices with cited sources. People adopt rules; the agent only proposes them.
+- **One agent file, one instance per game.** `kit/agents/lead-artist.md` (drafted, not hired yet) is written once. Each game gets its own plan at `<game>/art/lead-plan.md` and is assigned the same way the Artist is (`GAMES:` / `PROJECTS:`).
 - **When it runs:**
   - **First draft:** when a game gets its first art request, or right after Forge's Approve adds the game. It opens a PR with `<game>/art/lead-plan.md` (and a draft `art-direction.md` if there isn't one), for the crew to review.
   - **Again:** when the game's genre, camera (2D/3D) or release target changes, or someone asks.
@@ -141,6 +142,7 @@ Each role waits for a trigger. Don't set it up early. A game's lead plan says wh
 6. **Last:** Style Trainer (#10), Art QA (#11), and a human art lead (#12) if AI-only isn't selling.
 
 ## Rules every art agent follows
+- Follows the adopted house rules in `kit/art/art-rules.md`, and notes anything new in `kit/art/lessons.md`.
 - Reads `CLAUDE.md`, the game's `art/lead-plan.md`, `art-direction.md`, `art/anchors/` and `art/manifest.json` first.
 - One branch and one pull request per job; never merges, never pushes to `main`.
 - Never spends money. Only the Artist's Finals uses Canva plan credits, and only on `art-approved` issues. Anything else that costs money needs Hunter's OK.

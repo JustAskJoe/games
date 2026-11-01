@@ -144,6 +144,7 @@ sequenceDiagram
 | Guard, Checks | GitHub Actions, no AI | Live | Every pull request |
 | Producer | GitHub Actions, no AI (stage 1) | In review (games#16) | Monday 8am Central |
 | Legal reviewer | Claude Code agent (`.claude/agents/legal-reviewer.md` in `studio-private`) | In review (studio-private PR #1) | When someone asks; first-pass review of an agreement, 🟢/🟡/🔴; not a lawyer, never signs |
+| Lead Artist | Claude Code agent (`kit/agents/lead-artist.md`) | Planned (games#38) | On demand, one game at a time: writes `<game>/art/lead-plan.md`, reviews art sets, keeps `kit/art/art-rules.md` and `kit/art/lessons.md`; never makes images or spends |
 | App Engineer, Reviewer, Build Gate ("the Engineers") | Claude Code agents (`.claude/agents/` in the XR repo; the studio-crew plugin in review for every repo) | Live | In a Claude Code session, when someone asks. Each reads the repo's `STUDIO.md` card. The Engineer builds with tests and never commits; the Reviewer reviews and never edits; the Build Gate runs every check and commits only on a pass |
 | SDK Librarian, Headset test partner | Designed in the XR team plan (studio-private) | Planned | On demand |
 | Playtester, Balance | Not designed yet | Planned | Probably on-demand Claude Code agents, like the legal reviewer |
