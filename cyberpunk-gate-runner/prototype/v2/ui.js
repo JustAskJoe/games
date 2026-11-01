@@ -312,6 +312,7 @@
       <p>Neon City, 2089. Hush banned music. Your squad brings the beat back.</p>
       <button class="btn pri" data-act="play" type="button">Run</button>
       <button class="btn" data-act="how" type="button">How to play</button>
+      <button class="btn" data-act="arsenal" type="button">Weapons and gates</button>
       <p class="foot">Sound on, silent mode off. About one minute per run.</p>`);
   }
   function howScreen() {
@@ -321,6 +322,18 @@
       <li><b class="p">Your squad fires on its own.</b> Hordes fill the road. Carve a path through them, because whatever reaches you eats runners.</li>
       <li><b class="g">Pick your gun</b> at the weapon fork, then an upgrade for it later. Shoot gold crates to level it up.</li>
       <li><b class="p">Gates fill Overclock.</b> It multiplies your damage during the drop, up to ×3. Overclock gates fill it fastest. Red gates fill none.</li></ol>
+      <button class="btn pri" data-act="play" type="button">Run</button><button class="btn" data-act="title" type="button">Back</button>`);
+  }
+  function arsenalScreen() {
+    const gun = k => { const w = GR.WEAPONS[k]; return `<div class="gun"><div class="gn" style="color:${w.col}">${w.name}</div><p>${w.tip.split(': ')[1]}.</p><div class="ups">${w.mods.map(m => `<div><b>${m.name}</b> ${m.tip.split(': ')[1]}</div>`).join('')}</div></div>`; };
+    showSheet(`<h2>Weapons</h2><p>You start with the Pulse rifle. Pick one gun at the weapon fork, then one of its two upgrades later. Gold crates level it up.</p>
+      ${['arc', 'scatter', 'rail', 'rocket'].map(gun).join('')}
+      <h2 style="margin-top:16px">Gates</h2><ul class="gl">
+      <li><b class="gr">+8</b> Adds runners. Best while your squad is small.</li>
+      <li><b class="gr">×1.5</b> Multiplies your squad. Best once it's big.</li>
+      <li><b class="g">FIRE +25%</b> Everyone shoots faster.</li>
+      <li><b class="p">OVERCLOCK +30%</b> Multiplies your damage during the drop, up to ×3.</li>
+      <li><b class="r">−10 ×2</b> Lose runners now, then double what's left. Adds no Overclock.</li></ul>
       <button class="btn pri" data-act="play" type="button">Run</button><button class="btn" data-act="title" type="button">Back</button>`);
   }
   const FQ = [
@@ -356,6 +369,7 @@
     const a = b.dataset.act;
     if (a === 'play' || a === 'restart') startRun(0);
     else if (a === 'how') howScreen();
+    else if (a === 'arsenal') arsenalScreen();
     else if (a === 'title') titleScreen();
     else if (a === 'resume') resume();
     else if (a === 'jumpRiser') startRun(12);

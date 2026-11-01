@@ -15,6 +15,7 @@ Newest on top. Each entry covers **what's new** for players, **next up** for the
 - **Gates explain themselves:** each gate has a plain line under its number, like "more runners" or "shoot faster".
 - **"Charge" is gone:** those gates now read OVERCLOCK +30%, "stronger drop", and the meter shows your actual damage at the drop, like ×1.6.
 - **Clearer path choice:** a bouncing ▼ sits over the gate you're heading for, and the other gate dims much further.
+- **Weapons and gates screen:** a new start-menu button lists every gun, both of its upgrades and what each gate does.
 ### Next up
 
 ### Watch out
