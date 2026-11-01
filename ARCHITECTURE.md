@@ -177,7 +177,7 @@ This is fine for now ("Where do the shared accounts live?" in HOW-WE-WORK). It m
 - **GitHub suspensions happen.** Hunter's account (created Oct 19) was suspended by GitHub's automated abuse detection Oct 28-30, 2026, right after a burst of automated setup (org transfer, teams, invites, rules, many branches and PRs). GitHub gave no specific reason and cleared it on appeal. While suspended, his PRs were hidden and Forge's `GITHUB_TOKEN` (made on his account) stopped working, so Approve could not open PRs. To lower the risk: spread bulk GitHub changes out, turn on two-factor sign-in, and move Forge to a GitHub App owned by the org instead of a personal token.
 - **Forge doesn't auto-deploy.** Merging a Forge PR changes nothing live until someone runs `npx wrangler deploy`.
 - **The Lab's game list is hardcoded in two places:** `GAMES` in `forge/src/lab.js` (+ a card in `lab.html`) and the `LAB` map in this repo's `checks.yml` (preview links). They can drift.
-- **Free painted roughs** (open PR #11) would call an endpoint on the One Fifty Labs website and need an `ART_KEY` secret here.
+- **Free painted roughs** are live since Nov 1, 2026: the `ART_KEY` Actions secret is set, and the Art roughs workflow calls the endpoint on the One Fifty Labs website (Flux Schnell; no reference images yet).
 - **The deck and prototype kit also exist in Hunter's claude.ai Project "AI Games".** The repo's `kit/` is the copy the crew uses; the two can drift.
 - **The Artist has no automated tests.** Each real run is the test.
 - **The XR Lab depends on the token.** If `GITHUB_TOKEN` loses access to the private XR repo, the Workshop says so and the XR pull requests disappear; nothing else breaks.
