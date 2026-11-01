@@ -459,7 +459,7 @@ Each level says what changes in four places: **the Artist** (`kit/agents/artist.
 
 **What Claude makes directly (no image model):** UI frames, 9-slice panels, card frames, icons, logos (with a Google Font), VFX particles and shaders, simple code-driven animation (bob, squash, sway).
 
-**Proposed `artist.md` changes (separate PR):**
+**`artist.md` changes** (done Nov 1, 2026, except the manifest and handoff parts, which wait for `manifest.json`):
 1. Add "Read `kit/art/art-rules.md`, `<game>/art/lead-plan.md`, `<game>/art/manifest.json` and `<game>/art/anchors/`" to *Where things are*.
 2. In concepts mode: if a game has no anchors, the first concepts PR proposes a style anchor (2 or 3 key-art candidates) and asks for `Pick:`.
 3. In both modes: pass anchors as references on every generate call; log the anchors used per file.
