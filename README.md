@@ -13,6 +13,7 @@ Every game starts as a pitch in Forge (our team questionnaire). Approved pitches
 | [Hexed](hexed/) | Witchy tarot match-3, 10 levels | Prototype |
 | [Neon Surf](neon-surf/) | Neon-ocean rhythm surfing | Tech test |
 | [Cyberpunk Gate Runner](cyberpunk-gate-runner/) (working title: Overclock) | Cyberpunk runner shooter synced to a house beat | Prototype 2 (in progress) |
+| [Intergalactic Card Trader](card-trader/) (working title) | Card shop sim on a space station: inspect, haggle, grade, ride the trade lanes | Prototype v1 |
 | [Cardboard Cartel](cardboard-cartel/) | Trading-card collector idler | Design |
 | [Idle Hands](idle-hands/) | Idle game pitch | Pitch |
 | [Automation Idler](automation-idler/) | Idler built around real life automations | Design |
@@ -49,6 +50,7 @@ Most builds are single HTML files. Open `builds/*.html` in a browser, or run a p
 | Hexed | [`hexed/builds/hexed.html`](hexed/builds/hexed.html) |
 | Neon Surf | [`neon-surf/builds/neon-surf.html`](neon-surf/builds/neon-surf.html) |
 | Cyberpunk Gate Runner | [`cyberpunk-gate-runner/builds/cyberpunk-gate-runner.html`](cyberpunk-gate-runner/builds/cyberpunk-gate-runner.html) |
+| Intergalactic Card Trader | [`card-trader/builds/card-trader.html`](card-trader/builds/card-trader.html) |
 
 GitHub shows `.html` files as source, so download the file (with its `img/` folder where there is one) and open it locally to play. Every build is also playable in the [JustAskJoe Lab](https://jaj-forge.huntefl.workers.dev/lab) (email sign-in for the crew).
 
