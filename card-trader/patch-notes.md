@@ -6,6 +6,36 @@ Newest on top. See the repo's CLAUDE.md for how patch notes work.
 
 ---
 
+## v3 rev 2.2 playtest agents · 2026-11-01 · Playtester agent for Hunter (with Claude)
+Agents now fill in the same playtest questionnaire as human testers. Eight scripted personas played 3 runs each through the engine. Agent file: `kit/agents/playtester.md`. Results: `playtests/agents-2026-11-01.md` (summary), `.json` (answers + telemetry), `-batch.json` (ready to push to the questionnaire artifact). No game code changed.
+
+### What's new
+- Nothing player-facing. New tool: `node card-trader/prototype/playtest-agents.js 3` plays the kid, min-maxer, cozy collector, vintage hunter, sealed speculator, chaos goblin, cautious newbie and trusting soul. Each derives questionnaire answers from what happened in its runs and quotes logged events in the text answers.
+- What the personas agree on (24 runs):
+  - **Sleeves** are unclear for players who skip hints. The kid and the goblin hit "raw cards need a hard sleeve or mag case in the case" 12–13 times a run and run out of hard sleeves (a shop starts with 10). They're unfun for 6 of 8 personas because the only payoff the game shows is a foiled switch.
+  - **Fakes:** unclear for kid, goblin and trusting. 21 of 24 runs end holding fakes the persona never found, even the newbie who lamps everything: patience runs out first, and ring fakes need the Spectrometer.
+  - **Back-room asks look alike:** in 12 runs, a buyer's "check the back, I'll wait" paid off and a distractor's "the good stuff, in the back" got the floor robbed.
+  - **Money:** 6 of 8 personas close mid- and late-run days broke (cash under the next rent). Only the min-maxer and the sealed speculator are "ok" late. Value growth flattens around day 4–7 (median drag day per persona).
+  - **Never touched:** repacks by 7 of 8 personas (matches the Balance report: repacks are dead), and the board by 4 of 8.
+
+### Next up
+- [ ] @Hunter: OK pushing `playtests/agents-2026-11-01-batch.json` to the questionnaire artifact (8 docs `agent-<persona>` in `playtests`). The main session pushes it with ArtifactData after your yes.
+- [ ] @Hunter: decide whether Tier B (Claude plays the real page via Playwright) is worth trying. Estimate: about $3.40 a run on Sonnet 5.5, so 2 personas × 1 run is about $7. Needs your explicit OK; design in `kit/agents/playtester.md`.
+- [ ] Results page: show `source: 'agent'` docs apart from human ones (or behind a filter) so bot answers don't drown out people.
+- [ ] Pick a public route for outside testers (itch.io restricted page or a public build, plus a Google Form into a Sheet); options in `kit/agents/playtester.md`.
+
+### Watch out
+- [ ] @Hunter: seed 1034, vintage persona, day 4. A seller asked 4₵ for 3 cards; one was a vintage ink misprint the game estimated at 857₵ (true value about 2,044₵). Could be a gem by design, but the size looks like an outlier for the Balance agent.
+- [ ] Agent "clear" and "fun" are heuristics (refusals, surprises, payoff ratios), not feelings. Thresholds were set by eye on this one run of 24 games and aren't validated against human answers yet. Compare once humans have answered.
+- [ ] Personas play worse than the sim's careful bot (min-maxer median +144% vs careful +231%), so "broke" may be partly the personas' fault. The money bands use next-day rent and haven't been checked against how broke feels to a human.
+- [ ] `mins` in agent runs is an estimate (4 s a move, 10 s a visit, 30 s a morning), not a timing.
+- [ ] `drag` is written as a string ("5") to match `day`. Check that the results page reads it the same as human answers.
+- [ ] Re-pushing the batch overwrites docs: read them first and pin `if_version`, as ArtifactData requires.
+- [ ] Tier B costs are estimates from cached prices (Oct 6, 2026) and a guessed turn count, not measured. Recruiting options in `playtester.md` marked "unverified" (Lab public access, itch.io options, community rules, Steam fee, PlaytestCloud price) were not checked.
+- [ ] Only checked with `build-and-test.py --quick`; the script doesn't touch the build or the browser walkthrough.
+
+---
+
 ## v3 rev 2.2 balance · 2026-11-01 · Balance agent for Hunter (with Claude)
 The Balance agent's first pass: a report, then tuning at Hunter's request. Full report and every scratch rerun: `design/balance-report-2026-11-01.md`.
 
