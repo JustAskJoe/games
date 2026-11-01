@@ -22,19 +22,23 @@
     crate: { hp: 30, bite: 0, w: 0.13, credits: 10 },
     boss: { hp: 23000, bite: 0, w: 0.42, credits: 60 }
   };
-  // gate pairs: one every 2 bars from bar 4 to 18. Sides are shuffled per run (seeded). No pair has an obvious answer:
-  // +N beats x1.5 while the squad is small, fire rate beats both once it's big, charge trades growth for the drop,
-  // and a trade costs runners now for double later.
-  const GATES = [
-    [{ op: 'add', v: 8 }, { op: 'mul', v: 1.5 }],
-    [{ op: 'mul', v: 1.5 }, { op: 'rate', v: 0.25 }],
-    [{ op: 'add', v: 15 }, { op: 'oc', v: 30 }],
-    [{ op: 'weapon' }, { op: 'weapon' }],                    // the weapon fork: your one gun choice this run
-    [{ op: 'trade', lose: 10, v: 2 }, { op: 'rate', v: 0.25 }],
-    [{ op: 'add', v: 30 }, { op: 'mul', v: 1.5 }],
-    [{ op: 'mod', k: 0 }, { op: 'mod', k: 1 }],              // the upgrade fork: two ways to build that gun
-    [{ op: 'add', v: 40 }, { op: 'rate', v: 0.5 }]
-  ];
+  // one gate every 2 bars from bar 4 to 18. Each run deals the slots from these pools (seeded), so two different kinds
+  // always face each other: +N beats x1.5 while the squad is small, fire rate beats both once it's big, Overclock trades
+  // growth for the drop, and a trade costs runners now for double later. The weapon and upgrade forks stay on bars 10 and 16.
+  const POOLS = {
+    early: [{ op: 'add', v: 6 }, { op: 'add', v: 8 }, { op: 'add', v: 10 }, { op: 'mul', v: 1.5 }, { op: 'rate', v: 0.25 }],
+    mid: [{ op: 'add', v: 15 }, { op: 'add', v: 20 }, { op: 'mul', v: 1.5 }, { op: 'rate', v: 0.25 }, { op: 'oc', v: 30 }, { op: 'trade', lose: 6, v: 2 }],
+    late: [{ op: 'add', v: 30 }, { op: 'add', v: 40 }, { op: 'mul', v: 1.5 }, { op: 'rate', v: 0.25 }, { op: 'rate', v: 0.5 }, { op: 'oc', v: 30 }, { op: 'trade', lose: 10, v: 2 }]
+  };
+  const SLOTS = ['early', 'early', 'mid', 'weapon', 'mid', 'late', 'mod', 'late'];
+  function dealGates(r) {
+    return SLOTS.map(s => {
+      if (s === 'weapon') return [{ op: 'weapon' }, { op: 'weapon' }];         // your one gun choice this run
+      if (s === 'mod') return [{ op: 'mod', k: 0 }, { op: 'mod', k: 1 }];      // two ways to build that gun
+      const P = POOLS[s], a = P[Math.floor(r() * P.length)], rest = P.filter(g => g.op !== a.op);
+      return [a, rest[Math.floor(r() * rest.length)]];
+    });
+  }
   // mult scales damage. aim widens or narrows the cone, pierce hits a line of targets at full damage,
   // splash hits neighbours of each target. val is how much the bots value the extras.
   const WEAPONS = {
@@ -62,7 +66,7 @@
     for (let i = 0; i < 10; i++) add('runner', at(1, 0) + i * B, zz[i], { w: 0.1 });
     // gates on the downbeat every 2 bars
     const offer = FINDS.slice().sort(() => r() - 0.5); let oi = 0;
-    GATES.forEach((pair, i) => { const sw = r() < 0.5, opts = pair.map(g => g.op === 'weapon' ? { op: 'weapon', w: offer[oi++ % offer.length] } : g); add('gate', at(4 + i * 2, 0), 0, { L: sw ? opts[1] : opts[0], R: sw ? opts[0] : opts[1] }); });
+    dealGates(r).forEach((pair, i) => { const sw = r() < 0.5, opts = pair.map(g => g.op === 'weapon' ? { op: 'weapon', w: offer[oi++ % offer.length] } : g); add('gate', at(4 + i * 2, 0), 0, { L: sw ? opts[1] : opts[0], R: sw ? opts[0] : opts[1] }); });
     // horde walls fill the road on the odd bars, between gates. You carve a path; whatever's left reaches you.
     const wall = (bar, rows, across) => {
       for (let i = 0; i < rows; i++) for (let k = 0; k < across; k++) add('swarm', at(bar, 0) + i * 0.085, -0.92 + 1.84 * (k + 0.5) / across + (r() - 0.5) * 0.08);

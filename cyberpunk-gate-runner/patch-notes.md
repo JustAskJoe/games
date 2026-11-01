@@ -16,6 +16,7 @@ Newest on top. Each entry covers **what's new** for players, **next up** for the
 - **"Charge" is gone:** those gates now read OVERCLOCK +30%, "stronger drop", and the meter shows your actual damage at the drop, like ×1.6.
 - **Clearer path choice:** a bouncing ▼ sits over the gate you're heading for, and the other gate dims much further.
 - **Weapons and gates screen:** a new start-menu button lists every gun, both of its upgrades and what each gate does.
+- **Random gates:** every run deals a new set of gates. The weapon fork and the upgrade fork stay in the same places, and the four guns on offer still change.
 ### Next up
 
 ### Watch out
@@ -24,6 +25,7 @@ Newest on top. Each entry covers **what's new** for players, **next up** for the
 - [ ] Frame rate with Scatter or Arc at the drop isn't measured. Each shot segment is one instance (420 max).
 - [ ] The ▼ is a small mark above the gate, which is close to the floating text you removed earlier. If it feels like clutter, remove it from `drawLabels`.
 - [ ] Gate notes are about 10 px on a 390 px phone until the gate gets close. Check they're readable in time.
+- [ ] Random gates make some runs luckier than others. A deal with few squad gates can be rough before the drop. Sim results are averages, so note any run that feels unfair.
 
 ## P2 art · Oct 31, 2026 · Zach (with Claude)
 
