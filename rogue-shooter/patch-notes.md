@@ -6,6 +6,35 @@ Newest on top. Each entry covers **what's new** for players, **next up** for the
 
 ---
 
+## P1-art · Nov 1, 2026 · Joe (with Claude)
+Stardew Valley pixel art upgrade — complete visual overhaul.
+
+### What's new
+- **Pixel art sprite system:** all sprites defined as string grids with palette mapping, rendered to offscreen canvases and cached. `renderSprite()`, `stamp()`, `tileHash()` for deterministic ground detail.
+- **Warm earthy palette:** neon dark theme replaced with Stardew-inspired colors — parchment, wood, gold, earthy greens. CSS variables updated across all UI.
+- **Press Start 2P pixel font** replaces Orbitron for headings and HUD.
+- **Player:** 3-frame pixel sprite (idle, walk1, walk2) with per-class outfit palettes, facing flip, and bob animation.
+- **Enemies:** pixel art slime (squish), bat (wing flap), skeleton (sway), demon, and boss. Hit-flash turns sprites white. Shadow ellipses under all entities.
+- **Ground:** isometric grass tiles in varying greens with flowers, dark grass tufts, and pebbles. Replaces the dark grid.
+- **Bullets:** pixel-snapped rectangles per class (knight bar, mage square, marksman line+dot, rogue rotated bar, witch large square).
+- **Weapon VFX:** pixel-style fire patches (nested rects), frost rings (stroked arcs), orbital crosses (rotated fillRects), pixel-snapped lightning, rotated homing missiles.
+- **XP orbs:** pixel gem with pulse glow.
+- **UI:** wood-panel borders, warm brown overlays, square border-radius (4px), earthy card styling.
+- **Canvas:** `imageSmoothingEnabled=false` + CSS `image-rendering: pixelated`.
+
+### Next up
+- [ ] @Joe: playtest all 5 classes with the new art. Check readability of sprites and effects.
+- [ ] Consider sound effects and music.
+- [ ] Polish: particle effects, death animations, screen transitions.
+
+### Watch out
+- [ ] Pixel sprites are small at default scale (PX=2). May need tuning on high-DPI or large monitors.
+- [ ] All game logic is unchanged — balance items from P1 still apply.
+- [ ] Tested only on desktop Chrome. Mobile touch input still not implemented.
+- [ ] Sprite strings are hand-authored — complex shapes (boss, demon) have limited detail at this resolution.
+
+---
+
 ## P1 · Oct 31, 2026 · Joe (with Claude)
 First playable build.
 
