@@ -68,6 +68,27 @@ From the v3.1 beta plan (`design/v3.1-beta-plan.md` on branch `hunter/playtester
   - Q3: QuikSlab keeps its ±1.
   - Q4: Black Label comes from Halo only.
 
+## v3.1 floor, tutorial and vintage (Hunter, Nov 1, 2026)
+Answers to the v3.1 plan's Q5–Q10. Hunter said yes to Q5 and Q6, "you pick" for Q7 and Q8, gave the vintage idea for Q9, and "whatever you think" for Q10.
+- **Q5, guided day 1:** on by default for a new run, with SKIP TUTORIAL.
+  - Five steps: open the crate, put your best card in the case, Stock the floor, open, show your first customer a card.
+  - The first customer is an easy buyer who wants something in your case.
+- **Q6, automate the chores:** auto-sleeve when placing a card, auto-file new cards, and auto-refill the rack between customers. All on by default; each toggles in the back room's gear panel.
+  - Choosing what goes in the case, pricing and grading stay the player's job.
+  - **Stock the floor** is one button. It fills the opening minimums first, then empty case slots with cards worth 10₵+, the counter binder with 4–60₵ cards, and the rack with shelf packs. Its label says what it will do.
+- **Q7, rep is how people treat you:** at rep 100 sellers ask about 10% less; at rep 0, about 10% more. Stars stay walk-in traffic and what browsers pay. The morning report now says why the stars moved (the day's top three reasons).
+- **Q8, repacks hidden for v3.1:** the bulk sorter is off the catalog. The code stays until repacks are rebuilt.
+- **Q9, vintage:**
+  - Rare vintage stays expensive, and so does all vintage sealed. Vintage commons and uncommons are 25% cheaper.
+  - The vintage loop starts on day 3: Mox, a shady stranger (sunglasses indoors, two tells), gives you three real vintage packs, free.
+  - The packs have beat-up wrappers: about 8% of a pristine pack's sealed value (around 85–100₵ each), with real vintage cards inside (average about 83₵, about a 31% chance of a hit, best seen about 2,076₵).
+  - Rip them, sell them, or keep some. Calling security on him is a wrong call.
+- **Q10:** the human questionnaire gets the agents' keep / remove / change / add questions (done by Claude in the artifact).
+- **Also:**
+  - Skrimp the scalper buys at most 6 packs a visit (2 under Limit 2).
+  - Honest customers show a tell 4% of the time (was 12%).
+  - A warnings bar (crate waiting, slabs back, case nearly empty, rack empty, sleeves low) with fix buttons.
+
 ## Still open
 - Final title (Intergalactic Card Trader is a working title).
 - Whether the art direction holds after the crew sees it.
