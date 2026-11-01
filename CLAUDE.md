@@ -30,4 +30,6 @@ Before pushing, run the game's build-and-test command (table in CONTRIBUTING.md)
 
 **How it's wired.** `ARCHITECTURE.md` describes every piece (Studio HQ, Forge, Lab, the Art Cottage, the Artist, CI, accounts). If your change alters how any of those work (a route, a secret, a schedule, an account, a new agent or game in the Lab), update `ARCHITECTURE.md` in the same pull request.
 
-**Which org.** Repo-specific names (org, Forge link, Lab link, ownership line) live in `studio.json` at the repo root. Read it instead of assuming `onefiftylabs`. The `onefiftylabs` account is Hunter's own (One Fifty Labs: the website, `onefiftylabs/games-private`, `onefiftylabs/xr-app-suite`); game work for the collective goes here.
+**Which org.** Repo-specific names (org, Forge link, Lab link, ownership line) live in `studio.json` at the repo root. Read it instead of assuming `onefiftylabs`. The `onefiftylabs` account is Hunter's own (One Fifty Labs: the website, `onefiftylabs/games-private`); game work for the collective goes here. The studio's XR apps moved to the private `JustAskJoe/xr-app-suite` on Oct 31, 2026 (old links redirect). Nothing from it goes in this public repo.
+
+**New here?** If the person you're helping is new to the studio, or asks how it works, read `ONBOARDING.md` and follow its first-session checklist before changing anything.
