@@ -15,7 +15,7 @@
   // ---------- geometry helpers: non-indexed parts merged into one mesh, with colour and glow per vertex ----------
   const M = (x, y, z, rx, ry, rz, sx, sy, sz) => new T.Matrix4().compose(new T.Vector3(x || 0, y || 0, z || 0), new T.Quaternion().setFromEuler(new T.Euler(rx || 0, ry || 0, rz || 0)), new T.Vector3(sx || 1, sy || sx || 1, sz || sx || 1));
   function part(geo, col, glow, m) {
-    const g = geo.index ? geo.toNonIndexed() : geo.clone(); if (m) g.applyMatrix4(m);
+    const g = geo.index ? geo.toNonIndexed() : geo.clone(); if (m) g.applyMatrix4(m); g.computeVertexNormals();
     const n = g.attributes.position.count, c = new T.Color(col), ca = new Float32Array(n * 3), ga = new Float32Array(n).fill(glow || 0);
     for (let i = 0; i < n; i++) { ca[i * 3] = c.r; ca[i * 3 + 1] = c.g; ca[i * 3 + 2] = c.b; }
     g.setAttribute('color', new T.BufferAttribute(ca, 3)); g.setAttribute('aGlow', new T.BufferAttribute(ga, 1)); return g;
@@ -56,27 +56,36 @@
   const end = m => { m.instanceMatrix.needsUpdate = true; m.tint.needsUpdate = true; };
 
   // ---------- models ----------
+  const bone = COL.bone;
+  // Street Raver: hoodie, LED visor, a light strip down the hood, a chunky blaster. Faces -z, so the squad shows its back
   function runnerGeo() {
-    const s = new T.SphereGeometry(0.15, 8, 6);
+    const body = new T.CylinderGeometry(0.17, 0.22, 0.46, 6), hood = new T.CylinderGeometry(0.11, 0.19, 0.3, 6);
     return merge([
-      box(0.3, 0.42, 0.2, 0, 0.58, 0, COL.white), box(0.34, 0.1, 0.24, 0, 0.72, 0, COL.ink), part(s, COL.steel, 0, M(0, 0.93, 0)), box(0.26, 0.06, 0.04, 0, 0.94, -0.14, COL.white, 1),
-      box(0.11, 0.36, 0.13, -0.09, 0.18, 0, COL.ink), box(0.11, 0.36, 0.13, 0.09, 0.18, 0, COL.ink),
-      box(0.07, 0.07, 0.46, 0.2, 0.6, -0.2, COL.ink), box(0.03, 0.03, 0.16, 0.2, 0.6, -0.48, COL.white, 1)
+      box(0.12, 0.34, 0.14, -0.1, 0.17, 0, COL.ink, 3), box(0.12, 0.34, 0.14, 0.1, 0.17, 0, COL.ink, 3), box(0.14, 0.07, 0.2, -0.1, 0.035, -0.02, bone, 3), box(0.14, 0.07, 0.2, 0.1, 0.035, -0.02, bone, 3),
+      part(body, COL.white, 0, M(0, 0.57, 0)), box(0.3, 0.06, 0.26, 0, 0.8, 0, COL.ink, 3), part(hood, COL.white, 0, M(0, 0.97, 0)),
+      box(0.06, 0.56, 0.03, 0, 0.78, 0.19, COL.cyan, 2, -0.1), box(0.2, 0.06, 0.03, 0, 0.97, -0.16, COL.cyan, 2),
+      box(0.09, 0.09, 0.22, -0.24, 0.5, 0, COL.white), box(0.09, 0.09, 0.3, 0.24, 0.62, -0.08, COL.white),
+      box(0.11, 0.13, 0.42, 0.24, 0.62, -0.32, COL.ink, 3), box(0.09, 0.09, 0.05, 0.24, 0.62, -0.55, COL.gold, 2)
     ]);
   }
+  // Silencer: a flat saucer with a pink ring, a light pink dome and one mute-bar eye
   function droneGeo() {
-    const body = new T.OctahedronGeometry(0.46, 0), ring = new T.TorusGeometry(0.62, 0.035, 4, 14), core = new T.SphereGeometry(0.16, 8, 6);
-    return merge([part(body, COL.plum, 0, M(0, 0, 0, 0, 0, 0, 1, 0.72, 1)), part(ring, COL.white, 1, M(0, 0, 0, Math.PI / 2)), part(core, COL.white, 1, M(0, 0, 0.32))]);
+    const body = new T.CylinderGeometry(0.66, 0.66, 0.26, 6), dome = new T.CylinderGeometry(0.14, 0.26, 0.15, 6), ring = new T.TorusGeometry(0.72, 0.04, 4, 14), eye = new T.SphereGeometry(0.17, 8, 6);
+    return merge([part(body, COL.plum, 3), part(dome, COL.pink2, 2, M(0, 0.2, 0)), part(ring, COL.white, 1, M(0, 0, 0, Math.PI / 2)), part(eye, bone, 2, M(0, 0, 0.56)), box(0.28, 0.06, 0.05, 0, 0, 0.72, COL.ink, 3)]);
   }
+  // Mute: a pink diamond with one white bar across it, the mark every Hush unit wears
   function swarmGeo() {
-    const body = new T.OctahedronGeometry(0.3, 0), core = new T.SphereGeometry(0.1, 6, 4);
-    return merge([part(body, COL.plum, 0, M(0, 0, 0, 0, 0, 0, 1, 1.3, 1)), box(0.5, 0.03, 0.05, 0, 0.02, 0, COL.white, 1), part(core, COL.white, 1, M(0, 0.05, 0.24))]);
+    const body = new T.OctahedronGeometry(0.3, 0);
+    return merge([part(body, COL.white, 0, M(0, 0, 0, 0, Math.PI / 4, 0, 1, 1.3, 1)), box(0.46, 0.06, 0.3, 0, 0.02, 0, bone, 3)]);
   }
+  // Hush Rider: long and low, wide armoured shoulders, pink visor. Red turns gold below half health
   function bikerGeo() {
     const wheel = new T.CylinderGeometry(0.34, 0.34, 0.16, 10);
     return merge([
-      box(0.46, 0.34, 1.5, 0, 0.5, 0, COL.ink), box(0.5, 0.1, 1.54, 0, 0.72, 0, COL.white, 1), box(0.4, 0.62, 0.34, 0, 1.02, 0.1, COL.white), box(0.3, 0.26, 0.3, 0, 1.46, 0.02, COL.ink), box(0.26, 0.06, 0.06, 0, 1.48, 0.16, COL.gold, 1),
-      part(wheel, COL.ink, 0, M(0, 0.34, 0.62, 0, 0, Math.PI / 2)), part(wheel, COL.ink, 0, M(0, 0.34, -0.62, 0, 0, Math.PI / 2)), box(0.34, 0.1, 0.05, 0, 0.56, -0.78, COL.white, 1)
+      box(0.46, 0.3, 1.5, 0, 0.5, 0, COL.ink, 3), box(0.76, 0.14, 0.9, 0, 0.72, 0.08, COL.white), box(0.14, 0.14, 0.05, 0, 0.56, 0.78, bone, 2),
+      box(0.4, 0.56, 0.32, 0, 1.04, 0.08, COL.steel, 3), box(0.92, 0.2, 0.36, 0, 1.3, 0.08, COL.steel, 3), box(0.26, 0.26, 0.4, -0.5, 1.3, 0.08, COL.white), box(0.26, 0.26, 0.4, 0.5, 1.3, 0.08, COL.white),
+      box(0.3, 0.28, 0.3, 0, 1.56, 0.08, COL.steel, 3), box(0.25, 0.06, 0.05, 0, 1.58, 0.25, COL.pink, 2),
+      part(wheel, COL.ink, 3, M(0, 0.34, 0.62, 0, 0, Math.PI / 2)), part(wheel, COL.ink, 3, M(0, 0.34, -0.62, 0, 0, Math.PI / 2))
     ]);
   }
   function crateGeo() {
@@ -313,8 +322,8 @@
       const e = G.ents[i], z = e.ta - G.t; if (z > GR.BOSS_RANGE + 0.2) break; if (e.done || (z > AHEAD && e.kind !== 'boss')) continue;
       const x = wx(e.x), wZ = wz(z);
       if (e.kind === 'runner') put(picks, x, Math.abs(Math.sin(t * 5 + e.id)) * 0.2, wZ, 1.4, Math.PI + t * 2, 0, COL.cyan, 1.3);
-      else if (e.kind === 'drone') put(drones, x, 1.1 + Math.sin(t * 5 + e.id) * 0.16, wZ, 1, t * 2 + e.id, 0, e.hp < e.maxHp ? COL.white : COL.pink, e.hp < e.maxHp ? 1.5 : 1);
-      else if (e.kind === 'swarm') { if (swarm.count < 1000) put(swarm, x, 0.55 + Math.sin(t * 9 + e.id) * 0.1, wZ, 1, t * 3 + e.id, 0, e.hp < e.maxHp ? COL.white : COL.pink, e.hp < e.maxHp ? 1.6 : 1); }
+      else if (e.kind === 'drone') put(drones, x, 1.1 + Math.sin(t * 5 + e.id) * 0.16, wZ, 1, Math.sin(t * 2 + e.id) * 0.3, 0, e.hp < e.maxHp ? bone : COL.pink, e.hp < e.maxHp ? 1.5 : 1);
+      else if (e.kind === 'swarm') { if (swarm.count < 1000) put(swarm, x, 0.55 + Math.sin(t * 9 + e.id) * 0.1, wZ, 1, 0, Math.sin(t * 3 + e.id) * 0.22, e.hp < e.maxHp ? bone : COL.pink, e.hp < e.maxHp ? 1.3 : 0.62); }
       else if (e.kind === 'biker') put(bikers, x, 0, wZ, 1.15, 0, Math.sin(t * 7 + e.id) * 0.08, e.hp < e.maxHp * 0.5 ? COL.gold : COL.red, 1);
       else if (e.kind === 'crate') put(crate, x, 0.25 + Math.sin(t * 4) * 0.1, wZ, 1.1, t * 1.4, 0, COL.gold, 1 + UF.uPulse.value * 0.6);
       else if (e.kind === 'boss') { if (e.hp < bossHp) bossHit = 1; bossHp = e.hp; bossHit *= 0.82; put(boss, 0, Math.abs(Math.sin(t * 3.2)) * 0.25, wZ, 1.5, 0, 0, bossHit > 0.3 ? '#FFD0EC' : COL.white, 1 + UF.uPulse.value * 0.3 + bossHit * 1.6); }
@@ -333,7 +342,7 @@
     begin(runners);
     for (let i = 0; i < show; i++) {
       const r = Math.sqrt(i / Math.max(1, show)) * rad, a = i * 2.39996, bob = R.motion ? Math.abs(Math.sin(t * 11 + i * 1.7)) * 0.1 : 0;
-      put(runners, cx + Math.cos(a) * r, bob, Math.sin(a) * r * 0.82, s, Math.PI, lean, i === 0 ? '#FFFFFF' : oc ? '#D8FBFF' : COL.cyan, (oc ? 1.15 : 0.7) + UF.uPulse.value * 0.25);
+      put(runners, cx + Math.cos(a) * r, bob, Math.sin(a) * r * 0.82, s, 0, lean, oc ? COL.bone : COL.cyan, (oc ? 0.78 : 0.85) + UF.uPulse.value * 0.2);
     }
     end(runners);
     road.material.uniforms.uSq.value.set(cx, 0); road.material.uniforms.uSqR.value = rad;

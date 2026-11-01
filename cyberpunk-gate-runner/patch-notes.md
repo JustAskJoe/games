@@ -10,14 +10,21 @@ Newest on top. Each entry covers **what's new** for players, **next up** for the
 
 ### What's new
 - **Clean Synthwave city:** the street now follows the picked concept (#24 A). Towers sit dark with gold, violet and bone windows and one violet roofline. The road has chevrons and a bone centre line, the arches are violet frames that turn gold at the drop, and the sun is a dim violet-to-gold stripe that brightens.
+- **Street Ravers squad:** your runners are now hooded ravers with a light strip down the back and a chunky blaster, and they turn near-white in Overclock.
+- **Hush units:** swarm units are pink diamonds with a white mute bar, drones are flat saucers, and bikers have wide armoured shoulders and a pink visor. Models are flat-shaded.
+- **Fixed:** the squad was running backward, with guns pointing at the camera. It now faces up the road and shows its back, and it leans into turns.
 - **New signs:** before the drop every sign is Hush pink (HUSH, OBEY, NO MUSIC). At the drop each flips to its own slogan (LOUD, FREE THE BEAT, TURN IT UP).
 
 ### Next up
 - [ ] @Zach: play it and check the city still feels alive before the drop. It's much darker now, on purpose, so the road and the drop stand out.
+- [ ] @Zach: check you can tell swarm from drones and bikers at full speed, and that a big squad doesn't blur into one cyan shape (the sheet's own risk).
 
 ### Watch out
 - [ ] Removed two old sign pairs, NEON CITY 2089 and OVERCLOCK NEON CITY UNMUTED, because the sheet shows three pairs.
 - [ ] Arches on PC can look pink-white in the first moments of the drop while the colour fades to gold. Seen in a still, not judged in motion.
+- [ ] Swarm units sway now instead of spinning, so the mute bar stays readable. Up close that's less lively; judge in motion.
+- [ ] The Enforcer boss wasn't redesigned (the request excluded it), and it still has its old model next to the new units.
+- [ ] Frame rate wasn't measured. Swarm models have fewer triangles but squad models have similar counts; check a full horde on a mid-range phone.
 - [ ] Judged from stills on a software renderer, not on a real phone. Dark towers may crush to black on a dim phone screen.
 
 ## P2 · Oct 31, 2026 · Zach (with Claude)
@@ -76,10 +83,10 @@ Art only, no build change.
 - Painted roughs requested from the free Cloudflare workflow (`art/concepts/25-roughs.json`), but none were made yet: see Next up.
 
 ### Next up
-- [ ] @Zach: open the three sheets on a phone and reply `Pick: A`, `B` or `C` (plus notes) on the concepts pull request.
+- [x] @Zach: open the three sheets on a phone and reply `Pick: A`, `B` or `C` (plus notes) on the concepts pull request. (done Oct 31, Zach: picked A, Street Ravers, in chat with Claude)
 - [ ] @Zach @Hunter @Joe: review the draft `art/art-direction.md` with the concepts (it's the same file as in the #24 pull request).
 - [ ] @Hunter: the `ART_KEY` Actions secret is missing on `JustAskJoe/games`, so the Art roughs workflow can't make roughs. Add it, then run **Art roughs** (Actions → Run workflow) on `art/cyberpunk-gate-runner-25-squad-enemies`.
-- [ ] Whoever picks: decide the final-art source (Canva, a commission, or Claude building the models in `render.js`) and fill the cost table.
+- [x] Whoever picks: decide the final-art source (Canva, a commission, or Claude building the models in `render.js`) and fill the cost table. (done Oct 31, Zach: Claude builds it in code, so no cost table needed)
 
 ### Watch out
 - [ ] The art direction is a **draft** written by the agent from the requests and P2; nobody has signed it off.

@@ -8,6 +8,7 @@ The Artist agent (`kit/agents/artist.md`) reads this file as the only source of 
 
 ## Picks
 - Street (#24): **A, Clean Synthwave**. Zach, Oct 31, 2026.
+- Squad and enemies (#25): **A, Street Ravers**. Zach, Oct 31, 2026.
 
 ## The look
 Polished neon low-poly: clean shapes, strong silhouettes and glow rather than fine detail. Flat-shaded facets, two or three tones per surface, light coming from neon and windows, not from a sun. It has to read instantly on a phone while hundreds of things move on screen. When in doubt, take detail out and add glow.
