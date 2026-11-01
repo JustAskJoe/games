@@ -15,14 +15,14 @@
   "jobs": [
     {
       "key": "cards-shell-alt",
-      "prompt": "2D cel-shaded game illustration in a street-graffiti style: thick clean ink outlines, flat bold color, halftone dots and spray-paint drips, a joyful sci-fi market station full of neon, snacks and card shops, warm overhead lamp light with cool starlight rim. A 2×2 sheet of four separate trading card illustrations for the Shellstorm card game, each subject centered on its own plain panel with space between panels and a clear margin inside each panel. The same four creatures as the reference card sheet, in the same panel positions, each in a new pose and a new moment: top left, the kelp sprite asleep in a kelp hammock; top right, the lantern eel lighting a path through a sunken reef at night; bottom left, the maelstrom tortoise seen from above, resting in a calm lagoon; bottom right, the tide queen on a coral throne at low tide. Set palette: pink #FF8FC7 and teal #19C8D8, with violet #6A2BD9 night tones. Original designs, not resembling any existing franchise or trading card game. No text, no letters, no numbers, no signage.",
+      "prompt": "Reference image 1 is a style guide only: match its ink line work, flat bold color, halftone and spray drips, but do not include, copy or reuse its scene, characters or background anywhere in the new image. Reference image 2 is our card art sheet: keep its creature designs, and nothing else from it. 2D cel-shaded game illustration in a street-graffiti style: thick clean ink outlines, flat bold color, halftone dots and spray-paint drips, a joyful sci-fi market station full of neon, snacks and card shops, warm overhead lamp light with cool starlight rim. A 2×2 sheet of four separate square trading card illustrations that fill the entire image edge to edge, divided only by thin black gutters, with no background, border or scene around the panels, for the Shellstorm card game, each subject centered on its own plain panel with space between panels and a clear margin inside each panel. The same four creatures as the reference card sheet, in the same panel positions, each in a new pose and a new moment: top left, the kelp sprite asleep in a kelp hammock; top right, the lantern eel lighting a path through a sunken reef at night; bottom left, the maelstrom tortoise seen from above, resting in a calm lagoon; bottom right, the tide queen on a coral throne at low tide. Set palette: pink #FF8FC7 and teal #19C8D8, with violet #6A2BD9 night tones. Original designs, not resembling any existing franchise or trading card game. No text, no letters, no numbers, no signage.",
       "aspect": "1:1",
       "size": "1K",
       "refs": [
         "keyart",
         "shell"
       ],
-      "raw": "card-trader/art/gemini/cards-shell-alt.png",
+      "raw": "card-trader/art/gemini/cards-shell-alt.jpg",
       "post": {
         "width": 900,
         "to": "card-trader/builds/img/cards-shell-alt.jpg",
@@ -31,14 +31,14 @@
     },
     {
       "key": "cards-hive-alt",
-      "prompt": "2D cel-shaded game illustration in a street-graffiti style: thick clean ink outlines, flat bold color, halftone dots and spray-paint drips, a joyful sci-fi market station full of neon, snacks and card shops, warm overhead lamp light with cool starlight rim. A 2×2 sheet of four separate trading card illustrations for the Hive Gambit card game, each subject centered on its own plain panel with space between panels and a clear margin inside each panel. The same four creatures as the reference card sheet, in the same panel positions, each in a new pose and a new moment: top left, the drone bee carrying a glowing pollen crate; top right, the mantis knight bowing in salute; bottom left, the hornet mech diving through clouds; bottom right, the queen mech resting on a honeycomb tower at night. Set palette: lime #A6F01E and near-black #1A1A1A, with sun #FFD21F glow. Original designs, not resembling any existing franchise or trading card game. No text, no letters, no numbers, no signage.",
+      "prompt": "Reference image 1 is a style guide only: match its ink line work, flat bold color, halftone and spray drips, but do not include, copy or reuse its scene, characters or background anywhere in the new image. Reference image 2 is our card art sheet: keep its creature designs, and nothing else from it. 2D cel-shaded game illustration in a street-graffiti style: thick clean ink outlines, flat bold color, halftone dots and spray-paint drips, a joyful sci-fi market station full of neon, snacks and card shops, warm overhead lamp light with cool starlight rim. A 2×2 sheet of four separate square trading card illustrations that fill the entire image edge to edge, divided only by thin black gutters, with no background, border or scene around the panels, for the Hive Gambit card game, each subject centered on its own plain panel with space between panels and a clear margin inside each panel. The same four creatures as the reference card sheet, in the same panel positions, each in a new pose and a new moment: top left, the drone bee carrying a glowing pollen crate; top right, the mantis knight bowing in salute; bottom left, the hornet mech diving through clouds; bottom right, the queen mech resting on a honeycomb tower at night. Set palette: lime #A6F01E and near-black #1A1A1A, with sun #FFD21F glow. Original designs, not resembling any existing franchise or trading card game. No text, no letters, no numbers, no signage.",
       "aspect": "1:1",
       "size": "1K",
       "refs": [
         "keyart",
         "hive"
       ],
-      "raw": "card-trader/art/gemini/cards-hive-alt.png",
+      "raw": "card-trader/art/gemini/cards-hive-alt.jpg",
       "post": {
         "width": 900,
         "to": "card-trader/builds/img/cards-hive-alt.jpg",
@@ -47,14 +47,14 @@
     },
     {
       "key": "cards-star-alt",
-      "prompt": "2D cel-shaded game illustration in a street-graffiti style: thick clean ink outlines, flat bold color, halftone dots and spray-paint drips, a joyful sci-fi market station full of neon, snacks and card shops, warm overhead lamp light with cool starlight rim. A 2×2 sheet of four separate trading card illustrations for the Starweave card game, each subject centered on its own plain panel with space between panels and a clear margin inside each panel. The same four creatures as the reference card sheet, in the same panel positions, each in a new pose and a new moment: top left, the star puff curled asleep on a small moon; top right, the aurora koi leaping through ribbons of aurora; bottom left, the eclipse lion lying calm on a bank of clouds; bottom right, the celestial weaver stitching a net of stars. Set palette: purple #8B5CF6 and gold #FFD21F, with cyan #19D3F0 starlight. Original designs, not resembling any existing franchise or trading card game. No text, no letters, no numbers, no signage.",
+      "prompt": "Reference image 1 is a style guide only: match its ink line work, flat bold color, halftone and spray drips, but do not include, copy or reuse its scene, characters or background anywhere in the new image. Reference image 2 is our card art sheet: keep its creature designs, and nothing else from it. 2D cel-shaded game illustration in a street-graffiti style: thick clean ink outlines, flat bold color, halftone dots and spray-paint drips, a joyful sci-fi market station full of neon, snacks and card shops, warm overhead lamp light with cool starlight rim. A 2×2 sheet of four separate square trading card illustrations that fill the entire image edge to edge, divided only by thin black gutters, with no background, border or scene around the panels, for the Starweave card game, each subject centered on its own plain panel with space between panels and a clear margin inside each panel. The same four creatures as the reference card sheet, in the same panel positions, each in a new pose and a new moment: top left, the star puff curled asleep on a small moon; top right, the aurora koi leaping through ribbons of aurora; bottom left, the eclipse lion lying calm on a bank of clouds; bottom right, the celestial weaver stitching a net of stars. Set palette: purple #8B5CF6 and gold #FFD21F, with cyan #19D3F0 starlight. Original designs, not resembling any existing franchise or trading card game. No text, no letters, no numbers, no signage.",
       "aspect": "1:1",
       "size": "1K",
       "refs": [
         "keyart",
         "star"
       ],
-      "raw": "card-trader/art/gemini/cards-star-alt.png",
+      "raw": "card-trader/art/gemini/cards-star-alt.jpg",
       "post": {
         "width": 900,
         "to": "card-trader/builds/img/cards-star-alt.jpg",
@@ -63,14 +63,14 @@
     },
     {
       "key": "full-hive",
-      "prompt": "2D cel-shaded game illustration in a street-graffiti style: thick clean ink outlines, flat bold color, halftone dots and spray-paint drips, a joyful sci-fi market station full of neon, snacks and card shops, warm overhead lamp light with cool starlight rim. Two separate full-bleed trading card illustrations side by side for the Hive Gambit card game, each on its own tall portrait panel with a thin plain gap between them, no frames and no borders, each creature the same design as in the reference card sheet. Left panel: the queen mech standing tall before a glowing honeycomb wall, her world filling the panel edge to edge. Right panel: the hornet mech hovering with its wings a blur. In each panel the creature's head and main shape sit in the upper half; the lower 40% is calm and simple, soft gradient and halftone, no faces or detail there. Set palette: lime #A6F01E and near-black #1A1A1A, with sun #FFD21F highlights. Original designs, not resembling any existing franchise or trading card game. No text, no letters, no numbers, no signage.",
+      "prompt": "Reference image 1 is a style guide only: match its ink line work, flat bold color, halftone and spray drips, but do not include, copy or reuse its scene, characters or background anywhere in the new image. Reference image 2 is our card art sheet: keep its creature designs, and nothing else from it. 2D cel-shaded game illustration in a street-graffiti style: thick clean ink outlines, flat bold color, halftone dots and spray-paint drips, a joyful sci-fi market station full of neon, snacks and card shops, warm overhead lamp light with cool starlight rim. Two separate full-bleed trading card illustrations side by side for the Hive Gambit card game, each on its own tall portrait panel with a thin plain gap between them, no frames and no borders, each creature the same design as in the reference card sheet. Left panel: the queen mech standing tall before a glowing honeycomb wall, her world filling the panel edge to edge. Right panel: the hornet mech hovering with its wings a blur against a plain glowing honeycomb backdrop. No shops, no stalls, no signs, no screens and no buildings in either panel. In each panel the creature's head and main shape sit in the upper half; the lower 40% is calm and simple, soft gradient and halftone, no faces or detail there. Set palette: lime #A6F01E and near-black #1A1A1A, with sun #FFD21F highlights. Original designs, not resembling any existing franchise or trading card game. No text, no letters, no numbers, no signage.",
       "aspect": "4:3",
       "size": "1K",
       "refs": [
         "keyart",
         "hive"
       ],
-      "raw": "card-trader/art/gemini/full-hive.png",
+      "raw": "card-trader/art/gemini/full-hive.jpg",
       "post": {
         "width": 1100,
         "to": "card-trader/builds/img/full-hive.jpg",
@@ -79,14 +79,14 @@
     },
     {
       "key": "full-star",
-      "prompt": "2D cel-shaded game illustration in a street-graffiti style: thick clean ink outlines, flat bold color, halftone dots and spray-paint drips, a joyful sci-fi market station full of neon, snacks and card shops, warm overhead lamp light with cool starlight rim. Two separate full-bleed trading card illustrations side by side for the Starweave card game, each on its own tall portrait panel with a thin plain gap between them, no frames and no borders, each creature the same design as in the reference card sheet. Left panel: the celestial weaver floating in a web of constellations, her world filling the panel edge to edge. Right panel: the eclipse lion walking calmly across a ring of light. In each panel the creature's head and main shape sit in the upper half; the lower 40% is calm and simple, soft gradient night sky and halftone, no faces or detail there. Set palette: purple #8B5CF6 and gold #FFD21F, with ink #120A1F lines. Original designs, not resembling any existing franchise or trading card game. No text, no letters, no numbers, no signage.",
+      "prompt": "Reference image 1 is a style guide only: match its ink line work, flat bold color, halftone and spray drips, but do not include, copy or reuse its scene, characters or background anywhere in the new image. Reference image 2 is our card art sheet: keep its creature designs, and nothing else from it. 2D cel-shaded game illustration in a street-graffiti style: thick clean ink outlines, flat bold color, halftone dots and spray-paint drips, a joyful sci-fi market station full of neon, snacks and card shops, warm overhead lamp light with cool starlight rim. Two separate full-bleed trading card illustrations side by side for the Starweave card game, each on its own tall portrait panel with a thin plain gap between them, no frames and no borders, each creature the same design as in the reference card sheet. Left panel: the celestial weaver floating in a web of constellations, her world filling the panel edge to edge. Right panel: the eclipse lion walking calmly across a ring of light. In each panel the creature's head and main shape sit in the upper half; the lower 40% is calm and simple, soft gradient night sky and halftone, no faces or detail there. Set palette: purple #8B5CF6 and gold #FFD21F, with ink #120A1F lines. Original designs, not resembling any existing franchise or trading card game. No text, no letters, no numbers, no signage.",
       "aspect": "4:3",
       "size": "1K",
       "refs": [
         "keyart",
         "star"
       ],
-      "raw": "card-trader/art/gemini/full-star.png",
+      "raw": "card-trader/art/gemini/full-star.jpg",
       "post": {
         "width": 1100,
         "to": "card-trader/builds/img/full-star.jpg",
@@ -95,13 +95,13 @@
     },
     {
       "key": "release",
-      "prompt": "2D cel-shaded game illustration in a street-graffiti style: thick clean ink outlines, flat bold color, halftone dots and spray-paint drips, a joyful sci-fi market station full of neon, snacks and card shops, warm overhead lamp light with cool starlight rim. Wide view of a small card shop stall's front on a busy market strip on launch morning, a long happy line of small customers snaking along the strip: snail-folk with pearly shells, four-armed beetle-folk in sneakers and floating fluffballs with huge eyes, some holding snacks, blank banners and blank bunting overhead, stacked blank product boxes in the window. The middle of the picture is open street floor, calm and simple. Palette: magenta #FF2E93, cyan #19D3F0, sun #FFD21F, violet #6A2BD9 and night #1B0E33 shadows, ink #120A1F lines. Original designs, not resembling any existing franchise or trading card game. No text, no letters, no numbers, no signage.",
+      "prompt": "Reference image 1 is a style guide only. Do NOT reproduce its composition, its camera angle or any of its characters; this is a completely different picture: match its ink line work, flat bold color, halftone and spray drips, but do not include, copy or reuse its scene, characters or background anywhere in the new image. 2D cel-shaded game illustration in a street-graffiti style: thick clean ink outlines, flat bold color, halftone dots and spray-paint drips, a joyful sci-fi market station full of neon, snacks and card shops, warm overhead lamp light with cool starlight rim. Eye-level wide view straight along the strip, looking at the front of one small card shop stall on the right side, with's front on a busy market strip on launch morning, a long happy line of small customers snaking along the strip: snail-folk with pearly shells, four-armed beetle-folk in sneakers and floating fluffballs with huge eyes, some holding snacks, blank banners and blank bunting overhead, stacked blank product boxes in the window. The middle of the picture is open street floor, calm and simple. Palette: magenta #FF2E93, cyan #19D3F0, sun #FFD21F, violet #6A2BD9 and night #1B0E33 shadows, ink #120A1F lines. Original designs, not resembling any existing franchise or trading card game. No text, no letters, no numbers, no signage.",
       "aspect": "16:9",
       "size": "2K",
       "refs": [
         "keyart"
       ],
-      "raw": "card-trader/art/gemini/release.png",
+      "raw": "card-trader/art/gemini/release.jpg",
       "post": {
         "width": 1280,
         "to": "card-trader/builds/img/release.jpg",
@@ -110,14 +110,14 @@
     },
     {
       "key": "auction",
-      "prompt": "2D cel-shaded game illustration in a street-graffiti style: thick clean ink outlines, flat bold color, halftone dots and spray-paint drips, a joyful sci-fi market station full of neon, snacks and card shops, warm overhead lamp light with cool starlight rim. A cargo dock at night, one big sturdy unlabeled cargo crate on a pallet under a single warm spotlight at the right of the picture, a small round auction podium at the left, docked ships glowing through the big windows behind, open dock floor in the middle, calm and empty, with room for two bidders to stand left and right. Palette: night #1B0E33 and violet #6A2BD9, orange #FF7A1A spotlight, cyan #19D3F0 window glow, ink #120A1F lines. Original designs, not resembling any existing franchise or trading card game. No text, no letters, no numbers, no signage.",
+      "prompt": "Reference image 1 is a style guide only: match its ink line work, flat bold color, halftone and spray drips, but do not include, copy or reuse its scene, characters or background anywhere in the new image. Reference image 2 shows our docking bay: borrow its station architecture only. 2D cel-shaded game illustration in a street-graffiti style: thick clean ink outlines, flat bold color, halftone dots and spray-paint drips, a joyful sci-fi market station full of neon, snacks and card shops, warm overhead lamp light with cool starlight rim. A cargo dock at night, one big sturdy unlabeled cargo crate on a pallet under a single warm spotlight at the right of the picture, a small round auction podium at the left, docked ships glowing through the big windows behind, open dock floor in the middle, calm and empty, with room for two bidders to stand left and right. Palette: night #1B0E33 and violet #6A2BD9, orange #FF7A1A spotlight, cyan #19D3F0 window glow, ink #120A1F lines. Original designs, not resembling any existing franchise or trading card game. No text, no letters, no numbers, no signage.",
       "aspect": "16:9",
       "size": "2K",
       "refs": [
         "keyart",
         "dock"
       ],
-      "raw": "card-trader/art/gemini/auction.png",
+      "raw": "card-trader/art/gemini/auction.jpg",
       "post": {
         "width": 1280,
         "to": "card-trader/builds/img/auction.jpg",
@@ -126,19 +126,20 @@
     },
     {
       "key": "tournament",
-      "prompt": "2D cel-shaded game illustration in a street-graffiti style: thick clean ink outlines, flat bold color, halftone dots and spray-paint drips, a joyful sci-fi market station full of neon, snacks and card shops, warm overhead lamp light with cool starlight rim. A cozy card shop after closing, set up for a tournament: long tables along the sides with small snail-folk, four-armed beetle-folk and fluffball players facing each other over play mats, cards flat on the mats, snacks and drinks, a raised prize stand at the back with an empty glass display case, string lights overhead, a calm open floor in the middle. Cards lie flat; nothing rises off them. Palette: violet #6A2BD9 and night #1B0E33, magenta #FF2E93 and lime #A6F01E neon, sun #FFD21F lamps, ink #120A1F lines. Original designs, not resembling any existing franchise or trading card game. No text, no letters, no numbers, no signage.",
+      "prompt": "Reference image 1 is a style guide only: match its ink line work, flat bold color, halftone and spray drips, but do not include, copy or reuse its scene, characters or background anywhere in the new image. Reference image 2 shows our Card Night party: borrow its shop interior only. 2D cel-shaded game illustration in a street-graffiti style: thick clean ink outlines, flat bold color, halftone dots and spray-paint drips, a joyful sci-fi market station full of neon, snacks and card shops, warm overhead lamp light with cool starlight rim. A cozy card shop after closing, set up for a tournament: long tables along the sides with small snail-folk, four-armed beetle-folk and fluffball players facing each other over play mats, cards flat on the mats, snacks and drinks, a raised prize stand at the back with an empty glass display case, string lights overhead, a calm open floor in the middle. Cards lie flat; nothing rises off them. Palette: violet #6A2BD9 and night #1B0E33, magenta #FF2E93 and lime #A6F01E neon, sun #FFD21F lamps, ink #120A1F lines. Original designs, not resembling any existing franchise or trading card game. No text, no letters, no numbers, no signage.",
       "aspect": "16:9",
       "size": "2K",
       "refs": [
         "keyart",
         "cardnight"
       ],
-      "raw": "card-trader/art/gemini/tournament.png",
+      "raw": "card-trader/art/gemini/tournament.jpg",
       "post": {
         "width": 1280,
         "to": "card-trader/builds/img/tournament.jpg",
         "quality": 82
       }
     }
-  ]
+  ],
+  "_reviews": "Nov 1: full-hive v1 had fake lettering on a sign (R1) and redone with a plain backdrop; release v1 copied the key art layout and redone. Both first tries discarded."
 }

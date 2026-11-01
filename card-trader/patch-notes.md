@@ -33,17 +33,16 @@ A full 5-day week where the market pushes back. The design is in `design/v2-desi
   - The upgrades cost 50/70/40.
 
 ### Next up
-- [ ] @Hunter: approve or edit the Lead Artist's v2 addendum (`art/lead-plan-v2.md`), so the Artist can make the 12 v2 paintings in `art/v2-shotlist.md`: 3 new characters, full-art and alt-art cards, and Release Day, Auction and Tournament scenes. Until then the game falls back to the v1 art.
+- [x] @Hunter: approve the Lead Artist's v2 addendum. All 12 v2 paintings are made: 4 in Canva (the 3 new characters and the Shellstorm full-arts), 8 with Gemini through the new `kit/art/gemini.py` for about $0.72 total. (Hunter with Claude, 2026-11-01)
 - [ ] @Hunter @Zach @Joe: play the full week. Pass bar: you finish and want to try a different strategy.
 - [ ] Tune with real players: the auction rivals' caps, Bulk Dig gem odds, and Tournament entrant counts.
 
 ### Watch out
 - [ ] Upgrades are now worth about +28 points in the sim (they were about +23). Watch whether humans buy them, and when.
 - [ ] Careful bots still end with a small tab in about 20% of runs, from holding stock instead of cash at the end. It's a liquidity choice, but it may feel harsh. Rank thresholds are 150/500/1000/1800.
-- [ ] Full-art and alt-art cards show the v1 sheets until `full-*.jpg` and `cards-*-alt.jpg` exist. They're layered as CSS fallbacks.
-- [ ] The new characters (Skrimp, Quill, the Hype Bros) show an initial instead of a portrait until Batch A of the shot list is made.
 - [ ] Bots don't play the pump on purpose (careful bots just avoid buying it), and they never use the translator. Human results will differ.
 - [ ] Our variant marks (the RUN 1 sticker, starburst promo crests, set symbols) are original shapes. Have the legal reviewer confirm none echo real card games' marks (Lead Artist risk 2).
+- [ ] Gemini images: gemini.py's first try pasted the reference key art into the background (fixed: every prompt now says reference 1 is a style guide only). Two first tries were discarded (fake lettering on a sign; a copy of the key art layout). Release Day's stall has two letter-like graffiti tags, covered by UI. Check Gemini's commercial terms with the legal reviewer.
 - [ ] Tested in headless Chromium and the browser pane only.
 
 ## v1 · 2026-10-31 · Hunter (with Claude): three playable station days

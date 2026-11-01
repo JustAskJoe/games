@@ -16,7 +16,7 @@ Job file (JSON):
     "jobs": [{
       "key": "full-hive", "prompt": "...", "aspect": "4:3", "size": "1K",
       "refs": ["keyart", "hive"],                                             # anchor names, sent in this order
-      "raw": "card-trader/art/gemini/full-hive.png",                          # untouched model output (kept, for R13)
+      "raw": "card-trader/art/gemini/full-hive.jpg",                          # untouched model output (kept locally, git-ignored)
       "post": {"to": "card-trader/builds/img/full-hive.jpg", "width": 1100, "crop": [0, 0, 1, 1], "quality": 82}
     }]
   }
@@ -78,7 +78,7 @@ def generate(job, refs, model, api, key):
     if api == 'interactions':
         blocks = [{'type': 'text', 'text': job['prompt']}] + [{'type': 'image', 'mime_type': m, 'data': d} for m, d in refs]
         body = {'model': model, 'input': blocks,
-                'response_format': {'type': 'image', 'mime_type': 'image/png', 'aspect_ratio': job.get('aspect', '1:1'), 'image_size': job.get('size', '1K')}}
+                'response_format': {'type': 'image', 'mime_type': 'image/jpeg', 'aspect_ratio': job.get('aspect', '1:1'), 'image_size': job.get('size', '1K')}}
         resp = post(f'{API}/interactions', body, key)
     else:
         parts = [{'text': job['prompt']}] + [{'inline_data': {'mime_type': m, 'data': d}} for m, d in refs]

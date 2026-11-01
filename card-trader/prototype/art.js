@@ -64,10 +64,12 @@ function cardHTML(c, o) {
   const off = (10 - c.cen) * 1.3 * ((h & 1) ? 1 : -1);
   const vars = `--fr:${F.fr};--fr2:${F.fr2};--l:${7 + off}%;--r:${7 - off}%;`;
   const pos = `${q % 2 ? 100 : 0}% ${q > 1 ? 100 : 0}%`, base = `url(img/cards-${tm.game}.jpg)`;
-  const hue = Math.floor(tm.idx / 4) * 38 + (v.err === 'ink' ? 160 : 0);
+  // the shared base sheets get a per-card tint for variety; full-art and alt-art paintings are bespoke, so they keep their colors
+  const hue = (v.fin === 'full' || v.fin === 'alt' ? 0 : Math.floor(tm.idx / 4) * 38) + (v.err === 'ink' ? 160 : 0);
   let layers = base, sizes = '200% 200%', poss = pos;
   if (v.fin === 'alt') { layers = `url(img/cards-${tm.game}-alt.jpg), ${base}`; sizes = '200% 200%, 200% 200%'; poss = `${pos}, ${q % 2 ? 0 : 100}% ${q > 1 ? 0 : 100}%`; }
-  if (v.fin === 'full') { layers = `url(img/full-${tm.game}.jpg), ${base}`; sizes = '200% 100%, 220% 220%'; poss = `${tm.idx % 2 ? 100 : 0}% 50%, ${pos}`; }
+  // full-art pairs are two portrait panels side by side; zoom in a little so the gutter and outer edge never show
+  if (v.fin === 'full') { layers = `url(img/full-${tm.game}.jpg), ${base}`; sizes = '216% auto, 220% 220%'; poss = `${tm.idx % 2 ? 96 : 4}% 40%, ${pos}`; }
   const art = `background-image:${layers};background-size:${sizes};background-position:${poss};filter:hue-rotate(${hue}deg)${tm.rarity === 'g' ? ' saturate(1.5) contrast(1.15)' : ''};`;
   const name = o.readable ? `<span>${tm.name}</span>` : scriptSVG(CT.GAMES[tm.game].script, tm.name);
   const gem = o.readable ? GEM[tm.rarity] : ['#ddd', '?'];
