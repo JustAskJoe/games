@@ -88,3 +88,13 @@ Canva media ids for the Spades set: hand MAHYMHx42ek, dusk MAHYMBHel9c, court MA
 **Art reference Hunter picked (2026-10-19):** a hand-painted fantasy cottage illustration by Jourdan Tuffan (2019): ink linework with painterly flat shading, teal-green slate roofs, warm brown timber, cream plaster, mossy ivy, dusty-rose sky. Inspiration only; never copy, trace or reproduce it. Draft palette pulled from it for the prototype: roof teal #4E8F86, timber #6B4226, plaster #F1E4CC, moss #6E9A4C, sky #D9C9C0, ink #3A2518.
 - Candidate style lead C (the middle path): "Hand-painted fantasy concept art, confident ink linework over painterly flat color, storybook warmth with real atmosphere, teal slate roofs, warm timber and cream plaster, mossy greens, soft dusty-rose sky, readable chunky silhouettes."
 - Generated in style lead C (2026-10-19), 1680×944 in Canva, thumbnails only so far: cover scene `td-cover` MAHYboDFmaI (keep on a hill, road lined with towers, horde in the distance) and tower lineup `td-towers` MAHYbg0LcY4 (archer, cannon, lightning spire, frost crystal). Reviewed from thumbnails: clean, no text. Fetch full-res through the browser pane before using in the deck.
+
+## Gemini (Nano Banana): finals at volume
+Canva throttles bursts: about one image every 10 to 30 minutes once a session gets busy (Card Trader v2, Nov 2026). For a shot list of more than a few images, use `kit/art/gemini.py`:
+
+1. **One-time setup (the owner, never Claude):** claim the Google AI subscription's Cloud credits, make an API key in Google AI Studio, and set a budget alert at the credit amount. Store the key as `GEMINI_API_KEY` in your machine's environment. On Windows, run `setx GEMINI_API_KEY "<key>"`, then restart the Claude app and terminals. **Never commit it: the repo is public.**
+2. **Write a job file** from the approved shot list (Card Trader's is `card-trader/art/v2-gemini-jobs.json`): prompts verbatim, anchors as local image files, an aspect and size per job, and a finishing step (crop, width, JPEG or WebP).
+3. **Dry-run first:** `python3 kit/art/gemini.py <jobs.json> --dry-run`. It checks every anchor and prints the cost estimate. Then run it without `--dry-run`.
+4. **Review every image** (R1 text, R12 hands and faces, R17 look-alikes). Then add rows to the game's `design/ai-assets.md` from `gemini-log.jsonl` (the prompt, refs, model and time of every call). Raw outputs (JPEG) stay in `<game>/art/gemini/` and are git-ignored; finished images go in `builds/img/`.
+
+Defaults: `gemini-3.1-flash-image` (Nano Banana 2, about $0.067 a 1K image, $0.101 at 2K); `--model gemini-3-pro-image` for hero art. Up to 14 reference images per call. Check Gemini's terms for commercial use with the legal reviewer before anything ships in a sold game.

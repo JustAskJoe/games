@@ -6,6 +6,45 @@ Newest on top. See the repo's CLAUDE.md for how patch notes work.
 
 ---
 
+## v2 · 2026-11-01 · Hunter (with Claude): "the market fights back"
+A full 5-day week where the market pushes back. The design is in `design/v2-design.md`; the Lead Artist's v2 art plan is in `art/lead-plan-v2.md` (draft) with a shot list in `art/v2-shotlist.md`.
+
+### What's new
+- **5 days:** Reef Run, Hive Swarm, Star Drift, The Rumor and Wave 3 Release Day. 39 customer visits. Rent 40/70/90/120/150.
+- **Every week is different, and day 1 is still the tutorial.** Day 1 keeps its fixed customers and order. Days 2–5 keep their signature visitors (Skrimp, Quill, the Hype Bros) and draw the rest from a pool, always with at least 2 sellers, 2 buyers and a pack buyer. Demand moves by up to ±0.15, the ships that dock follow the hot games, and after night 1 the two flyers are random (never last night's pick). Everything is seeded, so saves replay the same week.
+- **Card variants**, all drawn in code: mirror foil, full-art, alt-art, First Run stamps, vintage and reprint set symbols, serial numbers (#1/50 is worth ×10), misprints that look like damage, and signed cards. Each species has its own tastes: Puffi like full and alt art, Mollu like First Runs and vintage, Zekk like serials and misprints.
+- **Promo opportunities:** dock promos from docking ships, box toppers when you restock tomorrow's hottest game, 2 promos from Card Night, 2 from a Tournament, and release promos on day 5.
+- **After Hours:** each night you pick 1 of 2 flyers: Card Night, Tournament Night, Dock Auction (bid against Sheelo and Klik), Bulk Dig (16 face-down cards, 6 flips, read the glints), or Swap Meet (three 1-for-1 trades).
+- **Bad actors:**
+  - Skrimp the scalper (days 3 and 5), countered by a "Limit 2" sign.
+  - Quill of the Glyphsmiths, whose ring fakes pass the basic UV lamp.
+  - The Hype Bros' pump on day 4: the card is ×1.8 that day, then reprinted and ×0.5 from day 5. The close-up report shows the reprint list.
+- **Loupe upgrades** (bought at close):
+  - Print Lens: set symbols, misprints, verified serials.
+  - Spectrometer: catches ring fakes.
+  - Steady Hands: the first tool on each card is free.
+- **Customers react** in code: they slide in, shake when insulted, bob when they counter, and get a DEAL or WALKED stamp as they leave.
+- **Saves** move to new v2 slots. v1 saves are left alone.
+- **Balance pass** (200 random weeks): careful +241% median, careful without upgrades +213%, sloppy −45%. Careful beats sloppy in 96% of runs. Careful ranks now spread from Corner Stall (7%) to Legend of the Lanes (11%).
+  - Promos are weaker (×1.4–2.0) and box toppers rarer (35%).
+  - Misprints are commoner (6% of old cards) and worth ×3.
+  - Buyers pay for a misprint or a vintage print only if you prove it with the **Print Lens**.
+  - Ring fakes show up more from day 3.
+  - The upgrades cost 50/70/40.
+
+### Next up
+- [x] @Hunter: approve the Lead Artist's v2 addendum. All 12 v2 paintings are made: 4 in Canva (the 3 new characters and the Shellstorm full-arts), 8 with Gemini through the new `kit/art/gemini.py` for about $0.72 total. (Hunter with Claude, 2026-11-01)
+- [ ] @Hunter @Zach @Joe: play the full week. Pass bar: you finish and want to try a different strategy.
+- [ ] Tune with real players: the auction rivals' caps, Bulk Dig gem odds, and Tournament entrant counts.
+
+### Watch out
+- [ ] Upgrades are now worth about +28 points in the sim (they were about +23). Watch whether humans buy them, and when.
+- [ ] Careful bots still end with a small tab in about 20% of runs, from holding stock instead of cash at the end. It's a liquidity choice, but it may feel harsh. Rank thresholds are 150/500/1000/1800.
+- [ ] Bots don't play the pump on purpose (careful bots just avoid buying it), and they never use the translator. Human results will differ.
+- [ ] Our variant marks (the RUN 1 sticker, starburst promo crests, set symbols) are original shapes. Have the legal reviewer confirm none echo real card games' marks (Lead Artist risk 2).
+- [ ] Gemini images: gemini.py's first try pasted the reference key art into the background (fixed: every prompt now says reference 1 is a style guide only). Two first tries were discarded (fake lettering on a sign; a copy of the key art layout). Release Day's stall has two letter-like graffiti tags, covered by UI. Check Gemini's commercial terms with the legal reviewer.
+- [ ] Tested in headless Chromium and the browser pane only.
+
 ## v1 · 2026-10-31 · Hunter (with Claude): three playable station days
 The first playable build: 3 station days at Stall 7 on Crosslane Market, desktop landscape, in a cel-shaded street-graffiti look. Design in `design/v1-design.md`, decisions in `design/handoff.md`.
 

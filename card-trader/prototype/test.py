@@ -11,11 +11,11 @@ errs = []
 # A small in-page bot that plays whatever is on screen through the UI's own buttons, so every screen gets drawn.
 BOT = """() => {
   const G = CTUI.G, q = s => document.querySelector(s), click = s => { const e = q(s); if (e && !e.disabled) { e.click(); return true; } return false; };
-  if (G.phase === 'title') return click('[data-act=start]');
   if (G.phase === 'morning') return click('[data-act=open]');
   if (G.phase === 'shop') { if (G.packs.star > 2) return click('[data-act=crack][data-game=star]'); return click('[data-act=next]'); }
   if (G.phase === 'visit') {
     const v = G.visit;
+    if (v.role === 'scalp') return click('[data-act=pass]');
     if (v.cards.length) {
       const c = v.cards.find(c => !c.know.uv);
       if (c && v.patience > 4) { q('#mat .card[data-uid="' + c.uid + '"]').click(); click('[data-tool=uv]'); click('[data-tool=loupe]'); return click('[data-act=closeLoupe]'); }
@@ -26,8 +26,19 @@ BOT = """() => {
     if (!v.showing) return click('[data-act=show]') || click('[data-act=pass]');
     return click('[data-act=accept]');
   }
-  if (G.phase === 'close') { click('[data-act=grade][data-co=halo]'); return click('[data-act=endDay]'); }
-  if (G.phase === 'cardnight') { if (!G.events.some(e => e.t === 'cardNight')) return click('[data-act=rip]'); return click('[data-act=nextMorning]'); }
+  if (G.phase === 'close') { click('[data-act=grade][data-co=halo]'); if (G.dayIdx === 0) click('[data-act=upgrade][data-k=lens]'); if (G.dayIdx === 1) click('[data-act=policy]'); return click('[data-act=endDay]'); }
+  if (G.phase === 'night') {
+    const N = G.night;
+    if (!N.pick) { for (const b of document.querySelectorAll('[data-act=pickNight]')) { b.click(); if (CTUI.G.night && CTUI.G.night.pick) return true; } return click('[data-act=nextMorning]'); }
+    if (!N.done) {
+      if (N.pick === 'cardnight') return click('[data-act=rip]');
+      if (N.pick === 'tourney') { click('[data-act=tourPrize]'); return click('[data-act=hostTourney]'); }
+      if (N.pick === 'auction') return N.auc.price < 40 ? click('[data-act=bid]') || click('[data-act=drop]') : click('[data-act=drop]');
+      if (N.pick === 'dig') return click('[data-act=dig]');
+      if (N.pick === 'swap') return click('[data-act=swapYes]') || click('[data-act=swapNo]') || click('[data-act=nextMorning]');
+    }
+    return click('[data-act=nextMorning]');
+  }
   return false;
 }"""
 
@@ -56,7 +67,7 @@ with sync_playwright() as p:
             pg.click('[data-act=fe-menu]'); pg.wait_for_timeout(200); pg.screenshot(path=str(shots / 'f5_pause.png')); pg.click('[data-act=fe-resume]')
         ph = pg.evaluate('CTUI.G.phase')
         if ph == 'end': break
-        key = ph + str(pg.evaluate('CTUI.G.dayIdx'))
+        key = ph + str(pg.evaluate('CTUI.G.dayIdx')) + (('_' + str(pg.evaluate('CTUI.G.night && CTUI.G.night.pick'))) if ph == 'night' else '')
         if key not in seen:
             seen.add(key); pg.wait_for_timeout(250); pg.screenshot(path=str(shots / f'd2_{key}.png'))
         if ph == 'visit' and 'loupe' not in seen and pg.evaluate('CTUI.G.visit.cards.length') > 0:

@@ -1,0 +1,51 @@
+/* v2 styles: card prints (mirror foil, full-art, alt-art, stamps, serials, signatures, set symbols), After Hours screens,
+   Loupe upgrades, the Limit 2 toggle, rumor chips and customer reactions. Folded into the build by build.py.
+   © 2026 justaskjoe. All rights reserved. */
+/* prints */
+.card .mirrorfoil { position: absolute; inset: 0; pointer-events: none; z-index: 1; mix-blend-mode: color-dodge; opacity: .5;
+  background: linear-gradient(125deg, transparent 15%, #9ff 30%, #f9f 42%, #ff9 54%, transparent 70%); background-size: 260% 260%; animation: sheen 4s linear infinite;
+  -webkit-mask: linear-gradient(#000 0 0) top/100% 6% no-repeat, linear-gradient(#000 0 0) bottom/100% 38% no-repeat, linear-gradient(#000 0 0) left/7% 100% no-repeat, linear-gradient(#000 0 0) right/7% 100% no-repeat;
+          mask: linear-gradient(#000 0 0) top/100% 6% no-repeat, linear-gradient(#000 0 0) bottom/100% 38% no-repeat, linear-gradient(#000 0 0) left/7% 100% no-repeat, linear-gradient(#000 0 0) right/7% 100% no-repeat; }
+.card.fullart .art { top: 0; left: 0; right: 0; height: 100%; border: 0; border-radius: 0; }
+.card.fullart .name { background: rgba(255,255,255,.78); }
+.card.altart .art { outline: 3px solid #FFD21F; outline-offset: -3px; }
+.card.altart::after { content: 'ALT'; position: absolute; left: 8%; top: 8%; z-index: 2; font-family: var(--display); font-size: calc(var(--w) * .07); background: #FFD21F; border: 1.5px solid var(--ink); border-radius: 4px; padding: 0 3px; }
+.card .promo { position: absolute; left: 6%; top: 6%; z-index: 2; width: 19%; aspect-ratio: 1; display: grid; place-items: center; font-family: var(--display); font-size: calc(var(--w) * .085); color: var(--ink);
+  background: var(--pc); clip-path: polygon(50% 0, 61% 30%, 95% 25%, 72% 52%, 90% 85%, 56% 72%, 50% 100%, 42% 72%, 8% 85%, 28% 52%, 5% 25%, 39% 30%); }
+.card.altart .promo { top: 16%; }
+.card .first { position: absolute; right: 27%; bottom: 5.5%; z-index: 2; font-family: var(--display); font-size: calc(var(--w) * .052); background: var(--ink); color: #FFD21F; padding: 1px 4px; border-radius: 3px; transform: rotate(-6deg); }
+.card .serial { position: absolute; left: 6%; bottom: 14%; z-index: 2; font-family: var(--display); font-size: calc(var(--w) * .062); color: #FFD21F; text-shadow: 1px 1px 0 var(--ink), 0 0 4px #fff7; }
+.card .sig { position: absolute; left: 20%; top: 46%; width: 60%; z-index: 2; opacity: .85; }
+.card .setsym { position: absolute; right: 6%; top: 63.5%; z-index: 2; font-size: calc(var(--w) * .07); color: var(--ink); line-height: 1; }
+/* rumor */
+.chip.rumor { background: #FFD21F; } .chip.rumor.down { background: var(--coral); color: #fff; }
+/* close: upgrades */
+.ups { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.up { display: flex; flex-direction: column; gap: 2px; text-align: left; border: 2.5px solid var(--ink); border-radius: 10px; padding: 6px 8px; background: #fff; cursor: pointer; box-shadow: 3px 3px 0 var(--ink); font: inherit; color: var(--ink); }
+.up b { font-family: var(--display); font-weight: 400; font-size: 13px; } .up span { font-weight: 800; color: var(--magenta); } .up small { font-size: 10.5px; line-height: 1.2; opacity: .75; }
+.up.owned { background: var(--lime); } .up.owned span { color: var(--ink); }
+.up:disabled { cursor: default; } .up:not(.owned):disabled { opacity: .5; }
+/* After Hours */
+.flyers { position: absolute; left: 0; right: 0; top: 170px; display: flex; justify-content: center; gap: 50px; z-index: 5; }
+.flyer { width: 420px; min-height: 300px; background: var(--paper); border: 4px solid var(--ink); border-radius: 14px; box-shadow: 8px 8px 0 var(--ink); padding: 22px; display: flex; flex-direction: column; gap: 12px;
+  transform: rotate(var(--tilt)); animation: slotIn .45s cubic-bezier(.2,1.4,.4,1) both; }
+.flyer p { margin: 0; font-size: 17px; line-height: 1.4; flex: 1; }
+.flyer::before { content: ''; position: absolute; left: 50%; top: -12px; width: 26px; height: 26px; margin-left: -13px; border-radius: 50%; background: var(--magenta); border: 3px solid var(--ink); }
+.panel.night { z-index: 6; }
+.crate { width: 130px; height: 110px; display: grid; place-items: center; font-size: 64px; background: repeating-linear-gradient(90deg, #b07a3c 0 18px, #9a6630 18px 22px); border: 4px solid var(--ink); border-radius: 8px; box-shadow: 5px 5px 0 var(--ink); }
+.crate.open { background: radial-gradient(circle, #fff7b0, #FFD21F 60%, #b07a3c 61%); animation: pop .5s both; }
+.dig { display: grid; grid-template-columns: repeat(8, 1fr); gap: 10px; margin-top: 10px; justify-items: center; }
+.digback { width: 74px; aspect-ratio: 5/7; border: 3px solid var(--ink); border-radius: 6px; box-shadow: 3px 3px 0 var(--ink); cursor: pointer; font-size: 24px;
+  background: radial-gradient(circle at 50% 40%, #fff3 0 20%, transparent 21%), repeating-linear-gradient(45deg, var(--gc) 0 6px, #0002 6px 12px); transition: transform .1s; }
+.digback:hover:not(:disabled) { transform: translateY(-5px) rotate(-3deg); }
+.digback:disabled { opacity: .5; cursor: default; }
+.swaprow { display: grid; grid-template-columns: 90px 110px 40px 110px 1fr; align-items: center; gap: 14px; padding: 8px 0; border-bottom: 2px dashed rgba(18,10,31,.2); }
+.portrait.mini { height: 90px; width: 90px; } .portrait.mini .nameplate { font-size: 12px; padding: 2px 6px; } .portrait.mini .sp { display: none; } .portrait.mini .fallback-face { font-size: 44px; }
+/* customer reactions (code stand-ins until expression art exists) */
+.portrait.enter { animation: custIn .4s cubic-bezier(.2,1.3,.4,1) both; }
+@keyframes custIn { from { transform: translateX(-60px) rotate(-6deg); opacity: 0; } to { transform: none; opacity: 1; } }
+.portrait.shake { animation: shakeP .45s; } @keyframes shakeP { 20%, 60% { transform: translateX(-10px) rotate(-3deg); } 40%, 80% { transform: translateX(10px) rotate(3deg); } }
+.portrait.bob .pic { animation: bob .45s ease-out; } @keyframes bob { 40% { transform: translateY(-10px) scaleY(1.04); } }
+.portrait.wobble .pic { animation: wob .5s ease-in-out; }
+.lastvisit { display: flex; align-items: center; gap: 10px; animation: pop .35s both; }
+.lastvisit.walk .portrait { filter: grayscale(.7); }
