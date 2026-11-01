@@ -11,12 +11,13 @@ errs = []
 # A small in-page bot that plays whatever is on screen through the UI's own buttons, so every screen gets drawn.
 BOT = """() => {
   const G = CTUI.G, q = s => document.querySelector(s), click = s => { const e = [...document.querySelectorAll(s)].find(e => !e.disabled); if (e) { e.click(); return true; } return false; };
+  if (G.phase === 'title') return click('[data-act=intro]');
   if (G.phase === 'morning') {
     // v3 rev 2: each morning, unpack in the back, open a box, put loose packs on the rack, then stock the case on the floor
     if (window._rd !== G.dayIdx) {
       const st = window._rs || 0;
-      if (st === 0) { window._rs = 1; return click('#hud [data-act=room]'); }
-      if (st === 1) { if (CTUI.room !== 'back') return click('[data-act=roomView][data-v=back]'); if (G.store.crate) return click('[data-act=unpack]');
+      if (st === 0) { window._rs = 1; return CTUI.room ? true : click('#hud [data-act=room]'); }
+      if (st === 1) { if (!CTUI.room) return click('#hud [data-act=room]'); if (CTUI.room !== 'back') return click('[data-act=roomView][data-v=back]'); if (G.store.crate && G.store.crateOpened !== G.dayIdx) return click('[data-act=unpack]');
         const box = G.goods.find(o => o.type === 'box' && o.loc === 'shelf'); window._rs = 2;
         if (box) { click('.good[data-uid="' + box.uid + '"]'); return click('[data-act=openGood]'); } return true; }
       if (st === 2) { window._rs = 3; const g = ['shell', 'hive', 'star'].find(g => G.store.backPacks[g] > 0); if (g) { click('.looseP[data-game=' + g + '][data-f=shelf]'); return click('[data-act=movePacks][data-n]:not([data-n="1"])'); } return true; }
@@ -27,7 +28,17 @@ BOT = """() => {
       if (G.dayIdx === 1) click('[data-act=pol][data-k=penny][data-d="1"]');
       window._rd = G.dayIdx; window._rs = 0; return true;
     }
-    if (CTUI.room) return click('#room [data-act=room]');
+    // day 1: finish setting out the floor (3 in the case, 4 in the counter binder, 3 on the rack) through the engine
+    if (CT.openChecklist(G).some(x => !x.done)) {
+      if (G.store.crate) CT.act(G, { t: 'unpack' });
+      for (const g of ['shell', 'hive', 'star']) if (G.store.backPacks[g]) CT.act(G, { t: 'movePacks', game: g, n: G.store.backPacks[g], to: 'rack' });
+      for (const c of G.stock.filter(c => !CT.isFloor(c.loc) && !c.know.fake && !c.graded)) {
+        if (CT.onGrid(G, 'case').length < 3) { if (c.prot !== 'hard' && c.prot !== 'mag') CT.act(G, { t: 'sleeve', uid: c.uid, prot: 'hard' }); CT.act(G, { t: 'place', uid: c.uid, to: 'case' }); }
+        else if (CT.where(G, 'cbinder').length < 4) { if (!c.prot || c.prot === 'none') CT.act(G, { t: 'sleeve', uid: c.uid, prot: 'penny' }); CT.act(G, { t: 'place', uid: c.uid, to: 'cbinder' }); }
+      }
+      CTUI.render(); return true;
+    }
+    if (CTUI.room) return click('#room [data-act=openFromRoom]') || click('#room [data-act=room]');
     return click('[data-act=open]');
   }
   if (G.phase === 'shop') { if (G.packs.star > 2) return click('[data-act=crack][data-game=star]'); return click('[data-act=next]'); }
@@ -53,7 +64,7 @@ BOT = """() => {
     if (!v.showing) return click('[data-act=show]') || click('[data-act=pass]');
     return click('[data-act=accept]');
   }
-  if (G.phase === 'close' && G.dayIdx === 0 && !G.store.up.lock) { if (!CTUI.catalog) return click('[data-act=catalog]'); click('[data-act=unlock][data-k=lock]'); click('[data-act=order][data-item=poster]'); return click('#loupe [data-act=catalog]'); }
+  if (G.phase === 'close' && G.dayIdx === 0 && !window._cat) { if (!CTUI.catalog) return click('[data-act=catalog]'); window._cat = 1; click('[data-act=unlock][data-k=lock]'); click('[data-act=order][data-item=poster]'); return click('#loupe [data-act=catalog]'); }
   if (G.phase === 'close' && G.dayIdx === 2 && !CTUI.board && !window._bd) { window._bd = 1; return click('#hud [data-act=board]'); }
   if (CTUI.board) return click('#loupe [data-act=board]');
   if (G.phase === 'close') { click('[data-act=grade][data-co=halo]'); if (G.dayIdx === 0) click('[data-act=upgrade][data-k=lens]'); if (G.dayIdx === 1) click('[data-act=policy]'); return click('[data-act=endDay]'); }
@@ -83,7 +94,7 @@ with sync_playwright() as p:
     pg.click('[data-act=fe-press]'); pg.wait_for_timeout(700); pg.screenshot(path=str(shots / 'f2_title.png'))
     pg.click('[data-act=fe-settings]'); pg.wait_for_timeout(300); pg.screenshot(path=str(shots / 'f3_settings.png')); pg.click('[data-act=fe-title]')
     pg.click('[data-act=fe-slots]'); pg.wait_for_timeout(700); pg.screenshot(path=str(shots / 'f4_slots.png'))
-    pg.click('[data-act=fe-new][data-slot="1"]'); pg.wait_for_timeout(300)
+    pg.click('[data-act=fe-new][data-slot="1"]'); pg.wait_for_timeout(300); pg.screenshot(path=str(shots / 'f6_intro.png'))
     seen, n, reloaded = set(), 0, False
     while n < 2400:
         # once, at the start of day 2: reload the page and continue slot 1, and check the run came back

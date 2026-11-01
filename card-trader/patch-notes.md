@@ -6,6 +6,53 @@ Newest on top. See the repo's CLAUDE.md for how patch notes work.
 
 ---
 
+## v3 rev 2.1 · 2026-11-01 · Hunter (with Claude): a new shop, setup before you open, the floor at the counter, the card generator
+Fixes from Hunter's playtest: the grid has to feed the day. It's set up before you open and used while you sell.
+
+### What's new
+- **A brand-new shop.** You start unrated, with no customers yet. Three questions decide your opening crate:
+  - your focus: singles, sealed or vintage hunter
+  - how you split your savings: mostly cash, balanced or mostly stock
+  - the game you grew up on, whose script you can read from day 1
+
+  Every combination starts at about the same value (530–555₵). Only the mix changes.
+- **Set up before you open.** On day 1, OPEN SHOP stays locked until you've unpacked the crate and put 3+ things in the case, 4+ cards in the counter binder and 3+ packs or sealed on the rack. The checklist shows in the morning, on the floor and in DJ Vee's line. On later mornings you open the crate first.
+- **The floor at the counter.** When a buyer is at the counter, your case, rack and counter binder show as small grids, and what fits their want lights up: tap it to show it. The **back drawer** holds everything else; each trip back costs patience, and some people send you back there on purpose.
+- **The card generator is plugged in** (`kit/cardgen`, PR #67): about 1,300 cards per game across vintage, mid and modern sets, with printings per era. That means first runs, early prints and misprints in vintage; reverse foils, star chases and the first full-arts in the mid era; and alt-art, illustrations, rainbow and gold in modern.
+  - Prices, sealed product, vintage drops (1–3 a run) and the modern reprint waves all come from it. Each game now has its own reprinted set and its own never-reprinted set.
+  - It prices like the real hobby: most modern singles are near bulk, and the money is in hits and vintage.
+- **Unrated start:** reviews pile up each day and the stars settle; early days swing hard.
+- **Rebalance on the generator economy:** rent is now 30 to 120 over the 10 days (it was 40 to 170), and an unlocked case gets hit 60% of nights from day 3.
+
+  | Bot | Median gain | Notes |
+  |---|---|---|
+  | careful | +222% | |
+  | careful without Loupe upgrades | +162% | |
+  | lazy | +99% | |
+  | greedy | +127% | 7% lost to theft |
+  | naive | +111% | 26% lost to theft |
+  | paranoid | +50% | rating about 2.1★ |
+
+  Careful beats sloppy 97% of the time. Every `build-and-test.py` band passes.
+- **Fixes:**
+  - The catalog crashed on the old wave names, which also stopped the stock room drawing.
+  - A generator price curve could go negative late in the run; it's now clamped in `kit/cardgen` and the tool page was rebuilt.
+  - The opening crate list showed "1 × packs" instead of the real count.
+  - In the morning, the back view now shows OPEN SHOP.
+
+### Next up
+- [ ] @Hunter: playtest the opening and day 1 setup, and sell a few cards from the floor at the counter. Does the grid feel part of selling now?
+- [ ] The Balance agent's first report on this build (session "Card Trader v3: first Balance agent report"), then any tuning it suggests.
+- [ ] PR #68 (Balance agent) needs a second teammate to approve it.
+
+### Watch out
+- [ ] On the counter floor, case cards are drawn very small (about 32 px). They're readable as lit or dim, not as card names. Check on a real screen.
+- [ ] Modern singles are mostly worth 1–3₵ now, so case tags look tiny early on. That's realistic, but check it doesn't feel pointless to stock the case on day 1.
+- [ ] The opening crate can't hold vintage sealed: a vintage pack is worth about 1,000₵. Vintage hunters get vintage singles instead.
+- [ ] Opening the generator for each run takes about 80 ms. It's fine in the browser; the 1,400-run sim is about a minute slower.
+
+---
+
 ## v3 rev 2 · 2026-11-01 · Hunter (with Claude): "the Back Room", part of the selling day
 After the first playtest, Hunter widened v3 (`design/v3-design.md`, rev 2). Your stock is now part of how you sell. Art is still placeholder, drawn in code ($0). It replaces the rev 1 build below.
 

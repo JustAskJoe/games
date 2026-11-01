@@ -401,11 +401,1035 @@ body.calm .bg.pan, body.calm .marquee .track, body.calm .logo .sweep { animation
 #room .zone[data-drop=safe] .tray .it .tiny, #room .zone[data-drop=inbox] .tray .it .tiny { transform: scale(.52); width: 40px; height: 60px; }
 #room .zone[data-drop=safe] .tray .pchip, #room .zone[data-drop=inbox] .tray .pchip { display: none; }
 #room .zone[data-drop=safe] .h, #room .zone[data-drop=inbox] .h { font-size: 14px; }
+
+/* opening questions, the setup checklist, the floor at the counter */
+.introopt { flex: 1; display: flex; flex-direction: column; gap: 8px; text-align: left; padding: 16px; border: var(--ol); border-radius: 14px; background: #fff; box-shadow: 5px 5px 0 var(--ink); cursor: pointer; border-top: 10px solid var(--gc, var(--magenta)); font: inherit; color: var(--ink); }
+.introopt:hover { transform: translate(-2px, -2px) rotate(-1deg); }
+.introopt b { font-family: var(--display); font-size: 22px; }
+.introopt span { font-size: 14px; }
+.check { font-size: 15px; font-weight: 800; padding: 3px 0; }
+.check.done { opacity: .6; text-decoration: line-through; }
+#cfloor { position: absolute; left: 360px; top: 300px; width: 548px; height: 300px; padding: 8px 10px; z-index: 4; overflow: hidden; }
+.lbl2 { font-family: var(--display); font-size: 11px; margin-bottom: 2px; }
+.cgrid { position: relative; border: 2.5px solid var(--ink); border-radius: 6px; background: linear-gradient(160deg, rgba(180,240,255,.6), rgba(255,255,255,.4)); }
+.cgrid .cpk { position: absolute; left: 4px; bottom: 4px; font-size: 10px; padding: 0 6px; }
+.mini { position: relative; display: inline-block; border-radius: 6px; }
+.mini.fit { cursor: pointer; outline: 3px solid var(--lime); outline-offset: -1px; box-shadow: 0 0 10px var(--lime); }
+.mini.dim { opacity: .35; filter: grayscale(.6); }
+.mini .tiny2 { transform: scale(.42); transform-origin: top left; width: 32px; height: 44px; }
+.mini .tiny2 .card:hover { transform: none; }
+.cbind { display: flex; flex-wrap: wrap; gap: 3px; max-height: 230px; overflow: hidden; }
+.cbind .mini { width: 32px; height: 44px; }
+.drawer { display: flex; flex-wrap: wrap; gap: 5px; max-height: 250px; overflow: hidden; }
+.drawer .mini { width: 46px; min-height: 44px; }
+.drawer .mini .fetch { position: absolute; right: -4px; top: -6px; font-size: 10px; font-weight: 800; background: var(--sun); border: 1.5px solid var(--ink); border-radius: 6px; padding: 0 3px; z-index: 3; }
 </style>
 </head>
 <body>
 <div id="wrap"><div id="stage" aria-live="polite"></div></div>
 <div class="owner">© 2026 justaskjoe. All rights reserved.</div>
+<script>
+// CardGen · a seeded collectible-card universe generator for any studio game with cards.
+// Pure and browser-safe: no DOM, no node-only APIs. A plain <script> sets the global CardGen; in node it's a CommonJS module.
+// Everything game-specific lives in a profile (JSON): factions and their name banks, eras and the variant tiers
+// each adds, the rarity ladder, set sizes, printings, sealed products, the economy curve and the hobby statistics.
+//   const P = CardGen.load(profile, stats)   // merges + validates; throws with readable errors (or use CardGen.validate)
+//   const U = CardGen.build(seed, P)         // the universe: U.card, U.set, U.openPack, U.price, U.sealedPrice, U.search ...
+// Fill-in guide: kit/cardgen/PROFILE.md. Usage: kit/cardgen/README.md.
+// © 2026 justaskjoe. All rights reserved.
+(function (root) {
+'use strict';
+const SCHEMA = 1;
+
+// ---------- seeded RNG (state is plain JSON { _s }, so a game can pass its own state object) ----------
+function R(S) { S._s = (S._s + 0x6D2B79F5) >>> 0; let t = S._s; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }
+function hash(str) { let h = 2166136261; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } h ^= h >>> 16; h = Math.imul(h, 0x85EBCA6B); h ^= h >>> 13; return h >>> 0; }
+// rng can be a function, a state object like a game's G (uses and advances G._s) or a number (a fresh stream from that seed).
+const rngOf = r => typeof r === 'function' ? r : r && typeof r._s === 'number' ? () => R(r) : (S => () => R(S))({ _s: r >>> 0 });
+const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+const range = (rnd, a) => a[0] + rnd() * (a[1] - a[0]);
+const irange = (rnd, a) => a[0] + Math.floor(rnd() * (a[1] - a[0] + 1));
+const pickA = (rnd, a) => a[Math.floor(rnd() * a.length)];
+const gauss = rnd => Math.sqrt(-2 * Math.log(rnd() || 1e-9)) * Math.cos(2 * Math.PI * rnd());
+function pickW(rnd, t) { let s = 0; for (const e of t) s += e[e.length - 1]; let x = rnd() * s; for (const e of t) { x -= e[e.length - 1]; if (x < 0) return e; } return t[t.length - 1]; }
+function shuffle(rnd, a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+const isObj = x => x && typeof x === 'object' && !Array.isArray(x);
+// Deep merge: stats (numbers) layered over the profile (structure). Arrays replace.
+function merge(a, b) { if (!isObj(a) || !isObj(b)) return b === undefined ? a : b; const o = Object.assign({}, a); for (const k of Object.keys(b)) o[k] = merge(a[k], b[k]); return o; }
+
+// ---------- names ----------
+const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+function word(rnd, L, n) { let w = ''; for (let i = 0; i < n; i++) w += (i && rnd() < (L.tick || 0) ? '\'' : '') + pickA(rnd, L.syl); return cap(w); }
+// Pattern tokens: {w2} {w3} {w23} = a made-up word of 2, 3 or 2-3 syllables; {kind} {adj} {title} {setNoun} = picks from the bank.
+function fill(rnd, L, pat, kind) {
+  return pat.replace(/\{(\w+)\}/g, (m, t) => t === 'w2' ? word(rnd, L, 2) : t === 'w3' ? word(rnd, L, 3) : t === 'w23' ? word(rnd, L, 2 + (rnd() < 0.4 ? 1 : 0))
+    : t === 'kind' ? kind : L[t] && L[t].length ? pickA(rnd, L[t]) : m);
+}
+// Edit distance, stopping once it passes k (the blocklist only cares about "within k").
+function near(a, b, k) {
+  if (Math.abs(a.length - b.length) > k) return false;
+  let prev = []; for (let j = 0; j <= b.length; j++) prev[j] = j;
+  for (let i = 1; i <= a.length; i++) {
+    const cur = [i]; let lo = i;
+    for (let j = 1; j <= b.length; j++) { cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); if (cur[j] < lo) lo = cur[j]; }
+    if (lo > k) return false; prev = cur;
+  }
+  return prev[b.length] <= k;
+}
+const norm = s => String(s).toLowerCase().replace(/[^a-z0-9]/g, '');
+// A private list of real card names (never committed), bucketed by length so the check stays cheap.
+function makeBlock(list) {
+  if (!list || !list.length) return null;
+  const by = {}; for (const n of list) { const s = norm(n); if (s) (by[s.length] = by[s.length] || []).push(s); }
+  return name => { const s = norm(name); for (let l = s.length - 2; l <= s.length + 2; l++) for (const b of by[l] || []) if (near(s, b, 2)) return true; return false; };
+}
+
+// ---------- schema check ----------
+// Returns a list of readable problems ("eras.mid.pack[3].t[2]: printing 'stars' isn't in eras.mid.printings (std, rev)").
+function validate(P) {
+  const e = [], say = (p, m) => e.push(p + ': ' + m), num = x => typeof x === 'number' && isFinite(x);
+  const rng2 = (p, a, int) => { if (!Array.isArray(a) || a.length !== 2 || !num(a[0]) || !num(a[1]) || a[0] > a[1] || (int && (a[0] % 1 || a[1] % 1))) say(p, 'needs [low, high]' + (int ? ' whole numbers' : '') + ', low ≤ high'); };
+  if (!isObj(P)) return ['profile: not a JSON object'];
+  if (P.schema !== SCHEMA) say('schema', 'must be ' + SCHEMA + ' (got ' + JSON.stringify(P.schema) + ')');
+  if (!P.id || typeof P.id !== 'string') say('id', 'needs a short id string, like "my-game"');
+  const rars = Array.isArray(P.rarities) ? P.rarities.map(r => r && r.k) : [];
+  if (!rars.length) say('rarities', 'needs a list like [{ "k": "c", "n": "Common" }, ...], lowest first');
+  if (new Set(rars).size !== rars.length || rars.some(k => !k || k === 's')) say('rarities', 'keys must be unique, non-empty, and not "s" (reserved for secrets)');
+  const isR = r => rars.indexOf(r) >= 0, lr = rars.join(', ');
+  for (const k of ['hitRarity', 'secretRarity']) if (P[k] != null && !isR(P[k])) say(k, '"' + P[k] + '" isn\'t a rarity (' + lr + ')');
+  if (!num(P.lowRarities) || P.lowRarities < 0 || P.lowRarities > rars.length) say('lowRarities', 'how many of the lowest rarities count as "low" (0-' + rars.length + ')');
+  if (!isObj(P.games) || !Object.keys(P.games).length) say('games', 'needs at least one game or faction');
+  else for (const g of Object.keys(P.games)) {
+    const G = P.games[g], L = G && G.lang;
+    if (!G || !G.name) say('games.' + g + '.name', 'missing');
+    if (!L) { say('games.' + g + '.lang', 'missing (name banks)'); continue; }
+    for (const k of ['syl', 'kinds', 'adj']) if (!Array.isArray(L[k]) || !L[k].length) say('games.' + g + '.lang.' + k, 'needs a non-empty list of strings');
+    if (!Array.isArray(L.setNoun) || !L.setNoun.length) say('games.' + g + '.lang.setNoun', 'needs a non-empty list (words for set names)');
+  }
+  const N = P.names || {};
+  if (!num(N.roster) || N.roster < 10) say('names.roster', 'how many creatures/characters each game has, at least 10');
+  for (const k of ['patterns', 'setPatterns']) if (!Array.isArray(N[k]) || !N[k].length || N[k].some(x => !Array.isArray(x) || !num(x[0]) || typeof x[1] !== 'string')) say('names.' + k, 'needs a list of [weight, "pattern"], like [3, "{adj} {kind}"]');
+  const PR = P.printings || {};
+  if (!PR.std) say('printings.std', 'every profile needs a "std" (standard) printing');
+  for (const k of Object.keys(PR)) { const d = PR[k]; if (!d || !d.n) say('printings.' + k + '.n', 'needs a display name'); if (!(num(d && d.m) || (Array.isArray(d && d.m) && d.m.length === 2 && d.m.every(num)))) say('printings.' + k + '.m', 'needs a value multiplier (a number, or [low-rarity, high-rarity])'); }
+  const isP = k => !!PR[k];
+  const B = (P.rarity || {}).base || {}, SG = (P.rarity || {}).sigma || {};
+  for (const r of rars) { if (!num(B[r]) || B[r] <= 0) say('rarity.base.' + r, 'needs a positive base value'); if (!num(SG[r]) || SG[r] < 0) say('rarity.sigma.' + r, 'needs a price spread (0 = every card the same)'); }
+  const order = P.eraOrder || [];
+  if (!Array.isArray(order) || !order.length) say('eraOrder', 'needs a list of era ids, oldest first');
+  for (const id of order) {
+    const E = (P.eras || {})[id], p = 'eras.' + id; if (!E) { say(p, 'listed in eraOrder but not defined'); continue; }
+    if (!E.code || typeof E.code !== 'string') say(p + '.code', 'needs a short code for set ids (like "v")');
+    if (!num(E.sets) || E.sets < 1 || E.sets % 1) say(p + '.sets', 'how many sets per game, a whole number ≥ 1');
+    rng2(p + '.size', E.size, true); if (E.secrets) rng2(p + '.secrets', E.secrets, true);
+    if (E.secrets && !P.secretRarity) say(p + '.secrets', 'secrets need a top-level "secretRarity"');
+    let sum = 0; for (const r of Object.keys(E.mix || {})) { if (!isR(r)) say(p + '.mix.' + r, 'isn\'t a rarity (' + lr + ')'); sum += E.mix[r]; }
+    if (Math.abs(sum - 1) > 0.02) say(p + '.mix', 'rarity shares should add up to 1 (they add up to ' + sum.toFixed(2) + ')');
+    const ep = E.printings || [];
+    if (ep[0] !== 'std') say(p + '.printings', 'must start with "std"');
+    for (const k of ep) if (!isP(k)) say(p + '.printings', '"' + k + '" isn\'t defined in printings');
+    for (const k of Object.keys(E.assign || {})) { if (ep.indexOf(k) < 0) say(p + '.assign.' + k, 'isn\'t one of this era\'s printings'); for (const r of Object.keys(E.assign[k])) if (!isR(r)) say(p + '.assign.' + k + '.' + r, 'isn\'t a rarity'); }
+    for (const k of E.numbered || []) if (ep.indexOf(k) < 0) say(p + '.numbered', '"' + k + '" isn\'t one of this era\'s printings');
+    if (!Array.isArray(E.pack) || !E.pack.length) say(p + '.pack', 'needs pack slots: [{ "n": 3, "t": [["c", "std", 1]] }, ...]');
+    else E.pack.forEach((sl, i) => {
+      if (!num(sl.n) || sl.n < 1) say(p + '.pack[' + i + '].n', 'cards in this slot, ≥ 1');
+      if (!Array.isArray(sl.t) || !sl.t.length) { say(p + '.pack[' + i + '].t', 'needs outcomes [rarity, printing, weight]'); return; }
+      sl.t.forEach((o, j) => {
+        const q = p + '.pack[' + i + '].t[' + j + ']';
+        if (!Array.isArray(o) || o.length !== 3 || !num(o[2]) || o[2] <= 0) { say(q, 'needs [rarity, printing, weight > 0]'); return; }
+        if (o[0] === 's' ? !E.secrets : !isR(o[0])) say(q, o[0] === 's' ? '"s" (a secret) but this era has no secrets' : 'rarity "' + o[0] + '" isn\'t in rarities (' + lr + ')');
+        if (ep.indexOf(o[1]) < 0) say(q, 'printing "' + o[1] + '" isn\'t in ' + p + '.printings (' + ep.join(', ') + ')');
+      });
+    });
+    if (E.runs) for (const r of E.runs) if (!isP(r[0])) say(p + '.runs', 'print run "' + r[0] + '" isn\'t a printing');
+    if (E.errPrinting && ep.indexOf(E.errPrinting) < 0) say(p + '.errPrinting', 'isn\'t one of this era\'s printings');
+    if (E.live) { if (!Array.isArray(E.release) || E.release.length !== E.sets) say(p + '.release', 'a live era needs one [first day, last day] release window per set (' + E.sets + ')'); else E.release.forEach((w, i) => rng2(p + '.release[' + i + ']', w, true)); }
+    if (!num(E.value)) say(p + '.value', 'needs a value multiplier for the era (1 = the base)');
+    if (!Array.isArray(E.drift) || E.drift.length !== 3) say(p + '.drift', 'needs daily drift [singles, chase singles, sealed]');
+  }
+  for (const k of Object.keys(P.eras || {})) if (order.indexOf(k) < 0) say('eras.' + k, 'defined but not in eraOrder');
+  for (const k of Object.keys(P.promos || {})) { if (!isP(k)) say('promos.' + k, 'isn\'t defined in printings'); for (const r of Object.keys(P.promos[k])) if (!isR(r)) say('promos.' + k + '.' + r, 'isn\'t a rarity'); }
+  const S = P.sealed || {};
+  if (!Object.keys(S).length) say('sealed', 'needs at least one product, like "pack"');
+  for (const t of Object.keys(S)) { const d = S[t]; if (!num(d.packs) || d.packs < 1) say('sealed.' + t + '.packs', 'packs inside, ≥ 1'); if (!num(d.msrp) || d.msrp <= 0) say('sealed.' + t + '.msrp', 'needs a shelf price'); if (d.shape && (!Array.isArray(d.shape) || d.shape.length !== 2)) say('sealed.' + t + '.shape', 'needs [width, height]'); }
+  for (const era of Object.keys(P.sealedMarket || {})) { if (order.indexOf(era) < 0) say('sealedMarket.' + era, 'isn\'t an era'); else rng2('sealedMarket.' + era, P.sealedMarket[era]); }
+  for (const era of Object.keys(P.sealedRef || {})) { const s = P.sealedRef[era]; if (order.indexOf(era) < 0) say('sealedRef.' + era, 'isn\'t an era'); if (!S[s.ref]) say('sealedRef.' + era + '.ref', 'isn\'t a sealed product'); for (const t of Object.keys(s.types || {})) { if (!S[t]) say('sealedRef.' + era + '.types.' + t, 'isn\'t a sealed product'); rng2('sealedRef.' + era + '.types.' + t, s.types[t]); } }
+  if (P.drops) { if (order.indexOf(P.drops.era) < 0) say('drops.era', 'isn\'t an era'); rng2('drops.n', P.drops.n, true); rng2('drops.days', P.drops.days, true); for (const t of P.drops.types || []) if (!S[t[0]]) say('drops.types', '"' + t[0] + '" isn\'t a sealed product'); }
+  const live = order.filter(id => P.eras && P.eras[id] && P.eras[id].live);
+  if (P.reprint && live.length) { const c = P.reprint.count || {}; for (const id of live) if ((c.yes || 0) + (c.no || 0) > P.eras[id].sets) say('reprint.count', 'more yes + no flags than ' + id + ' has sets'); }
+  const I = P.incoming || {};
+  for (const src of Object.keys(I.era || {})) if (!Array.isArray(I.era[src]) || I.era[src].length !== order.length) say('incoming.era.' + src, 'needs one weight per era (' + order.join(', ') + ')');
+  if (I.rarity) for (const r of I.rarity) if (!isR(r[0])) say('incoming.rarity', '"' + r[0] + '" isn\'t a rarity');
+  if (!P.fame || !isObj(P.fame.pick)) say('fame', 'needs { pow, k, pick: { rarity: weight } }');
+  return e;
+}
+function load(profile, stats) {
+  const P = stats ? merge(profile, stats) : profile, errs = validate(P);
+  if (errs.length) { const err = new Error('CardGen profile "' + (P && P.id) + '" has ' + errs.length + ' problem' + (errs.length > 1 ? 's' : '') + ':\n  ' + errs.join('\n  ')); err.problems = errs; throw err; }
+  return P;
+}
+
+// ---------- build ----------
+function build(seed, P, opts) {
+  if (!P || P.schema !== SCHEMA) P = load(P);
+  opts = opts || {};
+  seed = seed >>> 0;
+  const RARS = P.rarities.map(r => r.k), RANK = {}; RARS.forEach((r, i) => RANK[r] = i);
+  const LOW = P.lowRarities, HIT = P.hitRarity != null ? RANK[P.hitRarity] : RARS.length - 1, SEC = P.secretRarity, gameIds = Object.keys(P.games);
+  const blocked = makeBlock(opts.blocklist);
+  const sub = key => rngOf({ _s: hash(seed + '/' + key) });
+  const PR = P.printings, cards = [], sets = [], byId = {}, setById = {}, ix = {}, rosters = {}, Rp = P.reprint || {};
+  const day0 = (P.run && P.run.lastDay) || 10;
+  let rerolls = 0;
+  const sealedTypes = Object.keys(P.sealed);
+
+  for (const g of gameIds) {
+    // The roster: every creature this game has ever printed. Famous ones show up in more sets, at higher rarity.
+    const L = P.games[g].lang, rnd = sub(g + '/roster'), used = {}, roster = [], n = P.names.roster, heroes = P.names.heroes || 0;
+    for (let i = 0; i < n; i++) {
+      const kind = pickA(rnd, L.kinds), hero = i < heroes && P.names.hero && L.title;
+      let name, tries = 0;
+      do {
+        name = fill(rnd, L, pickW(rnd, hero && rnd() < 0.7 ? P.names.hero : P.names.patterns)[1], kind);
+        if (++tries > 40) name = word(rnd, L, 3 + Math.floor(tries / 60)) + ' ' + kind;
+        if (blocked && !used[name] && blocked(name)) { rerolls++; used[name] = 'x'; }
+      } while (used[name]);
+      used[name] = 1; roster.push({ i, name, kind, fame: Math.pow(1 - i / n, P.fame.pow) });
+    }
+    rosters[g] = roster;
+    const setNames = {};
+    for (const era of P.eraOrder) for (let k = 0; k < P.eras[era].sets; k++) makeSet(g, era, k, setNames);
+  }
+
+  function setName(rnd, L, taken) {
+    let nm, tries = 0;
+    do { nm = fill(rnd, L, pickW(rnd, P.names.setPatterns)[1], ''); if (++tries > 40) nm = word(rnd, L, 3) + ' ' + pickA(rnd, L.setNoun); if (!taken[nm] && blocked && blocked(nm)) { rerolls++; taken[nm] = 1; } } while (taken[nm]);
+    taken[nm] = 1; return nm;
+  }
+
+  function makeSet(g, era, k, names) {
+    const E = P.eras[era], id = g + '-' + E.code + (k + 1), rnd = sub(id), L = P.games[g].lang;
+    const N = irange(rnd, E.size), nSec = E.secrets ? irange(rnd, E.secrets) : 0;
+    const count = {}; let sum = 0;
+    RARS.forEach((r, i) => { count[r] = Math.max(i === 0 || !E.mix[r] ? 0 : 1, Math.round(N * (E.mix[r] || 0))); sum += count[r]; });
+    count[RARS[0]] += N - sum;
+    const run = E.run ? range(rnd, E.run) : 1, runMult = E.run ? Math.pow((E.run[0] + E.run[1]) / 2 / run, 0.4) : 1;
+    const s = { id, game: g, era, idx: k, name: setName(rnd, L, names), symbol: [Math.floor(rnd() * 12), Math.floor(rnd() * 360)],
+      size: N, secrets: 0, count, printRun: +run.toFixed(2), release: -1000, reprint: null, reveal: null, hype: 0, sm: 1, vs: null, walk: [1] };
+    for (let d = 1; d <= 16; d++) s.walk.push(+(s.walk[d - 1] * (1 + (E.walk || 0) * gauss(rnd))).toFixed(4));
+    if (E.live) { s.release = irange(rnd, E.release[k]); if (Rp.hype) s.hype = +range(rnd, Rp.hype).toFixed(3); }
+    if (P.sealedMarket && P.sealedMarket[era]) s.sm = +range(rnd, P.sealedMarket[era]).toFixed(3);
+    const ref = P.sealedRef && P.sealedRef[era];
+    if (ref) { s.vs = {}; for (const t of Object.keys(ref.types)) s.vs[t] = +range(rnd, ref.types[t]).toFixed(2); }
+    // Characters for the slots, rarest first, so the famous ones take the top rarities.
+    const left = rosters[g].slice(), picked = [], pick = P.fame.pick;
+    for (const r of RARS.slice().reverse()) for (let i = 0; i < count[r] + (r === SEC ? nSec : 0); i++) {
+      if (!left.length) break;
+      let tot = 0; for (const c of left) tot += 1 + c.fame * (pick[r] || 0);
+      let x = rnd() * tot, j = 0; for (; j < left.length - 1; j++) { x -= 1 + left[j].fame * (pick[r] || 0); if (x < 0) break; }
+      picked.push({ cr: left.splice(j, 1)[0], r, secret: r === SEC && i >= count[r] });
+    }
+    const main = shuffle(rnd, picked.filter(p => !p.secret)), secs = picked.filter(p => p.secret), list = [], D = P.demand || {}, bands = P.art && P.art.bands;
+    main.concat(secs).forEach((p, i) => {
+      const c = { id: id + '-' + (i + 1), set: id, game: g, era, num: i + 1, name: p.cr.name, kind: p.cr.kind, rarity: p.r,
+        secret: p.secret || undefined, demand: 'plain', base: 0, printings: ['std'], nums: undefined, fame: +p.cr.fame.toFixed(3), art: null };
+      let dm = 1;
+      if (D.chase && (p.secret || rnd() < (D.chase.p[p.r] || 0) * (1 + 2 * p.cr.fame))) { c.demand = 'chase'; dm = D.chase.m; }
+      else if (D.staple && rnd() < (D.staple.p[p.r] || 0)) { c.demand = 'staple'; dm = D.staple.m; }
+      else if (D.bulk && rnd() < (D.bulk.p[p.r] || 0)) { c.demand = 'bulk'; dm = D.bulk.m; }
+      c.base = Math.max(P.rarity.min || 0.5, +(P.rarity.base[p.r] * (E.scale && E.scale[p.r] != null ? E.scale[p.r] : 1) * (p.secret ? (P.rarity.secretMult || 1.5) : 1) * E.value * runMult * Math.exp(P.rarity.sigma[p.r] * gauss(rnd)) * dm * (1 + (P.fame.k || 0) * p.cr.fame)).toFixed(2));
+      const band = bands && bands[p.r] || [0, 1];
+      c.art = [band[0] + p.cr.i % band[1], (p.cr.i * 47 + k * 90 + RANK[p.r] * 13) % 360, Math.floor(rnd() * 100), Math.floor(rnd() * 100)];
+      list.push(c);
+    });
+    // Printings: every card gets the era's tiers unless the profile assigns a tier to a share (or a count) per rarity.
+    const give = (pk, rule) => {
+      for (const r of RARS) {
+        const f = rule[r]; if (!f) continue;
+        const of = shuffle(rnd, list.filter(c => c.rarity === r && !c.secret)), n = f >= 1 ? f : Math.max(1, Math.round(f * of.length));
+        for (const c of of.slice(0, n)) c.printings.push(pk);
+      }
+    };
+    const assign = E.assign || {};
+    for (const pk of E.printings) if (pk !== 'std') { if (assign[pk]) give(pk, assign[pk]); else for (const c of list) if (!c.secret || E.secretsGetAll) c.printings.push(pk); }
+    for (const pk of Object.keys(P.promos || {})) give(pk, P.promos[pk]);
+    let num = N + nSec;
+    if (E.numbered) for (const pk of E.numbered) for (const c of list) if (c.printings.indexOf(pk) >= 0) { c.nums = c.nums || {}; c.nums[pk] = ++num; }
+    s.secrets = num - N;
+    const X = ix[id] = {};
+    for (const c of list) { for (const pk of c.printings) { const key = (c.secret ? 's' : c.rarity) + ':' + pk; (X[key] = X[key] || []).push(c.id); } cards.push(c); byId[c.id] = c; }
+    s.cards = list.map(c => c.id);
+    sets.push(s); setById[id] = s;
+  }
+
+  // Reprint flags for live eras: per game, `count.yes` sets get reprinted, `count.no` are officially never reprinted, the
+  // rest drift. Sets out at the start are `flagWeight.start` times likelier to be flagged than mid-run releases, so the
+  // "spot it early and hold" play usually exists but a fresh release is never known-safe. Reveals come ≥ 2 days after release.
+  if (P.reprint) for (const g of gameIds) for (const era of P.eraOrder.filter(e => P.eras[e].live)) {
+    const rnd = sub(g + '/' + era + '/reprint'), C = Rp.count || {}, W = Rp.flagWeight || {}, last = Rp.lastDay || day0;
+    const pool = sets.filter(s => s.game === g && s.era === era).map(s => [s, s.release <= 0 ? (W.start || 1) : (W.release || 1)]), order = [];
+    while (pool.length) { const e = pickW(rnd, pool); order.push(e[0]); pool.splice(pool.indexOf(e), 1); }
+    order.forEach((s, i) => {
+      s.reprint = i < (C.yes || 0) ? 'yes' : i < (C.yes || 0) + (C.no || 0) ? 'no' : 'drift';
+      if (s.reprint !== 'drift') s.reveal = clamp(Math.max(irange(rnd, Rp[s.reprint].reveal), s.release + 2), 1, last);
+    });
+  }
+  // Old sealed product that turns up during a run (auctions, estates, a dealer who visits once).
+  const drops = [];
+  if (P.drops) {
+    const dr = sub('drops'), VS = P.drops, pool = sets.filter(s => s.era === VS.era);
+    for (let i = 0, n = irange(dr, VS.n); i < n && pool.length; i++) drops.push({ day: irange(dr, VS.days), set: pickA(dr, pool).id, type: pickW(dr, VS.types)[0], from: pickA(dr, VS.from || ['dealer']) });
+    drops.sort((a, b) => a.day - b.day);
+  }
+
+  // ---------- lookups ----------
+  const card = id => byId[id] || null;
+  const set = id => setById[id] || null;
+  const released = (s, day) => day == null || s.release <= day;
+  const isHit = (c, pk) => RANK[c.rarity] >= HIT || !!(PR[pk] && PR[pk].hit);
+  function pmult(c, pk) { const d = PR[pk || 'std']; if (!d) return 1; return Array.isArray(d.m) ? (RANK[c.rarity] < LOW ? d.m[0] : d.m[1]) : d.m; }
+  // grade: null = ungraded near-mint, a number = raw grade, { co, grade } = a slab from grader `co`. Older eras can swing harder.
+  function gmult(era, grade) {
+    const Gr = P.grade; if (grade == null || !Gr) return 1;
+    const curve = typeof grade === 'number' ? Gr.raw : (Gr[grade.co] || Gr.raw), v = typeof grade === 'number' ? grade : grade.grade;
+    const m = curve[clamp(Math.round(v), 0, curve.length - 1)], slope = P.eras[era].gradeSlope || 1;
+    return m > 1 ? 1 + (m - 1) * slope : m;
+  }
+  const mkt = (market, game) => market == null ? 1 : typeof market === 'number' ? market : market.demand == null ? 1 : typeof market.demand === 'number' ? market.demand : (market.demand[game] || 1);
+  // kind: 0 singles, 1 chase singles, 2 sealed
+  function trend(s, day, kind) {
+    day = day || 0; const E = P.eras[s.era];
+    let m = Math.pow(1 + E.drift[kind], day) * s.walk[clamp(Math.floor(day), 0, s.walk.length - 1)];
+    if (!E.live) return m;
+    m *= 1 + s.hype * (kind === 2 ? (Rp.hypeSealed != null ? Rp.hypeSealed : 1) : 1) * Math.exp(-Math.max(0, day - s.release) / (Rp.hypeDecay || 2.5)); // release hype is mostly in singles
+    const Y = Rp.yes, No = Rp.no;
+    if (s.reprint === 'yes') m *= day < s.reveal ? 1 + Y.pre[kind] * day : Y.drop[kind] * Math.pow(1 + Y.post[kind], day - s.reveal);
+    else if (s.reprint === 'no') m *= Math.pow(1 + No.pre[kind], Math.min(day, s.reveal)) * Math.pow(1 + No.post[kind], Math.max(0, day - s.reveal)) * (day >= s.reveal && No.jump ? No.jump[kind] : 1); // the announcement spikes it
+    return Math.max(0.05, m); // a long run of linear pre-reveal drift must never push a price below zero
+  }
+  function price(id, pk, grade, day, market) {
+    const c = card(id); if (!c) return 0;
+    return c.base * pmult(c, pk) * gmult(c.era, grade) * trend(setById[c.set], day, c.demand === 'chase' || isHit(c, pk) ? 1 : 0) * mkt(market, c.game);
+  }
+  // o: { grade: { co, grade }, weight: 'heavy' | 'light' | 'mid' } (weight only counts in eras where packs can be read by weight)
+  function sealedPrice(setId, type, day, market, o) {
+    const s = set(setId), d = P.sealed[type]; if (!s || !d) return 0;
+    const ref = P.sealedRef && P.sealedRef[s.era];
+    let v = ref && s.vs[type] != null ? P.sealed[ref.ref].msrp * s.vs[type] : d.msrp * s.sm;
+    v *= trend(s, day, 2) * mkt(market, s.game);
+    o = o || {};
+    if (o.grade && P.sealedGrade && P.sealedGrade[o.grade.co]) { const c = P.sealedGrade[o.grade.co]; v *= c[clamp(Math.round(o.grade.grade), 0, c.length - 1)]; }
+    const W = P.weight; if (o.weight && W && W.spread[s.era] > 0.5 && W.price[o.weight]) v *= W.price[o.weight];
+    return v;
+  }
+  // Distributor allocation: the share of an order you actually get. A never-reprint set dries up; a reprinted one floods.
+  function allocation(setId, day) {
+    const s = set(setId), A = Rp.alloc || {}; if (!s || !P.eras[s.era].live || !released(s, day)) return 0;
+    const d = day - Math.max(0, s.release);
+    if (s.reprint === 'no') return d < (A.noFrom || 1) ? 1 : Math.max(A.noMin || 0.2, 1 - (A.noStep || 0.15) * (d - (A.noFrom || 1) + 1));
+    if (s.reprint === 'yes' && day >= s.reveal) return A.yesAfter || 1.5;
+    return 1;
+  }
+
+  // ---------- packs ----------
+  // A pack's contents are fixed by its own seed when it's made, so it can be weighed (or searched) before it's opened.
+  function makePack(setId, rng) {
+    const s = set(setId), rnd = rngOf(rng), p = { set: setId, seed: Math.floor(rnd() * 4294967296) }, E = P.eras[s.era];
+    if (E.runs) p.run = pickW(rnd, E.runs)[0];
+    return p;
+  }
+  function pull(s, r, pk, rnd, run) {
+    const X = ix[s.id], E = P.eras[s.era], l = X[r + ':' + pk] || X[r + ':std'] || X[(r === 's' ? SEC : r) + ':std'] || X[RARS[0] + ':std'] || Object.values(X)[0];
+    const c = byId[l[Math.floor(rnd() * l.length)]];
+    if (E.runs && pk === 'std') pk = run || 'std';
+    if (E.errPrinting && (pk === 'std' || E.runs) && c.printings.indexOf(E.errPrinting) >= 0 && rnd() < (E.errRate || 0)) pk = E.errPrinting;
+    return { id: c.id, p: pk };
+  }
+  // openPack(setId, rng) or openPack(pack). A dead pack (searched or resealed) has had its last slot swapped for a common.
+  function openPack(x, rng) {
+    const pk = typeof x === 'string' ? makePack(x, rng) : x, s = set(pk.set), rnd = rngOf(pk.seed), out = [];
+    for (const slot of P.eras[s.era].pack) for (let i = 0; i < slot.n; i++) { const o = pickW(rnd, slot.t); out.push(pull(s, o[0], o[1], rnd, pk.run)); }
+    if (pk.dead) out[out.length - 1] = pull(s, RARS[0], 'std', rnd, pk.run);
+    return out;
+  }
+  // Heavy vs light: foil cards weigh more. Eras with weight spread give it away; weight-balanced eras don't.
+  function weigh(pk) {
+    const W = P.weight, s = set(pk.set); if (!W) return { g: null, tier: 'mid' };
+    const rnd = rngOf(hash('w' + pk.seed + (pk.dead ? 'd' : '')));
+    let foil = 0; for (const c of openPack(pk)) { const cc = byId[c.id]; if ((W.foilRarity || []).indexOf(cc.rarity) >= 0 || (PR[c.p] && (PR[c.p].foil || PR[c.p].hit))) foil++; }
+    const g = W.base + (W.spread[s.era] || 0) * foil * W.foil + W.noise * gauss(rnd), over = g - W.base;
+    return { g: +g.toFixed(2), tier: over >= W.heavy ? 'heavy' : over <= W.light ? 'light' : 'mid' };
+  }
+  const packHit = cs => cs.some(c => isHit(byId[c.id], c.p));
+  function promoPick(s, rnd, big) {
+    const ok = k => PR[k].promo && !!PR[k].big === !!big, pool = s.cards.map(id => byId[id]).filter(c => c.printings.some(ok));
+    if (!pool.length) return { id: s.cards[s.cards.length - 1], p: 'std' };
+    const c = pickA(rnd, pool); return { id: c.id, p: pickA(rnd, c.printings.filter(ok)) };
+  }
+  function openSealed(setId, type, rng) {
+    const s = set(setId), d = P.sealed[type], rnd = rngOf(rng), out = { packs: [], promos: [], pin: !!d.pin }, E = P.eras[s.era];
+    let run = null;
+    for (let i = 0; i < d.packs; i++) { const p = makePack(setId, rnd); if (E.runs) { run = run || p.run; p.run = run; } out.packs.push(p); } // one box, one print run
+    for (let i = 0; i < (d.promo || 0); i++) out.promos.push(promoPick(s, rnd, false));
+    for (let i = 0; i < (d.over || 0); i++) out.promos.push(promoPick(s, rnd, true));
+    return out;
+  }
+
+  // ---------- incoming cards (sellers, binders, lots, rewards) ----------
+  // o: { game, era, set, rarity, src (a key of incoming.era / incoming.runs, default 'binder'), day }
+  function draw(rng, o) {
+    o = o || {}; const rnd = rngOf(rng), I = P.incoming || {}, src = o.src || 'binder';
+    let pool = sets.filter(s => (!o.game || s.game === o.game) && (!o.set || s.id === o.set) && (!o.era || s.era === o.era) && released(s, o.day));
+    if (!o.era && !o.set && I.era) {
+      const w = I.era[src] || I.era.binder || P.eraOrder.map(() => 1), eras = P.eraOrder.map((e, i) => [e, w[i]]).filter(e => e[1] > 0 && pool.some(s => s.era === e[0]));
+      if (eras.length) { const e = pickW(rnd, eras)[0]; pool = pool.filter(s => s.era === e); }
+    }
+    if (!pool.length) return null;
+    const s = pickA(rnd, pool), E = P.eras[s.era], X = ix[s.id];
+    const r = o.rarity || (I.rarity ? pickW(rnd, I.rarity)[0] : pickW(rnd, RARS.map(k => [k, E.mix[k] || 0]))[0]);
+    const l = r === SEC && X['s:std'] && rnd() < (I.secret || 0) ? X['s:std'] : X[r + ':std'] || X[RARS[0] + ':std'];
+    const c = byId[pickA(rnd, l)];
+    let pk = 'std';
+    if (E.runs) { const runs = I.runs && (I.runs[src] || I.runs.binder) || E.runs; pk = pickW(rnd, runs)[0]; if (E.errPrinting && c.printings.indexOf(E.errPrinting) >= 0 && rnd() < (E.errRate || 0)) pk = E.errPrinting; }
+    else for (const k of c.printings) { const b = PR[k].promo ? ((I.promoBoost || {})[src] || 1) : 1; if (k !== 'std' && rnd() < ((I.print || {})[k] || 0) * b) { pk = k; break; } }
+    if (src === 'promo') { const ks = c.printings.filter(k => PR[k].promo); if (ks.length) pk = pickA(rnd, ks); }
+    return { id: c.id, p: pk };
+  }
+
+  // ---------- buyers' wants ----------
+  // f: { game, era, set, kind, demand, min, max, rarity, printing, hit, minValue, name, day, limit }
+  function search(f) {
+    f = f || {}; const out = [], lim = f.limit || Infinity;
+    for (const c of cards) {
+      const s = setById[c.set];
+      if ((f.game && c.game !== f.game) || (f.era && c.era !== f.era) || (f.set && c.set !== f.set) || (f.kind && c.kind !== f.kind) || (f.demand && c.demand !== f.demand)) continue;
+      if ((f.min && RANK[c.rarity] < RANK[f.min]) || (f.max && RANK[c.rarity] > RANK[f.max]) || (f.rarity && c.rarity !== f.rarity)) continue;
+      if ((f.printing && c.printings.indexOf(f.printing) < 0) || (f.hit && !c.printings.some(k => isHit(c, k))) || (f.minValue && c.base < f.minValue)) continue;
+      if ((f.name && c.name.toLowerCase().indexOf(f.name.toLowerCase()) < 0) || !released(s, f.day)) continue;
+      out.push(c); if (out.length >= lim) break;
+    }
+    return out;
+  }
+
+  // ---------- bulk and repacks ----------
+  const BK = P.bulk || { each: 1, under: 0 }, RK = P.repack || { premium: 1, minFloor: 0, slack: 1 };
+  const isBulk = (id, pk) => { const c = card(id); return !!c && RANK[c.rarity] < LOW && (pk || 'std') === 'std' && price(id, 'std') < BK.under; };
+  // plan: { packs, perPack (bulk cards per pack), hits: [value of each hit], floor (value guaranteed per pack) }. Plain JSON.
+  function repack(plan) {
+    const p = Object.assign({ perPack: 10, hits: [], floor: 0 }, plan), B = BK.each;
+    const hitSum = p.hits.reduce((a, b) => a + b, 0), ev = (hitSum + p.packs * (p.floor + p.perPack * B)) / p.packs;
+    return Object.assign(p, { left: p.left != null ? p.left : p.packs, hitsLeft: p.hitsLeft || p.hits.slice().sort((a, b) => b - a),
+      ev: +ev.toFixed(2), oneIn: p.hits.length ? +(p.packs / p.hits.length).toFixed(2) : Infinity, fair: +(ev * RK.premium).toFixed(2), loose: p.packs * p.perPack * B });
+  }
+  // How shoppers read a posted sign ({ oneIn, hitMin }): honest and decent draws people in; short of the sign is a scam.
+  function repackJudge(plan, sign) {
+    const p = repack(plan), minHit = p.hits.length ? Math.min.apply(null, p.hits) : 0;
+    const honest = p.hits.length > 0 && p.oneIn <= sign.oneIn * RK.slack && minHit >= sign.hitMin, stingy = p.floor < RK.minFloor;
+    return { honest, stingy, ev: p.ev, fair: p.fair, verdict: !honest ? 'scam' : stingy ? 'fair' : 'draw' };
+  }
+  // Open one repack from the plan (no replacement: the hits are really in there). Mutates plan.left / plan.hitsLeft.
+  function repackOpen(plan, rng) {
+    const rnd = rngOf(rng); if (!plan.left) return null;
+    const hit = plan.hitsLeft.length && rnd() < plan.hitsLeft.length / plan.left ? plan.hitsLeft.splice(Math.floor(rnd() * plan.hitsLeft.length), 1)[0] : 0;
+    plan.left--; return { hit, floor: plan.floor, bulk: plan.perPack };
+  }
+
+  const games = {};
+  for (const g of gameIds) {
+    const G = Object.assign({}, P.games[g]); delete G.lang;
+    games[g] = Object.assign(G, { frames: {}, sets: sets.filter(s => s.game === g).map(s => s.id), roster: rosters[g].length });
+    for (const e of P.eraOrder) games[g].frames[e] = P.eras[e].frame || null;
+  }
+  const eras = {}; for (const e of P.eraOrder) { const E = P.eras[e]; eras[e] = { name: E.name || e, code: E.code, yearsAgo: E.yearsAgo, printings: E.printings, frame: E.frame || null, live: !!E.live }; }
+  // Plain data for saving or downloading (the functions rebuild from seed + profile).
+  const data = () => ({ schema: SCHEMA, profile: P.id, seed, games, eras, rarities: P.rarities, printings: PR, sealed: P.sealed, sets, cards, drops });
+
+  return { schema: SCHEMA, profile: P.id, seed, version: P.version, fit: P.fit, games, eras, sets, cards, drops, rerolls, printings: PR, sealed: P.sealed, sealedTypes,
+    rarities: RARS, rank: RANK, currency: P.currency || null,
+    card, set, price, sealedPrice, trend, allocation, released: day => sets.filter(s => released(s, day)),
+    makePack, openPack, openSealed, weigh, packHit, isHit, draw, search, isBulk, repack, repackJudge, repackOpen,
+    printingMult: pmult, gradeMult: gmult, data };
+}
+
+const CardGen = { SCHEMA, build, load, validate, merge, hash, near, rngOf };
+if (typeof module !== 'undefined' && module.exports) module.exports = CardGen; else root.CardGen = CardGen;
+})(this);
+
+</script>
+<script>
+window.CG_PROFILE = {
+  "_about": "Intergalactic Card Trader's CardGen profile: structure and decisions (factions, name banks, eras, printings, products, run calendar). The numbers live in template-stats.json, merged over this. Guide: kit/cardgen/PROFILE.md. © 2026 justaskjoe. All rights reserved.",
+  "schema": 1,
+  "id": "card-trader",
+  "name": "Intergalactic Card Trader",
+  "currency": {"symbol":"₵","name":"credits"},
+  "rarities": [
+    {"k":"c","n":"Common"},
+    {"k":"u","n":"Uncommon"},
+    {"k":"r","n":"Rare"},
+    {"k":"h","n":"Holo"},
+    {"k":"g","n":"Grail"}
+  ],
+  "lowRarities": 2,
+  "hitRarity": "h",
+  "secretRarity": "g",
+  "games": {
+    "shell": {
+      "name": "Shellstorm",
+      "species": "mollu",
+      "script": "spiral",
+      "lang": {
+        "syl": [
+          "lu",
+          "mo",
+          "sha",
+          "pe",
+          "ri",
+          "na",
+          "ol",
+          "ve",
+          "coo",
+          "mei",
+          "wa",
+          "li",
+          "oa",
+          "nu",
+          "sel",
+          "ra",
+          "thi",
+          "ma",
+          "ou",
+          "e",
+          "qua",
+          "lo"
+        ],
+        "tick": 0,
+        "kinds": [
+          "Crab",
+          "Eel",
+          "Ray",
+          "Whale",
+          "Siren",
+          "Nautilus",
+          "Urchin",
+          "Jelly",
+          "Turtle",
+          "Seahorse",
+          "Squid",
+          "Otter",
+          "Snail",
+          "Shrimp",
+          "Clam",
+          "Kraken",
+          "Manta",
+          "Lobster",
+          "Sprite",
+          "Newt"
+        ],
+        "adj": [
+          "Tide",
+          "Reef",
+          "Brine",
+          "Coral",
+          "Pearl",
+          "Kelp",
+          "Foam",
+          "Drift",
+          "Lantern",
+          "Deep",
+          "Surf",
+          "Abyss",
+          "Moon",
+          "Silt",
+          "Undertow",
+          "Spindle",
+          "Salt",
+          "Lagoon"
+        ],
+        "title": ["Queen","Warden","Sage","Matriarch","Keeper","Herald","Titan","Elder"],
+        "setNoun": [
+          "Tides",
+          "Depths",
+          "Currents",
+          "Shoals",
+          "Wrecks",
+          "Lagoons",
+          "Swells",
+          "Trenches",
+          "Shallows",
+          "Moonpools",
+          "Rip",
+          "Reefs"
+        ]
+      }
+    },
+    "hive": {
+      "name": "Hive Gambit",
+      "species": "zekk",
+      "script": "dots",
+      "lang": {
+        "syl": [
+          "zz",
+          "kik",
+          "tra",
+          "vex",
+          "krr",
+          "zek",
+          "tik",
+          "ix",
+          "ka",
+          "rr",
+          "zo",
+          "vrr",
+          "kt",
+          "za",
+          "ki",
+          "xa",
+          "tzz",
+          "ek",
+          "dri",
+          "kla",
+          "zun"
+        ],
+        "tick": 0.3,
+        "kinds": [
+          "Drone",
+          "Mite",
+          "Beetle",
+          "Mantis",
+          "Hornet",
+          "Locust",
+          "Wasp",
+          "Moth",
+          "Ant",
+          "Cricket",
+          "Weevil",
+          "Scarab",
+          "Firefly",
+          "Cicada",
+          "Larva",
+          "Tick",
+          "Dragonfly",
+          "Termite",
+          "Roach",
+          "Aphid"
+        ],
+        "adj": [
+          "Gear",
+          "Chrome",
+          "Comb",
+          "Wax",
+          "Volt",
+          "Pollen",
+          "Stinger",
+          "Iron",
+          "Swarm",
+          "Rivet",
+          "Hex",
+          "Servo",
+          "Static",
+          "Brass",
+          "Nectar",
+          "Piston",
+          "Signal",
+          "Cog"
+        ],
+        "title": ["Overlord","Prime","Marshal","Engineer","Vanguard","Monarch","Core","Regent"],
+        "setNoun": [
+          "Protocols",
+          "Swarms",
+          "Combs",
+          "Engines",
+          "Uprising",
+          "Circuits",
+          "Assembly",
+          "Colonies",
+          "Gambits",
+          "Overclock",
+          "Signals",
+          "Foundry"
+        ]
+      }
+    },
+    "star": {
+      "name": "Starweave",
+      "species": "puffi",
+      "script": "waves",
+      "lang": {
+        "syl": [
+          "pu",
+          "fi",
+          "la",
+          "mi",
+          "no",
+          "va",
+          "li",
+          "su",
+          "fae",
+          "ru",
+          "pi",
+          "sel",
+          "ney",
+          "bo",
+          "lo",
+          "mee",
+          "ti",
+          "ora",
+          "wi",
+          "shi",
+          "aa"
+        ],
+        "tick": 0,
+        "kinds": [
+          "Fox",
+          "Owl",
+          "Pup",
+          "Toad",
+          "Koi",
+          "Bat",
+          "Stag",
+          "Lion",
+          "Whale",
+          "Phoenix",
+          "Dragon",
+          "Moth",
+          "Kit",
+          "Hare",
+          "Lynx",
+          "Swan",
+          "Sprite",
+          "Seal",
+          "Wyrm",
+          "Finch"
+        ],
+        "adj": [
+          "Comet",
+          "Star",
+          "Nova",
+          "Orbit",
+          "Glimmer",
+          "Moon",
+          "Halo",
+          "Aurora",
+          "Pulsar",
+          "Nebula",
+          "Eclipse",
+          "Dust",
+          "Twilight",
+          "Zenith",
+          "Quasar",
+          "Solstice",
+          "Meteor",
+          "Lumen"
+        ],
+        "title": ["Weaver","Seer","Guardian","Wanderer","Herald","Dreamer","Sovereign","Origin"],
+        "setNoun": [
+          "Skies",
+          "Constellations",
+          "Orbits",
+          "Nebulae",
+          "Eclipses",
+          "Horizons",
+          "Starfall",
+          "Auroras",
+          "Zeniths",
+          "Comets",
+          "Twilights",
+          "Threads"
+        ]
+      }
+    }
+  },
+  "names": {
+    "roster": 420,
+    "heroes": 30,
+    "patterns": [[45,"{w2} {kind}"],[35,"{adj} {kind}"],[20,"{kind} of {w2}"]],
+    "hero": [[7,"{w23}, {adj} {title}"],[3,"{w2} {kind}"]],
+    "setPatterns": [[1,"{adj} {setNoun}"],[1,"{w2} {setNoun}"]]
+  },
+  "art": {"bands":{"c":[0,8],"u":[8,4],"r":[12,3],"h":[15,2],"g":[17,1]}},
+  "run": {"lastDay":10},
+  "eraOrder": ["vintage","mid","modern"],
+  "eras": {
+    "vintage": {
+      "code": "v",
+      "name": "Wave 1",
+      "yearsAgo": 24,
+      "sets": 3,
+      "frame": "thick",
+      "printings": ["std","first","early","err"],
+      "errPrinting": "err",
+      "secretsGetAll": true
+    },
+    "mid": {
+      "code": "m",
+      "name": "Middle Waves",
+      "yearsAgo": 12,
+      "sets": 3,
+      "frame": "reverse",
+      "printings": ["std","rev","full","star"]
+    },
+    "modern": {
+      "code": "n",
+      "name": "Wave 3",
+      "yearsAgo": 1,
+      "sets": 5,
+      "start": 3,
+      "frame": "borderless",
+      "release": [[-40,-25],[-20,-10],[-6,-2],[2,4],[6,8]],
+      "printings": ["std","rev","illus","shiny","alt","rainbow","gold"],
+      "numbered": ["illus","shiny","alt","rainbow","gold"],
+      "live": true
+    }
+  },
+  "printings": {
+    "std": {"n":"Standard"},
+    "first": {"n":"First Run","see":"loupe","v":{"first":true}},
+    "early": {"n":"Early print","see":"print","v":{"set":"vintage"}},
+    "err": {"n":"Misprint","see":"print","v":{"err":"ink"}},
+    "rev": {"n":"Reverse foil","see":"loupe","foil":1,"v":{"fin":"mirror"}},
+    "full": {"n":"Full-art","hit":1,"v":{"fin":"full"}},
+    "star": {"n":"Star chase","hit":1,"v":{"fin":"full"}},
+    "illus": {"n":"Illustration","hit":1,"v":{"fin":"alt"}},
+    "shiny": {"n":"Shiny","hit":1,"v":{"fin":"mirror"}},
+    "alt": {"n":"Alt-art","hit":1,"v":{"fin":"alt"}},
+    "rainbow": {"n":"Rainbow foil","hit":1,"v":{"fin":"full"}},
+    "gold": {"n":"Gold hyper","hit":1,"v":{"fin":"full"}},
+    "pre": {"n":"Prerelease stamp","see":"loupe","promo":1,"v":{"promo":"release"}},
+    "staff": {"n":"Staff stamp","see":"loupe","promo":1},
+    "event": {"n":"Event stamp","see":"loupe","promo":1,"v":{"promo":"cardnight"}},
+    "dock": {"n":"Dock stamp","see":"loupe","promo":1,"v":{"promo":"dock"}},
+    "over": {"n":"Oversized","promo":1,"big":1},
+    "nfp": {"n":"Not for play","promo":1}
+  },
+  "sealed": {
+    "pack": {"packs":1,"shape":[1,1],"reseal":true,"grade":true},
+    "blister": {"packs":3,"promo":1,"shape":[1,2],"reseal":true,"grade":true},
+    "tin": {"packs":4,"promo":1,"shape":[2,2],"reseal":false,"grade":false},
+    "collector": {"packs":3,"promo":1,"pin":1,"shape":[2,2],"reseal":false,"grade":true},
+    "booster": {"packs":6,"shape":[2,3],"reseal":true,"grade":true},
+    "premium": {"packs":8,"promo":2,"over":1,"shape":[3,2],"reseal":false,"grade":true}
+  },
+  "drops": {
+    "era": "vintage",
+    "n": [1,3],
+    "days": [6,10],
+    "types": [["pack",4],["blister",2],["booster",2],["premium",1]],
+    "from": ["auction","estate","dealer"]
+  },
+  "reprint": {"count":{"yes":1,"no":1},"flagWeight":{"start":3,"release":1},"lastDay":10}
+}
+;
+window.CG_TEMPLATE = {
+  "_about": "Intergalactic Card Trader hobby statistics for CardGen. Aggregates only (shares, ratios, ranges, curves); hand-written v0 from general collecting-hobby knowledge. A private fit script rewrites these numbers from real data without changing keys (see card-trader/design/card-generator-integration.md). © 2026 justaskjoe. All rights reserved.",
+  "version": 1,
+  "fit": "hand-written v0, Nov 1 2026",
+  "eras": {
+    "vintage": {
+      "size": [80,105],
+      "secrets": [1,2],
+      "value": 1.3,
+      "scale": {"c":1,"u":0.6,"r":0.4,"h":0.3,"g":0.3},
+      "run": [0.3,0.6],
+      "gradeSlope": 2.2,
+      "mix": {"c":0.4,"u":0.3,"r":0.17,"h":0.11,"g":0.02},
+      "drift": [0.004,0.006,0.006],
+      "walk": 0.01,
+      "assign": {"err":{"c":0.01,"u":0.02,"r":0.04,"h":0.06,"g":0.1}},
+      "runs": [["first",10],["early",25],["std",65]],
+      "errRate": 0.12,
+      "pack": [
+        {"n":3,"t":[["c","std",1]]},
+        {"n":1,"t":[["u","std",1]]},
+        {"n":1,"t":[["r","std",66],["h","std",30],["g","std",3.5],["s","std",0.5]]}
+      ]
+    },
+    "mid": {
+      "size": [95,130],
+      "secrets": [4,9],
+      "value": 0.7,
+      "scale": {"c":0.35,"u":0.25,"r":0.2,"h":0.2,"g":0.25},
+      "run": [0.8,1.3],
+      "gradeSlope": 1.3,
+      "mix": {"c":0.38,"u":0.3,"r":0.18,"h":0.11,"g":0.03},
+      "drift": [0.002,0.003,0.004],
+      "walk": 0.012,
+      "assign": {"full":{"r":0.3,"h":0.35},"star":{"h":1}},
+      "pack": [
+        {"n":2,"t":[["c","std",1]]},
+        {"n":1,"t":[["u","std",1]]},
+        {"n":1,"t":[["c","rev",50],["u","rev",30],["r","rev",15],["h","rev",5]]},
+        {
+          "n": 1,
+          "t": [["r","std",60],["h","std",28],["g","std",4],["r","full",3],["h","full",3],["s","std",1.5],["h","star",0.5]]
+        }
+      ]
+    },
+    "modern": {
+      "size": [110,150],
+      "value": 1,
+      "scale": {"c":0.35,"u":0.15,"r":0.07,"h":0.05,"g":0.05},
+      "run": [2,4],
+      "gradeSlope": 1,
+      "mix": {"c":0.36,"u":0.28,"r":0.2,"h":0.12,"g":0.04},
+      "drift": [-0.004,0,-0.002],
+      "walk": 0.02,
+      "assign": {
+        "illus": {"c":0.12,"u":0.15,"r":0.1,"h":0.1},
+        "shiny": {"r":0.15,"h":0.1},
+        "alt": {"h":0.3,"g":0.4},
+        "rainbow": {"h":0.4,"g":0.6},
+        "gold": {"g":0.5}
+      },
+      "pack": [
+        {"n":2,"t":[["c","std",1]]},
+        {"n":1,"t":[["u","std",1]]},
+        {
+          "n": 1,
+          "t": [["c","rev",44],["u","rev",28],["r","rev",14],["h","rev",4],["c","illus",4],["u","illus",3],["r","shiny",3]]
+        },
+        {
+          "n": 1,
+          "t": [
+            ["r","std",58],
+            ["h","std",24],
+            ["g","std",5],
+            ["h","alt",2.5],
+            ["g","alt",1],
+            ["h","rainbow",3],
+            ["g","rainbow",1],
+            ["g","gold",1.5],
+            ["r","illus",3],
+            ["h","illus",1]
+          ]
+        }
+      ]
+    }
+  },
+  "printings": {
+    "std": {"m":1},
+    "first": {"m":2.6},
+    "early": {"m":1.5},
+    "err": {"m":3.5},
+    "rev": {"m":[2.2,1.3]},
+    "full": {"m":2.5},
+    "star": {"m":7},
+    "illus": {"m":[9,3]},
+    "shiny": {"m":2.5},
+    "alt": {"m":4.5},
+    "rainbow": {"m":3},
+    "gold": {"m":3.5},
+    "pre": {"m":1.4},
+    "staff": {"m":3},
+    "event": {"m":1.6},
+    "dock": {"m":1.6},
+    "over": {"m":0.8},
+    "nfp": {"m":0.3}
+  },
+  "sealed": {
+    "pack": {"msrp":28,"cost":20},
+    "blister": {"msrp":80,"cost":56},
+    "tin": {"msrp":100,"cost":70},
+    "collector": {"msrp":110,"cost":80},
+    "booster": {"msrp":150,"cost":120},
+    "premium": {"msrp":260,"cost":190}
+  },
+  "promos": {
+    "pre": {"r":0.06,"h":0.1},
+    "staff": {"h":0.04},
+    "event": {"r":0.03,"h":0.04,"g":0.1},
+    "dock": {"u":0.02,"r":0.03},
+    "over": {"h":0.05,"g":0.2},
+    "nfp": {"u":0.05,"r":0.08}
+  },
+  "rarity": {"base":{"c":2,"u":6,"r":20,"h":60,"g":260},"sigma":{"c":0.3,"u":0.4,"r":0.6,"h":0.7,"g":0.6}},
+  "demand": {
+    "chase": {"p":{"u":0.02,"r":0.06,"h":0.2,"g":0.45},"m":2.2},
+    "staple": {"p":{"c":0.04,"u":0.1,"r":0.18,"h":0.12,"g":0.08},"m":1.5},
+    "bulk": {"p":{"c":0.85,"u":0.6},"m":0.7}
+  },
+  "fame": {"pow":4,"k":1.5,"pick":{"c":0,"u":1,"r":4,"h":12,"g":30}},
+  "grade": {
+    "raw": [0.3,0.3,0.3,0.3,0.3,0.45,0.6,0.8,1,1.3,1.6],
+    "quik": [0.3,0.3,0.3,0.3,0.3,0.45,0.6,0.8,1.05,1.6,2.4],
+    "halo": [0.3,0.3,0.3,0.3,0.3,0.45,0.6,0.85,1.2,2,3.2]
+  },
+  "sealedGrade": {"quik":[0.9,0.9,0.9,0.9,0.9,0.9,0.9,1,1.1,1.35,1.8],"halo":[0.9,0.9,0.9,0.9,0.9,0.9,0.9,1,1.15,1.5,2.1]},
+  "sealedMarket": {"modern":[0.9,1.25],"mid":[2.5,6]},
+  "sealedRef": {
+    "vintage": {
+      "ref": "booster",
+      "types": {"pack":[5,9],"blister":[8,14],"tin":[9,15],"collector":[10,16],"booster":[18,30],"premium":[22,30]}
+    }
+  },
+  "weight": {
+    "base": 20.4,
+    "foil": 0.35,
+    "noise": 0.1,
+    "heavy": 0.22,
+    "light": 0.08,
+    "foilRarity": ["h","g"],
+    "spread": {"vintage":1,"mid":0.25,"modern":0},
+    "price": {"heavy":1.35,"light":0.7}
+  },
+  "reprint": {
+    "hype": [0.15,0.45],
+    "hypeDecay": 2.5,
+    "hypeSealed": 0.25,
+    "yes": {"reveal":[4,8],"pre":[0.005,0.01,0.012],"drop":[0.8,0.7,0.62],"post":[-0.02,-0.02,-0.025]},
+    "no": {"reveal":[6,10],"pre":[0.004,0.015,0.025],"post":[0.01,0.03,0.06],"jump":[1.03,1.1,1.15]},
+    "alloc": {"noFrom":1,"noStep":0.15,"noMin":0.2,"yesAfter":1.5}
+  },
+  "incoming": {
+    "era": {"binder":[10,30,60],"old":[45,40,15],"dealer":[20,40,40],"pack":[0,0,100]},
+    "rarity": [["c",45],["u",28],["r",16],["h",9],["g",2]],
+    "runs": {"binder":[["first",6],["early",22],["std",72]],"old":[["first",12],["early",28],["std",60]]},
+    "print": {
+      "rev": 0.15,
+      "full": 0.03,
+      "star": 0.01,
+      "illus": 0.04,
+      "shiny": 0.03,
+      "alt": 0.02,
+      "rainbow": 0.02,
+      "gold": 0.01,
+      "pre": 0.03,
+      "staff": 0.005,
+      "event": 0.02,
+      "dock": 0.02,
+      "over": 0.01,
+      "nfp": 0.02
+    },
+    "promoBoost": {"dealer":3,"promo":10},
+    "secret": 0.25
+  },
+  "bulk": {"each":1,"brick":500,"under":3},
+  "repack": {"premium":1.2,"minFloor":3,"slack":1.1}
+}
+;
+</script>
+<script>
+// Intergalactic Card Trader · its card universe: the shared CardGen core (kit/cardgen/) with Card Trader's profile.
+// Node: require('./cardgen.js'). Browser: inline kit/cardgen/cardgen.js, then
+//   window.CG_PROFILE = <data/cardgen-profile.json>; window.CG_TEMPLATE = <data/template-stats.json>;
+// then this file. CG.build(seed) → U. Swap guide: design/card-generator-integration.md.
+// © 2026 justaskjoe. All rights reserved.
+(function (root) {
+'use strict';
+const node = typeof module !== 'undefined' && module.exports && typeof require === 'function';
+const core = node ? require('../../kit/cardgen/cardgen.js') : root.CardGen;
+const profile = node ? require('../data/cardgen-profile.json') : root.CG_PROFILE;
+const stats = node ? require('../data/template-stats.json') : root.CG_TEMPLATE;
+const config = core.load(profile, stats); // throws with a readable list if the profile or stats are broken
+
+// build(seed) for the game; build(seed, otherStats) to try a refit; opts: { blocklist: [real names] } (private check only)
+function build(seed, s, opts) { return core.build(seed, s && s !== config ? core.load(profile, s) : config, opts); }
+
+const CG = { build, config, core, hash: core.hash, near: core.near };
+if (node) module.exports = CG; else root.CG = CG;
+})(this);
+
+</script>
 <script>
 // Intergalactic Card Trader's settings for the shared front end (frontend.js): words, art, colors, ticker, saves.
 // © 2026 justaskjoe. All rights reserved.
@@ -652,9 +1676,26 @@ const NIGHTS = {
   swap: { name: 'Swap Meet', blurb: 'Three regulars each offer a 1-for-1 trade. No cash, just your eye.' },
 };
 
+// ---------- the card universe ----------
+// Every card comes from the seeded CardGen universe (kit/cardgen, Card Trader's profile in data/): thousands of cards per
+// game across vintage, mid and modern sets, with printings per era, pull odds, sealed product and reprint flags. It is
+// rebuilt from G.seed (never stored in G), so saves stay plain JSON. Integration notes: design/card-generator-integration.md.
+const CGX = typeof CG !== 'undefined' ? CG : typeof require === 'function' ? require('./cardgen.js') : null;
+let UNI = null;
+function uni(G) { const sd = (G && G.seed) >>> 0; if (!UNI || UNI.seed !== sd) UNI = CGX.build(sd); return UNI; }
+const runDay = G => Math.max(0, G.dayIdx + 1);
+const ERA_U = {};
+function eraMedianU(era) { if (ERA_U[UNI.seed + era] == null) { const b = UNI.search({ era, rarity: 'u' }).map(c => c.base).sort((x, y) => x - y); ERA_U[UNI.seed + era] = b.length ? b[Math.floor(b.length / 2)] : BASE.u; } return ERA_U[UNI.seed + era]; }
+function cardOf(c) { return UNI && UNI.card(c.t); }
+function baseOf(c, misread) { const k = cardOf(c); if (!k) return BASE[tmpl(c.t).rarity]; return misread ? eraMedianU(k.era) : k.base; }
+
 // ---------- cards ----------
 const tid = (game, i) => game + '-' + i;
-function tmpl(t) { const [game, i] = t.split('-'); const idx = +i; return { game, idx, name: GAMES[game].cards[idx], rarity: RARITY_BY_INDEX(idx) }; }
+function tmpl(t) {
+  const k = UNI && UNI.card(t);
+  if (k) return { game: k.game, idx: k.art[0], hue: k.art[1], name: k.name, rarity: k.rarity, era: k.era, set: k.set, kind: k.kind };
+  const [game, i] = t.split('-'); const idx = +i; return { game, idx, name: GAMES[game].cards[idx], rarity: RARITY_BY_INDEX(idx) };
+}
 function trueGrade(c) { const lo = Math.min(c.cen, c.edg, c.sur), avg = (c.cen + c.edg + c.sur) / 3; return clamp(Math.round(lo * 0.35 + avg * 0.65), 1, 10); }
 function centerRatio(c) { const off = (10 - c.cen) * 2.6; return [Math.round(50 + off), Math.round(50 - off)]; } // e.g. 60/40
 
@@ -680,13 +1721,26 @@ function rollPrint(G, rarity, src) {
   if (src === 'pack' && (G.dayIdx === 4 || G.dayIdx === 8) && R(G) < 0.4) v.set = 'reprint';
   return v;
 }
+// The per-copy extras the universe doesn't own (serials, signatures) go on c.v with the printing's drawing hints.
+function printV(G, k, p, src) {
+  const v = { fin: 'std', first: false, set: k.era === 'vintage' ? 'vintage' : k.era === 'mid' ? 'mid' : 'core', promo: null, serial: null, err: null, signed: false };
+  Object.assign(v, (UNI.printings[p] || {}).v || {});
+  if (v.promo === 'dock') v.promo = 'dock-' + GAMES[k.game].species;
+  if ((v.fin === 'full' || v.fin === 'alt') && R(G) < 0.25) v.serial = 1 + Math.floor(R(G) * 50);
+  if (src === 'dealer' && R(G) < 0.06) v.signed = true;
+  return v;
+}
+// src: 'pack' | 'rareslot' (modern, current set) | 'old' (estate binders: more vintage) | 'dealer' | anything else = a binder
 function makeCard(G, game, rarity, q, opts) {
   opts = opts || {};
-  const at = () => clamp(Math.round(q + gauss(G) * (opts.fresh ? 1.0 : 1.5)), 1, 10);
-  const c = { uid: 'c' + (++G._uid), t: tid(game, rollIdx(G, rarity)), cen: at(), edg: at(), sur: at(), fake: null, graded: null,
+  const U = uni(G), at = () => clamp(Math.round(q + gauss(G) * (opts.fresh ? 1.0 : 1.5)), 1, 10);
+  const src = opts.src === 'pack' || opts.src === 'rareslot' ? 'pack' : opts.src === 'old' ? 'old' : opts.src === 'dealer' ? 'dealer' : 'binder';
+  let d = opts.id ? { id: opts.id, p: opts.p || 'std' } : U.draw(G, { game, rarity: rarity || undefined, src, era: opts.era, day: runDay(G) });
+  if (!d) d = U.draw(G, { game, rarity: rarity || undefined, day: runDay(G) });
+  const k = U.card(d.id);
+  const c = { uid: 'c' + (++G._uid), t: d.id, p: d.p, cen: at(), edg: at(), sur: at(), fake: null, graded: null,
     know: { loupe: false, uv: false, read: !!opts.read, fake: false, print: false, spec: false, free: false }, cost: 0, flawUsed: false,
-    v: rollPrint(G, rarity, opts.src || 'plain') };
-  if (opts.idx != null) c.t = tid(game, opts.idx);
+    v: printV(G, k, d.p, opts.src) };
   if (opts.fake) {
     c.fake = opts.fake === 'ring' ? 'ring' : (R(G) < 0.5 ? 'uv' : 'stock');
     // fakes copy whatever sells: ring fakes dress up as serialized full-arts and promos
@@ -695,10 +1749,7 @@ function makeCard(G, game, rarity, q, opts) {
   if (c.v.err === 'offcut') c.cen = Math.min(c.cen, 2 + Math.floor(R(G) * 3)); // a miscut reads exactly like bad centering
   if (opts.promo) c.v.promo = opts.promo;
   if (opts.mint) { c.cen = Math.max(c.cen, 9); c.edg = Math.max(c.edg, 9); c.sur = Math.max(c.sur, 9); }
-  // eras: vintage (Wave 1), mid era, modern (the Wave 2-4 sets, which can be reprinted)
-  c.era = opts.era || (c.v.set === 'vintage' ? 'vintage' : (opts.src === 'old' || opts.src === 'dealer') && R(G) < 0.45 ? 'mid' : 'modern');
-  if (c.era === 'vintage') c.v.set = 'vintage'; else if (c.era === 'mid' && c.v.set === 'core') c.v.set = 'mid';
-  if (c.era === 'modern') c.ms = G.msets ? (opts.src === 'pack' || opts.src === 'rareslot' ? currentSet(G) : Math.floor(R(G) * Math.max(1, setsOut(G).length))) : 0;
+  c.era = k.era; c.ms = k.era === 'modern' ? k.set : null;
   return c;
 }
 
@@ -709,6 +1760,13 @@ function pumpMult(G, c) { return G.pump && G.pump.t === c.t && !c.fake ? (G.dayI
 function variantMult(G, c, known) {
   const v = c.v || {}, low = RANK[tmpl(c.t).rarity] <= 1, sees = (k) => !known || known[k];
   let m = 1;
+  // CardGen copies: the printing's multiplier (seen with the Loupe or the Print Lens, or by anyone), plus per-copy extras
+  if (c.p && UNI) { const P = UNI.printings[c.p] || {};
+    if (!P.see || sees(P.see === 'print' ? 'print' : 'loupe')) m *= UNI.printingMult(UNI.card(c.t), c.p);
+    if (v.serial && sees('loupe')) m *= v.serial === 1 ? 10 : v.serial <= 5 ? 6 : 3;
+    if (v.signed && sees('loupe')) m *= 2;
+    if (v.promo && !P.promo && PROMOS[v.promo] && sees('loupe')) m *= PROMOS[v.promo].mult;
+    return Math.min(m, VARIANT_CAP); }
   if (v.fin === 'mirror' && sees('loupe')) m *= low ? 2 : 1.4;
   if (v.fin === 'full') m *= 2.5; if (v.fin === 'alt') m *= 2;
   if (v.first && sees('loupe')) m *= 1.6;
@@ -722,24 +1780,28 @@ function variantMult(G, c, known) {
   return Math.min(m, VARIANT_CAP);
 }
 function demandOf(G, game) { return G.demand[game] || 1; }
+// Modern singles follow their set's market (release hype, reprints, a set that's never reprinted); old eras drift.
+function singleTrend(G, c) { const k = cardOf(c); if (!k || !G.store) return 1; return UNI.trend(UNI.set(k.set), runDay(G), k.demand === 'chase' || UNI.isHit(k, c.p) ? 1 : 0); }
 function hot(G, c) { return G.hotList.indexOf(c.t) >= 0 ? 1.5 : 1; }
 // What the card is really worth to a buyer today (they can see the real condition and print).
 function trueValue(G, c, demand) {
   if (c.fake) return 0;
+  uni(G);
   const tm = tmpl(c.t), d = demand == null ? demandOf(G, tm.game) : demand;
   const m = c.graded ? GRADERS[c.graded.co].mult(c.graded.grade) : RAW(trueGrade(c));
-  return BASE[tm.rarity] * m * d * (demand == null ? hot(G, c) : 1) * variantMult(G, c, null) * pumpMult(G, c) * (c.trim && !c.graded ? TRIM_VALUE : 1) * (c.ms != null && G.msets ? setMult(G, c.ms, 'single') : 1);
+  return baseOf(c) * m * d * (demand == null ? hot(G, c) : 1) * variantMult(G, c, null) * pumpMult(G, c) * (c.trim && !c.graded ? TRIM_VALUE : 1) * singleTrend(G, c);
 }
 const readable = (G, c) => c.know.read || (G.fluency[tmpl(c.t).game] >= FLUENT_AT);
 // The player's best guess from what they've learned. Bots use only this.
 function estimate(G, c) {
+  uni(G);
   if (c.know.fake) return { value: 0, grade: null, rarity: tmpl(c.t).rarity, fake: true };
   const tm = tmpl(c.t), rar = readable(G, c) ? tm.rarity : null;
   const grade = c.graded ? c.graded.grade : c.know.loupe ? trueGrade(c) : null;
   const m = c.graded ? GRADERS[c.graded.co].mult(c.graded.grade) : RAW(grade == null ? 7 : grade);
   const vm = variantMult(G, c, c.know);
   const pm = G.pump && G.pump.t === c.t ? (G.dayIdx === 3 ? 1.8 : G.dayIdx >= 4 ? 0.5 : 1) : 1; // the market price is public
-  const v = BASE[rar || 'u'] * m * demandOf(G, tm.game) * hot(G, c) * vm * pm * (c.trim && c.know.loupe && !c.graded ? TRIM_VALUE : 1) * (c.ms != null && G.msets ? setMult(G, c.ms, 'single') : 1);
+  const v = baseOf(c, !rar) * m * demandOf(G, tm.game) * hot(G, c) * vm * pm * (c.trim && c.know.loupe && !c.graded ? TRIM_VALUE : 1) * singleTrend(G, c);
   return { value: v, grade, rarity: rar, fake: c.know.uv ? false : null, vmult: vm };
 }
 // What a seller believes their card is worth (home rate). They can't read other species' scripts, can't see
@@ -748,7 +1810,7 @@ function sellerBelief(G, person, c) {
   const tm = tmpl(c.t), P = PEOPLE[person], own = SPECIES[P.species].game === tm.game || person === 'sheelo' && tm.game === 'shell';
   const rar = own ? tm.rarity : (RANK[tm.rarity] >= 2 ? 'u' : tm.rarity); // misreads rares and up as "some uncommon"
   const sees = own ? { loupe: true, print: person === 'sheelo' } : { loupe: false, print: false };
-  let b = BASE[rar] * RAW(trueGrade(c)) * (c.fake ? variantMult(G, c, { loupe: true }) : variantMult(G, c, sees));
+  let b = baseOf(c, rar !== tm.rarity) * RAW(trueGrade(c)) * (c.fake ? variantMult(G, c, { loupe: true }) : variantMult(G, c, sees));
   if (G.pump && G.pump.t === c.t && G.dayIdx === 3) b *= 1.8;
   return b;
 }
@@ -764,10 +1826,8 @@ function newGame(seed) {
     startValue: 0, log: [], version: 4, week: null, lastNight: null };
   G._s = (seed || 1) >>> 0;
   G.week = buildWeek(G);
-  // starting case: a few singles you already know
-  for (const [g, r] of [['shell', 'u'], ['shell', 'c'], ['hive', 'u'], ['star', 'r'], ['star', 'c'], ['hive', 'c']]) {
-    const c = makeCard(G, g, r, 7.2, { read: true }); c.know.loupe = true; c.know.uv = true; c.cost = Math.round(trueValue(G, c, 1)); G.stock.push(c);
-  }
+  // a brand-new shop: the opening questions (setupShop) decide what's in the opening crate
+  G.packs = { shell: 0, hive: 0, star: 0 };
   initStore(G);
   G.demand = { shell: 1, hive: 1, star: 1 };
   G.startValue = Math.round(shopValue(G));
@@ -784,7 +1844,7 @@ function shopValue(G) {
   for (const o of G.goods) v += goodValue(G, o, true);
   for (const k in S.up) if (UNLOCKS[k]) v += UNLOCKS[k].cost * S.up[k] * 0.5; // fixtures resell for about half
   for (const p of G.grading) if (p.good) v += goodValue(G, p.good, true) - (p.card ? 0 : 0);
-  for (const it of S.orders.concat(S.crate ? S.crate.items : [])) { const C = CATALOG[it.item]; if (C && !C.gear) v += it.good ? goodValue(G, it.good, true) : C.cost; }
+  for (const it of S.orders.concat(S.crate ? S.crate.items : [])) { if (it.card) { v += trueValue(G, it.card, 1); continue; } if (it.good) { v += goodValue(G, it.good, true); continue; } if (it.item === 'packs') { v += it.n * PACK_RETAIL; continue; } const C = CATALOG[it.item]; if (C && !C.gear) v += it.good ? goodValue(G, it.good, true) : C.cost; }
   return v;
 }
 function money(G, amt, kind, label) { G.cash += amt; G.ledger.push({ day: G.dayIdx, kind, amt: Math.round(amt), label }); }
@@ -810,7 +1870,7 @@ function startDay(G) {
   G.dayIdx++; const D = G.week[G.dayIdx];
   G.events = [];
   if (G.store) { deliver(G);
-    const rel = G.msets.find(x => x.out === G.dayIdx && G.dayIdx > 0); if (rel) event(G, { t: 'release', set: rel.id });
+    for (const x of uni(G).sets) if (x.era === 'modern' && x.release === runDay(G)) event(G, { t: 'release', set: x.id });
     if (G.grateful && G.dayIdx >= 1) { G.grateful--; D.visitors.splice(1, 0, { who: pick(G, ['pip', 'moma']), role: 'sell', n: 2, games: ['shell', 'star'], q: 7.8, gem: 'h', src: 'old', read: true, intent: 'grateful' }); event(G, { t: 'grateful' }); } }
   G.demand = Object.assign({}, D.demand);
   // last night's hype lands on today
@@ -818,18 +1878,20 @@ function startDay(G) {
   // scalped packs: tomorrow's pack buyers already bought from Skrimp
   G.scalpedToday = G.scalped; G.scalped = 0; G.packsSoldToday = 0;
   // the pump: a rare-or-better from a game whose species isn't docking tomorrow... and it's on the reprint list
-  if (D.pump && !G.pump) { const g = pick(G, ['star', 'hive', 'shell']); G.pump = { t: tid(g, 12 + Math.floor(R(G) * 4)) }; }
+  const chase = g => { const l = uni(G).search({ game: g, era: 'modern', min: 'r', max: 'h', day: runDay(G) }); return l.length ? pick(G, l).id : uni(G).search({ game: g, min: 'r' })[0].id; };
+  if (D.pump && !G.pump) G.pump = { t: chase(pick(G, ['star', 'hive', 'shell'])) };
   const games = Object.keys(G.demand).sort((a, b) => G.demand[b] - G.demand[a]);
-  G.hotList = [tid(games[0], 12 + Math.floor(R(G) * 5)), tid(games[1], 12 + Math.floor(R(G) * 3))];
+  G.hotList = [chase(games[0]), chase(games[1])];
   if (G.pump) G.hotList = G.hotList.filter(t => t !== G.pump.t);
   G.visitIdx = -1; G.visit = null; G.phase = 'morning'; G.night = null;
   resolveGrades(G, false);
   for (const k of G.complaints) { money(G, -k.price, 'refund', 'Refund: ' + k.who + ' found a fake'); G.rep = clamp(G.rep - 8, 0, 100); event(G, { t: 'complaint', who: k.who, price: k.price }); }
   G.complaints = [];
   let dj = D.dj.replace('{pump}', G.pump ? tmpl(G.pump.t).name : 'a card');
-  if (G.msets) for (const st of G.msets) {
-    if (st.flag === 'yes' && st.reveal === G.dayIdx) { dj += ' Reprint announced: ' + st.name + ' is going back to print. Ouch for anyone holding it.'; event(G, { t: 'reprint', set: st.id }); }
-    if (st.flag === 'no' && st.reveal - 1 === G.dayIdx) dj += ' Distributor gossip: ' + st.name + ' allocations are getting tight.';
+  if (G.store) for (const st of uni(G).sets) {
+    if (st.reprint === 'yes' && st.reveal === runDay(G)) { dj += ' Reprint announced: ' + st.name + ' (' + GAMES[st.game].name + ') is going back to print. Ouch for anyone holding it.'; event(G, { t: 'reprint', set: st.id }); }
+    if (st.reprint === 'no' && st.reveal - 1 === runDay(G)) dj += ' Distributor gossip: ' + st.name + ' (' + GAMES[st.game].name + ') allocations are getting tight.';
+    if (st.reprint === 'no' && st.reveal === runDay(G)) dj += ' Official: ' + st.name + ' will not be reprinted.';
   }
   say(G, 'vee', dj);
 }
@@ -869,7 +1931,7 @@ function spawnVisit(G, spec) {
       let c;
       if (spec.pumpCards) { // the Hype Bros sell copies of the pumped card; one of three may be a ring fake
         const tm = tmpl(G.pump.t);
-        c = makeCard(G, tm.game, tm.rarity, spec.q, { idx: tm.idx, src: 'plain', fake: i === 2 && R(G) < 0.5 ? 'ring' : null, read: true });
+        c = makeCard(G, tm.game, tm.rarity, spec.q, { id: G.pump.t, src: 'plain', fake: i === 2 && R(G) < 0.5 ? 'ring' : null, read: true });
       } else {
         const isGem = i === gem, g = isGem && spec.gemGame ? spec.gemGame : pick(G, spec.games);
         const rar = isGem ? spec.gem : spec.role === 'bulk' ? (R(G) < 0.2 ? 'u' : 'c') : rollRarity(G, false);
@@ -972,8 +2034,10 @@ function act(G, it) {
   const v = G.visit;
   if (G.store) { const r3 = v3Act(G, it); if (r3) return r3; }
   switch (it.t) {
-    case 'start': if (G.phase !== 'title') return err('not now'); startDay(G); return ok();
-    case 'open': if (G.phase !== 'morning') return err('not now'); G.phase = 'shop'; say(G, 'vee', 'Doors open! First customer\'s at the counter.'); return ok();
+    case 'start': if (G.phase !== 'title') return err('not now'); if (G.store) setupShop(G, it.answers || {}); startDay(G); return ok();
+    case 'open': { if (G.phase !== 'morning') return err('not now');
+      const need = G.store && openChecklist(G).filter(x => !x.done); if (need && need.length) return err('Before you open: ' + need.map(x => x.label.toLowerCase()).join(', '));
+      G.phase = 'shop'; say(G, 'vee', 'Doors open! First customer\'s at the counter.'); return ok(); }
     case 'next': {
       if (G.phase !== 'shop') return err('finish this customer first');
       const D = G.week[G.dayIdx];
@@ -1163,9 +2227,8 @@ function err(m) { return { ok: false, error: m }; }
 
 // A dead pack (searched by the Scale Gang, or resealed) has had its hit taken: the rare slot is a common.
 function crackPack(G, game, dead) {
-  const out = [];
-  for (const r of ['c', 'c', 'c', 'u']) out.push(makeCard(G, game, r, 9.0, { fresh: true, src: 'pack' }));
-  out.push(dead ? makeCard(G, game, 'c', 9.0, { fresh: true, src: 'plain' }) : makeCard(G, game, rollRarity(G, true), 9.0, { fresh: true, src: 'rareslot' }));
+  const out = [], U = uni(G), pk = U.makePack(currentSet(G, game), G); if (dead) pk.dead = true;
+  for (const d of U.openPack(pk, G)) out.push(makeCard(G, game, null, 9.0, { fresh: true, src: 'pack', id: d.id, p: d.p }));
   for (const c of out) { c.know.uv = true; addStock(G, c); }
   return out;
 }
@@ -1198,8 +2261,8 @@ function offer(G, p) {
 function dealBuy(G, price) {
   const v = G.visit; if (G.cash < price) return err('not enough cash');
   money(G, -price, 'buy', 'Bought from ' + PEOPLE[v.who].name + ' (' + v.cards.length + ' card' + (v.cards.length > 1 ? 's' : '') + ')');
-  let belief = 0; for (const c of v.cards) belief += Math.max(1, BASE[tmpl(c.t).rarity] * RAW(trueGrade(c)));
-  for (const c of v.cards) { c.cost = price * Math.max(1, BASE[tmpl(c.t).rarity] * RAW(trueGrade(c))) / belief; addStock(G, c); }
+  let belief = 0; for (const c of v.cards) belief += Math.max(1, baseOf(c) * RAW(trueGrade(c)));
+  for (const c of v.cards) { c.cost = price * Math.max(1, baseOf(c) * RAW(trueGrade(c))) / belief; addStock(G, c); }
   G.stats.deals++; G.rep = clamp(G.rep + 1, 0, 100);
   say(G, v.who, line(G, v, 'deal')); endVisit(G, 'deal'); return ok();
 }
@@ -1274,7 +2337,7 @@ function pickNight(G, ev) {
     for (let i = 0; i < 16; i++) {
       const gem = i < 3; const g = pick(G, ['shell', 'hive', 'star']);
       const c = makeCard(G, g, gem ? pick(G, ['u', 'r', 'r', 'h']) : (R(G) < 0.85 ? 'c' : 'u'), 6.8, { src: 'old' });
-      if (gem && R(G) < 0.6) c.v.fin = 'mirror';
+      if (gem && R(G) < 0.6) { c.v.fin = 'mirror'; if (UNI.card(c.t).printings.indexOf('rev') >= 0) c.p = 'rev'; }
       const foil = c.v.fin !== 'std';
       c.hint = { glint: foil ? R(G) < 0.75 : R(G) < 0.15, game: g };
       c.flipped = false; cards.push(c);
@@ -1470,7 +2533,7 @@ const DAYS2 = [
   { name: 'Wave 4 Release Day', ships: ['mollu', 'zekk', 'puffi'], demand: { shell: 1.2, hive: 1.2, star: 1.2 }, release: true },
   { name: 'Last Call', ships: ['mollu', 'zekk', 'puffi'], demand: { shell: 1.1, hive: 1.1, star: 1.1 } },
 ];
-const RENT10 = [40, 60, 80, 100, 120, 130, 140, 150, 160, 170];
+const RENT10 = [30, 40, 50, 60, 70, 80, 90, 100, 110, 120];
 const RANKS10 = [[-1e9, 'Corner Stall'], [300, 'Strip Regular'], [900, 'Lane Favorite'], [1800, 'Dock Legend'], [3200, 'Legend of the Lanes']];
 // Signature visitors by day index (0-based). Day 1 stays the tutorial: one browser, one fetch, one fake to note.
 const V3_SPECIALS = {
@@ -1513,8 +2576,7 @@ function initStore(G) {
     stats: { browseSales: 0, browseCash: 0, counterCardSales: 0, stolen: 0, stolenValue: 0, wearHits: 0, wearValue: 0, switched: 0,
       trimsCaught: 0, merchSales: 0, deadPacks: 0, fetches: 0, bounties: 0, wrongCalls: 0, informed: 0, refused: 0, repacksSold: 0 } };
   G.goods = []; G.board = []; G.notes = []; G.seen = {};
-  G.rating = { stars: 3.6, n: 38, today: 0, why: [], reviews: [] };
-  G.msets = buildSets(G);
+  G.rating = { stars: null, n: 0, sum: 0, today: 0, why: [], reviews: [] };
   for (const c of G.stock) { c.loc = 'cbinder'; c.prot = c.prot || 'penny'; c.tag = defaultTag(G, c); }
 }
 const where = (G, loc) => G.stock.filter(c => c.loc === loc);
@@ -1539,7 +2601,7 @@ function gridSpot(G, f, o) { const [w, h] = sizeOf(G, f); for (const rot of [0, 
 function defaultTag(G, c) { return Math.max(1, Math.round((c.t ? estimate(G, c).value : goodValue(G, c)) * 1.15)); }
 function findGood(G, uid) { return G.goods.find(o => o.uid === uid); }
 function findThing(G, uid) { return findStock(G, uid) || findGood(G, uid); }
-function newGood(G, type, game, extra) { const o = Object.assign({ uid: 'g' + (++G._uid), type, game: game || null, set: currentSet(G), loc: null, x: 0, y: 0, rot: 0 }, extra || {}); return o; }
+function newGood(G, type, game, extra) { const o = Object.assign({ uid: 'g' + (++G._uid), type, game: game || null, set: game && GTYPE[type] ? currentSet(G, game) : null, loc: null, x: 0, y: 0, rot: 0 }, extra || {}); return o; }
 
 // Can thing o go to fixture f? Returns an error string or null.
 function placeRule(G, o, f) {
@@ -1615,30 +2677,14 @@ function autoStore(G) {
 }
 
 // ---------- modern sets and reprints ----------
-// Three modern waves are out at the start; Wave 3 releases on day 5 and Wave 4 on day 9. One wave gets reprinted
-// (its prices drop once the reprint is announced), one is never reprinted (it keeps climbing; nobody tells you which),
-// the rest drift. Hints: DJ Vee, the Hype Bros, distributor allocation, prices.
-const SET_NAMES = ['Wave 2a', 'Wave 2b', 'Wave 2c', 'Wave 3', 'Wave 4'];
-function buildSets(G) {
-  const sets = SET_NAMES.map((name, i) => ({ id: i, name, out: i < 3 ? 0 : i === 3 ? 4 : 8, flag: 'drift', reveal: 99, drift: [] }));
-  const order = [0, 1, 2, 3]; for (let k = order.length - 1; k > 0; k--) { const j = Math.floor(R(G) * (k + 1)); [order[k], order[j]] = [order[j], order[k]]; }
-  sets[order[0]].flag = 'yes'; sets[order[0]].reveal = Math.max(sets[order[0]].out + 2, 4 + Math.floor(R(G) * 4));
-  sets[order[1]].flag = 'no'; sets[order[1]].reveal = Math.max(sets[order[1]].out + 1, 3 + Math.floor(R(G) * 3)); // allocation gets cut from this day
-  for (const s of sets) for (let d = 0; d < 10; d++) s.drift.push(+(1 + (R(G) - 0.5) * 0.12).toFixed(3));
-  return sets;
-}
-function currentSet(G) { const sets = G.msets || []; let id = 0; for (const s of sets) if (s.out <= Math.max(0, G.dayIdx)) id = s.id; return id; }
-function setsOut(G) { return (G.msets || []).filter(s => s.out <= Math.max(0, G.dayIdx)); }
-// Price multiplier for a modern set today. kind: 'sealed' or 'single' (chase singles move less than sealed).
-function setMult(G, set, kind) {
-  const s = G.msets && G.msets[set]; if (!s) return 1;
-  const d = Math.max(0, G.dayIdx), k = kind === 'sealed' ? 1 : 0.55;
-  let m = 1; for (let i = 0; i <= Math.min(d, 9); i++) m *= 1 + (s.drift[i] - 1) * k;
-  if (s.flag === 'yes' && d >= s.reveal) m *= kind === 'sealed' ? 0.6 : 0.78;
-  if (s.flag === 'no' && d >= s.reveal - 1) m *= 1 + (d - s.reveal + 2) * (kind === 'sealed' ? 0.09 : 0.05);
-  return m;
-}
-function allocated(G, set) { const s = G.msets[set]; return s && s.flag === 'no' && G.dayIdx >= s.reveal; }
+// Each game has 5 modern sets (3 out at the start, 2 released during the run). Per game, one gets reprinted (its prices
+// drop when announced), one is never reprinted (it climbs, and its distributor allocation dries up), the rest drift.
+// Nobody tells you which: hints come from DJ Vee, the distributor and prices. The flags live in the universe.
+function currentSet(G, game) { const d = runDay(G); const l = uni(G).sets.filter(x => x.game === (game || 'shell') && x.era === 'modern' && x.release <= d).sort((x, y) => y.release - x.release); return l.length ? l[0].id : null; }
+function setName(G, id) { const x = id && uni(G).set(id); return x ? x.name : ''; }
+function setMult(G, id, kind) { const x = id && uni(G).set(id); return x ? uni(G).trend(x, runDay(G), kind === 'sealed' ? 2 : kind === 'chase' ? 1 : 0) : 1; }
+function allocated(G, id) { return !!id && uni(G).allocation(id, runDay(G)) < 0.35; }
+const GTYPE = { box: 'booster', blister: 'blister', tin: 'tin', collector: 'collector', premium: 'premium' };
 
 // ---------- value of sealed goods ----------
 // Vintage sealed: rare and expensive (5-30x a modern box). Heavy vintage packs are likelier to hold the hit; weighing
@@ -1648,19 +2694,19 @@ function goodValue(G, o, liquid) {
   if (o.type === 'brick') return 500 * 0.6;
   if (o.type === 'repack') return Math.max(1, (o.per || 10) * 0.4 + (o.hit ? (o.hitVal || 20) : 0));
   if (D.vintage) {
-    let v = o.val * (o.weighed ? (o.heavy ? 1.5 : 0.75) : 1) * (o.sgrade ? SEALED_GRADE(o.sgrade) : 1);
+    let v = (o.set ? uni(G).sealedPrice(o.set, o.vtype || (o.type === 'vpack' ? 'pack' : 'booster'), runDay(G), null, { weight: o.weighed ? (o.heavy ? 'heavy' : 'light') : null }) : o.val) * (o.sgrade ? SEALED_GRADE(o.sgrade) : 1);
     if (o.resealed && (o.sgrade || o.caught)) v *= 0.15;
     return v;
   }
-  const base = liquid ? D.cost : D.msrp;
-  return base * (o.dead ? 0.5 : 1) * setMult(G, o.set, 'sealed') * (o.sgrade ? SEALED_GRADE(o.sgrade) : 1);
+  const mkt = o.set && GTYPE[o.type] ? uni(G).sealedPrice(o.set, GTYPE[o.type], runDay(G), { demand: G.demand }) : D.msrp;
+  return mkt * (liquid ? D.cost / D.msrp : 1) * (o.dead ? 0.5 : 1) * (o.sgrade ? SEALED_GRADE(o.sgrade) : 1);
 }
 const SEALED_GRADE = g => g >= 10 ? 2.4 : g >= 9 ? 1.7 : g >= 8 ? 1.3 : 1.05;
 
 // ---------- the store rating ----------
 // A fictional star rating with a review count. Each day nudges it; the morning report quotes a few reviews.
 function bump(G, d, why) { if (!G.rating) return; G.rating.today += d; if (why && Math.abs(d) >= 0.02) G.rating.why.push([+d.toFixed(2), why]); }
-function ratingMod(G) { return G.rating ? G.rating.stars - 4 : 0; }
+function ratingMod(G) { const R_ = G.rating; return R_ && R_.stars != null ? (R_.stars - 4) * Math.min(1, R_.n / 12) : 0; }
 const REVIEW = {
   up: ['Fair prices, and they actually know their stuff.', 'Saw a vintage box on display. Unreal.', 'Pulled a hit from their repack!', 'They told my kid the card was fake and helped us out. Class act.', 'Case is always stocked.'],
   down: ['Sold me a fake. Never again.', 'Repacks are a scam.', 'Half the case was empty.', 'Accused my friend of stealing. Rude.', 'Overpriced and pushy.'],
@@ -1671,7 +2717,10 @@ function closeRating(G) {
   if (caseN >= 6 && packTotal(G) + goodsAt(G, 'rack').length >= 6) d += 0.03; else if (caseN === 0) d -= 0.05;
   if (G.store.up.riser) d += Math.min(2, goodsAt(G, 'case').filter(o => GOODS[o.type].vintage).length) * 0.04;
   d = clamp(d, -0.4, 0.3);
-  R_.stars = +clamp(R_.stars + d, 1, 5).toFixed(2); R_.n += 2 + Math.floor(R(G) * 4);
+  // today's customers leave a few reviews; how the day went sets where they land
+  const k = 2 + Math.floor(R(G) * 3) + (R_.n ? 0 : 1);
+  for (let i = 0; i < k; i++) R_.sum += clamp(Math.round(3.7 + d * 9 + gauss(G) * 0.8), 1, 5);
+  R_.n += k; R_.stars = +(R_.sum / R_.n).toFixed(2);
   R_.reviews = [];
   if (d > 0.02) R_.reviews.push(pick(G, REVIEW.up)); if (d < -0.02) R_.reviews.push(pick(G, REVIEW.down));
   R_.last = +d.toFixed(2); R_.today = 0; R_.why = [];
@@ -1714,10 +2763,12 @@ function sellThing(G, o, price, who) {
 }
 // Vintage sealed for sale from an estate: 1-3 a run. Rare and expensive.
 function vintageLot(G) {
-  const game = pick(G, ['shell', 'hive', 'star']), big = R(G) < 0.35;
-  const o = newGood(G, big ? 'vbox' : 'vpack', game, { era: 'vintage', set: null });
-  o.val = Math.round(big ? 168 * (5 + R(G) * 25) : 168 * (5 + R(G) * 25) / 18);
-  o.heavy = R(G) < 0.3; o.resealed = R(G) < 0.12;
+  const U = uni(G), S = G.store; S.drops = S.drops || 0;
+  let dr = U.drops[S.drops]; if (dr) S.drops++;
+  else { const vs = U.sets.filter(x => x.era === 'vintage'); dr = { set: pick(G, vs).id, type: 'pack' }; }
+  const set = U.set(dr.set), o = newGood(G, dr.type === 'pack' ? 'vpack' : 'vbox', set.game, { era: 'vintage', set: dr.set, vtype: dr.type });
+  o.resealed = R(G) < 0.12;
+  if (o.type === 'vpack') { o.pack = U.makePack(dr.set, G); o.heavy = U.weigh(o.pack).tier === 'heavy'; }
   return o;
 }
 function boardHas(G, who) { return G.board.find(b => b.who === who); }
@@ -1730,6 +2781,44 @@ function rollTells(G, v, guilty) {
   const n = guilty ? 3 : R(G) < 0.12 ? 1 : 0, pool = TELLS.slice(), out = [];
   for (let i = 0; i < n; i++) out.push(pool.splice(Math.floor(R(G) * pool.length), 1)[0]);
   v.tells = out; v.tellsShown = G.store.up.camera ? out.length : Math.min(out.length, guilty ? 2 : 1);
+}
+
+// ---------- the opening: a brand-new shop ----------
+// Three questions decide your start: focus (singles, sealed or vintage), how you split your savings (cash or stock),
+// and the game you grew up on (you can read its script from day 1). Everything arrives in an opening crate.
+const FOCUS = { singles: 'Singles shop', sealed: 'Sealed shop', vintage: 'Vintage hunter' };
+const SPLIT = { cash: { cash: 300, stock: 80 }, balanced: { cash: 210, stock: 180 }, stock: { cash: 130, stock: 270 } };
+function setupShop(G, ans) {
+  const focus = FOCUS[ans.focus] ? ans.focus : 'singles', split = SPLIT[ans.split] || SPLIT.balanced, home = GAMES[ans.home] ? ans.home : 'shell';
+  const U = uni(G), S = G.store, items = [], games = ['shell', 'hive', 'star'], other = games.filter(g => g !== home);
+  G.shop = { focus, split: SPLIT[ans.split] ? ans.split : 'balanced', home, name: ans.name || null };
+  G.cash = split.cash; G.fluency[home] = FLUENT_AT;
+  let budget = split.stock, n = 0;
+  const addCard = (g, rar, src, extra) => { const c = makeCard(G, g, rar, 7.6, Object.assign({ src, read: g === home }, extra || {})); c.know.uv = true; c.cost = Math.round(trueValue(G, c, 1)); budget -= c.cost; n++; items.push({ item: 'card', card: c }); };
+  const addGood = (type, g) => { const o = newGood(G, type, g); budget -= goodValue(G, o, true); items.push({ item: 'good', good: o }); };
+  // every shop gets 5 loose packs, 3 of them from the game you grew up on
+  items.push({ item: 'packs', game: home, n: 3 }, { item: 'packs', game: other[0], n: 1 }, { item: 'packs', game: other[1], n: 1 });
+  if (focus === 'sealed') { for (const [t, g] of [['blister', home], ['box', home], ['tin', other[0]], ['blister', other[1]]]) if (budget >= CATALOG[t === 'box' ? 'box' : t].cost * 0.8) addGood(t, g); }
+  if (focus === 'vintage') { addCard(home, 'r', 'old', { era: 'vintage' }); addCard(pick(G, other), 'u', 'old', { era: 'vintage' }); } // vintage sealed is far beyond a new shop: estates sell it later in the run
+  const src = focus === 'vintage' ? 'old' : 'binder';
+  if (budget > 60) addCard(home, 'h', src, { mint: true });
+  for (let guard = 0; (budget > 3 || n < 9) && n < 30 && guard < 80; guard++) addCard(pick(G, [home, home, other[0], other[1]]), budget > 80 ? pick(G, ['r', 'h']) : budget > 25 ? pick(G, ['u', 'r', 'r']) : budget > 3 ? pick(G, ['c', 'u', 'u']) : 'c', src);
+  if (budget > 0) G.cash += Math.round(budget); // whatever the crate didn't use stays in the till
+  S.crate = { items, opening: true };
+  G.startValue = Math.round(shopValue(G));
+  event(G, { t: 'opening' });
+}
+// What has to be true before the doors open. Day 1: the floor must be set out. Later days: open the morning crate.
+function openChecklist(G) {
+  const S = G.store, out = [];
+  if (S.crate && S.crateOpened !== G.dayIdx) out.push({ k: 'crate', label: 'Unpack the crate in the back', done: false });
+  else if (S.crate) out.push({ k: 'crate', label: 'Unpack the crate in the back', done: true });
+  if (G.dayIdx === 0) {
+    out.push({ k: 'case', label: 'Put 3+ things in the display case', done: onGrid(G, 'case').length >= 3, n: onGrid(G, 'case').length });
+    out.push({ k: 'cbinder', label: 'Fill 4+ counter binder pockets', done: where(G, 'cbinder').length >= 4, n: where(G, 'cbinder').length });
+    out.push({ k: 'rack', label: 'Hang 3+ packs or sealed on the rack', done: packTotal(G) + goodsAt(G, 'rack').length >= 3, n: packTotal(G) + goodsAt(G, 'rack').length });
+  }
+  return out;
 }
 
 // ---------- nightly ----------
@@ -1750,7 +2839,7 @@ function nightly(G) {
   const S = G.store;
   for (const c of where(G, 'case').concat(where(G, 'inbox'))) wearRoll(G, c, WEAR_DAY);
   for (const c of where(G, 'bbinder').concat(where(G, 'cbinder'))) wearRoll(G, c, WEAR_BINDER);
-  if (G.dayIdx >= 2 && !S.locked && onGrid(G, 'case').length && R(G) < 0.4) steal(G, 'case');
+  if (G.dayIdx >= 2 && !S.locked && onGrid(G, 'case').length && R(G) < 0.6) steal(G, 'case');
   // walk-ins buy merch and small sealed off the rack overnight
   for (const o of goodsAt(G, 'rack').slice()) { const D = GOODS[o.type]; if (D.nightly && R(G) < D.nightly * (1 + ratingMod(G) * 0.3)) { sellThing(G, o, o.tag || defaultTag(G, o), 'a walk-in'); S.stats.merchSales++; } }
   closeRating(G);
@@ -1760,8 +2849,8 @@ function nightly(G) {
 function order(G, item, game, qty) {
   const C = CATALOG[item]; if (!C) return err('not in the catalog');
   if (C.game && !GAMES[game]) return err('pick a card game');
-  const set = currentSet(G);
-  if (C.goods && C.game && allocated(G, set)) return err('the distributor says ' + G.msets[set].name + ' is on allocation: no more this run');
+  const set = C.game ? currentSet(G, game) : null;
+  if (C.goods && C.game && allocated(G, set)) return err('the distributor says ' + setName(G, set) + ' is on allocation: none to spare');
   const n = Math.max(1, qty | 0), cost = C.cost * n;
   if (G.cash < cost) return err('not enough cash');
   money(G, -cost, item === 'box' ? 'restock' : 'order', (n > 1 ? n + ' × ' : '') + C.name + (C.game ? ': ' + GAMES[game].name : ''));
@@ -1787,12 +2876,14 @@ function unpack(G) {
   for (const it of S.crate.items) {
     const C = CATALOG[it.item];
     if (C && C.gear) { S.gear[C.gear] += GEAR[C.gear].per; placed++; continue; }
+    if (it.card) { arrive(G, it.card); G.stock.push(it.card); placed++; continue; }
+    if (it.item === 'packs') { const f = gridFree(G, 'shelf') >= it.n ? 'shelf' : gridFree(G, 'rack') >= it.n ? 'rack' : null; if (f) { (f === 'rack' ? G.packs : S.backPacks)[it.game] += it.n; placed++; } else left.push(it); continue; }
     const o = it.good || newGood(G, C.goods, it.game, { set: it.set });
     const tries = GOODS[o.type].where.indexOf('shelf') >= 0 ? ['shelf', 'rack'] : GOODS[o.type].where;
     let done = false; for (const f of tries) { const sp = gridSpot(G, f, o); if (sp) { G.goods.push(o); o.loc = f; [o.x, o.y, o.rot] = sp; if (isFloor(f)) o.tag = defaultTag(G, o); done = true; break; } }
     if (done) placed++; else left.push(Object.assign({}, it, { good: o }));
   }
-  S.crate = left.length ? { items: left } : null;
+  S.crate = left.length ? { items: left } : null; S.crateOpened = G.dayIdx;
   return ok({ placed, left: left.length });
 }
 // Crack sealed product open: its packs go loose where it stood (rack or shelves), promos go to the inbox.
@@ -1804,17 +2895,18 @@ function openGood(G, uid) {
   if (room < D.packs) return err('not enough room for ' + D.packs + ' loose packs there');
   G.goods.splice(G.goods.indexOf(o), 1); store[o.game] += D.packs; if (o.dead) G.store.dead[o.game] += D.packs;
   const promos = [];
-  for (let i = 0; i < (D.promo || 0); i++) { const c = makeCard(G, o.game, R(G) < 0.3 ? 'h' : 'r', 9, { fresh: true, promo: o.type === 'tin' ? 'topper' : 'collector', src: 'plain' }); c.know.uv = true; addStock(G, c); promos.push(c); }
+  const got = o.set && GTYPE[o.type] ? uni(G).openSealed(o.set, GTYPE[o.type], G) : { promos: [] };
+  for (const d of (got.promos || []).slice(0, Math.max(1, D.promo || 0))) { const c = makeCard(G, o.game, null, 9, { fresh: true, id: d.id, p: d.p }); c.know.uv = true; addStock(G, c); promos.push(c); }
   return ok({ packs: D.packs, promos });
 }
 // Open a vintage pack: heavy packs are likelier to hold the hit.
 function openVintage(G, uid) {
   const o = findGood(G, uid); if (!o || o.type !== 'vpack') return err('not a vintage pack');
   G.goods.splice(G.goods.indexOf(o), 1); const out = [];
-  for (const r of ['c', 'c', 'c', 'u', 'u']) out.push(makeCard(G, o.game, r, 8.4, { src: 'old', era: 'vintage' }));
-  const hit = !o.resealed && R(G) < (o.heavy ? 0.6 : 0.15);
-  out.push(makeCard(G, o.game, hit ? (R(G) < 0.3 ? 'g' : 'h') : 'r', 8.4, { src: 'old', era: 'vintage' }));
-  for (const c of out) { c.v.set = 'vintage'; c.v.first = c.v.first || R(G) < 0.3; c.know.uv = true; addStock(G, c); }
+  out.length = 0; const U = uni(G), pk = Object.assign({}, o.pack || U.makePack(o.set, G), { dead: !!o.resealed });
+  for (const d of U.openPack(pk, G)) out.push(makeCard(G, o.game, null, 8.4, { src: 'old', id: d.id, p: d.p }));
+  const hit = out.some(c => U.isHit(U.card(c.t), c.p));
+  for (const c of out) { c.know.uv = true; addStock(G, c); }
   G.stats.cracked++;
   return ok({ pulled: out, hit });
 }
@@ -1850,7 +2942,7 @@ function v3Spawn(G, v, spec) {
   if (spec.src === 'trim') for (const c of v.cards) { c.trim = true; c.edg = 10; c.cen = Math.max(c.cen, 9); c.sur = Math.max(c.sur, 9); }
   if (v.role === 'browse') { const o = browsePick(G); v.pickUid = o ? o.uid : null; if (o) { const tag = o.tag || defaultTag(G, o); v.showing = o.uid; v.ceil = Math.round(tag * (lookOf(G, o) >= tag ? 1 : 0.96)); v.bid = Math.max(1, Math.round(tag * (0.8 + R(G) * 0.12))); } }
   if (v.role === 'sealedc') { const types = ['box', 'premium', 'tin', 'collector', 'blister']; v.wantsGood = { type: pick(G, types), game: pick(G, ['shell', 'hive', 'star']) }; }
-  if (v.role === 'vintage') { v.lot = vintageLot(G); v.ask = Math.round(v.lot.val * (0.7 + R(G) * 0.2)); v.floor = Math.round(v.lot.val * 0.55); }
+  if (v.role === 'vintage') { v.lot = vintageLot(G); const val = goodValue(G, v.lot); v.ask = Math.round(val * (0.7 + R(G) * 0.2)); v.floor = Math.round(val * 0.55); }
   if (v.role === 'sell' && v.intent === 'victim' && v.cards.length) v.ask = Math.max(3, Math.round(v.ask * 0.8));
 }
 function lookOf(G, o) { return o.t ? lookValue(G, o) : goodValue(G, o); }
@@ -2001,9 +3093,9 @@ function lookValue(G, c) { return c.fake || c.trim ? trueValue(G, Object.assign(
 
 const CT = { newGame, load, act, DAYS, GAMES, SPECIES, PEOPLE, GRADERS, RARITY_NAME, RANK, BASE, BOX, PACK_RETAIL, TRANSLATE_FEE, FLUENT_AT,
   FINISH, SETS, ERRORS, PROMOS, UPGRADES, NIGHTS, NIGHT_FLYERS,
-  RENT: RENT10, NIGHT_POOL, FIX, GOODS, GEAR, CATALOG, UNLOCKS, TELLS, WEAR_DAY, WEAR_SHOW, BULK_CAP, SET_NAMES,
-  where, goodsAt, onGrid, gridFits, gridFree, gridSpot, shapeOf, sizeOf, pocketsFree, isFloor, placeRule, findThing, backPackTotal,
-  defaultTag, lookValue, goodValue, setMult, currentSet, setsOut, boardHas, tmpl, trueGrade, centerRatio, estimate, readable, trueValue, shopValue, matches, wantsText, demandOf, variantMult, packTotal };
+  RENT: RENT10, NIGHT_POOL, FIX, GOODS, GEAR, CATALOG, UNLOCKS, TELLS, WEAR_DAY, WEAR_SHOW, BULK_CAP, uni, setName,
+  FOCUS, SPLIT, openChecklist, where, goodsAt, onGrid, gridFits, gridFree, gridSpot, shapeOf, sizeOf, pocketsFree, isFloor, placeRule, findThing, backPackTotal,
+  defaultTag, lookValue, goodValue, setMult, currentSet, boardHas, tmpl, trueGrade, centerRatio, estimate, readable, trueValue, shopValue, matches, wantsText, demandOf, variantMult, packTotal };
 if (typeof module !== 'undefined' && module.exports) module.exports = CT; else root.CT = CT;
 })(this);
 
@@ -2424,7 +3516,7 @@ function fit() { const s = Math.min(innerWidth / 1288, innerHeight / 728); const
 function startSlot(n, fresh) {
   UI.slot = n; UI.sel = null; UI.stock = false; UI.lastPull = null; UI.seenEvents = 0; UI.lastResult = null;
   const s = fresh ? null : FE.readSlot(n);
-  if (s && s.G) UI.G = s.G; else { UI.G = CT.newGame((Date.now() % 1e9) | 0); CT.act(UI.G, { t: 'start' }); }
+  if (s && s.G) UI.G = s.G; else { UI.G = CT.newGame((Date.now() % 1e9) | 0); UI.intro = { step: 0, a: {} }; }
   UI.seenEvents = UI.G.events.length; UI.screen = 'game'; save();
 }
 function save() { if (UI.slot && UI.G) FE.writeSlot(UI.slot, UI.G); }
@@ -2450,7 +3542,7 @@ function hud() {
     <div class="stat"><small>Cash</small><span class="cash">${money(G.cash)}</span></div>
     ${G.tab ? `<div class="stat"><small>Tab</small><span class="tabv">${money(G.tab)}</span></div>` : ''}
     <div class="stat"><small>Rep</small>${G.rep}</div>
-    ${G.rating ? `<div class="stat" title="Store rating"><small>Rating</small>${G.rating.stars.toFixed(1)}★</div>` : `<div class="stat"><small>Packs</small>${CT.packTotal(G)}</div>`}
+    ${G.rating ? `<div class="stat" title="Store rating"><small>Rating</small>${starsTxt(G)}</div>` : `<div class="stat"><small>Packs</small>${CT.packTotal(G)}</div>`}
     ${G.store && roomPhase() ? `<button class="btn ${UI.room ? 'pink' : G.store.crate ? 'lime' : 'white'}" data-act="room" title="Floor (F) and back (B)" style="white-space:nowrap">${G.store.crate ? '📦 ' : ''}STOCK ROOM</button>` : ''}
     ${G.board ? `<button class="btn ${UI.board ? 'pink' : 'white'}" data-act="board" title="Known offenders">📌 ${G.board.length}</button>` : ''}
     <button class="btn white" data-act="stock" title="Every card you own">📇 ${G.stock.length}</button>
@@ -2523,7 +3615,7 @@ function hint() {
     return v.species === 'mollu' ? 'Mollu love round numbers. They pay extra for First Runs and vintage when they buy.' : v.species === 'zekk' ? 'Zekk split the difference fast. As buyers they love serial numbers and misprints.' : 'Puffi care about condition and pay up for full-art and alt-art.';
   }
   if (v.role === 'sealed') return v.showing ? 'Name your price for the packs, or take their bid.' : 'They want sealed packs. SHOW PACKS to hear an offer.' + (G.week[G.dayIdx].release ? ' Release Day: every 3rd pack sold earns you a release promo.' : '');
-  if (!v.showing) return 'They want ' + CT.wantsText(v.wants) + '. Pick a card from your stock on the right.';
+  if (!v.showing) return 'They want ' + CT.wantsText(v.wants) + (G.store ? '. Lit-up things on your floor fit: tap one to show it. The back drawer costs patience.' : '. Pick a card from your stock on the right.');
   return 'Name your price. Push too far past what it\'s worth and they\'ll get insulted.';
 }
 
@@ -2532,6 +3624,7 @@ function render() {
   const G = UI.G, st = $('#stage');
   if (UI.screen !== 'game') { st.innerHTML = FE.render(); FE.afterRender(); return; }
   let html = '';
+  if (G.phase === 'title') { st.innerHTML = introScreen() + FE.overlay(); FE.afterRender(); return; }
   if (UI.room && !roomPhase()) UI.room = false;
   if (UI.room) html = roomScreen();
   else if (G.phase === 'morning') html = morningScreen();
@@ -2575,9 +3668,10 @@ function morningScreen() {
     <div class="h" style="font-size:14px;margin:12px 0 6px">HOT LIST · +50%</div><div class="row">${hot}${rumor}</div>
     <div style="margin-top:8px;font-size:13px">Rent due at close: <b>${money(D.rent)}</b>${G.dayIdx < G.week.length - 1 ? ' · <b>After Hours</b> event tonight' : ' · <b>Grade Day</b> tonight'}</div>
   </div>
-  ${G.rating ? `<div class="panel" style="left:40px;top:470px;width:560px;padding:10px 14px"><div class="h" style="font-size:16px">STORE RATING ${G.rating.stars.toFixed(1)}★ <small style="font-family:var(--body)">(${G.rating.n} reviews${G.rating.last ? ', ' + (G.rating.last > 0 ? '+' : '') + G.rating.last + ' yesterday' : ''})</small></div>${(G.rating.reviews || []).map(t => `<div style="font-size:13px;font-style:italic">"${esc(t)}"</div>`).join('')}</div>` : ''}
+  ${G.rating ? `<div class="panel" style="left:40px;top:470px;width:560px;padding:10px 14px"><div class="h" style="font-size:16px">STORE RATING ${starsTxt(G)} <small style="font-family:var(--body)">(${G.rating.n} reviews${G.rating.last ? ', ' + (G.rating.last > 0 ? '+' : '') + G.rating.last + ' yesterday' : ''})</small></div>${(G.rating.reviews || []).map(t => `<div style="font-size:13px;font-style:italic">"${esc(t)}"</div>`).join('')}</div>` : ''}
   ${ev ? `<div class="panel tilt-r" style="left:640px;top:96px;width:600px;padding:14px"><div class="h" style="font-size:22px">OVERNIGHT</div><div class="row" style="margin-top:10px;gap:18px">${ev}</div></div>` : ''}
-  <div class="sheet" style="right:40px;bottom:96px">${G.store && G.store.crate ? '<button class="btn big lime" data-act="room" style="margin-right:12px">📦 UNPACK THE CRATE</button>' : ''}<button class="btn big pink" data-act="open">OPEN SHOP ▶</button></div>
+  ${G.store ? checklistHTML('left:640px;top:' + (ev ? 330 : 96) + 'px;width:600px') : ''}
+  <div class="sheet" style="right:40px;bottom:96px"><button class="btn big lime" data-act="room" style="margin-right:12px">${G.store && G.store.crate ? '📦 UNPACK THE CRATE' : G.dayIdx === 0 ? 'SET OUT YOUR FLOOR' : 'STOCK ROOM'}</button><button class="btn big pink" data-act="open" ${G.store && CT.openChecklist(G).some(x => !x.done) ? 'disabled' : ''}>OPEN SHOP ▶</button></div>
   ${dj(hint())}`;
 }
 
@@ -2609,11 +3703,13 @@ function shopScreen() {
     ${G.store ? tellsHTML(v) : ''}
     <div class="muted" style="font-size:12px">${esc(P.line)}</div></div>`;
   const v3 = v3DealHTML(v);
-  if (v3) html += v3MatHTML(v);
+  if (v3 && G.store && !v.showing && ['switch', 'distract', 'sealedc'].indexOf(v.role) >= 0) html += counterFloorHTML(v);
+  else if (v3) html += v3MatHTML(v);
   else if (youBuy) html += `<div id="mat" class="${v.cards.length > 3 ? 'lot' : ''}">${v.cards.map(c => card(c, { size: v.cards.length > 3 ? 'sm' : 'md', act: 'loupe' })).join('')}</div>`;
   else if (v.role === 'scalp') html += `<div id="mat">${Array.from({ length: Math.min(CT.packTotal(G), G.policy.limit2 ? 2 : 12) }, (_, i) => `<div class="card xs pop" style="--fr:linear-gradient(160deg,#FF2E93,#6A2BD9);animation-delay:${i * .04}s"><div class="inner" style="display:grid;place-items:center;color:#fff;font-family:var(--display);font-size:12px;background:repeating-linear-gradient(45deg,#6A2BD9 0 8px,#FF2E93 8px 16px)">PACK</div></div>`).join('') || '<div class="chip">No packs to scalp</div>'}</div>`;
   else if (v.showing === 'packs') html += `<div id="mat">${Array.from({ length: v.packs }, (_, i) => `<div class="card sm pop" style="--fr:linear-gradient(160deg,#FF2E93,#6A2BD9);animation-delay:${i * .06}s"><div class="inner" style="display:grid;place-items:center;color:#fff;font-family:var(--display);font-size:16px;background:repeating-linear-gradient(45deg,#6A2BD9 0 8px,#FF2E93 8px 16px)">PACK</div></div>`).join('')}</div>`;
   else if (v.showing) { const c = G.store ? CT.findThing(G, v.showing) : G.stock.find(x => x.uid === v.showing); html += `<div id="mat">${c ? (c.t ? card(c, { act: 'loupe' }) : goodTile(c, 180, 120)) : ''}</div>`; }
+  else if (G.store && ['buy', 'flip'].indexOf(v.role) >= 0) html += counterFloorHTML(v);
   else html += `<div id="mat"><div class="chip" style="font-size:18px">${v.role === 'sealed' ? esc(P.name) + ' wants sealed packs →' : '← ' + esc(P.name) + ' is browsing. Pick a card on the right →'}</div></div>`;
   html += `<div id="deal" class="panel tilt-r">${v3 || (v.role === 'scalp' ? dealScalpHTML(v) : youBuy ? dealBuyHTML(v) : dealSellHTML(v))}</div>`;
   return html + dj(hint());
@@ -2653,6 +3749,10 @@ function dealSellHTML(v) {
       return `<div class="h" style="font-size:20px">SEALED PACKS</div><div>You have <b>${have}</b> packs. They want ${v.packs}.${G.scalpedToday ? ' (Fewer than usual: Skrimp got to them yesterday.)' : ''}</div>
         <div class="row"><button class="btn pink" data-act="showPacks" ${have ? '' : 'disabled'}>SHOW PACKS</button><button class="btn white" data-act="pass">PASS</button></div>`;
     }
+    if (G.store) { const fits = G.stock.filter(c => CT.matches(G, v.wants, c) && !c.know.fake), on = fits.filter(c => CT.isFloor(c.loc)).length;
+      return `<div class="h" style="font-size:20px">WHAT HAVE YOU GOT?</div><div style="font-size:14px">They want <b>${esc(CT.wantsText(v.wants))}</b>.</div>
+        <div class="est">${fits.length ? `<b>${on}</b> on your floor, <b>${fits.length - on}</b> in the back. Tap one on the floor below to show it. Fetching from the back drawer costs patience (⏳).` : 'Nothing you own fits. Pass for now, and remember who wants what.'}</div>
+        <div class="row"><button class="btn white" data-act="pass">PASS</button></div>`; }
     const fits = G.stock.filter(c => CT.matches(G, v.wants, c)).sort((x, y) => (CT.isFloor(x.loc) ? 0 : 1) - (CT.isFloor(y.loc) ? 0 : 1));
     return `<div class="h" style="font-size:20px">YOUR STOCK</div><div style="font-size:13px">Cards that fit what ${esc(CT.PEOPLE[v.who].name)} wants (⏳ = fetching from the back costs patience):</div>
       ${fits.length ? `<div class="stocklist">${fits.map(c => `<div style="text-align:center">${card(c, { size: 'xs', act: 'show' })}<div style="font-size:12px;font-weight:800">${estText(c)}</div>${G.store ? `<div style="font-size:10px">${esc(where_(c))}</div>` : ''}</div>`).join('')}</div>` : '<div class="est">Nothing that fits. Pass for now, and remember who wants what.</div>'}
@@ -2876,7 +3976,7 @@ function endScreen() {
       <tr><td>Best flip</td><td>${esc(best)}</td></tr><tr><td>Best grade</td><td>${esc(bg_)}</td></tr><tr><td>Best card you owned</td><td>${esc(pull)}</td></tr>
       <tr><td>Promos earned</td><td>${S.promos}</td></tr><tr><td>Variants spotted</td><td>${S.variants}</td></tr><tr><td>Misprints found</td><td>${S.misprints}</td></tr>
       <tr><td>Fakes caught / sold</td><td>${S.fakesCaught} / ${S.fakesSold}</td></tr><tr><td>Packs sold to the scalper</td><td>${S.scalpedPacks}</td></tr>
-      <tr><td>Deals · packs ripped</td><td>${S.deals} · ${S.cracked}</td></tr>${G.store ? `<tr><td>Store rating</td><td>${G.rating.stars.toFixed(1)}★ · ${G.board.length} on your board · ${G.store.stats.bounties} bounties · ${G.store.stats.wrongCalls} wrong calls</td></tr><tr><td>Stock room</td><td>browsers bought ${G.store.stats.browseSales} · stolen ${G.store.stats.stolen} · dead packs ${G.store.stats.deadPacks} · wear −${money(G.store.stats.wearValue)}</td></tr>` : ''}${F.tab ? `<tr><td>Unpaid tab</td><td class="neg">−${F.tab}</td></tr>` : ''}
+      <tr><td>Deals · packs ripped</td><td>${S.deals} · ${S.cracked}</td></tr>${G.store ? `<tr><td>Store rating</td><td>${starsTxt(G)} · ${G.board.length} on your board · ${G.store.stats.bounties} bounties · ${G.store.stats.wrongCalls} wrong calls</td></tr><tr><td>Stock room</td><td>browsers bought ${G.store.stats.browseSales} · stolen ${G.store.stats.stolen} · dead packs ${G.store.stats.deadPacks} · wear −${money(G.store.stats.wearValue)}</td></tr>` : ''}${F.tab ? `<tr><td>Unpaid tab</td><td class="neg">−${F.tab}</td></tr>` : ''}
     </table>
     <div class="row" style="margin-top:12px"><button class="btn big pink" data-act="again">PLAY AGAIN</button></div>
   </div>${dj(hint())}`;
@@ -2895,7 +3995,7 @@ function where_(c) { return fixName(c.loc) + (CT.FIX[c.loc] && CT.FIX[c.loc].fet
 function tiny(c) { return `<div class="tiny">${card(c, { size: 'xs', act: 'rsel', cls: UI.roomSel === c.uid ? 'selring' : '' })}</div>`; }
 function goodTile(o, w, h) {
   const D = CT.GOODS[o.type], gc = o.game ? GAME_COLOR[o.game] : '#ddd', vint = D.vintage;
-  const label = (vint ? '★ ' : '') + D.name.replace('Vintage ', 'Vtg ').replace('Collector ', 'Coll. ').toUpperCase();
+  const label = (vint ? '★ ' : '') + (vint && o.vtype ? 'VTG ' + o.vtype.replace('booster', 'booster box') : D.name.replace('Collector ', 'Coll. ')).toUpperCase();
   const badges = (o.sgrade ? `<span class="gb">${o.sgrade}</span>` : o.caught ? '<span class="gb bad">ALTERED</span>' : '') + (o.weighed ? `<span class="gb">${o.heavy ? 'HEAVY' : 'LIGHT'}</span>` : '') + (o.type === 'repack' ? `<span class="gb">1/${o.sign.every}</span>` : '');
   return `<div class="good ${vint ? 'vint' : ''} ${UI.roomSel === o.uid ? 'selring' : ''}" data-act="rsel" data-uid="${o.uid}" style="--gc:${gc};--tc:${GOOD_COLOR[o.type]};width:${w}px;height:${h}px">
     <span class="gl">${esc(label)}</span>${o.game ? `<span class="gg">${esc(CT.GAMES[o.game].name)}</span>` : ''}${badges}</div>`;
@@ -2932,7 +4032,7 @@ function roomScreen() {
       : `<div class="zone" style="left:586px;top:348px;width:300px;height:236px"><div class="h">BULK BIN</div><div style="font-size:30px;font-family:var(--display);margin-top:10px">${G.bulk}<small style="font-size:14px"> / ${CT.BULK_CAP}</small></div><div style="font-size:12px">Commons sell for 1₵ each. Nubb digs it. The bulk sorter (at close) turns it into repacks.</div><div style="font-size:12px;margin-top:8px">A top-loader binder for high-end raw cards is an upgrade at close.</div></div>`}
     <div style="position:absolute;left:896px;top:348px;width:368px;display:flex;flex-direction:column;gap:8px">
       <button class="btn big white" data-act="roomView" data-v="back">THE BACK ▶</button>
-      <button class="btn big pink" data-act="room">${G.phase === 'visit' ? '◀ BACK TO THE COUNTER' : '◀ CLOSE THE ROOM'}</button></div>`;
+      ${G.phase === 'morning' ? `<button class="btn big pink" data-act="openFromRoom" ${CT.openChecklist(G).some(x => !x.done) ? 'disabled' : ''}>OPEN SHOP ▶</button>` : `<button class="btn big pink" data-act="room">${G.phase === 'visit' ? '◀ BACK TO THE COUNTER' : '◀ CLOSE THE ROOM'}</button>`}</div>`;
   else body = `
     ${zone('shelf', 'left:16px;top:8px;width:620px;height:330px', `BACK SHELVES <small>${CT.gridFree(G, 'shelf')} free · boxes, sealed, slabs, bricks · fetching costs ⏳2</small>`, gridHTML('shelf', Math.min(64, Math.floor(588 / CT.sizeOf(G, 'shelf')[0])), 64))}
     ${zone('safe', 'left:646px;top:8px;width:240px;height:160px', `SAFE <small>${CT.where(G, 'safe').length}/${CT.sizeOf(G, 'safe')} · ⏳2</small>`, pocketList('safe', 'Grails and slabs. Never stolen.'))}
@@ -2942,14 +4042,15 @@ function roomScreen() {
     ${S.up.sorter ? repackHTML() : `<div class="zone" style="left:646px;top:348px;width:240px;height:236px"><div class="h">BULK</div><div style="font-size:26px;font-family:var(--display)">${G.bulk}</div><div style="font-size:12px">The bulk sorter (an upgrade at close) builds repacks with a posted hit sign.</div></div>`}
     <div style="position:absolute;left:896px;top:348px;width:368px;display:flex;flex-direction:column;gap:8px">
       <button class="btn big white" data-act="roomView" data-v="floor">◀ THE FLOOR</button>
-      <button class="btn big pink" data-act="room">${G.phase === 'visit' ? '◀ BACK TO THE COUNTER' : 'CLOSE THE ROOM'}</button></div>`;
+      ${G.phase === 'morning' ? `<button class="btn big pink" data-act="openFromRoom" ${CT.openChecklist(G).some(x => !x.done) ? 'disabled' : ''}>OPEN SHOP ▶</button>` : `<button class="btn big pink" data-act="room">${G.phase === 'visit' ? '◀ BACK TO THE COUNTER' : 'CLOSE THE ROOM'}</button>`}</div>`;
   return `${hud()}<div id="room" class="${view}">${body}</div>${dj(roomHint(selThing))}`;
 }
 function floorInfoHTML() {
   const G = UI.G, S = G.store;
   return `<div class="zone" style="left:896px;top:8px;width:368px;height:330px">
     <div class="h">THE FLOOR TODAY</div>
-    <div style="font-size:13px;margin:4px 0">Store rating <b>${G.rating.stars.toFixed(1)}★</b> (${G.rating.n} reviews). Stocked, fairly tagged floors raise it.</div>
+    <div style="font-size:13px;margin:4px 0">Store rating <b>${starsTxt(G)}</b> (${G.rating.n} reviews). Stocked, fairly tagged floors raise it.</div>
+    ${G.phase === 'morning' && G.dayIdx === 0 ? checklistHTML('position:relative;margin:4px 0', true) : ''}
     <button class="btn sm cyan" data-act="retag">RE-TAG EVERYTHING TO TODAY'S MARKET</button>
     <button class="toggle" data-act="sign" aria-pressed="${S.noTouch}" style="margin-top:8px;width:100%"><span class="tl">"No touching the packs" sign<small>Keeps the Scale Gang off the rack</small></span><span class="sw ${S.noTouch ? 'on' : ''}"><span></span></span></button>
     <div style="font-size:12px;margin-top:8px">Tap anything to move it, tag it or open it. On a grid, tap a spot to place; <b>R</b> rotates. Loose packs fill the gaps on the rack and shelves.</div>
@@ -2973,7 +4074,7 @@ function selHTML(o) {
     const D = CT.GOODS[o.type], val = CT.goodValue(G, o);
     return `<div class="zone" style="left:896px;top:8px;width:368px;height:330px;overflow:auto">
       <div class="h">${esc(D.name)}${o.game ? ' · ' + esc(CT.GAMES[o.game].name) : ''}</div>
-      <div style="font-size:13px;margin:4px 0">Market ~${money(val)} · in <b>${esc(fixName(o.loc))}</b>${o.set != null && !D.vintage && CT.SET_NAMES[o.set] ? ' · ' + CT.SET_NAMES[o.set] : ''}${D.vintage ? ' · vintage' + (o.weighed ? (o.heavy ? ' · HEAVY' : ' · light') : '') : ''}${o.sgrade ? ' · sealed grade ' + o.sgrade : ''}${o.type === 'repack' ? ` · sign: 1 in ${o.sign.every} has ${o.sign.min}₵+` : ''}</div>
+      <div style="font-size:13px;margin:4px 0">Market ~${money(val)} · in <b>${esc(fixName(o.loc))}</b>${o.set ? ' · ' + esc(CT.setName(G, o.set)) : ''}${D.vintage ? ' · vintage' + (o.weighed ? (o.heavy ? ' · HEAVY' : ' · light') : '') : ''}${o.sgrade ? ' · sealed grade ' + o.sgrade : ''}${o.type === 'repack' ? ` · sign: 1 in ${o.sign.every} has ${o.sign.min}₵+` : ''}</div>
       <div class="h" style="font-size:13px;margin-top:6px">MOVE TO</div><div class="row" style="gap:5px;flex-wrap:wrap">${sendButtons(o)}<button class="btn sm white" data-act="rotate">↻ ROTATE (R)</button></div>
       ${CT.isFloor(o.loc) ? `<div class="h" style="font-size:13px;margin-top:6px">PRICE TAG</div><div class="step"><button class="btn white" data-act="tagd" data-d="-1">−10%</button><b style="font-size:18px">${money(o.tag || CT.defaultTag(G, o))}</b><button class="btn white" data-act="tagd" data-d="1">+10%</button></div>` : ''}
       <div class="row" style="gap:5px;margin-top:8px;flex-wrap:wrap">
@@ -3016,7 +4117,7 @@ function repackHTML() {
 }
 function crateHTML() {
   const G = UI.G, C = G.store.crate, names = {};
-  for (const it of C.items) { const k = it.good ? CT.GOODS[it.good.type].name : (CT.CATALOG[it.item] || { name: it.item }).name; const kk = k + (it.game ? ' · ' + CT.GAMES[it.game].name : ''); names[kk] = (names[kk] || 0) + 1; }
+  for (const it of C.items) { const k = it.card ? 'single cards' : it.item === 'packs' ? 'loose packs' : it.good ? CT.GOODS[it.good.type].name : (CT.CATALOG[it.item] || { name: it.item }).name; const kk = k + (it.game ? ' · ' + CT.GAMES[it.game].name : ''); names[kk] = (names[kk] || 0) + (it.item === 'packs' ? it.n : 1); }
   return `<div class="zone" style="left:896px;top:8px;width:368px;height:330px">
     <div class="h">DELIVERY CRATE</div>
     <div style="display:grid;place-items:center;margin:8px 0"><div class="cratebox">📦 ${C.items.length}</div></div>
@@ -3026,7 +4127,9 @@ function crateHTML() {
 }
 function roomHint(sel) {
   const G = UI.G, S = G.store;
-  if (S.crate && UI.room === 'back') return 'A crate came in! Cut it open: sealed to the shelves, gear in the drawer.';
+  const todo = G.phase === 'morning' ? CT.openChecklist(G).filter(x => !x.done) : [];
+  if (S.crate && UI.room === 'back' && todo.some(x => x.k === 'crate')) return G.dayIdx === 0 ? 'Your opening crate! Cut it open, then set out the floor: 3 things in the case, 4 cards in the counter binder, 3 packs or sealed on the rack.' : 'A crate came in! Cut it open: sealed to the shelves, gear in the drawer.';
+  if (todo.length && !sel) return 'Before you open: ' + todo.map(x => x.label.toLowerCase() + (x.n != null ? ' (' + x.n + ' so far)' : '')).join('; ') + '.';
   if (S.crate) return 'A delivery crate is waiting in THE BACK.';
   if (sel) return sel.t ? (CT.isFloor(sel.loc) ? 'On the floor, customers can see it and buy it, and thieves can reach it. Fair tags sell.' : 'In the back it\'s safe and it doesn\'t sell. Buyers wait while you fetch it.') : 'Sealed product: hold it, open it into loose packs, or put it out on the floor. Some sets climb if they never get reprinted.';
   if (UI.room === 'floor' && !CT.onGrid(G, 'case').length) return 'An empty case sells nothing and hurts your rating. Put out hard-sleeved cards, slabs or sealed at fair tags.';
@@ -3035,7 +4138,6 @@ function roomHint(sel) {
 }
 function catalogHTML() {
   const G = UI.G, C = CT.CATALOG, games = Object.keys(CT.GAMES), S = G.store;
-  const set = CT.currentSet(G);
   const row = (k, extra) => { const it = C[k];
     const btns = it.game ? games.map(g => `<button class="btn sm" style="background:${GAME_COLOR[g]}" data-act="order" data-item="${k}" data-game="${g}" ${G.cash >= it.cost ? '' : 'disabled'}>${esc(CT.GAMES[g].name.split(' ')[0])}</button>`).join('')
       : `<button class="btn sm" data-act="order" data-item="${k}" ${G.cash < it.cost ? 'disabled' : ''}>ORDER</button>`;
@@ -3046,7 +4148,7 @@ function catalogHTML() {
     <div class="row" style="align-items:center;margin-bottom:10px"><div class="h" style="font-size:30px;color:var(--sun);flex:1">DISTRIBUTOR CATALOG</div><span class="chip">Cash ${money(G.cash)}</span><button class="btn pink" style="flex:none" data-act="catalog">CLOSE</button></div>
     <div class="row" style="gap:14px;align-items:flex-start">
     <div class="panel" style="position:relative;padding:12px 16px;flex:1">
-      <div class="h" style="font-size:18px">SEALED · current set: ${esc(CT.SET_NAMES[set])}</div>
+      <div class="h" style="font-size:18px">SEALED · newest sets: ${Object.keys(CT.GAMES).map(g => esc(CT.setName(G, CT.currentSet(G, g)))).join(', ')}</div>
       ${row('box', 'Arrives tomorrow. 2×3 on the shelves; open it into 6 loose packs.')}
       ${row('premium', '3×2. Collectors hold these. Some sets climb if they never get reprinted.')}
       ${row('tin', '2×2. 4 packs and a promo.')}
@@ -3100,14 +4202,14 @@ function v3DealHTML(v) {
   if (v.role === 'distract') {
     const far = G.stock.filter(c => !CT.isFloor(c.loc) && CT.matches(G, v.wants, c) && !c.know.fake).slice(0, 6);
     return `<div class="h" style="font-size:20px">"GOT ANYTHING IN THE BACK?"</div><div style="font-size:13px">${v.foiled ? 'Their friend has stopped drifting.' : 'Going to the back leaves the floor alone. Check the tells first.'}</div>
-      ${far.length ? `<div class="stocklist">${far.map(c => `<div style="text-align:center">${card(c, { size: 'xs', act: 'show' })}<div style="font-size:11px;font-weight:800">${esc(where_(c))}</div></div>`).join('')}</div>` : '<div class="est">Nothing in the back that fits.</div>'}
+      <div class="est">${far.length ? far.length + ' thing' + (far.length > 1 ? 's' : '') + ' in the back fit. Opening the BACK DRAWER below means turning your back on the floor.' : 'Nothing in the back that fits.'}</div>
       <div class="row"><button class="btn lime" data-act="watch" ${v.watched ? 'disabled' : ''}>WATCH THEM AND THEIR FRIEND</button><button class="btn white" data-act="pass">NOT TODAY</button></div>`;
   }
   if (v.role === 'switch') {
     const fits = G.stock.filter(c => CT.matches(G, v.wants, c));
     return `<div class="h" style="font-size:20px">"CAN I SEE IT?"</div>
       <div style="font-size:13px">${v.watched ? 'You\'re watching all four hands.' : esc(P.name) + ' wants to hold it. Up close.'} Cards that fit:</div>
-      ${fits.length ? `<div class="stocklist">${fits.slice(0, 6).map(c => `<div style="text-align:center">${card(c, { size: 'xs', act: 'show' })}<div style="font-size:11px;font-weight:800">${c.graded ? 'slab' : PROT_NAME[c.prot || 'none']}</div></div>`).join('')}</div>` : '<div class="est">Nothing that fits.</div>'}
+      <div class="est">${fits.length ? 'Pick one from the floor below (or the back drawer). Hard sleeves, mag cases and slabs are shop-stamped: they can\'t be swapped.' : 'Nothing that fits.'}</div>
       <div class="row"><button class="btn lime" data-act="watch" ${v.watched ? 'disabled' : ''}>WATCH THEIR HANDS</button><button class="btn white" data-act="pass">NOT TODAY</button></div>`;
   }
   if (v.role === 'reseal') return `<div class="h" style="font-size:20px">"FACTORY SEALED"</div>
@@ -3127,7 +4229,7 @@ function v3DealHTML(v) {
   if (v.role === 'sealedc' && !v.showing) {
     const W = v.wantsGood, fits = G.goods.filter(o => o.type === W.type && o.game === W.game);
     return `<div class="h" style="font-size:20px">SEALED COLLECTOR</div><div style="font-size:13px">Wants a ${esc(CT.GOODS[W.type].name.toLowerCase())}, ${esc(CT.GAMES[W.game].name)}.</div>
-      ${fits.length ? fits.map(o => `<div class="row" style="align-items:center">${goodTile(o, 90, 50)}<span style="font-size:12px">${esc(fixName(o.loc))}${CT.FIX[o.loc].fetch ? ' · ⏳' + CT.FIX[o.loc].fetch : ''}</span><button class="btn sm" data-act="show" data-uid="${o.uid}">SHOW</button></div>`).join('') : '<div class="est">You don\'t have one. Order sealed at close.</div>'}
+      <div class="est">${fits.length ? 'You have ' + fits.length + '. Pick it on the floor below, or from the back drawer (⏳).' : 'You don\'t have one. Order sealed at close.'}</div>
       <div class="row"><button class="btn white" data-act="pass">PASS</button></div>`;
   }
   if (v.role === 'vintage') { const val = CT.goodValue(G, v.lot); return `<div class="h" style="font-size:20px">VINTAGE SEALED</div>
@@ -3152,8 +4254,8 @@ const V3_EVENT_TEXT = {
   searched: () => '⚖ The Scale Gang left your rack lighter on hits. Some packs are now dead weight.',
   gearOut: () => '⚠ Out of sleeves! New cards are going in unprotected.',
   crate: e => '📦 Delivery! A crate with ' + e.n + ' item' + (e.n === 1 ? '' : 's') + ' is in the back.',
-  release: e => '🚀 ' + CT.SET_NAMES[e.set] + ' is out today.',
-  reprint: e => '📉 Reprint announced: ' + CT.SET_NAMES[e.set] + '.',
+  release: e => '🚀 New set out today: ' + CT.setName(UI.G, e.set) + '.',
+  reprint: e => '📉 Reprint announced: ' + CT.setName(UI.G, e.set) + '.',
   grateful: () => '💛 Someone you helped is back, with real cards to sell.',
   board: e => '📌 ' + CT.PEOPLE[e.who].name + ' is on your Known Offenders board.',
   distracted: e => e.got ? '🫥 While you were in the back, their friend lifted something off the floor.' : '🫥 Their friend tried the floor while you were in the back.',
@@ -3220,6 +4322,52 @@ function onDrop(e) {
   UI.roomSel = null; save(); render(); return r;
 }
 
+// ---------- v3: opening a brand-new shop ----------
+const STARS = G => G.rating && G.rating.stars != null;
+function starsTxt(G) { return STARS(G) ? G.rating.stars.toFixed(1) + '★' : 'NEW'; }
+const INTRO = [
+  { k: null, h: 'STALL 7 IS YOURS', p: 'You just signed the lease on an empty stall at the dock. No customers yet, no reviews, a crate of stock coming. Three quick questions decide what\'s in it.' },
+  { k: 'focus', h: 'WHAT KIND OF SHOP?', opts: [['singles', 'SINGLES SHOP', 'A crate of binder cards across all three games. Fill the case and the binders.'], ['sealed', 'SEALED SHOP', 'Boxes, tins and blisters to hold or open, and fewer singles.'], ['vintage', 'VINTAGE HUNTER', 'Older cards from estate binders: fewer, pricier, riskier.']] },
+  { k: 'split', h: 'HOW DO YOU SPLIT YOUR SAVINGS?', opts: [['cash', 'MOSTLY CASH', 'About 300₵ in the till, a small crate. Room to buy.'], ['balanced', 'BALANCED', 'About 210₵ and a medium crate.'], ['stock', 'MOSTLY STOCK', 'About 130₵ and a big crate. Tight on rent early.']] },
+  { k: 'home', h: 'WHICH GAME DID YOU GROW UP ON?', opts: [['shell', 'SHELLSTORM', 'You read the Mollu spiral script from day 1.'], ['hive', 'HIVE GAMBIT', 'You read the Zekk dot script from day 1.'], ['star', 'STARWEAVE', 'You read the Puffi wave script from day 1.']] },
+];
+function introScreen() {
+  const I = UI.intro || (UI.intro = { step: 0, a: {} }), Q = INTRO[Math.min(I.step, INTRO.length - 1)];
+  return `${bg('dock', .45)}<div class="panel tilt-l" style="left:190px;top:90px;width:900px;padding:22px">
+    <div class="chip" style="background:var(--sun)">STEP ${I.step + 1} OF ${INTRO.length}</div>
+    <div class="h" style="font-size:40px;margin:10px 0">${Q.h}</div>
+    ${Q.p ? `<div style="font-size:18px;margin-bottom:14px">${Q.p}</div><button class="btn big pink" data-act="intro">LET'S GO ▶</button>` :
+      `<div class="row" style="gap:14px;align-items:stretch">${Q.opts.map(([v, t, d]) => `<button class="introopt" data-act="intro" data-k="${Q.k}" data-v="${v}" ${Q.k === 'home' ? `style="--gc:${GAME_COLOR[v]}"` : ''}><b>${t}</b><span>${d}</span></button>`).join('')}</div>`}
+  </div>${dj(I.step === 0 ? 'Welcome to the strip, new kid. I\'m DJ Vee, Lane FM. I\'ll be in your ear all week.' : 'Pick one. You can\'t get this wrong, only different.')}`;
+}
+function checklistHTML(style, compact) {
+  const G = UI.G, list = CT.openChecklist(G);
+  if (!list.length) return '';
+  return `<div class="${compact ? '' : 'panel tilt-r'}" style="${compact ? '' : 'position:absolute;'}${style};padding:${compact ? '4px 0' : '14px'}">
+    ${compact ? '' : `<div class="h" style="font-size:22px">${G.dayIdx === 0 ? 'BEFORE YOU OPEN, DAY 1' : 'BEFORE YOU OPEN'}</div>`}
+    ${list.map(x => `<div class="check ${x.done ? 'done' : ''}">${x.done ? '✅' : '⬜'} ${esc(x.label)}${x.n != null && !x.done ? ' (' + x.n + ')' : ''}</div>`).join('')}
+    ${compact ? '' : `<div style="font-size:12px;margin-top:6px">${G.dayIdx === 0 ? 'Customers only see what\'s on the floor. Set it out in the STOCK ROOM: tap a card, then tap a spot.' : 'A crate came in overnight.'}</div>`}</div>`;
+}
+// The floor at the counter: the buyer looks at your case, rack and counter binder. Things that fit light up; tap one to
+// show it. The back drawer holds the rest, and each trip back costs the customer's patience.
+function counterFloorHTML(v) {
+  const G = UI.G, back = UI.drawer, cw = 34, ch = 46;
+  const fit = o => o.t ? v.role !== 'sealedc' && !o.know.fake && CT.matches(G, v.wants, o) : v.role === 'sealedc' && o.type === v.wantsGood.type && o.game === v.wantsGood.game;
+  const face = (o, w, h) => o.t ? `<div class="tiny2">${card(o, { size: 'xs' })}</div>` : goodTile(o, w, h);
+  const item = (o, w, h, style, extra) => { const ok = fit(o); return `<div class="mini ${ok ? 'fit' : 'dim'}" ${ok ? `data-act="show" data-uid="${o.uid}"` : ''} style="${style || ''}">${face(o, w, h)}${extra || ''}</div>`; };
+  const grid = f => { const [w, h] = CT.sizeOf(G, f); let out = ''; for (const o of CT.onGrid(G, f)) { const [sw, sh] = CT.shapeOf(o); out += item(o, sw * cw - 4, sh * ch - 4, `position:absolute;left:${o.x * cw}px;top:${o.y * ch}px;width:${sw * cw}px;height:${sh * ch}px`); }
+    const packs = f === 'rack' ? CT.packTotal(G) : 0; return `<div class="cgrid" style="width:${w * cw}px;height:${h * ch}px">${out}${packs ? `<span class="chip cpk">${packs} loose packs</span>` : ''}</div>`; };
+  const all = G.stock.filter(c => !CT.isFloor(c.loc)).concat(G.goods.filter(o => !CT.isFloor(o.loc)));
+  const onFloor = G.stock.filter(c => CT.isFloor(c.loc)).concat(G.goods.filter(o => CT.isFloor(o.loc))).filter(fit).length, inBack = all.filter(fit).length;
+  const body = back
+    ? `<div class="drawer">${all.filter(fit).concat(all.filter(o => !fit(o))).slice(0, 30).map(o => item(o, 46, 30, '', `<span class="fetch">⏳${CT.FIX[o.loc] ? CT.FIX[o.loc].fetch : 0}</span>`)).join('') || '<div class="chip">The back is empty.</div>'}</div>`
+    : `<div class="row" style="gap:10px;align-items:flex-start"><div><div class="lbl2">CASE</div>${grid('case')}</div><div><div class="lbl2">RACK</div>${grid('rack')}</div>
+        <div style="flex:1"><div class="lbl2">COUNTER BINDER</div><div class="cbind">${CT.where(G, 'cbinder').concat(CT.where(G, 'tlbinder')).map(c => item(c)).join('') || '<span class="muted" style="font-size:11px">empty</span>'}</div></div></div>`;
+  return `<div id="cfloor" class="panel">
+    <div class="row" style="align-items:center;gap:6px;margin-bottom:6px"><button class="btn sm ${back ? 'white' : 'pink'}" data-act="drawer" data-v="0">YOUR FLOOR · ${onFloor} fit</button><button class="btn sm ${back ? 'pink' : 'white'}" data-act="drawer" data-v="1">BACK DRAWER ⏳ · ${inBack} fit</button>
+      <span style="font-size:11px;flex:1;text-align:right">${back ? 'Fetching costs patience. Some people send you back here on purpose.' : 'Lit up = fits what they want. Tap to show it.'}</span></div>${body}</div>`;
+}
+
 // ---------- input ----------
 function onClick(e) {
   const el = e.target.closest('[data-act]'); if (!el) return;
@@ -3232,7 +4380,10 @@ function onClick(e) {
   const rr = roomClick(a, el, uid);
   if (rr !== undefined) r = rr; else switch (a) {
     case 'open': r = act({ t: 'open' }); break;
-    case 'next': UI.lastPull = null; UI.lastResult = null; r = act({ t: 'next' }); UI.offer = 0; break;
+    case 'openFromRoom': r = act({ t: 'open' }); if (r.ok) UI.room = null; break;
+    case 'drawer': UI.drawer = el.dataset.v === '1'; break;
+    case 'intro': { const I = UI.intro; if (el.dataset.k) I.a[el.dataset.k] = el.dataset.v; I.step++; if (I.step >= INTRO.length) { r = act({ t: 'start', answers: I.a }); UI.intro = null; UI.room = 'back'; sting('grade'); } break; }
+    case 'next': UI.lastPull = null; UI.lastResult = null; UI.drawer = false; r = act({ t: 'next' }); UI.offer = 0; break;
     case 'loupe': UI.sel = uid; UI.uvView = false; UI.stock = false; break;
     case 'closeLoupe': UI.sel = null; break;
     case 'uvview': UI.uvView = !UI.uvView; break;

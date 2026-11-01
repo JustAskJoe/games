@@ -384,7 +384,7 @@ function build(seed, P, opts) {
     const Y = Rp.yes, No = Rp.no;
     if (s.reprint === 'yes') m *= day < s.reveal ? 1 + Y.pre[kind] * day : Y.drop[kind] * Math.pow(1 + Y.post[kind], day - s.reveal);
     else if (s.reprint === 'no') m *= Math.pow(1 + No.pre[kind], Math.min(day, s.reveal)) * Math.pow(1 + No.post[kind], Math.max(0, day - s.reveal)) * (day >= s.reveal && No.jump ? No.jump[kind] : 1); // the announcement spikes it
-    return m;
+    return Math.max(0.05, m); // a long run of linear pre-reveal drift must never push a price below zero
   }
   function price(id, pk, grade, day, market) {
     const c = card(id); if (!c) return 0;

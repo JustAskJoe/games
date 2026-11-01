@@ -84,3 +84,25 @@
 #room .zone[data-drop=safe] .tray .it .tiny, #room .zone[data-drop=inbox] .tray .it .tiny { transform: scale(.52); width: 40px; height: 60px; }
 #room .zone[data-drop=safe] .tray .pchip, #room .zone[data-drop=inbox] .tray .pchip { display: none; }
 #room .zone[data-drop=safe] .h, #room .zone[data-drop=inbox] .h { font-size: 14px; }
+
+/* opening questions, the setup checklist, the floor at the counter */
+.introopt { flex: 1; display: flex; flex-direction: column; gap: 8px; text-align: left; padding: 16px; border: var(--ol); border-radius: 14px; background: #fff; box-shadow: 5px 5px 0 var(--ink); cursor: pointer; border-top: 10px solid var(--gc, var(--magenta)); font: inherit; color: var(--ink); }
+.introopt:hover { transform: translate(-2px, -2px) rotate(-1deg); }
+.introopt b { font-family: var(--display); font-size: 22px; }
+.introopt span { font-size: 14px; }
+.check { font-size: 15px; font-weight: 800; padding: 3px 0; }
+.check.done { opacity: .6; text-decoration: line-through; }
+#cfloor { position: absolute; left: 360px; top: 300px; width: 548px; height: 300px; padding: 8px 10px; z-index: 4; overflow: hidden; }
+.lbl2 { font-family: var(--display); font-size: 11px; margin-bottom: 2px; }
+.cgrid { position: relative; border: 2.5px solid var(--ink); border-radius: 6px; background: linear-gradient(160deg, rgba(180,240,255,.6), rgba(255,255,255,.4)); }
+.cgrid .cpk { position: absolute; left: 4px; bottom: 4px; font-size: 10px; padding: 0 6px; }
+.mini { position: relative; display: inline-block; border-radius: 6px; }
+.mini.fit { cursor: pointer; outline: 3px solid var(--lime); outline-offset: -1px; box-shadow: 0 0 10px var(--lime); }
+.mini.dim { opacity: .35; filter: grayscale(.6); }
+.mini .tiny2 { transform: scale(.42); transform-origin: top left; width: 32px; height: 44px; }
+.mini .tiny2 .card:hover { transform: none; }
+.cbind { display: flex; flex-wrap: wrap; gap: 3px; max-height: 230px; overflow: hidden; }
+.cbind .mini { width: 32px; height: 44px; }
+.drawer { display: flex; flex-wrap: wrap; gap: 5px; max-height: 250px; overflow: hidden; }
+.drawer .mini { width: 46px; min-height: 44px; }
+.drawer .mini .fetch { position: absolute; right: -4px; top: -6px; font-size: 10px; font-weight: 800; background: var(--sun); border: 1.5px solid var(--ink); border-radius: 6px; padding: 0 3px; z-index: 3; }
