@@ -6,6 +6,74 @@ Newest on top. Each entry covers **what's new** for players, **next up** for the
 
 ---
 
+## P2 art · Oct 31, 2026 · Zach (with Claude)
+
+### What's new
+- **Clean Synthwave city:** the street now follows the picked concept (#24 A). Towers sit dark with gold, violet and bone windows and one violet roofline. The road has chevrons and a bone centre line, the arches are violet frames that turn gold at the drop, and the sun is a dim violet-to-gold stripe that brightens.
+- **Street Ravers squad:** your runners are now hooded ravers with a light strip down the back and a chunky blaster, and they turn near-white in Overclock.
+- **Hush units:** swarm units are pink diamonds with a white mute bar, drones are flat saucers, and bikers have wide armoured shoulders and a pink visor. Models are flat-shaded.
+- **Fixed:** the squad was running backward, with guns pointing at the camera. It now faces up the road and shows its back, and it leans into turns.
+- **New signs:** before the drop every sign is Hush pink (HUSH, OBEY, NO MUSIC). At the drop each flips to its own slogan (LOUD, FREE THE BEAT, TURN IT UP).
+
+### Next up
+- [ ] @Zach: play it and check the city still feels alive before the drop. It's much darker now, on purpose, so the road and the drop stand out.
+- [ ] @Zach: check you can tell swarm from drones and bikers at full speed, and that a big squad doesn't blur into one cyan shape (the sheet's own risk).
+
+### Watch out
+- [ ] Removed two old sign pairs, NEON CITY 2089 and OVERCLOCK NEON CITY UNMUTED, because the sheet shows three pairs.
+- [ ] Arches on PC can look pink-white in the first moments of the drop while the colour fades to gold. Seen in a still, not judged in motion.
+- [ ] Swarm units sway now instead of spinning, so the mute bar stays readable. Up close that's less lively; judge in motion.
+- [ ] The Enforcer boss wasn't redesigned (the request excluded it), and it still has its old model next to the new units.
+- [ ] Frame rate wasn't measured. Swarm models have fewer triangles but squad models have similar counts; check a full horde on a mid-range phone.
+- [ ] Judged from stills on a software renderer, not on a real phone. Dark towers may crush to black on a dim phone screen.
+
+## P2 · Oct 31, 2026 · Zach (with Claude)
+First step of Prototype 2: new graphics, same game.
+
+### What's new
+- **The street is real 3D now:** a neon city with lit towers, Hush propaganda billboards, a striped synthwave sun, a wet glowing road and light arches that pass overhead on the beat.
+- **New models for everything:** your runners, drones, bikers, the gold crate and the Hush Enforcer.
+- The picture adapts to the window, so it plays wide on a PC as well as tall on a phone.
+- **Harder music:** same 122 BPM, but a punchier kick, a pumping detuned bass, an acid line through the build, darker chords and a screaming hoover riff at the drop. Still original and made in code.
+- **Weapons are a path now:** one weapon fork per run, then a later fork with two upgrades for the gun you chose (for example Overcharge or Forked on the Arc gun). No more swapping guns mid run.
+- **Cleaner gates:** the text floating above gates is gone. The gate itself is the one thing to read, and the lit side shows your choice.
+- **Boss health bar:** a big fixed bar with the Enforcer's health as a percentage.
+- **The city reacts:** windows and rooftop neon wake up as Overclock charges, and at the drop the Hush signs flip to "FREE THE BEAT" and fireworks go off over the street.
+- **More impact:** shockwaves, a camera punch on gates and the drop, enemies bursting into neon shards, and a chain of explosions when the Enforcer falls.
+- **The Enforcer lands on the drop:** it appears as the beat drops and walks through the horde for an 8 second fight, instead of dying in a fraction of a second.
+- **Horde walls:** packs fill the whole road, from 24 enemies early to nearly 400 at the drop. Your fire carves a path and whatever gets through eats runners.
+- **Split road at gates:** a divider leads into each gate, your side lights up with chevrons, the other dims, and both show what they'd do for you.
+- **Weapons:** weapon gates offer Arc gun, Scatter, Railgun and Rockets, each fighting differently. Power gates and gold crates level your gun up.
+- **Gates are real choices:** flat numbers, multipliers, fire rate, Overclock charge and risky trades, where the best pick depends on your squad.
+- **Street signs fixed:** they hang off the buildings over the road instead of cutting into the walls.
+- **Faster and a bit harder:** the city rushes past about 40% faster, your squad only has 1.7 seconds to shoot what's coming (was 2.3), and drones, bikers and the Enforcer all hit harder.
+
+### Next up
+- [x] @Zach: play the 3D build on PC and give a verdict. (done Oct 31, Zach: very fun, liked traveling through the city)
+- [x] @Zach: judge the new pace on PC, then next are comparable gates and weapon upgrades. (done Oct 31, Zach approved and asked for everything)
+- [ ] @Hunter @Joe: play the Lab preview on a real phone. It's the only proof the 3D runs well there.
+- [x] Split road at gates, horde walls, boss on the drop, impact, city reacts. (done Oct 31, Zach with Claude)
+- [ ] @Zach: judge the full P2 build on PC. Pass bar: do you want a second run without being asked?
+- [ ] On-beat timing bonus and tap calibration, then music and a second street.
+
+### Watch out
+- [ ] **Not tested on a real phone or a real graphics card.** Automated runs use software graphics, so they prove it works, not that it's smooth. Frame rate is unmeasured everywhere.
+- [ ] Automatic quality drop (under about 40 fps it lowers resolution, then turns glow off) has only been exercised in software graphics. Add `#q=0`, `#q=1` or `#q=2` to the URL to lock a tier.
+- [ ] If the browser loses its graphics context (phones can do this when backgrounded), recovery is untested.
+- [ ] three.js r159 is the last version with a single-script build. Upgrading later means adding a bundler. It logs a harmless deprecation warning in the console.
+- [ ] The build grew from 56 KB to about 750 KB. Not measured on a slow connection.
+- [x] The boss still dies in about 0.23s before reaching you, so its new model is barely seen until the boss-on-the-drop change. Rules are unchanged from P1. (fixed Oct 31, Zach with Claude: it's an 8 second fight now)
+- [ ] Building from `prototype/v1` would overwrite this build with P1. Use v2.
+- [ ] The squad draws at most 180 runners; the number shown is still the true count.
+- [ ] The new music was checked for errors and levels only. Claude can't hear it, so whether it sounds good is a human call. It also adds more audio voices at the drop, which is a risk on phones.
+- [ ] **Hordes are the biggest performance risk:** several hundred enemies plus effects at once, not measured on any real device. Phones may need fewer drawn enemies.
+- [ ] Nobody has played the hordes, boss fight, impact or city yet. They've only been checked with bots and stills.
+- [ ] No slow-mo on the boss kill: game time is song time, so slowing it would desync the music. There's a chain of explosions instead.
+- [ ] Weapons and upgrades were tuned with bots, so a human may find one clearly best. See the table in `prototype/v2/README.md`.
+- [ ] You can still win without killing the Enforcer, but contact now costs twice as many runners. A casual bot kills it in 54% of runs and survives it in about 35%. Check that a survive win doesn't feel flat.
+- [ ] Peak squads are about 100 now, down from 198, after the weapon path brought back fewer power gates. Bands still pass. Results differ by upgrade: Scatter's upgrades kill the boss far less often than Rail's.
+- [ ] Sim bands changed for the harder tuning: random 25-60% is now 5-40%, idle at most 35% is now at most 25%. Smart and casual bands are unchanged. Needs a human check that a first run isn't punishing.
+- [ ] The song tempo is unchanged at 122 BPM, so gates still arrive every 2 bars. "Faster" is world speed and less shooting time, not more gates per minute. Bots don't feel speed, so whether it's readable at this pace is a human call.
 ## Art #25 · Oct 31, 2026 · Artist agent (with Claude)
 Art only, no build change.
 
@@ -15,10 +83,10 @@ Art only, no build change.
 - Painted roughs requested from the free Cloudflare workflow (`art/concepts/25-roughs.json`), but none were made yet: see Next up.
 
 ### Next up
-- [ ] @Zach: open the three sheets on a phone and reply `Pick: A`, `B` or `C` (plus notes) on the concepts pull request.
+- [x] @Zach: open the three sheets on a phone and reply `Pick: A`, `B` or `C` (plus notes) on the concepts pull request. (done Oct 31, Zach: picked A, Street Ravers, in chat with Claude)
 - [ ] @Zach @Hunter @Joe: review the draft `art/art-direction.md` with the concepts (it's the same file as in the #24 pull request).
 - [ ] @Hunter: the `ART_KEY` Actions secret is missing on `JustAskJoe/games`, so the Art roughs workflow can't make roughs. Add it, then run **Art roughs** (Actions → Run workflow) on `art/cyberpunk-gate-runner-25-squad-enemies`.
-- [ ] Whoever picks: decide the final-art source (Canva, a commission, or Claude building the models in `render.js`) and fill the cost table.
+- [x] Whoever picks: decide the final-art source (Canva, a commission, or Claude building the models in `render.js`) and fill the cost table. (done Oct 31, Zach: Claude builds it in code, so no cost table needed)
 
 ### Watch out
 - [ ] The art direction is a **draft** written by the agent from the requests and P2; nobody has signed it off.
@@ -39,10 +107,10 @@ Art only, no build change.
 - Painted roughs requested from the free Cloudflare workflow (`art/concepts/24-roughs.json`), but none were made yet: see Next up.
 
 ### Next up
-- [ ] @Zach: open the three sheets on a phone and reply `Pick: A`, `B` or `C` (plus notes) on the concepts pull request.
+- [x] @Zach: open the three sheets on a phone and reply `Pick: A`, `B` or `C` (plus notes) on the concepts pull request. (done Oct 31, Zach: picked A, Clean Synthwave, in chat with Claude)
 - [ ] @Zach @Hunter @Joe: review the draft `art/art-direction.md` with the concepts: palette, color roles (the city avoids cyan and pink), the four extra P2 shades, sizes, and `final_art_source`.
 - [ ] @Hunter: the Art roughs workflow failed on this branch with "ART_KEY isn't set": the `ART_KEY` Actions secret is missing on `JustAskJoe/games` (probably lost in the move from onefiftylabs). Add it, then run **Art roughs** (Actions → Run workflow) on `art/cyberpunk-gate-runner-24-street` and the roughs will land on the branch.
-- [ ] Whoever picks: decide the final-art source (Canva, a commission, or Claude building it in code in `render.js`) and fill the cost table, so finals can be priced.
+- [x] Whoever picks: decide the final-art source (Canva, a commission, or Claude building it in code in `render.js`) and fill the cost table, so finals can be priced. (done Oct 31, Zach: Claude builds it in code, so no cost table needed)
 
 ### Watch out
 - [ ] The art direction is a **draft** written by the agent from the request and P2; nobody has signed it off.
