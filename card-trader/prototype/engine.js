@@ -366,10 +366,8 @@ function newGame(seed) {
     startValue: 0, log: [], version: 4, week: null, lastNight: null };
   G._s = (seed || 1) >>> 0;
   G.week = buildWeek(G);
-  // starting case: a few singles you already know
-  for (const [g, r] of [['shell', 'u'], ['shell', 'c'], ['hive', 'u'], ['star', 'r'], ['star', 'c'], ['hive', 'c']]) {
-    const c = makeCard(G, g, r, 7.2, { read: true }); c.know.loupe = true; c.know.uv = true; c.cost = Math.round(trueValue(G, c, 1)); G.stock.push(c);
-  }
+  // a brand-new shop: the opening questions (setupShop) decide what's in the opening crate
+  G.packs = { shell: 0, hive: 0, star: 0 };
   initStore(G);
   G.demand = { shell: 1, hive: 1, star: 1 };
   G.startValue = Math.round(shopValue(G));
@@ -386,7 +384,7 @@ function shopValue(G) {
   for (const o of G.goods) v += goodValue(G, o, true);
   for (const k in S.up) if (UNLOCKS[k]) v += UNLOCKS[k].cost * S.up[k] * 0.5; // fixtures resell for about half
   for (const p of G.grading) if (p.good) v += goodValue(G, p.good, true) - (p.card ? 0 : 0);
-  for (const it of S.orders.concat(S.crate ? S.crate.items : [])) { const C = CATALOG[it.item]; if (C && !C.gear) v += it.good ? goodValue(G, it.good, true) : C.cost; }
+  for (const it of S.orders.concat(S.crate ? S.crate.items : [])) { if (it.card) { v += trueValue(G, it.card, 1); continue; } if (it.good) { v += goodValue(G, it.good, true); continue; } if (it.item === 'packs') { v += it.n * PACK_RETAIL; continue; } const C = CATALOG[it.item]; if (C && !C.gear) v += it.good ? goodValue(G, it.good, true) : C.cost; }
   return v;
 }
 function money(G, amt, kind, label) { G.cash += amt; G.ledger.push({ day: G.dayIdx, kind, amt: Math.round(amt), label }); }
@@ -576,8 +574,10 @@ function act(G, it) {
   const v = G.visit;
   if (G.store) { const r3 = v3Act(G, it); if (r3) return r3; }
   switch (it.t) {
-    case 'start': if (G.phase !== 'title') return err('not now'); startDay(G); return ok();
-    case 'open': if (G.phase !== 'morning') return err('not now'); G.phase = 'shop'; say(G, 'vee', 'Doors open! First customer\'s at the counter.'); return ok();
+    case 'start': if (G.phase !== 'title') return err('not now'); if (G.store) setupShop(G, it.answers || {}); startDay(G); return ok();
+    case 'open': { if (G.phase !== 'morning') return err('not now');
+      const need = G.store && openChecklist(G).filter(x => !x.done); if (need && need.length) return err('Before you open: ' + need.map(x => x.label.toLowerCase()).join(', '));
+      G.phase = 'shop'; say(G, 'vee', 'Doors open! First customer\'s at the counter.'); return ok(); }
     case 'next': {
       if (G.phase !== 'shop') return err('finish this customer first');
       const D = G.week[G.dayIdx];
@@ -1073,7 +1073,7 @@ const DAYS2 = [
   { name: 'Wave 4 Release Day', ships: ['mollu', 'zekk', 'puffi'], demand: { shell: 1.2, hive: 1.2, star: 1.2 }, release: true },
   { name: 'Last Call', ships: ['mollu', 'zekk', 'puffi'], demand: { shell: 1.1, hive: 1.1, star: 1.1 } },
 ];
-const RENT10 = [40, 60, 80, 100, 120, 130, 140, 150, 160, 170];
+const RENT10 = [30, 40, 50, 60, 70, 80, 90, 100, 110, 120];
 const RANKS10 = [[-1e9, 'Corner Stall'], [300, 'Strip Regular'], [900, 'Lane Favorite'], [1800, 'Dock Legend'], [3200, 'Legend of the Lanes']];
 // Signature visitors by day index (0-based). Day 1 stays the tutorial: one browser, one fetch, one fake to note.
 const V3_SPECIALS = {
@@ -1116,7 +1116,7 @@ function initStore(G) {
     stats: { browseSales: 0, browseCash: 0, counterCardSales: 0, stolen: 0, stolenValue: 0, wearHits: 0, wearValue: 0, switched: 0,
       trimsCaught: 0, merchSales: 0, deadPacks: 0, fetches: 0, bounties: 0, wrongCalls: 0, informed: 0, refused: 0, repacksSold: 0 } };
   G.goods = []; G.board = []; G.notes = []; G.seen = {};
-  G.rating = { stars: 3.6, n: 38, today: 0, why: [], reviews: [] };
+  G.rating = { stars: null, n: 0, sum: 0, today: 0, why: [], reviews: [] };
   for (const c of G.stock) { c.loc = 'cbinder'; c.prot = c.prot || 'penny'; c.tag = defaultTag(G, c); }
 }
 const where = (G, loc) => G.stock.filter(c => c.loc === loc);
@@ -1246,7 +1246,7 @@ const SEALED_GRADE = g => g >= 10 ? 2.4 : g >= 9 ? 1.7 : g >= 8 ? 1.3 : 1.05;
 // ---------- the store rating ----------
 // A fictional star rating with a review count. Each day nudges it; the morning report quotes a few reviews.
 function bump(G, d, why) { if (!G.rating) return; G.rating.today += d; if (why && Math.abs(d) >= 0.02) G.rating.why.push([+d.toFixed(2), why]); }
-function ratingMod(G) { return G.rating ? G.rating.stars - 4 : 0; }
+function ratingMod(G) { const R_ = G.rating; return R_ && R_.stars != null ? (R_.stars - 4) * Math.min(1, R_.n / 12) : 0; }
 const REVIEW = {
   up: ['Fair prices, and they actually know their stuff.', 'Saw a vintage box on display. Unreal.', 'Pulled a hit from their repack!', 'They told my kid the card was fake and helped us out. Class act.', 'Case is always stocked.'],
   down: ['Sold me a fake. Never again.', 'Repacks are a scam.', 'Half the case was empty.', 'Accused my friend of stealing. Rude.', 'Overpriced and pushy.'],
@@ -1257,7 +1257,10 @@ function closeRating(G) {
   if (caseN >= 6 && packTotal(G) + goodsAt(G, 'rack').length >= 6) d += 0.03; else if (caseN === 0) d -= 0.05;
   if (G.store.up.riser) d += Math.min(2, goodsAt(G, 'case').filter(o => GOODS[o.type].vintage).length) * 0.04;
   d = clamp(d, -0.4, 0.3);
-  R_.stars = +clamp(R_.stars + d, 1, 5).toFixed(2); R_.n += 2 + Math.floor(R(G) * 4);
+  // today's customers leave a few reviews; how the day went sets where they land
+  const k = 2 + Math.floor(R(G) * 3) + (R_.n ? 0 : 1);
+  for (let i = 0; i < k; i++) R_.sum += clamp(Math.round(3.7 + d * 9 + gauss(G) * 0.8), 1, 5);
+  R_.n += k; R_.stars = +(R_.sum / R_.n).toFixed(2);
   R_.reviews = [];
   if (d > 0.02) R_.reviews.push(pick(G, REVIEW.up)); if (d < -0.02) R_.reviews.push(pick(G, REVIEW.down));
   R_.last = +d.toFixed(2); R_.today = 0; R_.why = [];
@@ -1320,6 +1323,44 @@ function rollTells(G, v, guilty) {
   v.tells = out; v.tellsShown = G.store.up.camera ? out.length : Math.min(out.length, guilty ? 2 : 1);
 }
 
+// ---------- the opening: a brand-new shop ----------
+// Three questions decide your start: focus (singles, sealed or vintage), how you split your savings (cash or stock),
+// and the game you grew up on (you can read its script from day 1). Everything arrives in an opening crate.
+const FOCUS = { singles: 'Singles shop', sealed: 'Sealed shop', vintage: 'Vintage hunter' };
+const SPLIT = { cash: { cash: 300, stock: 80 }, balanced: { cash: 210, stock: 180 }, stock: { cash: 130, stock: 270 } };
+function setupShop(G, ans) {
+  const focus = FOCUS[ans.focus] ? ans.focus : 'singles', split = SPLIT[ans.split] || SPLIT.balanced, home = GAMES[ans.home] ? ans.home : 'shell';
+  const U = uni(G), S = G.store, items = [], games = ['shell', 'hive', 'star'], other = games.filter(g => g !== home);
+  G.shop = { focus, split: SPLIT[ans.split] ? ans.split : 'balanced', home, name: ans.name || null };
+  G.cash = split.cash; G.fluency[home] = FLUENT_AT;
+  let budget = split.stock, n = 0;
+  const addCard = (g, rar, src, extra) => { const c = makeCard(G, g, rar, 7.6, Object.assign({ src, read: g === home }, extra || {})); c.know.uv = true; c.cost = Math.round(trueValue(G, c, 1)); budget -= c.cost; n++; items.push({ item: 'card', card: c }); };
+  const addGood = (type, g) => { const o = newGood(G, type, g); budget -= goodValue(G, o, true); items.push({ item: 'good', good: o }); };
+  // every shop gets 5 loose packs, 3 of them from the game you grew up on
+  items.push({ item: 'packs', game: home, n: 3 }, { item: 'packs', game: other[0], n: 1 }, { item: 'packs', game: other[1], n: 1 });
+  if (focus === 'sealed') { for (const [t, g] of [['blister', home], ['box', home], ['tin', other[0]], ['blister', other[1]]]) if (budget >= CATALOG[t === 'box' ? 'box' : t].cost * 0.8) addGood(t, g); }
+  if (focus === 'vintage') { addCard(home, 'r', 'old', { era: 'vintage' }); addCard(pick(G, other), 'u', 'old', { era: 'vintage' }); } // vintage sealed is far beyond a new shop: estates sell it later in the run
+  const src = focus === 'vintage' ? 'old' : 'binder';
+  if (budget > 60) addCard(home, 'h', src, { mint: true });
+  for (let guard = 0; (budget > 3 || n < 9) && n < 30 && guard < 80; guard++) addCard(pick(G, [home, home, other[0], other[1]]), budget > 80 ? pick(G, ['r', 'h']) : budget > 25 ? pick(G, ['u', 'r', 'r']) : budget > 3 ? pick(G, ['c', 'u', 'u']) : 'c', src);
+  if (budget > 0) G.cash += Math.round(budget); // whatever the crate didn't use stays in the till
+  S.crate = { items, opening: true };
+  G.startValue = Math.round(shopValue(G));
+  event(G, { t: 'opening' });
+}
+// What has to be true before the doors open. Day 1: the floor must be set out. Later days: open the morning crate.
+function openChecklist(G) {
+  const S = G.store, out = [];
+  if (S.crate && S.crateOpened !== G.dayIdx) out.push({ k: 'crate', label: 'Unpack the crate in the back', done: false });
+  else if (S.crate) out.push({ k: 'crate', label: 'Unpack the crate in the back', done: true });
+  if (G.dayIdx === 0) {
+    out.push({ k: 'case', label: 'Put 3+ things in the display case', done: onGrid(G, 'case').length >= 3, n: onGrid(G, 'case').length });
+    out.push({ k: 'cbinder', label: 'Fill 4+ counter binder pockets', done: where(G, 'cbinder').length >= 4, n: where(G, 'cbinder').length });
+    out.push({ k: 'rack', label: 'Hang 3+ packs or sealed on the rack', done: packTotal(G) + goodsAt(G, 'rack').length >= 3, n: packTotal(G) + goodsAt(G, 'rack').length });
+  }
+  return out;
+}
+
 // ---------- nightly ----------
 function steal(G, what) {
   const S = G.store;
@@ -1338,7 +1379,7 @@ function nightly(G) {
   const S = G.store;
   for (const c of where(G, 'case').concat(where(G, 'inbox'))) wearRoll(G, c, WEAR_DAY);
   for (const c of where(G, 'bbinder').concat(where(G, 'cbinder'))) wearRoll(G, c, WEAR_BINDER);
-  if (G.dayIdx >= 2 && !S.locked && onGrid(G, 'case').length && R(G) < 0.4) steal(G, 'case');
+  if (G.dayIdx >= 2 && !S.locked && onGrid(G, 'case').length && R(G) < 0.6) steal(G, 'case');
   // walk-ins buy merch and small sealed off the rack overnight
   for (const o of goodsAt(G, 'rack').slice()) { const D = GOODS[o.type]; if (D.nightly && R(G) < D.nightly * (1 + ratingMod(G) * 0.3)) { sellThing(G, o, o.tag || defaultTag(G, o), 'a walk-in'); S.stats.merchSales++; } }
   closeRating(G);
@@ -1375,12 +1416,14 @@ function unpack(G) {
   for (const it of S.crate.items) {
     const C = CATALOG[it.item];
     if (C && C.gear) { S.gear[C.gear] += GEAR[C.gear].per; placed++; continue; }
+    if (it.card) { arrive(G, it.card); G.stock.push(it.card); placed++; continue; }
+    if (it.item === 'packs') { const f = gridFree(G, 'shelf') >= it.n ? 'shelf' : gridFree(G, 'rack') >= it.n ? 'rack' : null; if (f) { (f === 'rack' ? G.packs : S.backPacks)[it.game] += it.n; placed++; } else left.push(it); continue; }
     const o = it.good || newGood(G, C.goods, it.game, { set: it.set });
     const tries = GOODS[o.type].where.indexOf('shelf') >= 0 ? ['shelf', 'rack'] : GOODS[o.type].where;
     let done = false; for (const f of tries) { const sp = gridSpot(G, f, o); if (sp) { G.goods.push(o); o.loc = f; [o.x, o.y, o.rot] = sp; if (isFloor(f)) o.tag = defaultTag(G, o); done = true; break; } }
     if (done) placed++; else left.push(Object.assign({}, it, { good: o }));
   }
-  S.crate = left.length ? { items: left } : null;
+  S.crate = left.length ? { items: left } : null; S.crateOpened = G.dayIdx;
   return ok({ placed, left: left.length });
 }
 // Crack sealed product open: its packs go loose where it stood (rack or shelves), promos go to the inbox.
@@ -1591,7 +1634,7 @@ function lookValue(G, c) { return c.fake || c.trim ? trueValue(G, Object.assign(
 const CT = { newGame, load, act, DAYS, GAMES, SPECIES, PEOPLE, GRADERS, RARITY_NAME, RANK, BASE, BOX, PACK_RETAIL, TRANSLATE_FEE, FLUENT_AT,
   FINISH, SETS, ERRORS, PROMOS, UPGRADES, NIGHTS, NIGHT_FLYERS,
   RENT: RENT10, NIGHT_POOL, FIX, GOODS, GEAR, CATALOG, UNLOCKS, TELLS, WEAR_DAY, WEAR_SHOW, BULK_CAP, uni, setName,
-  where, goodsAt, onGrid, gridFits, gridFree, gridSpot, shapeOf, sizeOf, pocketsFree, isFloor, placeRule, findThing, backPackTotal,
+  FOCUS, SPLIT, openChecklist, where, goodsAt, onGrid, gridFits, gridFree, gridSpot, shapeOf, sizeOf, pocketsFree, isFloor, placeRule, findThing, backPackTotal,
   defaultTag, lookValue, goodValue, setMult, currentSet, boardHas, tmpl, trueGrade, centerRatio, estimate, readable, trueValue, shopValue, matches, wantsText, demandOf, variantMult, packTotal };
 if (typeof module !== 'undefined' && module.exports) module.exports = CT; else root.CT = CT;
 })(this);

@@ -13,8 +13,8 @@ function bot(style) {
   const pumped = (G, c) => G.pump && G.pump.t === c.t;
   return function play(G) {
     const v = G.visit;
-    if (G.phase === 'title') return CT.act(G, { t: 'start' });
-    if (G.phase === 'morning') { backRoom(G, style); return CT.act(G, { t: 'open' }); }
+    if (G.phase === 'title') { const k = G.seed % 3; return CT.act(G, { t: 'start', answers: { focus: ['singles', 'sealed', 'vintage'][k], split: 'balanced', home: ['shell', 'hive', 'star'][(G.seed >> 2) % 3] } }); }
+    if (G.phase === 'morning') { backRoom(G, style); setupGate(G); return CT.act(G, { t: 'open' }); }
     if (G.phase === 'shop') return CT.act(G, { t: 'next' });
     if (G.phase === 'visit') {
       // paranoid: anyone showing a tell gets security called on them
@@ -152,6 +152,16 @@ const SCHEMER = ['story changes when you ask where it\'s from', 'gets pushy the 
 function hotGame(G) { const d = G.week[Math.min(G.week.length - 1, G.dayIdx + 1)].demand; return Object.keys(d).sort((a, b) => d[b] - d[a])[0]; }
 // Morning: unpack the crate, open boxes into loose packs and fill the rack, file the inbox, then (organized/greedy)
 // stock the case and counter binder at fair tags. Lazy and sloppy leave everything where it landed.
+// Day 1: every shop has to set out its floor before it can open (3 in the case, 4 in the counter binder, 3 on the rack).
+function setupGate(G) {
+  if (G.store.crate) CT.act(G, { t: 'unpack' });
+  if (G.dayIdx !== 0) return;
+  for (const g of ['shell', 'hive', 'star']) if (G.store.backPacks[g]) CT.act(G, { t: 'movePacks', game: g, n: G.store.backPacks[g], to: 'rack' });
+  const mine = G.stock.filter(c => !CT.isFloor(c.loc) && !c.know.fake && !c.graded).sort((a, b) => CT.estimate(G, b).value - CT.estimate(G, a).value);
+  for (const c of mine) { if (CT.onGrid(G, 'case').length >= 3) break; if (c.prot !== 'hard' && c.prot !== 'mag') CT.act(G, { t: 'sleeve', uid: c.uid, prot: 'hard' }); CT.act(G, { t: 'place', uid: c.uid, to: 'case' }); }
+  for (const c of mine.filter(c => !CT.isFloor(c.loc))) { if (CT.where(G, 'cbinder').length >= 4) break; if (!c.prot || c.prot === 'none') CT.act(G, { t: 'sleeve', uid: c.uid, prot: 'penny' }); CT.act(G, { t: 'place', uid: c.uid, to: 'cbinder' }); }
+  for (const o of G.goods.filter(o => o.loc === 'shelf' && CT.GOODS[o.type].where.indexOf('rack') >= 0)) { if (CT.packTotal(G) + CT.goodsAt(G, 'rack').length >= 3) break; CT.act(G, { t: 'place', uid: o.uid, to: 'rack' }); }
+}
 function backRoom(G, style) {
   const S = G.store;
   if (style === 'lazy' && S.sleeve.penny < 1e6) CT.act(G, { t: 'sleevePolicy', penny: 1e9, hard: 1e9, mag: 1e9 });
