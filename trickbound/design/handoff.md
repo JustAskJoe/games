@@ -51,6 +51,9 @@ https://claude.ai/artifact/GGqdLbfDThpFt3PNaua7ji
 - Spades Plus is rated 4.7★ with 10M+ installs on Google Play.
 - A May 2023 Statista survey named Spades with Blackjack as top picks after Solitaire.
 
+## Decision: places are isometric dioramas (art direction B, #21)
+Hunter picked **B: isometric diorama** for the town and the station interior on Oct 31, 2026 (PR #30). Prototype v1 now draws Cinder Hollow and the night-train car as three-quarter isometric scenes in `prototype/v1/world.js`; the walk grid, collision and script are unchanged underneath. The depot screen's header for Cinder Hollow is the waiting-hall card room drawn the same way. Both places have two states: **Arrival** (one lamp of two working) and **Lamp-lit** (after the back room is won). Everything is code-drawn concept art until final art is approved; `art/art-direction.md` is still a draft.
+
 ## Art (AI mood reference)
 New Canva media IDs:
 - Card hand: MAHYMHx42ek

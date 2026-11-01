@@ -177,7 +177,7 @@
       ? `<div class="card-ish"><span class="fm" style="color:var(--gold)">The bracket · entry ${t.entry} marks</span><b>${esc(t.ruleText)}</b>${t.tables.map((tb, i) => `<div class="tbl-row${(st.bracket || 0) === i && !st.won ? ' now' : ''}"><span>${(st.bracket || 0) > i || st.won ? '✓ ' : ''}${esc(tb.name)}</span><span class="ab">${esc(tb.ruleText)} · ${tb.house.map((k) => FAM_ICON[tb.houseFam[k]]).join(' ')}</span></div>`).join('')}<div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn primary" type="button" data-s="sitdown" ${P.marks < t.entry && !(st.bracket > 0) ? 'disabled' : ''}>${st.won ? 'Play the bracket again' : st.bracket ? `Table ${st.bracket + 1}` : `Enter (${t.entry} marks)`}</button></div></div>`
       : `<div class="card-ish"><span class="fm" style="color:var(--gold)">The back room · stake ${t.stake} marks</span><b>${esc(t.ruleName)}: ${esc(t.ruleText)}</b><span class="ab">House: ${t.house.map((k) => `${esc(SP.PERSONAS[k].name)} ${FAM_ICON[t.houseFam[k]]}`).join(' · ')}. A night is a full game: first team to ${t.rules.target} points, usually several hands. Win the night: +${t.stake * 2} marks and the next stop opens. Lose: −${t.stake}.</span><div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn primary" type="button" data-s="sitdown">Sit down</button></div></div>`;
     root.innerHTML = `<div class="screen"><div class="screen-in">${flash ? `<div class="flash">${flash}</div>` : ''}
-      <div class="depot-art"><img src="${t.img}" alt=""><div class="depot-title"><span class="eyebrow">${t.kind === 'junction' ? 'Junction' : 'Depot'}</span><h2>${esc(t.name)}</h2></div><span class="marks">◉ ${P.marks}</span></div>
+      <div class="depot-art">${HUB_TOWNS[t.id] && window.TBWorld ? '<canvas role="img" aria-label="The waiting-hall card room"></canvas>' : `<img src="${t.img}" alt="">`}<div class="depot-title"><span class="eyebrow">${t.kind === 'junction' ? 'Junction' : 'Depot'}</span><h2>${esc(t.name)}</h2></div><span class="marks">◉ ${P.marks}</span></div>
       ${back}
       ${HUB_TOWNS[t.id] && window.TBWorld ? '' : crewsHTML(t)}
       <div class="card-ish"><span class="fm" style="color:var(--ember)">The counter</span>
@@ -190,6 +190,8 @@
       <div class="card-ish"><span class="fm" style="color:var(--grove)">Regulars</span>${t.regulars.map(([w, l]) => `<p class="reg"><b>${esc(w)}:</b> ${esc(l)}</p>`).join('')}</div>
       <div class="home-foot">${HUB_TOWNS[t.id] ? '<button class="btn primary" type="button" data-s="hub">Walk outside</button>' : ''}<button class="btn" type="button" data-s="map">Back to the train</button><button class="btn" type="button" data-s="jump">Jump ⏩</button></div>
     </div></div>`;
+    // Cinder Hollow's hall is the isometric diorama (#21): Lamp-lit once the back room is won
+    const hall = root.querySelector('.depot-art canvas'); if (hall) window.TBWorld.drawHall(hall, { lit: !!st.won });
   }
 
   // ---------------- Pickup crews (catching) ----------------
@@ -256,7 +258,7 @@
       : P.flags.firstDuel ? [['Dee', 'Back room’s through the door: first to 150, ten a seat. Win it and Lamplight opens.'], ['Dee', 'Out here the crews play for pocket money, and every table’s got a critter asleep on it. Play the way it likes and it might wake for you.']]
       : [['Dee', 'Go on in.']];
     const intro = !P.flags.hubIntro ? (P.flags.hubIntro = true, save(), [['Dee', `This is Cinder Hollow, ${P.name || 'kid'}. Small, but everybody plays.`], ['Dee', 'The back room is the real game. Win there and the Line opens up.'], ['Dee', 'Those crews — Moss and Pike at the heap, the kids on the platform — they’ll play you for pocket money. See the critters asleep over their tables? Those are the ones you can wake.']]) : null;
-    window.TBWorld.hub(P, { door: () => depot(t), train: () => { if (P.enc[t.id]) delete P.enc[t.id]; cur = null; save(); map(); } }, { from, crews, dee, intro });
+    window.TBWorld.hub(P, { door: () => depot(t), train: () => { if (P.enc[t.id]) delete P.enc[t.id]; cur = null; save(); map(); } }, { from, crews, dee, intro, lit: !!st.won });
   }
 
   // ---------------- Packs ----------------
