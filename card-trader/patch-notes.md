@@ -6,6 +6,25 @@ Newest on top. See the repo's CLAUDE.md for how patch notes work.
 
 ---
 
+## v3.0.2 · 2026-11-01 · Hunter (with Claude): playtest quick fixes
+Text fixes from the Nov 1 agent playtests (`playtests/findings-2026-11-01.md`, PR #70). No balance numbers changed.
+
+### What's new
+- **Reviews tell the truth.** Each review line now needs to be true of your shop that day: "Pulled a hit from their repack!" only after a repack hit, "Saw a vintage box on display" only with vintage in the case, "Case is always stocked" only with 6+ things in it, "Half the case was empty" only with 2 or fewer, "Overpriced and pushy" only when a floor tag is well above its default, "Sold me a fake" only after a refund or a caught fake, "Accused my friend of stealing" only after a wrong security call, "Repacks are a scam" only once your repacks have fallen below their sign. If nothing fits, there's no review that day. Across 360 bot runs, main had 626 reviews that didn't match the shop; now 0.
+- **The reprint line names the right wave.** On the eve of Wave 3 the close still says "Wave 3 reprint list is out: <card> is on it". On the eve of Wave 4 it no longer repeats it.
+- **Card Night counts the crowd's packs.** With nothing on the rack it says so instead of "The crowd still bought some packs", and otherwise says how many they bought.
+- Continuing a save (fixed in v3.0.1) re-checked in the browser: a day-4 save loaded on a fresh page shows real card names and no "undefined" anywhere.
+
+  `build-and-test.py` (full, with the walkthrough): ALL GOOD. The balance sim's output is byte-for-byte the same as main (same random draws, so seeds don't shift).
+
+### Watch out
+- [ ] Once PR #70 merges, tick its "Fix the review lines…" Next-up item for the review half only. The other half, saying why the rating moved each morning, isn't done.
+- [ ] On a bad day where none of the five complaint lines is true, the morning report now shows no review at all. Fine for honesty; maybe add a mild generic line if it reads empty.
+- [ ] "Overpriced and pushy" fires when any floor tag is over 1.25× its default tag. That threshold was picked by eye. Vintage put in the case (tagged at 1.3× value, about 1.13× default) stays under it.
+- [ ] Bots never pick Card Night or sell repacks, so the Card Night line and "Pulled a hit from their repack!" were checked with a forced test and a code read, not in sim runs. Not played by a person on a phone.
+
+---
+
 ## v3.0.1 · 2026-11-01 · Hunter (with Claude): continuing a save
 ### What's new
 - **Fix:** continuing a saved run on a freshly opened page showed card names as "undefined" until something rebuilt the card universe. Loading a save now rebuilds it from the run's seed. The agent playtesters found it; the fix was checked by loading a save in a fresh node process and through the full walkthrough.
