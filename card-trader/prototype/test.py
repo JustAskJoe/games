@@ -36,10 +36,24 @@ with sync_playwright() as p:
     pg.on('pageerror', lambda e: errs.append(str(e)))
     benign = ('net::', 'fonts.g', 'Failed to load resource')  # offline webfonts; missing optional art falls back to drawn color
     pg.on('console', lambda m: errs.append('console: ' + m.text) if m.type == 'error' and not any(x in m.text for x in benign) else None)
-    pg.goto(build.as_uri()); pg.wait_for_timeout(900)
-    pg.screenshot(path=str(shots / 'd1_title.png'))
-    seen, n = set(), 0
+    # front end: opening (let the effects play), title, save slots, new game in slot 1
+    pg.goto(build.as_uri()); pg.wait_for_timeout(3800)
+    pg.screenshot(path=str(shots / 'f1_opening.png'))
+    pg.click('[data-act=fe-press]'); pg.wait_for_timeout(700); pg.screenshot(path=str(shots / 'f2_title.png'))
+    pg.click('[data-act=fe-settings]'); pg.wait_for_timeout(300); pg.screenshot(path=str(shots / 'f3_settings.png')); pg.click('[data-act=fe-title]')
+    pg.click('[data-act=fe-slots]'); pg.wait_for_timeout(700); pg.screenshot(path=str(shots / 'f4_slots.png'))
+    pg.click('[data-act=fe-new][data-slot="1"]'); pg.wait_for_timeout(300)
+    seen, n, reloaded = set(), 0, False
     while n < 900:
+        # once, at the start of day 2: reload the page and continue slot 1, and check the run came back
+        if not reloaded and pg.evaluate('CTUI.G.dayIdx') == 1 and pg.evaluate('CTUI.G.phase') == 'morning':
+            reloaded = True; before = pg.evaluate('[CTUI.G.dayIdx, Math.round(CTUI.G.cash), CTUI.G.stock.length]')
+            pg.reload(); pg.wait_for_timeout(500); pg.click('[data-act=fe-press]'); pg.click('[data-act=fe-slots]'); pg.wait_for_timeout(500)
+            pg.click('[data-act=fe-continue][data-slot="1"]'); pg.wait_for_timeout(200)
+            after = pg.evaluate('[CTUI.G.dayIdx, Math.round(CTUI.G.cash), CTUI.G.stock.length]')
+            print('save survives reload:', before == after, before)
+            if before != after: errs.append(f'save/continue lost state: {before} -> {after}')
+            pg.click('[data-act=fe-menu]'); pg.wait_for_timeout(200); pg.screenshot(path=str(shots / 'f5_pause.png')); pg.click('[data-act=fe-resume]')
         ph = pg.evaluate('CTUI.G.phase')
         if ph == 'end': break
         key = ph + str(pg.evaluate('CTUI.G.dayIdx'))
@@ -53,6 +67,7 @@ with sync_playwright() as p:
     final = pg.evaluate('CTUI.G.final')
     print('steps', n, 'phase', pg.evaluate('CTUI.G.phase'), 'final', final)
     if pg.evaluate('CTUI.G.phase') != 'end': errs.append('the UI walkthrough never reached the end screen')
+    if not reloaded: errs.append('never reached day 2 to test save and reload')
     # stock drawer and a second run
     pg.click('[data-act=stock]'); pg.wait_for_timeout(200); pg.screenshot(path=str(shots / 'd5_stock.png')); pg.click('#loupe [data-act=stock]')
     pg.click('[data-act=again]'); pg.wait_for_timeout(300)

@@ -18,13 +18,13 @@ This list is for Steam's AI disclosure. Every image below was made with Canva's 
 | 2026-10-31 | `builds/img/grader.jpg` | Grader office: old appraiser slabbing a card | MAHZouPQSvA | key art | prototype art. **Redo:** the appraiser drifted toward a famous green big-eared franchise character |
 | 2026-10-31 | `builds/img/p-klik.webp`, `p-vrrz.webp`, `p-zazza.webp` | Zekk lineup (Klik, Vrrz, Zazza), cropped into 3 portraits in code | MAHZohkB4CA | key art | prototype art |
 | 2026-10-31 | `builds/img/p-mimbo.webp`, `p-floss.webp`, `p-nubb.webp` | Puffi lineup (Mimbo, Floss, Nubb), cropped into 3 portraits in code | MAHZolQj-xw | key art | prototype art |
+| 2026-10-31 | `builds/img/p-tumbo.webp`, `p-sheelo.webp` | Mollu pair (Tumbo, Sheelo), cropped into 2 portraits in code | MAHZoqCSSc4 | key art + Pearla | prototype art |
 | 2026-10-31 | (not used) | Klik first try, grittier than the key art | MAHZoXqw04M | key art | replaced by the lineup |
 | 2026-10-31 | (not used) | Klik cut-out test for `remove-background` | MAHZoXDCym8 | | test only |
 
 **Drawn in code, not AI:** card frames, alien scripts, UV watermarks, wear marks, slabs, every UI element. The music is an original synth loop written in code (`prototype/music.js`).
 
 **Still to make:**
-- Portraits for Tumbo and Sheelo (Mollu).
 - A redo of the grader office appraiser (see the row above).
 
 The build falls back to drawn stand-ins until they exist.

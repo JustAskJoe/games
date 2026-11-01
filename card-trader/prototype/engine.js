@@ -5,11 +5,8 @@
 'use strict';
 
 // ---------- seeded RNG ----------
-function rng(seed) {
-  let a = seed >>> 0;
-  return function () { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
-}
-const R = (G) => G._r();
+// The RNG state lives in G._s, so G is plain JSON: a save is JSON.stringify(G) and a load is JSON.parse.
+function R(G) { G._s = (G._s + 0x6D2B79F5) >>> 0; let t = G._s; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }
 const pick = (G, arr) => arr[Math.floor(R(G) * arr.length)];
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 const gauss = (G) => (R(G) + R(G) + R(G) - 1.5) * 1.15; // cheap bell curve, sd ~1
@@ -160,7 +157,7 @@ function newGame(seed) {
     visitIdx: -1, visit: null, ledger: [], days: [], say: null, events: [], complaints: [],
     stats: { bestFlip: null, bestGrade: null, fakesCaught: 0, fakesSold: 0, deals: 0, walkouts: 0, cracked: 0 },
     startValue: 0, log: [] };
-  G._r = rng(seed || 1);
+  G._s = (seed || 1) >>> 0;
   // starting case: a few singles you already know
   for (const [g, r] of [['shell', 'u'], ['shell', 'c'], ['hive', 'u'], ['star', 'r'], ['star', 'c'], ['hive', 'c']]) {
     const c = makeCard(G, g, r, 7.2, { read: true }); c.know.loupe = true; c.know.uv = true; c.cost = Math.round(trueValue(G, c, 1)); G.stock.push(c);
@@ -509,7 +506,8 @@ function finale(G) {
   say(G, 'vee', 'GRADE DAY! Every slab is home. Final shop value ' + v + '₵. Rank: ' + rank + '!');
 }
 
-const CT = { newGame, act, DAYS, GAMES, SPECIES, PEOPLE, GRADERS, RARITY_NAME, RANK, BASE, BOX, PACK_RETAIL, TRANSLATE_FEE, FLUENT_AT,
+function load(json) { const G = typeof json === 'string' ? JSON.parse(json) : json; if (typeof G._s !== 'number') throw new Error('not a Card Trader save'); return G; }
+const CT = { newGame, load, act, DAYS, GAMES, SPECIES, PEOPLE, GRADERS, RARITY_NAME, RANK, BASE, BOX, PACK_RETAIL, TRANSLATE_FEE, FLUENT_AT,
   tmpl, trueGrade, centerRatio, estimate, readable, trueValue, shopValue, matches, wantsText, demandOf };
 if (typeof module !== 'undefined' && module.exports) module.exports = CT; else root.CT = CT;
 })(this);

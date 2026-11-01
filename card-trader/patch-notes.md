@@ -20,21 +20,24 @@ The first playable build: 3 station days at Stall 7 on Crosslane Market, desktop
 - **Grading:** QuikSlab (cheap, next day, ±1) or Halo Bureau (dear, 2 days, exact). Day 3 ends with **Grade Day**, when every slab comes home.
 - **Trade lanes:** each morning a different mix of ships sets the demand for each game and a hot list. Tomorrow's demand shows at close, so you can restock packs for it.
 - **End of day:** a ledger, rent (soft: anything you can't pay goes on a tab), grading and restocking. **Card Night** after day 2: rip packs live on stream for hype.
+- **A real game front end:** an opening sequence (spray-tag intro, halftone wipe, logo slam with shake and sparks, light sweep, flying cards, mouse parallax), then a title menu, **3 save slots** (the game saves itself after every move), settings (music, sound effects, reduced motion) and a ☰ pause menu. It's reusable: `kit/snippets/game-front-end/`.
 - **DJ Vee on Lane FM** coaches one hint at a time. The beat is an original synth loop (♪ toggles it).
-- **Art:** Canva AI paintings for the key art, the shop, the docking bay, Card Night, the grader office, DJ Vee, 7 of the 9 regulars, and card art for all 3 games, each made with the key art as a style reference. Each customer lineup is one painting cut into portraits in code. Card frames, scripts, wear and UV are drawn in code.
+- **Art:** Canva AI paintings for the key art, the shop, the docking bay, Card Night, the grader office, DJ Vee, all 9 regulars, and card art for all 3 games, each made with the key art as a style reference. Each customer lineup is one painting cut into portraits in code. Card frames, scripts, wear and UV are drawn in code.
 - Balance sim (`node sim.js`): the careful bot doubles the shop's value (+105% median), a bot that never inspects gets about +4%, and a sloppy bot loses about 29%.
 
 ### Next up
 - [ ] @Hunter @Zach @Joe: play all 3 days on desktop and say whether inspecting, haggling and Grade Day are fun. Pass bar: you start a second run without being asked.
-- [ ] Finish the art: portraits for Tumbo and Sheelo, and a redo of the grader office appraiser, who drifted toward a famous franchise look. The list is in `design/ai-assets.md`.
+- [ ] Redo the grader office appraiser, who drifted toward a famous franchise look. The list is in `design/ai-assets.md`.
 - [ ] Crew deck (about 12 slides) from the brief, using the v1 art and screenshots.
 - [ ] Add a playtest feedback form (the kit has one in Tower Defense).
+- [ ] v2 ideas are parked in `design/v2-ideas.md`: a 5-day week, scalpers, pump-and-dump, fake rings and more. Decide after the v1 playtest.
 
 ### Watch out
 - [ ] Tested in headless Chromium and Claude's browser pane only (1280×720, plus a 390/320 px check that nothing scrolls sideways). Not checked on a real desktop browser or with real players.
 - [ ] Balance is bot-tuned. A perfect 10 grade showed up in only about 1% of careful-bot runs; real players who grade more may see more. Rent (40/60/90) and the pack prices are first guesses.
 - [ ] The bots never use the translator, never point out flaws on lots, and never hold packs for Card Night. Human results will differ.
 - [ ] Canva's AI throttles bursts (about 8 jobs, then cooldowns of several minutes that grew longer as the session went on). Plan art in small batches, or move character art to Gemini (see the art pipeline doc).
+- [ ] Saves live in the browser's localStorage, so they're per browser and per device, and clearing site data wipes them. The Lab serves every game from one origin, so check that slot keys (`ict.v1.*`) don't collide when another game adopts the front end.
 - [ ] CI's **Build and test** doesn't run Card Trader yet, like the other games except Tower Defense. Run `python3 card-trader/build-and-test.py` by hand before pushing.
 - [ ] Canva's terms limit reselling raw AI images. Check with the legal reviewer before any of this art ships in a sold game.
 - [ ] Theme check (from the 0.0 note): the setting is a happy station market with alien card games, trade lanes and grading. None of the names, UI or systems come from the reference game. Keep checking this at review.

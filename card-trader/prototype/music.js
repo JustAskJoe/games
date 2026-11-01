@@ -35,13 +35,16 @@ function tick() {
 }
 // One-shot stingers for deals, grades and pack rips.
 function sting(kind) {
-  if (!ctx || !on) return; const t = ctx.currentTime + 0.01;
+  init(); if (!ctx) return; const t = ctx.currentTime + 0.01;
   const seq = { deal: [72, 76, 79], buy: [67, 72], walk: [60, 55], grade: [72, 76, 79, 84], rip: [79, 84, 88, 91], fake: [58, 52] }[kind] || [72];
   seq.forEach((n, k) => stab(t + k * 0.08, [n, n + 12]));
 }
-function start() {
+function init() {
   if (!ctx) { const AC = root.AudioContext || root.webkitAudioContext; if (!AC) return; ctx = new AC(); master = ctx.createGain(); master.gain.value = 0.35; master.connect(ctx.destination); }
   if (ctx.state === 'suspended') ctx.resume();
+}
+function start() {
+  init(); if (!ctx) return;
   if (on) return; on = true; next = ctx.currentTime + 0.05; timer = setInterval(tick, 25);
 }
 function stop() { on = false; clearInterval(timer); }

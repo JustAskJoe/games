@@ -7,12 +7,20 @@ const esc = s => String(s).replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;'
 const IMG = { keyart: 'img/keyart.jpg', shop: 'img/shop.jpg', dock: 'img/dock.jpg', cardnight: 'img/cardnight.jpg', grader: 'img/grader.jpg', dj: 'img/dj.webp' };
 const SP_COLOR = { mollu: '#19C8D8', zekk: '#A6F01E', puffi: '#B28CFF' };
 const GAME_COLOR = { shell: '#FF8FC7', hive: '#A6F01E', star: '#8B5CF6' };
-const UI = { G: null, sel: null, uvView: false, offer: 0, stock: false, nightGame: null, nightN: 3, lastPull: null, seenEvents: 0 };
+const UI = { screen: 'opening', slot: null, G: null, sel: null, uvView: false, offer: 0, stock: false, nightGame: null, nightN: 3, lastPull: null, seenEvents: 0 };
 
 // ---------- stage scaling: a 1280x720 world letterboxed into any window ----------
-function fit() { const s = Math.min(innerWidth / 1288, innerHeight / 728); $('#stage').style.transform = `translate(-50%, -50%) scale(${s})`; }
+function fit() { const s = Math.min(innerWidth / 1288, innerHeight / 728); const st = $('#stage'); st.style.setProperty('--st', `translate(-50%, -50%) scale(${s})`); st.style.transform = `translate(-50%, -50%) scale(${s})`; }
 
-function newRun() { UI.G = CT.newGame((Date.now() % 1e9) | 0); UI.sel = null; UI.stock = false; UI.lastPull = null; render(); }
+// Start a slot: fresh = a new run (straight to the first morning), else load the saved run.
+function startSlot(n, fresh) {
+  UI.slot = n; UI.sel = null; UI.stock = false; UI.lastPull = null; UI.seenEvents = 0;
+  const s = fresh ? null : FE.readSlot(n);
+  if (s && s.G) UI.G = s.G; else { UI.G = CT.newGame((Date.now() % 1e9) | 0); CT.act(UI.G, { t: 'start' }); }
+  UI.seenEvents = UI.G.events.length; UI.screen = 'game'; save();
+}
+function save() { if (UI.slot && UI.G) FE.writeSlot(UI.slot, UI.G); }
+const sting = k => { if (FE.settings.sfx) MUSIC.sting(k); };
 function act(intent) {
   const r = CT.act(UI.G, intent);
   if (!r.ok) toast(r.error);
@@ -34,7 +42,8 @@ function hud() {
     <div class="stat"><small>Rep</small>${G.rep}</div>
     <div class="stat"><small>Packs</small>${G.packs.shell + G.packs.hive + G.packs.star}</div>
     <button class="btn white" data-act="stock">Stock (${G.stock.length})</button>
-    <button class="btn ${MUSIC.on ? 'lime' : 'white'}" data-act="music" aria-pressed="${MUSIC.on}" title="Lane FM beat">♪</button>
+    <button class="btn ${FE.settings.music ? 'lime' : 'white'}" data-act="music" aria-pressed="${FE.settings.music}" title="Lane FM beat">♪</button>
+    <button class="btn white" data-act="fe-menu" title="Menu" aria-label="Menu">☰</button>
   </div>`;
 }
 function dj(text) {
@@ -88,32 +97,18 @@ function hint() {
 // ---------- screens ----------
 function render() {
   const G = UI.G, st = $('#stage');
+  if (UI.screen !== 'game') { st.innerHTML = FE.render(); FE.afterRender(); return; }
   let html = '';
-  if (G.phase === 'title') html = titleScreen();
-  else if (G.phase === 'morning') html = morningScreen();
+  if (G.phase === 'morning') html = morningScreen();
   else if (G.phase === 'shop' || G.phase === 'visit') html = shopScreen();
   else if (G.phase === 'close') html = closeScreen();
   else if (G.phase === 'cardnight') html = nightScreen();
   else if (G.phase === 'end') html = endScreen();
   if (UI.stock) html += stockDrawer();
   if (UI.sel) html += loupeScreen();
-  st.innerHTML = html;
+  html += FE.overlay();
+  st.innerHTML = html; FE.afterRender();
   const sl = $('#offer'); if (sl) sl.addEventListener('input', e => { UI.offer = +e.target.value; const o = $('#offerv'); if (o) o.textContent = money(UI.offer); const b = $('[data-act=offer]'); if (b) b.textContent = (G.visit && (G.visit.showing) ? 'ASK ' : 'OFFER ') + money(UI.offer); });
-}
-
-function titleScreen() {
-  return `${bg('keyart', .25)}
-  <div class="sheet" style="left:60px;top:70px;width:640px">
-    <div class="title-logo">INTERGALACTIC<br>CARD TRADER<span>happy space Akihabara</span></div>
-  </div>
-  <div class="panel tilt-r" style="left:70px;top:390px;width:520px;padding:16px 18px">
-    <div class="h" style="font-size:20px;margin-bottom:8px">STALL 7 · CROSSLANE MARKET</div>
-    <div style="font-size:16px;line-height:1.4">Three station days. Aliens from three worlds bring cards you can't read.
-      Inspect them under the <b>Loupe</b>, <b>haggle</b>, catch the <b>fakes</b>, send gems to the <b>graders</b>,
-      and ride the <b>trade lanes</b>.</div>
-    <div class="row" style="margin-top:14px"><button class="btn big pink" data-act="start">OPEN STALL 7 ▶</button></div>
-    <div class="muted" style="font-size:12px;margin-top:8px">v1 prototype · desktop landscape · ♪ beat starts with your first tap</div>
-  </div>`;
 }
 
 function demandBars(demand) {
@@ -344,18 +339,19 @@ function endScreen() {
 // ---------- input ----------
 function onClick(e) {
   const el = e.target.closest('[data-act]'); if (!el) return;
-  if (!MUSIC.on && !UI.muted) MUSIC.start();
+  if (FE.settings.music && !MUSIC.on) MUSIC.start();
+  if (el.dataset.act.indexOf('fe-') === 0) { FE.click(el); render(); return; }
+  if (FE.pause || FE.inSettings || FE.confirm) return;
   const a = el.dataset.act, G = UI.G, v = G.visit, uid = el.dataset.uid || el.closest('[data-uid]') && el.closest('[data-uid]').dataset.uid;
   let r = null;
   switch (a) {
-    case 'start': r = act({ t: 'start' }); break;
     case 'open': r = act({ t: 'open' }); break;
     case 'next': UI.lastPull = null; r = act({ t: 'next' }); UI.offer = 0; break;
     case 'loupe': UI.sel = uid; UI.uvView = false; UI.stock = false; break;
     case 'closeLoupe': UI.sel = null; break;
     case 'uvview': UI.uvView = !UI.uvView; break;
     case 'tool': { const t = el.dataset.tool; r = act({ t: 'inspect', uid: UI.sel, tool: t }); if (t === 'uv' && r.ok) UI.uvView = true;
-      const c = G.stock.find(x => x.uid === UI.sel) || (v && v.cards.find(x => x.uid === UI.sel)); if (t === 'uv' && c && c.fake) MUSIC.sting('fake');
+      const c = G.stock.find(x => x.uid === UI.sel) || (v && v.cards.find(x => x.uid === UI.sel)); if (t === 'uv' && c && c.fake) sting('fake');
       if (!G.visit && v) UI.sel = null; break; }
     case 'flaw': { const target = el.dataset.uid || (v && (v.cards.find(c => c.know.loupe && !c.flawUsed && (Math.min(c.cen, c.edg, c.sur) <= 6 || (c.know.uv && c.fake))) || {}).uid); r = act({ t: 'flaw', uid: target }); UI.sel = null; break; }
     case 'offer': r = act({ t: 'offer', price: UI.offer }); break;
@@ -363,33 +359,35 @@ function onClick(e) {
     case 'pass': r = act({ t: 'pass' }); break;
     case 'show': r = act({ t: 'show', uid }); UI.offer = 0; break;
     case 'showPacks': r = act({ t: 'showPacks' }); UI.offer = 0; break;
-    case 'crack': r = act({ t: 'crack', game: el.dataset.game }); if (r.ok) { UI.lastPull = r.pulled; MUSIC.sting('rip'); } break;
+    case 'crack': r = act({ t: 'crack', game: el.dataset.game }); if (r.ok) { UI.lastPull = r.pulled; sting('rip'); } break;
     case 'toBulk': r = act({ t: 'toBulk', uid: UI.sel }); UI.sel = null; break;
     case 'grade': r = act({ t: 'grade', uid, co: el.dataset.co }); if (r.ok) toast('Sent to ' + CT.GRADERS[el.dataset.co].name); break;
     case 'restock': r = act({ t: 'restock', game: el.dataset.game }); if (r.ok) toast('+' + CT.BOX.packs + ' ' + CT.GAMES[el.dataset.game].name + ' packs'); break;
-    case 'endDay': r = act({ t: 'endDay' }); if (G.phase === 'end') MUSIC.sting('grade'); break;
+    case 'endDay': r = act({ t: 'endDay' }); if (G.phase === 'end') sting('grade'); break;
     case 'nightGame': UI.nightGame = el.dataset.game; UI.nightN = Math.min(3, G.packs[el.dataset.game]); break;
-    case 'rip': r = act({ t: 'cardNight', game: UI.nightGame, n: UI.nightN }); MUSIC.sting('rip'); break;
+    case 'rip': r = act({ t: 'cardNight', game: UI.nightGame, n: UI.nightN }); sting('rip'); break;
     case 'nextMorning': r = act({ t: 'nextMorning' }); UI.nightGame = null; break;
     case 'stock': UI.stock = !UI.stock; UI.sel = null; break;
-    case 'music': if (MUSIC.on) { MUSIC.stop(); UI.muted = true; } else { MUSIC.start(); UI.muted = false; } break;
-    case 'again': newRun(); return;
+    case 'music': FE.settings.music = !FE.settings.music; FE.apply(); try { localStorage.setItem(FE.config.id + '.settings', JSON.stringify(FE.settings)); } catch (e) { /* storage blocked */ } if (FE.settings.music) MUSIC.start(); break;
+    case 'again': startSlot(UI.slot, true); render(); return;
   }
-  if (v && !G.visit && G.lastVisit === v) { MUSIC.sting(v.result === 'deal' ? 'deal' : 'walk'); UI.sel = null; }
+  if (v && !G.visit && G.lastVisit === v) { sting(v.result === 'deal' ? 'deal' : 'walk'); UI.sel = null; }
   for (const ev of G.events.slice(UI.seenEvents)) { if (ev.t === 'fluent') toast('You can read ' + CT.GAMES[ev.game].name + ' now!'); if (ev.t === 'fakeFound') toast('FAKE spotted!'); }
   UI.seenEvents = G.events.length;
+  save();
   render();
 }
 function onInput(e) { if (e.target.id === 'nightn') { UI.nightN = +e.target.value; const n = $('#nightv'); if (n) n.textContent = UI.nightN; } }
-function onKey(e) { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('.card[data-act]')) { e.preventDefault(); e.target.click(); } if (e.key === 'Escape' && (UI.sel || UI.stock)) { UI.sel = null; UI.stock = false; render(); } }
+function onKey(e) {
+  if (UI.screen === 'opening' && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); const p = $('[data-act=fe-press]'); if (p) p.click(); return; } if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('.card[data-act]')) { e.preventDefault(); e.target.click(); } if (e.key === 'Escape' && (UI.sel || UI.stock)) { UI.sel = null; UI.stock = false; render(); } }
 
 // Mark card sheets that haven't been made yet, so cards fall back to a drawn emblem.
 function probeArt() { for (const g of Object.keys(CT.GAMES)) { const im = new Image(); im.onerror = () => document.body.classList.add('noart-' + g); im.src = 'img/cards-' + g + '.jpg'; } }
 function boot() {
-  probeArt(); fit(); addEventListener('resize', fit);
-  const st = $('#stage'); st.addEventListener('click', onClick); st.addEventListener('input', onInput); st.addEventListener('keydown', onKey);
-  newRun();
+  probeArt(); fit(); addEventListener('resize', fit); FE.apply();
+  const st = $('#stage'); st.addEventListener('click', onClick); st.addEventListener('input', onInput); addEventListener('keydown', onKey);
+  render();
 }
-root.CTUI = UI; root.CTUI.render = render; root.CTUI.newRun = newRun;
+root.CTUI = UI; Object.assign(UI, { render, startSlot, save });
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 })(this);
