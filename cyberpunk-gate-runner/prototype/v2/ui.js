@@ -341,7 +341,7 @@
       <button class="btn pri" data-act="play" type="button">Run</button><button class="btn" data-act="title" type="button">Back</button>`);
   }
   function arsenalScreen() {
-    const gun = k => { const w = GR.WEAPONS[k]; return `<div class="gun"><div class="gn" style="color:${w.col}">${w.name}</div><p>${w.tip.split(': ')[1]}.</p><div class="ups">${w.mods.map(m => `<div><b>${m.name}</b> ${m.tip.split(': ')[1]}</div>`).join('')}</div></div>`; };
+    const gun = k => { const w = GR.WEAPONS[k]; return `<div class="gun"><div class="gn" style="color:${w.col}">${w.name}</div><p>${w.note[0].toUpperCase() + w.tip.split(': ')[1].slice(1)}.</p><div class="ups">${w.mods.map(m => `<div><b>${m.name}</b> ${m.tip.split(': ')[1]}</div>`).join('')}</div></div>`; };
     showSheet(`<h2>Weapons</h2><p>You start with the Pulse rifle. Pick one gun at the weapon fork, then one of its two upgrades later. Gold crates level it up.</p>
       ${['arc', 'scatter', 'rail', 'rocket'].map(gun).join('')}
       <h2 style="margin-top:16px">Gates</h2><ul class="gl">
