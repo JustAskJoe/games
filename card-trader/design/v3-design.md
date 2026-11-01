@@ -2,7 +2,7 @@
 
 © 2026 justaskjoe. All rights reserved.
 
-**Status:** rev 2 draft for Hunter's approval (Nov 1, 2026). Rev 1 was approved and built: the PR #65 build has a Back Room side screen, a display case grid, gear, wear, a catalog and 5 bad actors. After the first playtest, Hunter widened the scope so that space and stock become part of selling itself. Rev 2 replaces rev 1. Art stays placeholder ($0) until Hunter says go.
+**Status:** rev 2 approved by Hunter (Nov 1, 2026). Not built yet: the playable PR #65 build is still rev 1. Rev 1 was approved and built: the PR #65 build has a Back Room side screen, a display case grid, gear, wear, a catalog and 5 bad actors. After the first playtest, Hunter widened the scope so that space and stock become part of selling itself. Rev 2 replaces rev 1. Art stays placeholder ($0) until Hunter says go.
 
 **The question v3 answers:** is running a real card shop fun? That covers deciding what's on the floor today, what you hold back, and what's out at the graders, with a market that has old and new cards and people who are working you.
 **Pass bar:** testers rearrange the floor and back stock without being told to, pull at least one card from the back for a customer, report or forgive someone on purpose, and finish the run.

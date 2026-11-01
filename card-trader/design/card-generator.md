@@ -2,7 +2,7 @@
 
 © 2026 justaskjoe. All rights reserved.
 
-**Status:** draft scope for Hunter (Nov 1, 2026). It's built alongside v3 (`design/v3-design.md`, rev 2) so that v3 can plug it in for a large jump in card variety.
+**Status:** approved by Hunter (Nov 1, 2026), with the decisions in section 6. It's built alongside v3 (`design/v3-design.md`, rev 2) so that v3 can plug it in for a large jump in card variety.
 
 **What it is:** a seeded generator that builds the whole card universe for Shellstorm, Hive Gambit and Starweave. That universe covers 3 eras, several sets per era, every card's printings and variants, pull rates, sealed products, and how prices move. Today each game has 18 hand-written cards. After this, each game has a few thousand cards, and the economy feels like the real collecting hobby.
 
@@ -63,11 +63,34 @@ Helpers the engine calls:
 - **Budget:** the generator code and template stay under about 60 KB in the build.
 - **Balance:** `build-and-test.py` passes with the generator plugged in.
 
-## 6. Holes to settle (Hunter)
-1. **Size:** about how many sets per era and cards per set? (Suggested: 3 sets per era per game, 80–150 cards plus secrets. That's about 1,000–1,300 per game.)
-2. **Names:** fully alien (can't be read until you're fluent in that species' script) or a readable translation? (Today: alien until decoded.)
-3. **Store rating:** what exactly does it raise? (Suggested: more browsers, richer collectors, better sellers walking in.) And what lowers it?
-4. **Vintage sealed:** how many show up per run? (Suggested: 1–3 across days 6–10, worth 5–30× a modern box.)
-5. **Graded sealed:** the same graders, or a separate sealed grader?
-6. **Market moves:** do generated sets get reprinted (prices drop) or banned or rotated in play (staples drop) as the run goes on?
-7. **Zach's data:** what format and fields, and which sources? We'll need set lists, rarities, pull rates if there are any, and price history if the terms allow it.
+## 6. Decisions (Hunter, Nov 1)
+1. **Size:** 3 sets per era per game, 80–150 cards each plus secrets. That's about 1,000–1,300 cards per game.
+2. **Names:** alien script, readable once you decode the card or you're fluent in that game (as now).
+3. **Store rating:** a fictional star rating with a review count. Hunter asked for a judgement call, made realistic. Each day nudges it up or down by a fraction of a star, and a few made-up review lines show in the morning report.
+   - **Raises it:**
+     - fair tags (near today's market)
+     - an honest repack hit sign
+     - informing a fake-seller's victim
+     - a well-stocked floor
+     - vintage sealed on display
+     - events (Card Night, a tournament)
+     - deals where the customer leaves happy
+   - **Lowers it:**
+     - selling a fake or a trim (when it's found)
+     - repacks below their sign
+     - insults and walkouts
+     - an empty case or rack
+     - accusing an innocent customer
+     - selling out to a scalper
+     - theft that customers saw
+   - **What a higher rating does:** more browsers, more high-end collectors, more and better sellers walking in (estate binders, vintage), and buyers who accept tags a little over market. A low rating draws bargain hunters and flippers.
+4. **Vintage sealed:** 1–3 per run, between days 6 and 10, worth 5–30× a modern box.
+5. **Graded sealed:** the same graders (QuikSlab and Halo) also grade sealed.
+6. **Reprints (only modern gets reprinted, and not always, as in real life):**
+   - **3 modern sets** are out at the start. **2 more release** during the run, one each half.
+   - **One set gets a reprint:** its prices and sealed product drop.
+   - **One set is officially never reprinted:** its sealed product and chase cards keep climbing.
+   - The rest drift.
+   - **The player isn't told which is which.** Hints come from DJ Vee, the Hype Bros, distributor allocation (a set you can't get more of) and price trends. Spotting the no-reprint set early and holding its sealed product is the play to find.
+   - The generator gives each modern set a `reprint` flag (`yes`, `no` or `drift`) and a reveal day, all seeded.
+7. **Zach's data:** later. The generator runs on the hand-written template until then.
