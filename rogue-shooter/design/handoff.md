@@ -17,7 +17,7 @@ Single HTML file, pure Canvas + vanilla JS. No libraries, no build step.
 - **Depth sorting** by `entity.x + entity.y`.
 - **State machine:** `start | playing | levelup | stats | dead | won`.
 - **Menus:** class select uses keyboard (←/→, Enter, 1-5) or click; level-up uses 1/2/3 or ←/→ + Enter, with a 0.35 s input guard after the cards appear. The class-select previews are drawn with the in-game `renderSprite()`, so `buildCharSelect()` runs after `SPR` is defined, at the bottom of the script.
-- **Art concepts:** `art/concepts/sketches.html` (not yet adopted).
+- **Sprites:** each class has its own sprite set (`SPR.hero[id]` with `idle`, `w1`, `w2`) and palette (`HERO_PAL`); enemies use `MON_PAL`. Hit-flash builds an all-white palette from any palette (`whiteOf`). The art sheet is `art/concepts/sketches.html`.
 - **Lateral movement boost:** `1.4×` on all directions so the player doesn't feel slow on the iso grid.
 - **Google Fonts:** Press Start 2P (headings/HUD), Rajdhani (body).
 - **Pixel art system:** sprites defined as comma-separated string rows, palette-mapped and rendered to offscreen canvases via `renderSprite()`. Cached by data+palette+scale key. `stamp()` draws them centered at a world position with optional horizontal flip. `tileHash()` gives deterministic per-tile decoration.
@@ -44,8 +44,8 @@ Each weapon has a legendary evolution at LV 5+ gated by a stat threshold:
 ### Synergies
 All 10 weapon pairs have a passive bonus (stat multipliers + behavioral flags like "slow on hit" or "fire patch on impact"). Applied in `getWpnCfg()` and checked in each weapon's update function.
 
-### Enemies (5 + boss)
-Slime (basic), Bat (fast), Skeleton (tanky), Demon (ranged), Boss (wave 10 only). All drawn as pixel art sprites with animation frames (slime squish, bat wing flap, skeleton sway). Hit-flash uses white palette override.
+### Enemies (7 + mini-boss + boss)
+Slime (basic; ember/frost/venom colors after 1:00, cosmetic), Bat (fast), Wisp (fast, weaves; from 0:45), Shroomling (spore cloud on death slows the player 40%; from 1:00), Skeleton (tanky), Demon (heavy), Moss Golem (mini-boss every 25 s from 1:50 to 2:50), Demon King boss (spawns at 3:00). All pixel-art sprites with simple animation (slime squash, bat wings, hops and bobs). Hit-flash uses an all-white palette.
 
 ## What's built
 Everything above, in `builds/rogue-shooter.html`.
