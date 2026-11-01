@@ -128,6 +128,72 @@ Text fixes from the Nov 1 agent playtests (`playtests/findings-2026-11-01.md`, P
 
 ---
 
+## v3 rev 2.2 playtest agents · 2026-11-01 · Playtester agent for Hunter (with Claude)
+Agents now fill in the same playtest questionnaire as human testers. Eight scripted personas played 3 runs each through the engine (Tier A), and Claude played two full runs itself as a cautious newbie and an impatient min-maxer (Tier B, no-API route). Agent file: `kit/agents/playtester.md`. Side-by-side findings: `playtests/findings-2026-11-01.md`. Results: `playtests/agents-2026-11-01.*` and `playtests/claude-2026-11-01*.json`, each with a batch ready to push to the questionnaire artifact. No game code changed.
+
+### What's new
+- Nothing player-facing. New tool: `node card-trader/prototype/playtest-agents.js 3` plays the kid, min-maxer, cozy collector, vintage hunter, sealed speculator, chaos goblin, cautious newbie and trusting soul. Each derives questionnaire answers from what happened in its runs and quotes logged events in the text answers.
+- What the personas agree on (24 runs):
+  - **Sleeves** are unclear for players who skip hints. The kid and the goblin hit "raw cards need a hard sleeve or mag case in the case" 12–13 times a run and run out of hard sleeves (a shop starts with 10). They're unfun for 6 of 8 personas because the only payoff the game shows is a foiled switch.
+  - **Fakes:** unclear for kid, goblin and trusting. 21 of 24 runs end holding fakes the persona never found, even the newbie who lamps everything: patience runs out first, and ring fakes need the Spectrometer.
+  - **Back-room asks look alike:** in 12 runs, a buyer's "check the back, I'll wait" paid off and a distractor's "the good stuff, in the back" got the floor robbed.
+  - **Money:** 6 of 8 personas close mid- and late-run days broke (cash under the next rent). Only the min-maxer and the sealed speculator are "ok" late. Value growth flattens around day 4–7 (median drag day per persona).
+  - **Never touched:** repacks by 7 of 8 personas (matches the Balance report: repacks are dead), and the board by 4 of 8.
+- **Verdicts:** every agent run now also lists like / dislike / makes sense / confusing / keep / remove / change / add. Across 24 Tier A runs:
+  - keep: browsers (24), sealed (24), loupe (21);
+  - change: sleeves (18);
+  - remove: repacks (22), the board (12);
+  - add: a fake-rescan reminder (21), a safer mid-run cash floor (21), something new around day 4–7.
+- **v3.1 beta plan (draft):** `design/v3.1-beta-plan.md` turns the playtests and Hunter's notes into one change list:
+  - sets and rarities always known;
+  - condition shown as a range, with an Eye upgrade track and a Black Label 10;
+  - a grader-shipment reveal;
+  - a guided day 1 and a simpler back room;
+  - a QoL sweep (auto-sleeve, auto-file, stock the floor);
+  - scalper, rating and tell fixes, a mid-run spine, cheaper vintage;
+  - a beta gate. Ten questions for Hunter.
+- New tool: `node card-trader/prototype/play-driver.js` lets a person or a Claude Code session play the real engine one step at a time, seeing only player-visible text, with standing orders for routine visitors and in-the-moment notes. No API.
+- What Claude found playing (newbie 542₵ → 1,614₵, min-maxer 690₵ → 2,383₵, both Lane Favorite):
+  - **Star rating can't be read** (both rated it clear 1/5). It falls on good days with no reason given; rep hits 100 while stars fall to 3.7. Reviews describe things that never happened: "Pulled a hit from their repack!" with no repacks, "Saw a vintage box on display", "Case is always stocked" with one card in the case.
+  - **The scalper is the best strategy:** the min-maxer sold Skrimp every pack three times for about 1,300₵. Rep fell 73 → 43, but nothing it could feel got worse. Tier A missed this.
+  - **Tells are noise** (most honest customers show one), and **ring fakes pass UV and loupe** until you buy the Spectrometer. DJ Vee's hint led there.
+  - **Mid-run flatline:** both runs drag from day 4–5. Singles are 1–10₵ cards; on days without pack buyers the rack sits full.
+  - **Vintage out of reach:** first estate lots were 944₵ and 1,064₵ against 94₵ and 700₵ in the till; the next was 2,675₵.
+  - **Sealed value you can't reach:** a booster box shows ~250₵ but can't go on the rack, so walk-ins only get its ~170₵ of packs.
+
+### Next up
+- [ ] @Hunter: OK pushing `playtests/agents-2026-11-01-batch.json` to the questionnaire artifact (8 docs `agent-<persona>` in `playtests`). The main session pushes it with ArtifactData after your yes.
+- [ ] @Hunter: OK pushing `playtests/claude-2026-11-01-batch.json` (2 docs `agent-claude-<persona>`).
+- [x] Build the Tier B API runner (`card-trader/prototype/playtest-llm.js`: dry-run by default, `--go` to spend, `--max-runs`, `--max-tokens`, `--mock` for a free test) and the manual `.github/workflows/playtest-llm.yml` on `PLAYTEST_ANTHROPIC_API_KEY` (Haiku 5.5). Claude, Nov 1, 2026.
+- [ ] @Hunter: create the `PLAYTEST_ANTHROPIC_API_KEY` org secret (own Console workspace, $5/month hard limit), then OK the first real run (estimate for all 8 personas on Haiku: about $0.75, cautious).
+- [ ] @Hunter: answer Q1–Q10 in `design/v3.1-beta-plan.md`.
+- [ ] Paid API playtest: OK'd by Hunter (Nov 1) for after the v3.1 fixes land and the key exists. Run `go: false` first.
+- [ ] Balance agent: add an "always sell to the scalper" bot, and check whether rep loss should cost something.
+- [x] Fix the review lines so they only mention what the shop actually has: done in PR #73 (merged Nov 1).
+- [x] Say why the rating moved each morning: done in v3.1 (PR #77, Nov 1).
+- [ ] Results page: show `source: 'agent'` docs apart from human ones (or behind a filter) so bot answers don't drown out people.
+- [ ] Pick a public route for outside testers (itch.io restricted page or a public build, plus a Google Form into a Sheet); options in `kit/agents/playtester.md`.
+
+### Watch out
+- [ ] @Hunter: seed 1034, vintage persona, day 4. A seller asked 4₵ for 3 cards; one was a vintage ink misprint the game estimated at 857₵ (true value about 2,044₵). Could be a gem by design, but the size looks like an outlier for the Balance agent.
+- [ ] Agent "clear" and "fun" are heuristics (refusals, surprises, payoff ratios), not feelings. Thresholds were set by eye on this one run of 24 games and aren't validated against human answers yet. Compare once humans have answered.
+- [ ] Personas play worse than the sim's careful bot (min-maxer median +144% vs careful +231%), so "broke" may be partly the personas' fault. The money bands use next-day rent and haven't been checked against how broke feels to a human.
+- [ ] `mins` in agent runs is an estimate (4 s a move, 10 s a visit, 30 s a morning), not a timing.
+- [ ] `drag` is written as a string ("5") to match `day`. Check that the results page reads it the same as human answers.
+- [ ] Re-pushing the batch overwrites docs: read them first and pin `if_version`, as ArtifactData requires.
+- [ ] Tier B costs are estimates from cached prices (Oct 6, 2026) and a guessed turn count, not measured. Recruiting options in `playtester.md` marked "unverified" (Lab public access, itch.io options, community rules, Steam fee, PlaytestCloud price) were not checked.
+- [ ] Only checked with `build-and-test.py --quick`; the scripts don't touch the build or the browser walkthrough.
+- [x] Fixed in v3.0.1 (PR #72, Nov 1). Possible bug, not verified in the browser: card names come out `undefined` after a save is loaded, because `CT.load()` doesn't rebuild the card universe until something calls `uni(G)`. Reproduced in Node via the driver ("I'm looking for undefined"). `frontend.js` loads saves on continue; check there. The driver works around it.
+- [ ] Day 8's close repeats "Wave 3 reprint list is out" on the eve of Wave 4, and Card Night with no packs says "the crowd still bought some packs".
+- [ ] Claude's two runs are one seed each, played by the same model that wrote the code, and it played the min-maxer knowing the newbie run's lesson that sealed pays. Treat them as two careful testers, not a sample.
+- [ ] The API runner has only run on `--mock`. Untested against the real API: the JSON-schema output format, `effort: low` on Haiku 5.5, refusal handling and the cache hit. Check the first real run's logged `usage` and replace the estimate.
+- [ ] The workflow pins `@anthropic-ai/sdk@^0.136.0` without checking that version exists on npm, and the workflow has never run. Try a `go: false` run first (it calls nothing).
+- [ ] The new workflow touches `.github/`, so Guard needs another teammate's approval on this PR.
+- [ ] Standing orders made routine visits automatic, so some lines (for example Quill's "Glyphsmiths' workshop, I mean") went unread in the moment. A human would read every line.
+
+
+---
+
 ## v3.0.1 · 2026-11-01 · Hunter (with Claude): continuing a save
 ### What's new
 - **Fix:** continuing a saved run on a freshly opened page showed card names as "undefined" until something rebuilt the card universe. Loading a save now rebuilds it from the run's seed. The agent playtesters found it; the fix was checked by loading a save in a fresh node process and through the full walkthrough.
