@@ -225,6 +225,7 @@ function run(seed, style) {
   for (let guard = 0; G.phase !== 'end' && guard < 12000; guard++) play(G);
   if (G.phase !== 'end') throw new Error('stuck in ' + G.phase + ' (seed ' + seed + ', ' + style + ')');
   for (const k of ['cash', 'tab', 'rep']) if (!Number.isFinite(G[k])) throw new Error(k + ' is not a number');
+  G.simStockV = G.stock.reduce((b, c) => b + CT.trueValue(G, c, 1), 0); // while this run's card universe is loaded
   return G;
 }
 
@@ -242,7 +243,7 @@ if (require.main === module) {
     const avg = k => (res[s].reduce((a, G) => a + G.stats[k], 0) / N).toFixed(1);
     const ranks = {}; for (const G of res[s]) ranks[G.final.rank] = (ranks[G.final.rank] || 0) + 1;
     const st = k => res[s].reduce((a, G) => a + G.store.stats[k], 0) / N;
-    const stockV = res[s].reduce((a, G) => a + G.stock.reduce((b, c) => b + CT.trueValue(G, c, 1), 0), 0) / N;
+    const stockV = res[s].reduce((a, G) => a + G.simStockV, 0) / N;
     const disp = st('browseSales') / Math.max(1, st('browseSales') + st('counterCardSales')) * 100;
     const stars = res[s].reduce((a, G) => a + G.rating.stars, 0) / N;
     console.log(`${s.padEnd(10)} back room: wear -${st('wearValue').toFixed(0)}₵ (${(st('wearValue') / (stockV + st('wearValue')) * 100).toFixed(1)}% of stock)  stolen ${st('stolen').toFixed(1)} (-${st('stolenValue').toFixed(0)}₵, ${(st('stolenValue') / (res[s].reduce((a, G) => a + G.final.value, 0) / N) * 100).toFixed(0)}% of final)  display ${disp.toFixed(0)}% of singles  rating ${stars.toFixed(2)}  bounties ${st('bounties').toFixed(1)}  wrong calls ${st('wrongCalls').toFixed(1)}  fetches ${st('fetches').toFixed(1)}  switched ${st('switched').toFixed(1)}  dead packs ${st('deadPacks').toFixed(1)}  merch ${st('merchSales').toFixed(1)}`);

@@ -216,9 +216,26 @@ const NIGHTS = {
   swap: { name: 'Swap Meet', blurb: 'Three regulars each offer a 1-for-1 trade. No cash, just your eye.' },
 };
 
+// ---------- the card universe ----------
+// Every card comes from the seeded CardGen universe (kit/cardgen, Card Trader's profile in data/): thousands of cards per
+// game across vintage, mid and modern sets, with printings per era, pull odds, sealed product and reprint flags. It is
+// rebuilt from G.seed (never stored in G), so saves stay plain JSON. Integration notes: design/card-generator-integration.md.
+const CGX = typeof CG !== 'undefined' ? CG : typeof require === 'function' ? require('./cardgen.js') : null;
+let UNI = null;
+function uni(G) { const sd = (G && G.seed) >>> 0; if (!UNI || UNI.seed !== sd) UNI = CGX.build(sd); return UNI; }
+const runDay = G => Math.max(0, G.dayIdx + 1);
+const ERA_U = {};
+function eraMedianU(era) { if (ERA_U[UNI.seed + era] == null) { const b = UNI.search({ era, rarity: 'u' }).map(c => c.base).sort((x, y) => x - y); ERA_U[UNI.seed + era] = b.length ? b[Math.floor(b.length / 2)] : BASE.u; } return ERA_U[UNI.seed + era]; }
+function cardOf(c) { return UNI && UNI.card(c.t); }
+function baseOf(c, misread) { const k = cardOf(c); if (!k) return BASE[tmpl(c.t).rarity]; return misread ? eraMedianU(k.era) : k.base; }
+
 // ---------- cards ----------
 const tid = (game, i) => game + '-' + i;
-function tmpl(t) { const [game, i] = t.split('-'); const idx = +i; return { game, idx, name: GAMES[game].cards[idx], rarity: RARITY_BY_INDEX(idx) }; }
+function tmpl(t) {
+  const k = UNI && UNI.card(t);
+  if (k) return { game: k.game, idx: k.art[0], hue: k.art[1], name: k.name, rarity: k.rarity, era: k.era, set: k.set, kind: k.kind };
+  const [game, i] = t.split('-'); const idx = +i; return { game, idx, name: GAMES[game].cards[idx], rarity: RARITY_BY_INDEX(idx) };
+}
 function trueGrade(c) { const lo = Math.min(c.cen, c.edg, c.sur), avg = (c.cen + c.edg + c.sur) / 3; return clamp(Math.round(lo * 0.35 + avg * 0.65), 1, 10); }
 function centerRatio(c) { const off = (10 - c.cen) * 2.6; return [Math.round(50 + off), Math.round(50 - off)]; } // e.g. 60/40
 
@@ -244,13 +261,26 @@ function rollPrint(G, rarity, src) {
   if (src === 'pack' && (G.dayIdx === 4 || G.dayIdx === 8) && R(G) < 0.4) v.set = 'reprint';
   return v;
 }
+// The per-copy extras the universe doesn't own (serials, signatures) go on c.v with the printing's drawing hints.
+function printV(G, k, p, src) {
+  const v = { fin: 'std', first: false, set: k.era === 'vintage' ? 'vintage' : k.era === 'mid' ? 'mid' : 'core', promo: null, serial: null, err: null, signed: false };
+  Object.assign(v, (UNI.printings[p] || {}).v || {});
+  if (v.promo === 'dock') v.promo = 'dock-' + GAMES[k.game].species;
+  if ((v.fin === 'full' || v.fin === 'alt') && R(G) < 0.25) v.serial = 1 + Math.floor(R(G) * 50);
+  if (src === 'dealer' && R(G) < 0.06) v.signed = true;
+  return v;
+}
+// src: 'pack' | 'rareslot' (modern, current set) | 'old' (estate binders: more vintage) | 'dealer' | anything else = a binder
 function makeCard(G, game, rarity, q, opts) {
   opts = opts || {};
-  const at = () => clamp(Math.round(q + gauss(G) * (opts.fresh ? 1.0 : 1.5)), 1, 10);
-  const c = { uid: 'c' + (++G._uid), t: tid(game, rollIdx(G, rarity)), cen: at(), edg: at(), sur: at(), fake: null, graded: null,
+  const U = uni(G), at = () => clamp(Math.round(q + gauss(G) * (opts.fresh ? 1.0 : 1.5)), 1, 10);
+  const src = opts.src === 'pack' || opts.src === 'rareslot' ? 'pack' : opts.src === 'old' ? 'old' : opts.src === 'dealer' ? 'dealer' : 'binder';
+  let d = opts.id ? { id: opts.id, p: opts.p || 'std' } : U.draw(G, { game, rarity: rarity || undefined, src, era: opts.era, day: runDay(G) });
+  if (!d) d = U.draw(G, { game, rarity: rarity || undefined, day: runDay(G) });
+  const k = U.card(d.id);
+  const c = { uid: 'c' + (++G._uid), t: d.id, p: d.p, cen: at(), edg: at(), sur: at(), fake: null, graded: null,
     know: { loupe: false, uv: false, read: !!opts.read, fake: false, print: false, spec: false, free: false }, cost: 0, flawUsed: false,
-    v: rollPrint(G, rarity, opts.src || 'plain') };
-  if (opts.idx != null) c.t = tid(game, opts.idx);
+    v: printV(G, k, d.p, opts.src) };
   if (opts.fake) {
     c.fake = opts.fake === 'ring' ? 'ring' : (R(G) < 0.5 ? 'uv' : 'stock');
     // fakes copy whatever sells: ring fakes dress up as serialized full-arts and promos
@@ -259,10 +289,7 @@ function makeCard(G, game, rarity, q, opts) {
   if (c.v.err === 'offcut') c.cen = Math.min(c.cen, 2 + Math.floor(R(G) * 3)); // a miscut reads exactly like bad centering
   if (opts.promo) c.v.promo = opts.promo;
   if (opts.mint) { c.cen = Math.max(c.cen, 9); c.edg = Math.max(c.edg, 9); c.sur = Math.max(c.sur, 9); }
-  // eras: vintage (Wave 1), mid era, modern (the Wave 2-4 sets, which can be reprinted)
-  c.era = opts.era || (c.v.set === 'vintage' ? 'vintage' : (opts.src === 'old' || opts.src === 'dealer') && R(G) < 0.45 ? 'mid' : 'modern');
-  if (c.era === 'vintage') c.v.set = 'vintage'; else if (c.era === 'mid' && c.v.set === 'core') c.v.set = 'mid';
-  if (c.era === 'modern') c.ms = G.msets ? (opts.src === 'pack' || opts.src === 'rareslot' ? currentSet(G) : Math.floor(R(G) * Math.max(1, setsOut(G).length))) : 0;
+  c.era = k.era; c.ms = k.era === 'modern' ? k.set : null;
   return c;
 }
 
@@ -273,6 +300,13 @@ function pumpMult(G, c) { return G.pump && G.pump.t === c.t && !c.fake ? (G.dayI
 function variantMult(G, c, known) {
   const v = c.v || {}, low = RANK[tmpl(c.t).rarity] <= 1, sees = (k) => !known || known[k];
   let m = 1;
+  // CardGen copies: the printing's multiplier (seen with the Loupe or the Print Lens, or by anyone), plus per-copy extras
+  if (c.p && UNI) { const P = UNI.printings[c.p] || {};
+    if (!P.see || sees(P.see === 'print' ? 'print' : 'loupe')) m *= UNI.printingMult(UNI.card(c.t), c.p);
+    if (v.serial && sees('loupe')) m *= v.serial === 1 ? 10 : v.serial <= 5 ? 6 : 3;
+    if (v.signed && sees('loupe')) m *= 2;
+    if (v.promo && !P.promo && PROMOS[v.promo] && sees('loupe')) m *= PROMOS[v.promo].mult;
+    return Math.min(m, VARIANT_CAP); }
   if (v.fin === 'mirror' && sees('loupe')) m *= low ? 2 : 1.4;
   if (v.fin === 'full') m *= 2.5; if (v.fin === 'alt') m *= 2;
   if (v.first && sees('loupe')) m *= 1.6;
@@ -286,24 +320,28 @@ function variantMult(G, c, known) {
   return Math.min(m, VARIANT_CAP);
 }
 function demandOf(G, game) { return G.demand[game] || 1; }
+// Modern singles follow their set's market (release hype, reprints, a set that's never reprinted); old eras drift.
+function singleTrend(G, c) { const k = cardOf(c); if (!k || !G.store) return 1; return UNI.trend(UNI.set(k.set), runDay(G), k.demand === 'chase' || UNI.isHit(k, c.p) ? 1 : 0); }
 function hot(G, c) { return G.hotList.indexOf(c.t) >= 0 ? 1.5 : 1; }
 // What the card is really worth to a buyer today (they can see the real condition and print).
 function trueValue(G, c, demand) {
   if (c.fake) return 0;
+  uni(G);
   const tm = tmpl(c.t), d = demand == null ? demandOf(G, tm.game) : demand;
   const m = c.graded ? GRADERS[c.graded.co].mult(c.graded.grade) : RAW(trueGrade(c));
-  return BASE[tm.rarity] * m * d * (demand == null ? hot(G, c) : 1) * variantMult(G, c, null) * pumpMult(G, c) * (c.trim && !c.graded ? TRIM_VALUE : 1) * (c.ms != null && G.msets ? setMult(G, c.ms, 'single') : 1);
+  return baseOf(c) * m * d * (demand == null ? hot(G, c) : 1) * variantMult(G, c, null) * pumpMult(G, c) * (c.trim && !c.graded ? TRIM_VALUE : 1) * singleTrend(G, c);
 }
 const readable = (G, c) => c.know.read || (G.fluency[tmpl(c.t).game] >= FLUENT_AT);
 // The player's best guess from what they've learned. Bots use only this.
 function estimate(G, c) {
+  uni(G);
   if (c.know.fake) return { value: 0, grade: null, rarity: tmpl(c.t).rarity, fake: true };
   const tm = tmpl(c.t), rar = readable(G, c) ? tm.rarity : null;
   const grade = c.graded ? c.graded.grade : c.know.loupe ? trueGrade(c) : null;
   const m = c.graded ? GRADERS[c.graded.co].mult(c.graded.grade) : RAW(grade == null ? 7 : grade);
   const vm = variantMult(G, c, c.know);
   const pm = G.pump && G.pump.t === c.t ? (G.dayIdx === 3 ? 1.8 : G.dayIdx >= 4 ? 0.5 : 1) : 1; // the market price is public
-  const v = BASE[rar || 'u'] * m * demandOf(G, tm.game) * hot(G, c) * vm * pm * (c.trim && c.know.loupe && !c.graded ? TRIM_VALUE : 1) * (c.ms != null && G.msets ? setMult(G, c.ms, 'single') : 1);
+  const v = baseOf(c, !rar) * m * demandOf(G, tm.game) * hot(G, c) * vm * pm * (c.trim && c.know.loupe && !c.graded ? TRIM_VALUE : 1) * singleTrend(G, c);
   return { value: v, grade, rarity: rar, fake: c.know.uv ? false : null, vmult: vm };
 }
 // What a seller believes their card is worth (home rate). They can't read other species' scripts, can't see
@@ -312,7 +350,7 @@ function sellerBelief(G, person, c) {
   const tm = tmpl(c.t), P = PEOPLE[person], own = SPECIES[P.species].game === tm.game || person === 'sheelo' && tm.game === 'shell';
   const rar = own ? tm.rarity : (RANK[tm.rarity] >= 2 ? 'u' : tm.rarity); // misreads rares and up as "some uncommon"
   const sees = own ? { loupe: true, print: person === 'sheelo' } : { loupe: false, print: false };
-  let b = BASE[rar] * RAW(trueGrade(c)) * (c.fake ? variantMult(G, c, { loupe: true }) : variantMult(G, c, sees));
+  let b = baseOf(c, rar !== tm.rarity) * RAW(trueGrade(c)) * (c.fake ? variantMult(G, c, { loupe: true }) : variantMult(G, c, sees));
   if (G.pump && G.pump.t === c.t && G.dayIdx === 3) b *= 1.8;
   return b;
 }
@@ -374,7 +412,7 @@ function startDay(G) {
   G.dayIdx++; const D = G.week[G.dayIdx];
   G.events = [];
   if (G.store) { deliver(G);
-    const rel = G.msets.find(x => x.out === G.dayIdx && G.dayIdx > 0); if (rel) event(G, { t: 'release', set: rel.id });
+    for (const x of uni(G).sets) if (x.era === 'modern' && x.release === runDay(G)) event(G, { t: 'release', set: x.id });
     if (G.grateful && G.dayIdx >= 1) { G.grateful--; D.visitors.splice(1, 0, { who: pick(G, ['pip', 'moma']), role: 'sell', n: 2, games: ['shell', 'star'], q: 7.8, gem: 'h', src: 'old', read: true, intent: 'grateful' }); event(G, { t: 'grateful' }); } }
   G.demand = Object.assign({}, D.demand);
   // last night's hype lands on today
@@ -382,18 +420,20 @@ function startDay(G) {
   // scalped packs: tomorrow's pack buyers already bought from Skrimp
   G.scalpedToday = G.scalped; G.scalped = 0; G.packsSoldToday = 0;
   // the pump: a rare-or-better from a game whose species isn't docking tomorrow... and it's on the reprint list
-  if (D.pump && !G.pump) { const g = pick(G, ['star', 'hive', 'shell']); G.pump = { t: tid(g, 12 + Math.floor(R(G) * 4)) }; }
+  const chase = g => { const l = uni(G).search({ game: g, era: 'modern', min: 'r', max: 'h', day: runDay(G) }); return l.length ? pick(G, l).id : uni(G).search({ game: g, min: 'r' })[0].id; };
+  if (D.pump && !G.pump) G.pump = { t: chase(pick(G, ['star', 'hive', 'shell'])) };
   const games = Object.keys(G.demand).sort((a, b) => G.demand[b] - G.demand[a]);
-  G.hotList = [tid(games[0], 12 + Math.floor(R(G) * 5)), tid(games[1], 12 + Math.floor(R(G) * 3))];
+  G.hotList = [chase(games[0]), chase(games[1])];
   if (G.pump) G.hotList = G.hotList.filter(t => t !== G.pump.t);
   G.visitIdx = -1; G.visit = null; G.phase = 'morning'; G.night = null;
   resolveGrades(G, false);
   for (const k of G.complaints) { money(G, -k.price, 'refund', 'Refund: ' + k.who + ' found a fake'); G.rep = clamp(G.rep - 8, 0, 100); event(G, { t: 'complaint', who: k.who, price: k.price }); }
   G.complaints = [];
   let dj = D.dj.replace('{pump}', G.pump ? tmpl(G.pump.t).name : 'a card');
-  if (G.msets) for (const st of G.msets) {
-    if (st.flag === 'yes' && st.reveal === G.dayIdx) { dj += ' Reprint announced: ' + st.name + ' is going back to print. Ouch for anyone holding it.'; event(G, { t: 'reprint', set: st.id }); }
-    if (st.flag === 'no' && st.reveal - 1 === G.dayIdx) dj += ' Distributor gossip: ' + st.name + ' allocations are getting tight.';
+  if (G.store) for (const st of uni(G).sets) {
+    if (st.reprint === 'yes' && st.reveal === runDay(G)) { dj += ' Reprint announced: ' + st.name + ' (' + GAMES[st.game].name + ') is going back to print. Ouch for anyone holding it.'; event(G, { t: 'reprint', set: st.id }); }
+    if (st.reprint === 'no' && st.reveal - 1 === runDay(G)) dj += ' Distributor gossip: ' + st.name + ' (' + GAMES[st.game].name + ') allocations are getting tight.';
+    if (st.reprint === 'no' && st.reveal === runDay(G)) dj += ' Official: ' + st.name + ' will not be reprinted.';
   }
   say(G, 'vee', dj);
 }
@@ -433,7 +473,7 @@ function spawnVisit(G, spec) {
       let c;
       if (spec.pumpCards) { // the Hype Bros sell copies of the pumped card; one of three may be a ring fake
         const tm = tmpl(G.pump.t);
-        c = makeCard(G, tm.game, tm.rarity, spec.q, { idx: tm.idx, src: 'plain', fake: i === 2 && R(G) < 0.5 ? 'ring' : null, read: true });
+        c = makeCard(G, tm.game, tm.rarity, spec.q, { id: G.pump.t, src: 'plain', fake: i === 2 && R(G) < 0.5 ? 'ring' : null, read: true });
       } else {
         const isGem = i === gem, g = isGem && spec.gemGame ? spec.gemGame : pick(G, spec.games);
         const rar = isGem ? spec.gem : spec.role === 'bulk' ? (R(G) < 0.2 ? 'u' : 'c') : rollRarity(G, false);
@@ -727,9 +767,8 @@ function err(m) { return { ok: false, error: m }; }
 
 // A dead pack (searched by the Scale Gang, or resealed) has had its hit taken: the rare slot is a common.
 function crackPack(G, game, dead) {
-  const out = [];
-  for (const r of ['c', 'c', 'c', 'u']) out.push(makeCard(G, game, r, 9.0, { fresh: true, src: 'pack' }));
-  out.push(dead ? makeCard(G, game, 'c', 9.0, { fresh: true, src: 'plain' }) : makeCard(G, game, rollRarity(G, true), 9.0, { fresh: true, src: 'rareslot' }));
+  const out = [], U = uni(G), pk = U.makePack(currentSet(G, game), G); if (dead) pk.dead = true;
+  for (const d of U.openPack(pk, G)) out.push(makeCard(G, game, null, 9.0, { fresh: true, src: 'pack', id: d.id, p: d.p }));
   for (const c of out) { c.know.uv = true; addStock(G, c); }
   return out;
 }
@@ -762,8 +801,8 @@ function offer(G, p) {
 function dealBuy(G, price) {
   const v = G.visit; if (G.cash < price) return err('not enough cash');
   money(G, -price, 'buy', 'Bought from ' + PEOPLE[v.who].name + ' (' + v.cards.length + ' card' + (v.cards.length > 1 ? 's' : '') + ')');
-  let belief = 0; for (const c of v.cards) belief += Math.max(1, BASE[tmpl(c.t).rarity] * RAW(trueGrade(c)));
-  for (const c of v.cards) { c.cost = price * Math.max(1, BASE[tmpl(c.t).rarity] * RAW(trueGrade(c))) / belief; addStock(G, c); }
+  let belief = 0; for (const c of v.cards) belief += Math.max(1, baseOf(c) * RAW(trueGrade(c)));
+  for (const c of v.cards) { c.cost = price * Math.max(1, baseOf(c) * RAW(trueGrade(c))) / belief; addStock(G, c); }
   G.stats.deals++; G.rep = clamp(G.rep + 1, 0, 100);
   say(G, v.who, line(G, v, 'deal')); endVisit(G, 'deal'); return ok();
 }
@@ -838,7 +877,7 @@ function pickNight(G, ev) {
     for (let i = 0; i < 16; i++) {
       const gem = i < 3; const g = pick(G, ['shell', 'hive', 'star']);
       const c = makeCard(G, g, gem ? pick(G, ['u', 'r', 'r', 'h']) : (R(G) < 0.85 ? 'c' : 'u'), 6.8, { src: 'old' });
-      if (gem && R(G) < 0.6) c.v.fin = 'mirror';
+      if (gem && R(G) < 0.6) { c.v.fin = 'mirror'; if (UNI.card(c.t).printings.indexOf('rev') >= 0) c.p = 'rev'; }
       const foil = c.v.fin !== 'std';
       c.hint = { glint: foil ? R(G) < 0.75 : R(G) < 0.15, game: g };
       c.flipped = false; cards.push(c);
@@ -1078,7 +1117,6 @@ function initStore(G) {
       trimsCaught: 0, merchSales: 0, deadPacks: 0, fetches: 0, bounties: 0, wrongCalls: 0, informed: 0, refused: 0, repacksSold: 0 } };
   G.goods = []; G.board = []; G.notes = []; G.seen = {};
   G.rating = { stars: 3.6, n: 38, today: 0, why: [], reviews: [] };
-  G.msets = buildSets(G);
   for (const c of G.stock) { c.loc = 'cbinder'; c.prot = c.prot || 'penny'; c.tag = defaultTag(G, c); }
 }
 const where = (G, loc) => G.stock.filter(c => c.loc === loc);
@@ -1103,7 +1141,7 @@ function gridSpot(G, f, o) { const [w, h] = sizeOf(G, f); for (const rot of [0, 
 function defaultTag(G, c) { return Math.max(1, Math.round((c.t ? estimate(G, c).value : goodValue(G, c)) * 1.15)); }
 function findGood(G, uid) { return G.goods.find(o => o.uid === uid); }
 function findThing(G, uid) { return findStock(G, uid) || findGood(G, uid); }
-function newGood(G, type, game, extra) { const o = Object.assign({ uid: 'g' + (++G._uid), type, game: game || null, set: currentSet(G), loc: null, x: 0, y: 0, rot: 0 }, extra || {}); return o; }
+function newGood(G, type, game, extra) { const o = Object.assign({ uid: 'g' + (++G._uid), type, game: game || null, set: game && GTYPE[type] ? currentSet(G, game) : null, loc: null, x: 0, y: 0, rot: 0 }, extra || {}); return o; }
 
 // Can thing o go to fixture f? Returns an error string or null.
 function placeRule(G, o, f) {
@@ -1179,30 +1217,14 @@ function autoStore(G) {
 }
 
 // ---------- modern sets and reprints ----------
-// Three modern waves are out at the start; Wave 3 releases on day 5 and Wave 4 on day 9. One wave gets reprinted
-// (its prices drop once the reprint is announced), one is never reprinted (it keeps climbing; nobody tells you which),
-// the rest drift. Hints: DJ Vee, the Hype Bros, distributor allocation, prices.
-const SET_NAMES = ['Wave 2a', 'Wave 2b', 'Wave 2c', 'Wave 3', 'Wave 4'];
-function buildSets(G) {
-  const sets = SET_NAMES.map((name, i) => ({ id: i, name, out: i < 3 ? 0 : i === 3 ? 4 : 8, flag: 'drift', reveal: 99, drift: [] }));
-  const order = [0, 1, 2, 3]; for (let k = order.length - 1; k > 0; k--) { const j = Math.floor(R(G) * (k + 1)); [order[k], order[j]] = [order[j], order[k]]; }
-  sets[order[0]].flag = 'yes'; sets[order[0]].reveal = Math.max(sets[order[0]].out + 2, 4 + Math.floor(R(G) * 4));
-  sets[order[1]].flag = 'no'; sets[order[1]].reveal = Math.max(sets[order[1]].out + 1, 3 + Math.floor(R(G) * 3)); // allocation gets cut from this day
-  for (const s of sets) for (let d = 0; d < 10; d++) s.drift.push(+(1 + (R(G) - 0.5) * 0.12).toFixed(3));
-  return sets;
-}
-function currentSet(G) { const sets = G.msets || []; let id = 0; for (const s of sets) if (s.out <= Math.max(0, G.dayIdx)) id = s.id; return id; }
-function setsOut(G) { return (G.msets || []).filter(s => s.out <= Math.max(0, G.dayIdx)); }
-// Price multiplier for a modern set today. kind: 'sealed' or 'single' (chase singles move less than sealed).
-function setMult(G, set, kind) {
-  const s = G.msets && G.msets[set]; if (!s) return 1;
-  const d = Math.max(0, G.dayIdx), k = kind === 'sealed' ? 1 : 0.55;
-  let m = 1; for (let i = 0; i <= Math.min(d, 9); i++) m *= 1 + (s.drift[i] - 1) * k;
-  if (s.flag === 'yes' && d >= s.reveal) m *= kind === 'sealed' ? 0.6 : 0.78;
-  if (s.flag === 'no' && d >= s.reveal - 1) m *= 1 + (d - s.reveal + 2) * (kind === 'sealed' ? 0.09 : 0.05);
-  return m;
-}
-function allocated(G, set) { const s = G.msets[set]; return s && s.flag === 'no' && G.dayIdx >= s.reveal; }
+// Each game has 5 modern sets (3 out at the start, 2 released during the run). Per game, one gets reprinted (its prices
+// drop when announced), one is never reprinted (it climbs, and its distributor allocation dries up), the rest drift.
+// Nobody tells you which: hints come from DJ Vee, the distributor and prices. The flags live in the universe.
+function currentSet(G, game) { const d = runDay(G); const l = uni(G).sets.filter(x => x.game === (game || 'shell') && x.era === 'modern' && x.release <= d).sort((x, y) => y.release - x.release); return l.length ? l[0].id : null; }
+function setName(G, id) { const x = id && uni(G).set(id); return x ? x.name : ''; }
+function setMult(G, id, kind) { const x = id && uni(G).set(id); return x ? uni(G).trend(x, runDay(G), kind === 'sealed' ? 2 : kind === 'chase' ? 1 : 0) : 1; }
+function allocated(G, id) { return !!id && uni(G).allocation(id, runDay(G)) < 0.35; }
+const GTYPE = { box: 'booster', blister: 'blister', tin: 'tin', collector: 'collector', premium: 'premium' };
 
 // ---------- value of sealed goods ----------
 // Vintage sealed: rare and expensive (5-30x a modern box). Heavy vintage packs are likelier to hold the hit; weighing
@@ -1212,12 +1234,12 @@ function goodValue(G, o, liquid) {
   if (o.type === 'brick') return 500 * 0.6;
   if (o.type === 'repack') return Math.max(1, (o.per || 10) * 0.4 + (o.hit ? (o.hitVal || 20) : 0));
   if (D.vintage) {
-    let v = o.val * (o.weighed ? (o.heavy ? 1.5 : 0.75) : 1) * (o.sgrade ? SEALED_GRADE(o.sgrade) : 1);
+    let v = (o.set ? uni(G).sealedPrice(o.set, o.vtype || (o.type === 'vpack' ? 'pack' : 'booster'), runDay(G), null, { weight: o.weighed ? (o.heavy ? 'heavy' : 'light') : null }) : o.val) * (o.sgrade ? SEALED_GRADE(o.sgrade) : 1);
     if (o.resealed && (o.sgrade || o.caught)) v *= 0.15;
     return v;
   }
-  const base = liquid ? D.cost : D.msrp;
-  return base * (o.dead ? 0.5 : 1) * setMult(G, o.set, 'sealed') * (o.sgrade ? SEALED_GRADE(o.sgrade) : 1);
+  const mkt = o.set && GTYPE[o.type] ? uni(G).sealedPrice(o.set, GTYPE[o.type], runDay(G), { demand: G.demand }) : D.msrp;
+  return mkt * (liquid ? D.cost / D.msrp : 1) * (o.dead ? 0.5 : 1) * (o.sgrade ? SEALED_GRADE(o.sgrade) : 1);
 }
 const SEALED_GRADE = g => g >= 10 ? 2.4 : g >= 9 ? 1.7 : g >= 8 ? 1.3 : 1.05;
 
@@ -1278,10 +1300,12 @@ function sellThing(G, o, price, who) {
 }
 // Vintage sealed for sale from an estate: 1-3 a run. Rare and expensive.
 function vintageLot(G) {
-  const game = pick(G, ['shell', 'hive', 'star']), big = R(G) < 0.35;
-  const o = newGood(G, big ? 'vbox' : 'vpack', game, { era: 'vintage', set: null });
-  o.val = Math.round(big ? 168 * (5 + R(G) * 25) : 168 * (5 + R(G) * 25) / 18);
-  o.heavy = R(G) < 0.3; o.resealed = R(G) < 0.12;
+  const U = uni(G), S = G.store; S.drops = S.drops || 0;
+  let dr = U.drops[S.drops]; if (dr) S.drops++;
+  else { const vs = U.sets.filter(x => x.era === 'vintage'); dr = { set: pick(G, vs).id, type: 'pack' }; }
+  const set = U.set(dr.set), o = newGood(G, dr.type === 'pack' ? 'vpack' : 'vbox', set.game, { era: 'vintage', set: dr.set, vtype: dr.type });
+  o.resealed = R(G) < 0.12;
+  if (o.type === 'vpack') { o.pack = U.makePack(dr.set, G); o.heavy = U.weigh(o.pack).tier === 'heavy'; }
   return o;
 }
 function boardHas(G, who) { return G.board.find(b => b.who === who); }
@@ -1324,8 +1348,8 @@ function nightly(G) {
 function order(G, item, game, qty) {
   const C = CATALOG[item]; if (!C) return err('not in the catalog');
   if (C.game && !GAMES[game]) return err('pick a card game');
-  const set = currentSet(G);
-  if (C.goods && C.game && allocated(G, set)) return err('the distributor says ' + G.msets[set].name + ' is on allocation: no more this run');
+  const set = C.game ? currentSet(G, game) : null;
+  if (C.goods && C.game && allocated(G, set)) return err('the distributor says ' + setName(G, set) + ' is on allocation: none to spare');
   const n = Math.max(1, qty | 0), cost = C.cost * n;
   if (G.cash < cost) return err('not enough cash');
   money(G, -cost, item === 'box' ? 'restock' : 'order', (n > 1 ? n + ' × ' : '') + C.name + (C.game ? ': ' + GAMES[game].name : ''));
@@ -1368,17 +1392,18 @@ function openGood(G, uid) {
   if (room < D.packs) return err('not enough room for ' + D.packs + ' loose packs there');
   G.goods.splice(G.goods.indexOf(o), 1); store[o.game] += D.packs; if (o.dead) G.store.dead[o.game] += D.packs;
   const promos = [];
-  for (let i = 0; i < (D.promo || 0); i++) { const c = makeCard(G, o.game, R(G) < 0.3 ? 'h' : 'r', 9, { fresh: true, promo: o.type === 'tin' ? 'topper' : 'collector', src: 'plain' }); c.know.uv = true; addStock(G, c); promos.push(c); }
+  const got = o.set && GTYPE[o.type] ? uni(G).openSealed(o.set, GTYPE[o.type], G) : { promos: [] };
+  for (const d of (got.promos || []).slice(0, Math.max(1, D.promo || 0))) { const c = makeCard(G, o.game, null, 9, { fresh: true, id: d.id, p: d.p }); c.know.uv = true; addStock(G, c); promos.push(c); }
   return ok({ packs: D.packs, promos });
 }
 // Open a vintage pack: heavy packs are likelier to hold the hit.
 function openVintage(G, uid) {
   const o = findGood(G, uid); if (!o || o.type !== 'vpack') return err('not a vintage pack');
   G.goods.splice(G.goods.indexOf(o), 1); const out = [];
-  for (const r of ['c', 'c', 'c', 'u', 'u']) out.push(makeCard(G, o.game, r, 8.4, { src: 'old', era: 'vintage' }));
-  const hit = !o.resealed && R(G) < (o.heavy ? 0.6 : 0.15);
-  out.push(makeCard(G, o.game, hit ? (R(G) < 0.3 ? 'g' : 'h') : 'r', 8.4, { src: 'old', era: 'vintage' }));
-  for (const c of out) { c.v.set = 'vintage'; c.v.first = c.v.first || R(G) < 0.3; c.know.uv = true; addStock(G, c); }
+  out.length = 0; const U = uni(G), pk = Object.assign({}, o.pack || U.makePack(o.set, G), { dead: !!o.resealed });
+  for (const d of U.openPack(pk, G)) out.push(makeCard(G, o.game, null, 8.4, { src: 'old', id: d.id, p: d.p }));
+  const hit = out.some(c => U.isHit(U.card(c.t), c.p));
+  for (const c of out) { c.know.uv = true; addStock(G, c); }
   G.stats.cracked++;
   return ok({ pulled: out, hit });
 }
@@ -1414,7 +1439,7 @@ function v3Spawn(G, v, spec) {
   if (spec.src === 'trim') for (const c of v.cards) { c.trim = true; c.edg = 10; c.cen = Math.max(c.cen, 9); c.sur = Math.max(c.sur, 9); }
   if (v.role === 'browse') { const o = browsePick(G); v.pickUid = o ? o.uid : null; if (o) { const tag = o.tag || defaultTag(G, o); v.showing = o.uid; v.ceil = Math.round(tag * (lookOf(G, o) >= tag ? 1 : 0.96)); v.bid = Math.max(1, Math.round(tag * (0.8 + R(G) * 0.12))); } }
   if (v.role === 'sealedc') { const types = ['box', 'premium', 'tin', 'collector', 'blister']; v.wantsGood = { type: pick(G, types), game: pick(G, ['shell', 'hive', 'star']) }; }
-  if (v.role === 'vintage') { v.lot = vintageLot(G); v.ask = Math.round(v.lot.val * (0.7 + R(G) * 0.2)); v.floor = Math.round(v.lot.val * 0.55); }
+  if (v.role === 'vintage') { v.lot = vintageLot(G); const val = goodValue(G, v.lot); v.ask = Math.round(val * (0.7 + R(G) * 0.2)); v.floor = Math.round(val * 0.55); }
   if (v.role === 'sell' && v.intent === 'victim' && v.cards.length) v.ask = Math.max(3, Math.round(v.ask * 0.8));
 }
 function lookOf(G, o) { return o.t ? lookValue(G, o) : goodValue(G, o); }
@@ -1565,8 +1590,8 @@ function lookValue(G, c) { return c.fake || c.trim ? trueValue(G, Object.assign(
 
 const CT = { newGame, load, act, DAYS, GAMES, SPECIES, PEOPLE, GRADERS, RARITY_NAME, RANK, BASE, BOX, PACK_RETAIL, TRANSLATE_FEE, FLUENT_AT,
   FINISH, SETS, ERRORS, PROMOS, UPGRADES, NIGHTS, NIGHT_FLYERS,
-  RENT: RENT10, NIGHT_POOL, FIX, GOODS, GEAR, CATALOG, UNLOCKS, TELLS, WEAR_DAY, WEAR_SHOW, BULK_CAP, SET_NAMES,
+  RENT: RENT10, NIGHT_POOL, FIX, GOODS, GEAR, CATALOG, UNLOCKS, TELLS, WEAR_DAY, WEAR_SHOW, BULK_CAP, uni, setName,
   where, goodsAt, onGrid, gridFits, gridFree, gridSpot, shapeOf, sizeOf, pocketsFree, isFloor, placeRule, findThing, backPackTotal,
-  defaultTag, lookValue, goodValue, setMult, currentSet, setsOut, boardHas, tmpl, trueGrade, centerRatio, estimate, readable, trueValue, shopValue, matches, wantsText, demandOf, variantMult, packTotal };
+  defaultTag, lookValue, goodValue, setMult, currentSet, boardHas, tmpl, trueGrade, centerRatio, estimate, readable, trueValue, shopValue, matches, wantsText, demandOf, variantMult, packTotal };
 if (typeof module !== 'undefined' && module.exports) module.exports = CT; else root.CT = CT;
 })(this);
