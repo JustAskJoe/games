@@ -6,6 +6,128 @@ Newest on top. See the repo's CLAUDE.md for how patch notes work.
 
 ---
 
+## v3.1 floor, tutorial and vintage · 2026-11-01 · Hunter (with Claude)
+Built on the grading rework (PR #74). Hunter's answers to the v3.1 plan's Q5–Q10 are in `design/handoff.md`.
+
+### What's new
+- **A guided first morning** (skippable). DJ Vee walks you through it, and the spot to tap glows:
+  1. Open the crate.
+  2. Put your best card in the case.
+  3. Stock the floor.
+  4. Open.
+  5. Show your first customer, an easy buyer, a card.
+- **The shop does the chores** (each can be turned off in the back room):
+  - Placing a card puts on the sleeve it needs.
+  - New cards get filed.
+  - The rack refills itself from the shelves between customers.
+  - **STOCK THE FLOOR** puts your best cards in the case, mid cards in the counter binder and packs on the rack. Its label says what it will do.
+- **A warnings bar** with fix buttons: crate waiting, slabs back, case nearly empty, rack empty, sleeves low.
+- **The rating says why.** The morning report lists the day's biggest reasons the stars moved.
+- **Rep matters at the counter:** sellers ask up to about 10% less when your rep is high, and more when it's low.
+- **A stranger with old packs.** On day 3, a shady guy in a long coat hands you three real vintage packs for free. The wrappers are beat up, so they're worth little sealed, but the cards inside are real. Rip them, sell them, or weigh them first. Vintage commons are a bit cheaper now; rare vintage and all vintage sealed stay expensive.
+- **Skrimp the scalper** takes at most 6 packs a visit.
+- **Fewer tells on honest customers** (4%, was 12%), so a tell means more.
+- **Repacks are off** for this version; the bulk sorter is gone from the catalog.
+- **Balance** (`node sim.js 200`; full `build-and-test.py`: ALL GOOD):
+
+  | Check | Result |
+  | --- | --- |
+  | careful vs noupgrades (Loupe upgrades worth 5+) | +269% vs +257% |
+  | noupgrades vs lazy (organized back room worth 30+) | +257% vs +210% |
+  | greedy theft (5–15% of final) | 9% |
+  | browser share (25–45%) | 37% |
+  | paranoid stars vs organized (a star or more lower) | 2.47 vs 4.64 |
+  | naive theft (10%+) | 17% |
+  | careful beats sloppy | 98% |
+
+### Next up
+- [ ] A mid-run spine: a collector contract on day 4 and a regional show on day 6 (plan section 6).
+- [ ] Re-run the agent playtests on this build. The persona bots in PR #70 need rules for the stranger, Stock the floor and grading ranges first.
+- [ ] Then the paid API playtest (OK'd by Hunter, about $0.75), after a `go: false` estimate.
+
+### Watch out
+- [ ] **The balance band is very noisy at 200 seeds.** The same change moved "careful vs noupgrades" between −34 and +39 points. Two settings were chosen at 400 seeds:
+  - Vintage commons at 75% (60% cost the Loupe upgrades their edge).
+  - The careful bot buys the Eye tools only once it holds a raw card worth 40₵+ whose read could reach 9; with all three bought up front it lost to noupgrades.
+  - The Balance agent should look at a bigger sample or a steadier statistic.
+- [ ] The lazy and sloppy sim bots turn the new automation off, because they stand for players who skip the chores. With it on, the organized-vs-lazy band would have nothing to measure.
+- [ ] Found and fixed while testing:
+  - CASE stayed disabled for unsleeved cards even with auto-sleeve on (the button didn't know auto-sleeve would handle it).
+  - Stock the floor couldn't meet the day 1 minimums when the opening crate held only cheap cards.
+  - A sim stall: an estate bot retried a vintage buy with no room to put it.
+- [ ] The tutorial was checked with Playwright screenshots of every step at 1280×720, plus the full walkthrough at phone widths. Not played by a human or on a real phone.
+- [ ] The stranger's portrait is the letter fallback (no art for Mox yet). Add him to the Lead Artist's list.
+- [ ] The warnings bar sits under the HUD and can overlap the top of tall panels. Check on small screens.
+
+---
+
+## v3.1 grading rework · 2026-11-01 · Hunter (with Claude)
+Plan sections 1–3 from `design/v3.1-beta-plan.md` (on PR #70): known sets, condition ranges with an Eye track and a Black Label, and a grader-box reveal.
+
+### What's new
+- **You know your cards.** Every card shows its name, set and rarity. Decoding scripts and the translator are gone.
+- **Your eye gives a range, not a number.**
+  - The loupe reads centering, edges and surface as ranges (for example "edges 6–10"). A card's grade and value show as ranges too ("grade 7–9", "40–90₵").
+  - Before you look, a card shows the range its source suggests.
+  - Only a slab is certain.
+- **The Eye track** (Loupe upgrades at close): each tool narrows one subgrade's read; the Trained Eye narrows all three. Re-read a card after buying one.
+
+  | Upgrade | Cost |
+  | --- | --- |
+  | Centering Card | 25₵ |
+  | Edge Light | 30₵ |
+  | Surface Lamp | 35₵ |
+  | Trained Eye | 90₵ (needs the other three) |
+- **Grading is the gamble.**
+  - The grading form shows what each card is worth raw and at each grade in your range, including a Black Label.
+  - Halo is exact; QuikSlab can be one off.
+  - **Black Label 10:** a perfect card that passes Halo's second look. Very rare; worth 2.5× a normal 10.
+- **The grader box.** Returning slabs arrive in a taped box: tap to slit the tape, then flip each slab. You see the grade, your read beside it ("you read 8–9: spot on"), and the new value. A Black Label glows gold. Grade Day opens the last box.
+- **Balance** (`node sim.js 200`, full `build-and-test.py`: ALL GOOD):
+
+  | Bot | Before | After |
+  | --- | --- | --- |
+  | careful (now also buys the three Eye tools) | +231% | +246% |
+  | noupgrades | +210% | +211% |
+
+  - Loupe upgrades are worth +35 points (band floor 5).
+  - Careful beats sloppy 98%.
+
+### Next up
+- [x] @Hunter: answer Q1–Q4. Kept the defaults (Hunter, Nov 1); recorded in `design/handoff.md`.
+- [ ] Re-run the agent playtests on this build (Tier A and a Claude no-API run). The persona bots need their grading rules switched from the true grade to the range first.
+- [ ] Next v3.1 pieces: guided day 1 and the QoL sweep.
+
+### Watch out
+- [ ] A true grade 10 only happens when all three subgrades are 10 (`trueGrade()` rounding): about 0.3% of cards in the sim. So nearly every 10 is a Black Label candidate, and a normal 10 is almost as rare. If 10s should be commoner than Black Labels, change `trueGrade()`, then re-tune the RAW and grader multipliers.
+- [ ] Ranges are wide at the start (±2 per subgrade gives grade ranges like 5–9). That's on purpose, but untested with humans. Watch whether new players find early grading guesswork frustrating.
+- [ ] Eye prices were tuned against the careful bot only. At 40/60/80₵ the bot lost 17 points against no upgrades, failing the band, so they're 25/30/35₵ now. The Trained Eye (90₵) isn't bought by any bot; its value is unmeasured.
+- [ ] Card art still draws wear from the true condition (art.js), so a sharp eye could read the art. Probably fine as flavour; check with testers.
+- [ ] The sim's careful bot now grades from your read (range reaches 9 and its middle is 8+) instead of the true grade, and its "point out a flaw" check uses your read. Its numbers moved for that reason too.
+- [ ] Checked with the full `build-and-test.py` (walkthrough at desktop and phone width) and Playwright screenshots of the grader box (taped, face down, flipped, Black Label) and the loupe. Not checked on a real phone.
+- [ ] `playtest-agents.js` and `play-driver.js` (PR #70) still call `CT.trueGrade` in a few persona rules. Update them when both PRs are in.
+
+---
+
+## v3.0.2 · 2026-11-01 · Hunter (with Claude): playtest quick fixes
+Text fixes from the Nov 1 agent playtests (`playtests/findings-2026-11-01.md`, PR #70). No balance numbers changed.
+
+### What's new
+- **Reviews tell the truth.** Each review line now needs to be true of your shop that day: "Pulled a hit from their repack!" only after a repack hit, "Saw a vintage box on display" only with vintage in the case, "Case is always stocked" only with 6+ things in it, "Half the case was empty" only with 2 or fewer, "Overpriced and pushy" only when a floor tag is well above its default, "Sold me a fake" only after a refund or a caught fake, "Accused my friend of stealing" only after a wrong security call, "Repacks are a scam" only once your repacks have fallen below their sign. If nothing fits, there's no review that day. Across 360 bot runs, main had 626 reviews that didn't match the shop; now 0.
+- **The reprint line names the right wave.** On the eve of Wave 3 the close still says "Wave 3 reprint list is out: <card> is on it". On the eve of Wave 4 it no longer repeats it.
+- **Card Night counts the crowd's packs.** With nothing on the rack it says so instead of "The crowd still bought some packs", and otherwise says how many they bought.
+- Continuing a save (fixed in v3.0.1) re-checked in the browser: a day-4 save loaded on a fresh page shows real card names and no "undefined" anywhere.
+
+  `build-and-test.py` (full, with the walkthrough): ALL GOOD. The balance sim's output is byte-for-byte the same as main (same random draws, so seeds don't shift).
+
+### Watch out
+- [ ] Once PR #70 merges, tick its "Fix the review lines…" Next-up item for the review half only. The other half, saying why the rating moved each morning, isn't done.
+- [ ] On a bad day where none of the five complaint lines is true, the morning report now shows no review at all. Fine for honesty; maybe add a mild generic line if it reads empty.
+- [ ] "Overpriced and pushy" fires when any floor tag is over 1.25× its default tag. That threshold was picked by eye. Vintage put in the case (tagged at 1.3× value, about 1.13× default) stays under it.
+- [ ] Bots never pick Card Night or sell repacks, so the Card Night line and "Pulled a hit from their repack!" were checked with a forced test and a code read, not in sim runs. Not played by a person on a phone.
+
+---
+
 ## v3 rev 2.2 playtest agents · 2026-11-01 · Playtester agent for Hunter (with Claude)
 Agents now fill in the same playtest questionnaire as human testers. Eight scripted personas played 3 runs each through the engine (Tier A), and Claude played two full runs itself as a cautious newbie and an impatient min-maxer (Tier B, no-API route). Agent file: `kit/agents/playtester.md`. Side-by-side findings: `playtests/findings-2026-11-01.md`. Results: `playtests/agents-2026-11-01.*` and `playtests/claude-2026-11-01*.json`, each with a batch ready to push to the questionnaire artifact. No game code changed.
 
@@ -47,8 +169,8 @@ Agents now fill in the same playtest questionnaire as human testers. Eight scrip
 - [ ] @Hunter: answer Q1–Q10 in `design/v3.1-beta-plan.md`.
 - [ ] Paid API playtest: OK'd by Hunter (Nov 1) for after the v3.1 fixes land and the key exists. Run `go: false` first.
 - [ ] Balance agent: add an "always sell to the scalper" bot, and check whether rep loss should cost something.
-- [ ] Fix the review lines so they only mention what the shop actually has: done in PR #73 (not merged yet). Tick this when #73 merges.
-- [ ] Say why the rating moved each morning (planned in `design/v3.1-beta-plan.md`, section 6).
+- [x] Fix the review lines so they only mention what the shop actually has: done in PR #73 (merged Nov 1).
+- [x] Say why the rating moved each morning: done in v3.1 (PR #77, Nov 1).
 - [ ] Results page: show `source: 'agent'` docs apart from human ones (or behind a filter) so bot answers don't drown out people.
 - [ ] Pick a public route for outside testers (itch.io restricted page or a public build, plus a Google Form into a Sheet); options in `kit/agents/playtester.md`.
 
@@ -68,6 +190,7 @@ Agents now fill in the same playtest questionnaire as human testers. Eight scrip
 - [ ] The workflow pins `@anthropic-ai/sdk@^0.136.0` without checking that version exists on npm, and the workflow has never run. Try a `go: false` run first (it calls nothing).
 - [ ] The new workflow touches `.github/`, so Guard needs another teammate's approval on this PR.
 - [ ] Standing orders made routine visits automatic, so some lines (for example Quill's "Glyphsmiths' workshop, I mean") went unread in the moment. A human would read every line.
+
 
 ---
 

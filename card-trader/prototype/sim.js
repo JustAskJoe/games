@@ -14,12 +14,15 @@ function bot(style) {
   return function play(G) {
     const v = G.visit;
     if (G.phase === 'title') { const k = G.seed % 3; return CT.act(G, { t: 'start', answers: { focus: ['singles', 'sealed', 'vintage'][k], split: 'balanced', home: ['shell', 'hive', 'star'][(G.seed >> 2) % 3] } }); }
+    // v3.1: the shop's chores are automatic by default; lazy and sloppy stand for players who never use that help
+    if (G.phase === 'morning' && G.dayIdx === 0 && (style === 'lazy' || style === 'sloppy') && CT.autoOn(G, 'file')) for (const k of ['sleeve', 'file', 'rack']) CT.act(G, { t: 'setAuto', k, on: false });
     if (G.phase === 'morning') { backRoom(G, style); setupGate(G); return CT.act(G, { t: 'open' }); }
     if (G.phase === 'shop') return CT.act(G, { t: 'next' });
     if (G.phase === 'visit') {
       // paranoid: anyone showing a tell gets security called on them
       if (style === 'paranoid' && v.tellsShown > 0 && ['thief', 'distract', 'switch'].indexOf(v.role) < 0) return CT.act(G, { t: 'security' });
       if (watchful && v.disguised && CT.boardHas(G, v.who)) return CT.act(G, { t: 'refuse' });
+      if (v.role === 'stranger') return CT.act(G, { t: 'accept' }); // free vintage packs (paranoid already called security above)
       if (v.role === 'weigh') return CT.act(G, { t: org ? 'sellBehind' : 'accept' });
       if (v.role === 'thief') {
         if (!watchful) return CT.act(G, { t: 'pass' });
@@ -48,7 +51,7 @@ function bot(style) {
       }
       if (v.role === 'vintage') {
         const val = CT.goodValue(G, v.lot), rent = G.week[G.dayIdx].rent;
-        if (org && v.ask <= val * 0.85 && G.cash > v.ask + rent + 40) return CT.act(G, { t: 'accept' });
+        if (org && v.ask <= val * 0.85 && G.cash > v.ask + rent + 40 && CT.act(G, { t: 'accept' }).ok) return; // no room: pass instead of retrying
         if (org && G.cash > val * 0.6 + rent) { CT.act(G, { t: 'offer', price: Math.round(val * 0.6) }); if (G.visit) CT.act(G, { t: 'offer', price: Math.round(val * 0.7) }); }
         return G.visit && CT.act(G, { t: 'pass' });
       }
@@ -78,7 +81,7 @@ function bot(style) {
             if (watchful && schemer) return CT.act(G, { t: 'security' });
             if (watchful && !schemer && v.cards.length <= 2) return CT.act(G, { t: 'inform' });
           }
-          for (const c of v.cards) if (c.know.loupe && !c.flawUsed && (Math.min(c.cen, c.edg, c.sur) <= 6 || c.know.fake)) CT.act(G, { t: 'flaw', uid: c.uid });
+          for (const c of v.cards) if (c.know.loupe && !c.flawUsed && (c.eye && Math.min(c.eye.cen[0], c.eye.edg[0], c.eye.sur[0]) <= 6 || c.know.fake)) CT.act(G, { t: 'flaw', uid: c.uid });
           if (!G.visit) return;
         }
         let est = 0; for (const c of v.cards) est += pumped(G, c) && careful ? CT.estimate(G, c).value * 0.25 : CT.estimate(G, c).value;
@@ -115,14 +118,16 @@ function bot(style) {
       if (careful) {
         const rent = G.week[G.dayIdx].rent;
         if (ups) for (const k of ['lens', 'spec', 'hands']) if (!G.up[k] && G.cash > rent + CT.UPGRADES[k].cost + 80) CT.act(G, { t: 'upgrade', k });
+        // Eye tools only once there's a card worth grading (a raw card worth 40+ whose read could reach 9)
+        if (ups && G.stock.some(c => !c.graded && c.know.loupe && !c.know.fake && CT.estimate(G, c).gradeHi >= 9 && CT.estimate(G, c).value >= 40)) for (const k of ['eye1', 'eye2', 'eye3']) if (!G.up[k] && G.cash > rent + CT.UPGRADES[k].cost + 80) CT.act(G, { t: 'upgrade', k });
         if (G.dayIdx >= 1) CT.act(G, { t: 'policy', limit2: true });
         for (const c of G.stock.slice()) {
           if (!c.know.loupe) CT.act(G, { t: 'inspect', uid: c.uid, tool: 'loupe' });
           if (!c.know.uv || (G.up.spec && !c.know.spec)) CT.act(G, { t: 'inspect', uid: c.uid, tool: 'uv' });
           const e = CT.estimate(G, c);
           if (e.fake) continue;
-          const g = CT.trueGrade(c);
-          if (!c.graded && c.know.loupe && g >= 9 && e.value >= 20 && G.cash > 15 + rent) CT.act(G, { t: 'grade', uid: c.uid, co: 'halo' });
+          // v3.1: the bot sees a grade range, not the true grade: send when the range reaches 9 and its middle is 8+
+          if (!c.graded && c.know.loupe && e.gradeHi >= 9 && e.grade >= 8 && e.value >= 20 && G.cash > 15 + rent) CT.act(G, { t: 'grade', uid: c.uid, co: 'halo' });
           else if (!c.graded && e.rarity === 'c' && e.value < 2.5) CT.act(G, { t: 'toBulk', uid: c.uid });
         }
         if (G.store.up.sorter && G.bulk >= 150) CT.act(G, { t: 'repack', n: 8, per: 15, every: 4, min: 12, price: 12 });

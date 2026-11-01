@@ -1,0 +1,15 @@
+careful    back room: wear -4₵ (1.7% of stock)  stolen 0.0 (-0₵, 0% of final)  display 37% of singles  rating 4.69  bounties 10.9  wrong calls 0.0  fetches 14.6  switched 0.0  dead packs 0.0  merch 2.6
+careful    median gain 232%  tab 2%  fakes sold 0.0  promos 17.6  variants 67.1  misprints 0.3  scalped 0.0  ranks {"Lane Favorite":72,"Dock Legend":59,"Corner Stall":12,"Legend of the Lanes":16,"Strip Regular":41}
+noupgrades back room: wear -5₵ (1.5% of stock)  stolen 0.0 (-0₵, 0% of final)  display 41% of singles  rating 4.64  bounties 6.7  wrong calls 0.0  fetches 13.4  switched 0.0  dead packs 0.0  merch 4.3
+noupgrades median gain 253%  tab 5%  fakes sold 3.1  promos 18.8  variants 65.8  misprints 0.0  scalped 0.0  ranks {"Legend of the Lanes":23,"Corner Stall":4,"Strip Regular":40,"Dock Legend":51,"Lane Favorite":82}
+sloppy     back room: wear -10₵ (2.6% of stock)  stolen 1.6 (-40₵, 10% of final)  display 17% of singles  rating 3.15  bounties 0.0  wrong calls 0.0  fetches 27.1  switched 0.3  dead packs 3.0  merch 0.0
+sloppy     median gain -53%  tab 94%  fakes sold 4.0  promos 12.3  variants 0.0  misprints 0.0  scalped 0.7  ranks {"Corner Stall":180,"Lane Favorite":5,"Strip Regular":10,"Dock Legend":4,"Legend of the Lanes":1}
+lazy       back room: wear -34₵ (6.0% of stock)  stolen 6.9 (-189₵, 9% of final)  display 17% of singles  rating 3.28  bounties 0.0  wrong calls 0.0  fetches 22.7  switched 2.0  dead packs 12.1  merch 0.0
+lazy       median gain 207%  tab 7%  fakes sold 0.0  promos 20.2  variants 69.8  misprints 0.0  scalped 0.0  ranks {"Legend of the Lanes":17,"Corner Stall":17,"Lane Favorite":82,"Dock Legend":30,"Strip Regular":54}
+greedy     back room: wear -5₵ (2.0% of stock)  stolen 6.0 (-182₵, 9% of final)  display 40% of singles  rating 3.97  bounties 6.4  wrong calls 0.0  fetches 9.8  switched 0.0  dead packs 13.1  merch 0.0
+greedy     median gain 206%  tab 1%  fakes sold 2.9  promos 19.1  variants 66.5  misprints 0.0  scalped 0.0  ranks {"Legend of the Lanes":12,"Strip Regular":65,"Lane Favorite":75,"Dock Legend":45,"Corner Stall":3}
+paranoid   back room: wear -5₵ (2.0% of stock)  stolen 0.0 (-0₵, 0% of final)  display 35% of singles  rating 2.54  bounties 7.8  wrong calls 15.1  fetches 11.0  switched 0.0  dead packs 0.0  merch 1.2
+paranoid   median gain 66%  tab 31%  fakes sold 3.0  promos 15.9  variants 62.1  misprints 0.0  scalped 0.0  ranks {"Dock Legend":10,"Strip Regular":70,"Corner Stall":86,"Lane Favorite":31,"Legend of the Lanes":3}
+naive      back room: wear -6₵ (1.5% of stock)  stolen 8.6 (-361₵, 17% of final)  display 38% of singles  rating 4.21  bounties 0.0  wrong calls 0.0  fetches 16.0  switched 0.1  dead packs 0.0  merch 3.8
+naive      median gain 218%  tab 18%  fakes sold 2.8  promos 20.1  variants 66.9  misprints 0.0  scalped 0.0  ranks {"Legend of the Lanes":14,"Corner Stall":25,"Lane Favorite":70,"Dock Legend":44,"Strip Regular":47}
+careful beats sloppy 97%
