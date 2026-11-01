@@ -36,8 +36,11 @@
     { name: 'Static District', bpm: 118, track: 'static', pal: 'static', start: [64, 80], wlvCap: 5, fight: 10, drop: 14,
       gates: { add: 0.7, mul: 1.3, trade: 1.6 }, hp: 1.4, bite: 1.2, dens: 1, walls: W0.concat([[20, 14, 16], [22, 14, 16], [24, 14, 16], [26, 14, 16], [28, 14, 16]]),
       boss: { id: 'echo', hp: 205000, contact: 60, every: 2, loss: 0.14, w: 0.14 } },
+    { name: 'The Conservatory', bpm: 124, track: 'conserv', pal: 'conserv', start: [80, 100], wlvCap: 6, fight: 12, drop: 16,
+      gates: { add: 0.8, mul: 1.35, trade: 1.7 }, hp: 1.8, bite: 1.4, dens: 1.05, walls: W0.concat([[20, 14, 16], [22, 14, 16], [24, 14, 16], [26, 14, 16], [28, 14, 16], [30, 14, 16]]),
+      boss: { id: 'vale', hp: 171000, contact: 60, armor: 3, rearmor: 2, open: 3, loss: 0.14 } }
   ];
-  const MAX_LEVEL = 4;   // the last street the game offers. levelDef() already makes streets past the table: raise this to open them
+  const MAX_LEVEL = 5;   // the last street the game offers. levelDef() already makes streets past the table: raise this to open them
   // past the table the streets cycle: same boss, look and song order, a key shift, and every number scaled by how far past the table you are
   function levelDef(n) {
     const i = n - 1; if (i < LEVELS.length) return Object.assign({ n }, LEVELS[i]);
@@ -92,6 +95,18 @@
       },
       init(G, st, e) { st.real = e.seq[0]; e.x = e.lanes[st.real]; e.w = G.def.boss.w; },
       tick(G, b, e, st) { const i = Math.min(e.seq.length - 1, Math.floor((G.t - DROP_T) / (b.every * BAR))), r = e.seq[Math.max(0, i)]; if (r !== st.real) { st.real = r; e.x = e.lanes[r]; G.ev.push({ type: 'shuffle', t: G.t }); } } },
+    // run into the attack: only gold orbs crack the armor, red ones hurt, and a silence beam stops your squad firing
+    vale: { name: 'DIRECTOR VALE', tip: 'Catch gold orbs to crack the armor. Dodge red', lose: 'Vale can\'t be hurt until the armor cracks. Run into gold orbs, dodge red ones, and stay out of the silence beam.', win: 'Vale lost the room.',
+      setup(S, b) {
+        for (let k = 1; k < S.def.fight; k++) {
+          const s = S.r() < 0.5 ? -1 : 1, x = 0.3 + S.r() * 0.3;
+          S.add('orb', S.at(DROP_BAR + k, 2), s * x, { gold: true, w: 0.14 }); S.add('orb', S.at(DROP_BAR + k, 2), -s * x, { gold: false, w: 0.14, loss: b.loss });
+          if (k % 3 === 2) { const c = S.r() < 0.5 ? -1 : 1; S.add('haz', S.at(DROP_BAR + k, 0), 0, { x0: c < 0 ? -1 : 0, x1: c < 0 ? 0 : 1, warn: 1.1, dur: BAR * 0.75, style: 'beam' }); }
+        }
+      },
+      init(G, st, e) { st.armor = G.def.boss.armor; st.max = st.armor; e.armor = true; },
+      tick(G, b, e, st) { if (!e.armor && G.t >= st.until) { e.armor = true; st.armor = b.rearmor; st.max = b.rearmor; G.ev.push({ type: 'armor', t: G.t, on: true }); } }
+    }
   };
   // one gate every 2 bars from bar 4 to 18. Each run deals the slots from these pools (seeded), so two different kinds
   // always face each other: +N beats x1.5 while the squad is small, fire rate beats both once it's big, Overclock trades

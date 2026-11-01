@@ -18,6 +18,7 @@
     yards: { fog: '#06242A', tone: ['#0B2C30', '#0A2038', '#2A2410'], a: [0.05, 0.55, 0.6], b: [1, 0.62, 0.1], arch: ['#2FD6C4', '#FFB547'], far: 0.6, rain: 0.5, haze: 1 },
     glass: { fog: '#0E2A4A', tone: ['#12304E', '#0C2448', '#1E3A5C'], a: [0.2, 0.5, 1], b: [0.85, 0.92, 1], arch: ['#6FB8FF', '#E8F4FF'], far: 1.6, rain: 1, haze: 1 },
     static: { fog: '#1B1036', tone: ['#21123E', '#170C34', '#1E2A18'], a: [0.45, 0.15, 1], b: [0.55, 1, 0.15], arch: ['#A66BFF', '#B6FF3C'], far: 0.9, rain: 0.7, haze: 0.62 },
+    conserv: { fog: '#2A0B10', tone: ['#33100F', '#280A18', '#3A1A08'], a: [0.85, 0.08, 0.12], b: [1, 0.7, 0.15], arch: ['#FF4D4D', '#FFD24A'], far: 1.25, rain: 0.25, haze: 1 }
   };
 
   // ---------- geometry helpers: non-indexed parts merged into one mesh, with colour and glow per vertex ----------
