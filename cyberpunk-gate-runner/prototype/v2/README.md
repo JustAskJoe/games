@@ -39,6 +39,13 @@ Casual clear rate by squad brought in (all four guns, typical weapon level):
 | 4 | 21% | 33% | 43% |
 | 5 | 16% | 28% | 37% |
 
+Those tables are Medium. `DIFFS` in `engine.js` scales a street for Easy and Hard, and `sim.js` holds the bands. First-try clears on Levels 1 to 5:
+
+| Difficulty | Smart | Casual | Kid bot (fight attention 35%) |
+|---|---|---|---|
+| Easy | not banded | 99–100% | 87–100% |
+| Hard | 51–93% | 19–57% | not banded |
+
 Level 1 street bots: random clears 5%, idle 6%. With the counter switched off, the smart bot clears 0% of Levels 2 to 5.
 
 Vale's HP is lower than Echo's because you can only hurt Vale while the armor is cracked. Surviving a boss's contact costs runners equal to its remaining HP / `contact`, and doesn't unlock anything.
