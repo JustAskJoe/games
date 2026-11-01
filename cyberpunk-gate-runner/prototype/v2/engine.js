@@ -33,8 +33,11 @@
     { name: 'Glass Canyon', bpm: 120, track: 'glass', pal: 'glass', start: [48, 60], wlvCap: 4, fight: 8, drop: 12,
       gates: { add: 0.6, mul: 1.3, trade: 1.6 }, hp: 1.1, bite: 1, dens: 1, walls: W0.concat([[20, 16, 16], [22, 16, 16], [24, 16, 16], [26, 16, 16]]),
       boss: { id: 'warden', hp: 108000, contact: 60, every: 2, warn: 0.5, reflect: 0.03 } },
+    { name: 'Static District', bpm: 118, track: 'static', pal: 'static', start: [64, 80], wlvCap: 5, fight: 10, drop: 14,
+      gates: { add: 0.7, mul: 1.3, trade: 1.6 }, hp: 1.4, bite: 1.2, dens: 1, walls: W0.concat([[20, 14, 16], [22, 14, 16], [24, 14, 16], [26, 14, 16], [28, 14, 16]]),
+      boss: { id: 'echo', hp: 205000, contact: 60, every: 2, loss: 0.14, w: 0.14 } },
   ];
-  const MAX_LEVEL = 3;   // the last street the game offers. levelDef() already makes streets past the table: raise this to open them
+  const MAX_LEVEL = 4;   // the last street the game offers. levelDef() already makes streets past the table: raise this to open them
   // past the table the streets cycle: same boss, look and song order, a key shift, and every number scaled by how far past the table you are
   function levelDef(n) {
     const i = n - 1; if (i < LEVELS.length) return Object.assign({ n }, LEVELS[i]);
@@ -78,6 +81,17 @@
         if (G.t >= st.next) { st.side = -st.side; st.next += every; st.warn = false; G.ev.push({ type: 'swap', t: G.t, side: st.side }); }
       },
       hit(G, b, e, st) { if (sideOf(G) !== st.side) return true; hurt(G, b.reflect, 'reflect'); return false; } },
+    // find the real one: three holograms shuffle, only one takes damage, and the fakes send shockwaves down their lanes
+    echo: { name: 'ECHO', tip: 'Three Echoes. Hit the one pulsing on the kick', lose: 'Only the Echo pulsing on the kick is real. Line up with it, because the other two send shockwaves down their lanes.', win: 'The real Echo went quiet.',
+      setup(S, b, e) {
+        const X = [-0.62, 0, 0.62], every = b.every; let cur = 1; e.lanes = X; e.seq = [];
+        for (let k = 0; k * every < S.def.fight + every; k++) {
+          cur = (cur + 1 + Math.floor(S.r() * 2)) % 3; e.seq.push(cur);
+          if (k * every + 1 < S.def.fight) for (let l = 0; l < 3; l++) if (l !== cur) S.add('haz', S.at(DROP_BAR + k * every + 1, 0), 0, { x0: X[l] - 0.3, x1: X[l] + 0.3, warn: 1.1, loss: b.loss, style: 'wave' });
+        }
+      },
+      init(G, st, e) { st.real = e.seq[0]; e.x = e.lanes[st.real]; e.w = G.def.boss.w; },
+      tick(G, b, e, st) { const i = Math.min(e.seq.length - 1, Math.floor((G.t - DROP_T) / (b.every * BAR))), r = e.seq[Math.max(0, i)]; if (r !== st.real) { st.real = r; e.x = e.lanes[r]; G.ev.push({ type: 'shuffle', t: G.t }); } } },
   };
   // one gate every 2 bars from bar 4 to 18. Each run deals the slots from these pools (seeded), so two different kinds
   // always face each other: +N beats x1.5 while the squad is small, fire rate beats both once it's big, Overclock trades
