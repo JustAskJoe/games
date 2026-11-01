@@ -6,6 +6,9 @@
 
 The Artist agent (`kit/agents/artist.md`) reads this file as the only source of this game's look. People edit it; agents propose changes in pull requests.
 
+## Picks
+- Street (#24): **A, Clean Synthwave**. Zach, Oct 31, 2026.
+
 ## The look
 Polished neon low-poly: clean shapes, strong silhouettes and glow rather than fine detail. Flat-shaded facets, two or three tones per surface, light coming from neon and windows, not from a sun. It has to read instantly on a phone while hundreds of things move on screen. When in doubt, take detail out and add glow.
 
@@ -54,14 +57,14 @@ Working shades from Prototype 2 (`render.js`), for low-poly facets only, never a
 - Drone: about 1.2 units wide, hovering at 1.1 units, roughly **20–30 px** wide.
 - Biker: about 1.7 units tall and 1.5 long at 1.15 scale, roughly **30–40 px** tall.
 - Street towers: 3–6 units wide, 9–33 tall, set back 7–12 units from the road centre; hanging signs 3.4–7 units wide (4:1), 9–12 units up.
-- Arches: about 9 units wide and 8 tall, one every 2 bars, alternating cyan and pink in P2.
+- Arches: about 9 units wide and 8 tall, one every 2 bars: violet frames with a bone chevron, gold after the drop.
 - Far skyline: 70 blocks, 18–98 units tall, 150–210 units away; sun about 0.2 of the screen width, above the horizon.
 - Everything is built in code from low-poly shapes and shaders today. Final art is likely **textures, emissive maps and model guides**, not sprites; confirm that before picking a final source.
 
 ## Pipeline settings
 ```
 roughs: cloudflare            # cloudflare (free, full size) | canva (links only) | off
-final_art_source: undecided   # candidates: canva | commission | in-code (Claude builds it in render.js)
+final_art_source: in-code     # Claude builds the picks as models and shaders in render.js
 canva_roughs: on
 slack_channel: none           # no Gate Runner channel yet
 ```

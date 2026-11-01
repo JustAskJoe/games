@@ -327,7 +327,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   const RW = 3.4, ZS = 10, AHEAD = 4.6, SIGN_TILT = 0.24;     // road half width, world units per second of song, seconds drawn ahead
   const wx = x => x * RW, wz = z => -z * ZS;
   const R = { ok: false, quality: 2, locked: false, RW, ZS };
-  const COL = { cyan: '#3DF0FF', pink: '#FF3DA8', pink2: '#FF7AD0', violet: '#8B5CFF', gold: '#FFB547', green: '#4BFFA5', red: '#FF4D6D', white: '#FFFFFF', steel: '#1B2148', ink: '#0B0E2C', plum: '#3A1050' };
+  const COL = { cyan: '#3DF0FF', pink: '#FF3DA8', pink2: '#FF7AD0', violet: '#8B5CFF', gold: '#FFB547', green: '#4BFFA5', red: '#FF4D6D', white: '#FFFFFF', steel: '#1B2148', ink: '#0B0E2C', plum: '#3A1050', bone: '#F2EFE6' };
   const FOG = new T.Color('#1C0B3E');
   const UF = { uFog: { value: FOG }, uFogR: { value: new T.Vector2(30, 60) }, uT: { value: 0 }, uPulse: { value: 0 }, uOC: { value: 0 }, uCharge: { value: 0 } };
 
@@ -350,11 +350,11 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     return out;
   }
 
-  // ---------- the one material for models: lit body, rim light, glowing parts ----------
+  // ---------- the one material for models: lit body, rim light, glowing parts. Parts take the instance tint unless glow is 2 (own colour, glowing) or 3 (own colour, lit) ----------
   const neonMat = () => new T.ShaderMaterial({
     uniforms: Object.assign({ uGlow: { value: 3.2 } }, UF),
     vertexShader: `attribute vec3 color; attribute float aGlow; attribute vec3 aTint; varying vec3 vC, vN, vW; varying float vG;
-      void main(){ vec4 w = modelMatrix * instanceMatrix * vec4(position, 1.); vW = w.xyz; vN = normalize(mat3(modelMatrix) * mat3(instanceMatrix) * normal); vC = color * aTint; vG = aGlow; gl_Position = projectionMatrix * viewMatrix * w; }`,
+      void main(){ vec4 w = modelMatrix * instanceMatrix * vec4(position, 1.); vW = w.xyz; vN = normalize(mat3(modelMatrix) * mat3(instanceMatrix) * normal); vC = aGlow > 1.5 ? color : color * aTint; vG = aGlow > 2.5 ? 0. : min(aGlow, 1.); gl_Position = projectionMatrix * viewMatrix * w; }`,
     fragmentShader: `uniform vec3 uFog; uniform vec2 uFogR; uniform float uGlow; varying vec3 vC, vN, vW; varying float vG;
       void main(){ vec3 V = normalize(cameraPosition - vW), N = normalize(vN); float d = max(dot(N, normalize(vec3(.3, .8, .5))), 0.), rim = pow(1. - max(dot(N, V), 0.), 2.5);
         vec3 c = vC * (.34 + .66 * d) + vC * rim * .9; c = mix(c, vC * uGlow, vG);
@@ -415,29 +415,30 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   }
   function archGeo() {
     const w = RW * 1.32, h = 8;
-    return merge([box(0.3, h, 0.3, -w, h / 2, 0, COL.ink), box(0.3, h, 0.3, w, h / 2, 0, COL.ink), box(w * 2 + 0.3, 0.3, 0.3, 0, h, 0, COL.ink), box(0.1, h, 0.34, -w + 0.2, h / 2, 0, COL.white, 1), box(0.1, h, 0.34, w - 0.2, h / 2, 0, COL.white, 1), box(w * 2, 0.1, 0.34, 0, h - 0.2, 0, COL.white, 1)]);
+    return merge([box(0.3, h, 0.3, -w, h / 2, 0, COL.ink), box(0.3, h, 0.3, w, h / 2, 0, COL.ink), box(w * 2 + 0.3, 0.3, 0.3, 0, h, 0, COL.ink), box(0.1, h, 0.34, -w + 0.2, h / 2, 0, COL.white, 1), box(0.1, h, 0.34, w - 0.2, h / 2, 0, COL.white, 1), box(w * 2, 0.1, 0.34, 0, h - 0.2, 0, COL.white, 1), box(0.86, 0.1, 0.36, -0.36, h - 0.46, 0, COL.bone, 2, 0, 0, 0.42), box(0.86, 0.1, 0.36, 0.36, h - 0.46, 0, COL.bone, 2, 0, 0, -0.42)]);
   }
 
-  // ---------- towers: procedural lit windows, a neon line on the roof ----------
+  // ---------- towers: procedural gold, violet and bone windows, one violet line on the roof ----------
   const towerMat = fogR => new T.ShaderMaterial({
     uniforms: Object.assign({}, UF, { uFogR: { value: fogR } }),
-    vertexShader: `attribute vec3 aTint; attribute float aSeed; varying vec3 vP, vN, vW, vT, vS; varying float vR;
-      void main(){ vS = vec3(length(instanceMatrix[0].xyz), length(instanceMatrix[1].xyz), length(instanceMatrix[2].xyz)); vP = position * vS; vN = normal; vT = aTint; vR = aSeed;
+    vertexShader: `attribute float aSeed; varying vec3 vP, vN, vW, vS; varying float vR;
+      void main(){ vS = vec3(length(instanceMatrix[0].xyz), length(instanceMatrix[1].xyz), length(instanceMatrix[2].xyz)); vP = position * vS; vN = normal; vR = aSeed;
         vec4 w = modelMatrix * instanceMatrix * vec4(position, 1.); vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }`,
-    fragmentShader: `uniform vec3 uFog; uniform vec2 uFogR; uniform float uPulse, uOC, uCharge; varying vec3 vP, vN, vW, vT, vS; varying float vR;
+    fragmentShader: `uniform vec3 uFog; uniform vec2 uFogR; uniform float uPulse, uOC, uCharge; varying vec3 vP, vN, vW, vS; varying float vR;
       float h(vec2 p){ return fract(sin(dot(p, vec2(41.3, 289.1))) * 43758.5); }
       void main(){ vec2 uv = abs(vN.x) > .5 ? vec2(vP.z, vP.y) : vec2(vP.x, vP.y); vec2 cell = vec2(.72, .98), id = floor(uv / cell), f = fract(uv / cell);
         float win = step(.18, f.x) * step(f.x, .82) * step(.25, f.y) * step(f.y, .75), r = h(id + floor(vR * 91. + .5)), on = step(.9 - .26 * uCharge - .12 * uOC, r) * win * step(abs(vN.y), .5);
-        vec3 c = vec3(.006, .007, .024) + vec3(.008, .005, .03) * (vP.y / vS.y), lit = mix(vT, vec3(1., .78, .5), step(.84, r));
-        c += lit * on * (.5 + .7 * uPulse * step(.8, r));
-        c += vT * (.5 + 1.5 * uCharge + 1.2 * uOC) * smoothstep(vS.y - .26, vS.y - .12, vP.y) * step(abs(vN.y), .5);
+        float pick = h(id * 1.7 + floor(vR * 37. + .5)); const vec3 VIOLET = vec3(.26, .11, 1.), GOLD = vec3(1., .46, .06), BONE = vec3(.89, .86, .79);
+        vec3 c = mix(vec3(.002, .0025, .012), vec3(.004, .005, .024), step(.5, abs(vN.x))) * (.7 + .6 * vP.y / vS.y), lit = pick < .55 ? GOLD : pick < .82 ? VIOLET : BONE;
+        c += lit * on * (.22 + .22 * uCharge + .22 * uOC + .3 * uPulse * step(.8, r));
+        c += mix(VIOLET, GOLD, uOC * step(.5, vR)) * (.5 + 1.1 * uCharge + .8 * uOC) * smoothstep(vS.y - .22, vS.y - .1, vP.y) * step(abs(vN.y), .5);
         gl_FragColor = vec4(mix(c, uFog, smoothstep(uFogR.x, uFogR.y, length(cameraPosition - vW))), 1.); }`
   });
 
   // ---------- state ----------
   let renderer, scene, cam, rtS, rtA, rtB, fsScene, fsCam, fsQuad, mats = {}, W = 1, H = 1, DPR = 1, road, sky, runners, picks, drones, swarm, bikers, crate, boss, arches, rails, near, billboards, towerData = [], gates = [], parts = [], tracers = [], pts, lines, pi = 0;
   const camBase = new T.Vector3(0, 6.6, 9.2), look = new T.Vector3(), PN = 1600, TN = 90, v3 = new T.Vector3();
-  const frameMs = [], shocks = []; let lastPerf = 0, slowCheck = 0, shockI = 0, lastBeat = -1, punch = 0, baseFov = 52, bossHp = 0, bossHit = 0;
+  const ARCH0 = new T.Color(COL.violet), ARCH1 = new T.Color(COL.gold), archCol = new T.Color(), frameMs = [], shocks = []; let lastPerf = 0, slowCheck = 0, shockI = 0, lastBeat = -1, punch = 0, baseFov = 52, bossHp = 0, bossHit = 0;
 
   function buildRoad() {
     const m = new T.ShaderMaterial({
@@ -447,14 +448,15 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
         void main(){ float x = vW.x, ax = abs(x), z = vW.z - uT * ZS, dist = length(cameraPosition - vW), on = 1. - smoothstep(RW * 1.03, RW * 1.05, ax);
           vec3 c = mix(vec3(.003, .003, .01), vec3(.006, .007, .024), on);
           float bz = abs(fract(z / BEAT + .5) - .5) * BEAT, bar = abs(fract(z / (BEAT * 4.) + .5) - .5) * BEAT * 4.;
-          vec3 acc = mix(vec3(.55, .25, 1.), vec3(1., .16, .6), uOC);
+          vec3 acc = mix(vec3(.3, .14, 1.), vec3(1., .46, .06), uOC);
           c += on * acc * (smoothstep(.05, .0, bz) * (.05 + .14 * uPulse) + smoothstep(.1, .0, bar) * (.2 + .5 * uPulse));
-          float lane = abs(fract(x / (RW * .5) + .5) - .5) * RW * .5; c += on * vec3(.15, .4, .6) * smoothstep(.022, .0, lane) * .22;
-          float dash = step(fract(z / (BEAT * .5)), .5) * smoothstep(.07, .03, ax); c += vec3(1., .16, .6) * dash * (.9 + 1.2 * uPulse);
+          float lane = abs(fract(x / (RW * .5) + .5) - .5) * RW * .5; c += on * vec3(.3, .15, .9) * smoothstep(.022, .0, lane) * .16;
+          float dash = step(fract(z / (BEAT * .5)), .5) * smoothstep(.07, .03, ax); c += vec3(.89, .86, .79) * dash * (.5 + .8 * uPulse);
+          float cz = z - ax * .55, chev = min(abs(fract(cz / (BEAT * 8.)) - .5), abs(fract((cz + 1.1) / (BEAT * 8.)) - .5)) * BEAT * 8.; c += on * acc * smoothstep(.13, .07, chev) * step(ax, RW * .72) * (.3 + .4 * uPulse);
           c += vec3(.14, .9, 1.) * smoothstep(.16, .0, abs(ax - RW * 1.04)) * (.9 + 1.1 * uPulse);
           float wet = (sin(x * 1.7 + 1.) * .5 + .5) * (sin(x * 4.3) * .5 + .5) * (sin(z * .09 + x * .4) * .5 + .5);
-          float far = smoothstep(4., 46., dist); c += on * (mix(vec3(.9, .2, .75), vec3(1., .3, .5), uOC) * wet * .16 * far + vec3(.34, .11, .48) * far * far * .22);
-          vec2 q = (vW.xz - uSq) / vec2(uSqR + 1.2, (uSqR + 1.2) * .8); c += on * mix(vec3(.05, .7, .9), vec3(1., .9, .9), uOC) * exp(-dot(q, q) * 1.5) * .28;
+          float far = smoothstep(4., 46., dist); c += on * (mix(vec3(.3, .14, 1.), vec3(1., .46, .06), uOC) * wet * .16 * far + vec3(.34, .11, .48) * far * far * .22);
+          vec2 q = (vW.xz - uSq) / vec2(uSqR + 1.2, (uSqR + 1.2) * .8); c += on * mix(vec3(.05, .7, .9), vec3(.5, .7, .8), uOC) * exp(-dot(q, q) * 1.5) * mix(.28, .12, uOC);
           float zone = step(uSplit.y, vW.z) * step(vW.z, 3.) * uSplit.z, mine = step(0., x * uSplit.x);
           if (zone > 0.) { float cv = fract((vW.z + abs(x - uSplit.x * RW * .5) * .9 + uT * 16.) / 3.4);
             c *= 1. - .62 * zone * (1. - mine) * on; c += on * zone * mine * vec3(.1, .75, 1.) * (.09 + .55 * step(cv, .22)); c += vec3(1.) * smoothstep(.14, .05, ax) * zone * 1.6; }
@@ -470,10 +472,10 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       fragmentShader: `uniform vec3 uFog; uniform float uPulse, uOC, uT; varying vec3 vD;
         float h(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5); }
         void main(){ vec3 d = normalize(vD); float y = max(d.y, 0.);
-          vec3 c = mix(mix(uFog * 2.1, vec3(.32, .05, .34) + .22 * uOC * vec3(1., .1, .5), smoothstep(0., .1, y)), vec3(.008, .012, .05), smoothstep(.05, .5, y));
+          vec3 c = mix(mix(uFog * 2.1, vec3(.05, .008, .08) + .1 * uOC * vec3(.26, .11, 1.), smoothstep(0., .1, y)), vec3(.008, .012, .05), smoothstep(.05, .5, y));
           vec2 sv = vec2(d.x, d.y) / max(-d.z, .05); vec2 s = sv - vec2(0., .24); float r = length(s) / .2, disc = 1. - smoothstep(.97, 1.03, r);
-          float cut = s.y > .03 ? 1. : smoothstep(-.06, .06, sin(s.y * 120. + uT * .7) + .9 + s.y * 8.); vec3 sun = mix(vec3(1., .1, .55), vec3(1., .8, .3), smoothstep(-.18, .18, s.y));
-          c = mix(c, sun * (.95 + .3 * uPulse), disc * cut); c += sun * .13 * exp(-r * r * .42) * (.8 + .3 * uPulse);
+          float cut = s.y > .03 ? 1. : smoothstep(-.06, .06, sin(s.y * 120. + uT * .7) + .9 + s.y * 8.); vec3 sun = mix(vec3(.26, .11, 1.), vec3(1., .46, .06), smoothstep(-.18, .18, s.y));
+          c = mix(c, sun * (.34 + .34 * uOC + .16 * uPulse), disc * cut); c += sun * .035 * exp(-r * r * .42) * (.8 + .3 * uPulse);
           vec2 g = floor(d.xy * 190.); c += vec3(.9) * step(.994, h(g)) * smoothstep(.12, .4, y);
           gl_FragColor = vec4(c, 1.); }`
     });
@@ -482,9 +484,8 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   const hash = i => { const v = Math.sin(i * 127.1) * 43758.5453; return v - Math.floor(v); };
   function towerMesh(count, mat) {
     const g = new T.BoxGeometry(1, 1, 1); g.translate(0, 0.5, 0);
-    const tint = new Float32Array(count * 3), seed = new Float32Array(count), pal = [COL.pink, COL.cyan, COL.violet, COL.gold, COL.cyan, COL.pink2];
-    for (let i = 0; i < count; i++) { tc.set(pal[i % pal.length]); tint.set([tc.r, tc.g, tc.b], i * 3); seed[i] = hash(i + count); }
-    g.setAttribute('aTint', new T.InstancedBufferAttribute(tint, 3)); g.setAttribute('aSeed', new T.InstancedBufferAttribute(seed, 1));
+    const seed = new Float32Array(count); for (let i = 0; i < count; i++) seed[i] = hash(i + count);
+    g.setAttribute('aSeed', new T.InstancedBufferAttribute(seed, 1));
     const mesh = new T.InstancedMesh(g, mat, count); mesh.frustumCulled = false; return mesh;
   }
   function buildCity() {
@@ -494,19 +495,19 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     const N = 36; near = towerMesh(N, towerMat(new T.Vector2(34, 96))); near.instanceMatrix.setUsage(T.DynamicDrawUsage);
     for (let i = 0; i < N; i++) { const s = i % 2 ? 1 : -1; towerData.push({ s, x: s * (RW * 1.55 + 2.4 + hash(i + 3) * 4), w: 3 + hash(i + 5) * 3, h: 9 + hash(i + 8) * 24, d: 6 + hash(i + 9) * 2, z0: Math.floor(i / 2) * 7.5 + hash(i) * 2 }); }
     scene.add(near);
-    // billboards: Hush propaganda on the street towers
-    const cv = document.createElement('canvas'); cv.width = 1024; cv.height = 2048; const c = cv.getContext('2d');
-    [['HUSH', 'SILENCE IS SAFE', '#FF3DA8'], ['NO MUSIC', 'ZONE 7 · ENFORCED', '#3DF0FF'], ['OBEY', 'THE QUIET', '#FFB547'], ['NEON CITY', '2089', '#8B5CFF'], ['FREE THE BEAT', 'HUSH IS OVER', '#4BFFA5'], ['LOUD', 'ZONE 7 LIBERATED', '#FF3DA8'], ['TURN IT UP', 'ALL NIGHT', '#FFB547'], ['OVERCLOCK', 'NEON CITY UNMUTED', '#3DF0FF']].forEach(([a, b, col], i) => {
-      const y = i * 256; c.fillStyle = '#080A22'; c.fillRect(0, y, 1024, 256); c.strokeStyle = col; c.lineWidth = 12; c.strokeRect(10, y + 10, 1004, 236);
-      c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = col; c.font = `700 ${a.length > 10 ? 96 : 118}px "Space Grotesk",system-ui,sans-serif`; c.fillText(a, 512, y + 104); c.fillStyle = '#F2EFE6'; c.font = '500 46px "Space Grotesk",system-ui,sans-serif'; c.fillText(b, 512, y + 196);
+    // signs: Hush propaganda on the street towers, flipped to a liberated slogan at the drop
+    const cv = document.createElement('canvas'); cv.width = 1024; cv.height = 1536; const c = cv.getContext('2d');
+    [['HUSH', 'SILENCE IS SAFE', COL.pink], ['OBEY', 'THE QUIET', COL.pink], ['NO MUSIC', 'ZONE 7 · ENFORCED', COL.pink], ['LOUD', 'ZONE 7 LIBERATED', COL.gold], ['FREE THE BEAT', 'HUSH IS OVER', COL.green], ['TURN IT UP', 'ALL NIGHT', COL.bone]].forEach(([a, b, col], i) => {
+      const y = i * 256; c.fillStyle = COL.ink; c.fillRect(0, y, 1024, 256); c.strokeStyle = col; c.lineWidth = 20; c.lineJoin = 'round'; c.strokeRect(14, y + 14, 996, 228);
+      c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = col; c.font = `700 ${a.length > 10 ? 96 : 118}px "Space Grotesk",system-ui,sans-serif`; c.fillText(a, 512, y + 104); c.fillStyle = COL.bone; c.font = '500 46px "Space Grotesk",system-ui,sans-serif'; c.fillText(b, 512, y + 196);
     });
     const tex = new T.CanvasTexture(cv); tex.colorSpace = T.SRGBColorSpace; tex.anisotropy = 4;
-    const pg = new T.PlaneGeometry(9, 2.25), cell = new Float32Array(N); for (let i = 0; i < N; i++) cell[i] = i % 4; pg.setAttribute('aCell', new T.InstancedBufferAttribute(cell, 1));
+    const pg = new T.PlaneGeometry(9, 2.25), cell = new Float32Array(N); for (let i = 0; i < N; i++) cell[i] = i % 3; pg.setAttribute('aCell', new T.InstancedBufferAttribute(cell, 1));
     billboards = new T.InstancedMesh(pg, new T.ShaderMaterial({
       side: T.DoubleSide, uniforms: Object.assign({ tMap: { value: tex } }, UF, { uFogR: { value: new T.Vector2(30, 92) } }),
-      vertexShader: `attribute float aCell; uniform float uOC; varying vec2 vU; varying vec3 vW; void main(){ vU = vec2(uv.x, (7. - (aCell + step(.5, uOC) * 4.) + uv.y) / 8.); vec4 w = modelMatrix * instanceMatrix * vec4(position, 1.); vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }`,
+      vertexShader: `attribute float aCell; uniform float uOC; varying vec2 vU; varying vec3 vW; void main(){ vU = vec2(uv.x, (5. - (aCell + step(.5, uOC) * 3.) + uv.y) / 6.); vec4 w = modelMatrix * instanceMatrix * vec4(position, 1.); vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }`,
       fragmentShader: `uniform sampler2D tMap; uniform vec3 uFog; uniform vec2 uFogR; uniform float uPulse, uOC, uCharge; varying vec2 vU; varying vec3 vW;
-        void main(){ vec3 c = texture2D(tMap, vU).rgb * (1.2 + .6 * uPulse + 1.4 * uCharge * uOC); gl_FragColor = vec4(mix(c, uFog, smoothstep(uFogR.x, uFogR.y, length(cameraPosition - vW))), 1.); }`
+        void main(){ vec3 c = texture2D(tMap, vU).rgb * (1. + .5 * uPulse + 1.2 * uCharge * uOC); gl_FragColor = vec4(mix(c, uFog, smoothstep(uFogR.x, uFogR.y, length(cameraPosition - vW))), 1.); }`
     }), N);
     billboards.instanceMatrix.setUsage(T.DynamicDrawUsage); billboards.frustumCulled = false; scene.add(billboards);
     // light streaks rushing past: moved in the shader, so they cost nothing per frame
@@ -516,7 +517,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     const st = new T.LineSegments(lg, new T.ShaderMaterial({
       transparent: true, depthWrite: false, blending: T.AdditiveBlending, uniforms: UF, defines: { ZS: ZS.toFixed(2) },
       vertexShader: `attribute float aZ, aE; uniform float uT; varying float vA; void main(){ float z = mod(aZ + uT * ZS * 1.5, 90.) - 76. - aE * 2.8; vA = smoothstep(-76., -44., z) * .55; gl_Position = projectionMatrix * viewMatrix * vec4(position.xy, z, 1.); }`,
-      fragmentShader: `uniform float uOC; varying float vA; void main(){ gl_FragColor = vec4(mix(vec3(.25, .85, 1.), vec3(1., .3, .7), uOC) * vA, 1.); }`
+      fragmentShader: `uniform float uOC; varying float vA; void main(){ gl_FragColor = vec4(mix(vec3(.3, .14, 1.), vec3(1., .46, .06), uOC) * vA, 1.); }`
     }));
     st.frustumCulled = false; scene.add(st);
   }
@@ -621,7 +622,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     }
     near.instanceMatrix.needsUpdate = true; billboards.instanceMatrix.needsUpdate = true;
     begin(arches); const barT = 2 * GR.BAR, k0 = Math.floor((t - 0.5 * GR.BAR) / barT);
-    for (let k = k0; k < k0 + 4; k++) { const ta = (k + 0.5) * barT + GR.BAR * 0.5, z = ta - t; if (z < -1.5 || z > 13) continue; put(arches, 0, 0, wz(z), 1, 0, 0, k % 2 ? COL.pink : COL.cyan, 0.9 + UF.uPulse.value * 0.7); }
+    for (let k = k0; k < k0 + 4; k++) { const ta = (k + 0.5) * barT + GR.BAR * 0.5, z = ta - t; if (z < -1.5 || z > 13) continue; put(arches, 0, 0, wz(z), 1, 0, 0, archCol.lerpColors(ARCH0, ARCH1, UF.uOC.value), 0.38 + UF.uPulse.value * 0.26); }
     end(arches);
     begin(rails); for (const s of [-1, 1]) put(rails, s * RW * 1.05, 0.12, -38, 1, 0, 0, COL.cyan, 0.45 + UF.uPulse.value * 0.4); end(rails);
   }

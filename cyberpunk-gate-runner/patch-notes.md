@@ -6,6 +6,20 @@ Newest on top. Each entry covers **what's new** for players, **next up** for the
 
 ---
 
+## P2 art · Oct 31, 2026 · Zach (with Claude)
+
+### What's new
+- **Clean Synthwave city:** the street now follows the picked concept (#24 A). Towers sit dark with gold, violet and bone windows and one violet roofline. The road has chevrons and a bone centre line, the arches are violet frames that turn gold at the drop, and the sun is a dim violet-to-gold stripe that brightens.
+- **New signs:** before the drop every sign is Hush pink (HUSH, OBEY, NO MUSIC). At the drop each flips to its own slogan (LOUD, FREE THE BEAT, TURN IT UP).
+
+### Next up
+- [ ] @Zach: play it and check the city still feels alive before the drop. It's much darker now, on purpose, so the road and the drop stand out.
+
+### Watch out
+- [ ] Removed two old sign pairs, NEON CITY 2089 and OVERCLOCK NEON CITY UNMUTED, because the sheet shows three pairs.
+- [ ] Arches on PC can look pink-white in the first moments of the drop while the colour fades to gold. Seen in a still, not judged in motion.
+- [ ] Judged from stills on a software renderer, not on a real phone. Dark towers may crush to black on a dim phone screen.
+
 ## P2 · Oct 31, 2026 · Zach (with Claude)
 First step of Prototype 2: new graphics, same game.
 
@@ -86,10 +100,10 @@ Art only, no build change.
 - Painted roughs requested from the free Cloudflare workflow (`art/concepts/24-roughs.json`), but none were made yet: see Next up.
 
 ### Next up
-- [ ] @Zach: open the three sheets on a phone and reply `Pick: A`, `B` or `C` (plus notes) on the concepts pull request.
+- [x] @Zach: open the three sheets on a phone and reply `Pick: A`, `B` or `C` (plus notes) on the concepts pull request. (done Oct 31, Zach: picked A, Clean Synthwave, in chat with Claude)
 - [ ] @Zach @Hunter @Joe: review the draft `art/art-direction.md` with the concepts: palette, color roles (the city avoids cyan and pink), the four extra P2 shades, sizes, and `final_art_source`.
 - [ ] @Hunter: the Art roughs workflow failed on this branch with "ART_KEY isn't set": the `ART_KEY` Actions secret is missing on `JustAskJoe/games` (probably lost in the move from onefiftylabs). Add it, then run **Art roughs** (Actions → Run workflow) on `art/cyberpunk-gate-runner-24-street` and the roughs will land on the branch.
-- [ ] Whoever picks: decide the final-art source (Canva, a commission, or Claude building it in code in `render.js`) and fill the cost table, so finals can be priced.
+- [x] Whoever picks: decide the final-art source (Canva, a commission, or Claude building it in code in `render.js`) and fill the cost table, so finals can be priced. (done Oct 31, Zach: Claude builds it in code, so no cost table needed)
 
 ### Watch out
 - [ ] The art direction is a **draft** written by the agent from the request and P2; nobody has signed it off.
