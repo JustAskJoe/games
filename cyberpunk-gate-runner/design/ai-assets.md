@@ -6,6 +6,7 @@ For Steam's AI disclosure. One row per file or batch, newest on top.
 
 | Date | File(s) | Made with | Status | Issue / PR |
 | --- | --- | --- | --- | --- |
+| Nov 1, 2026 | `prototype/v2/render.js` (layered city: street furniture, skyline, rain, steam, traffic, signage and made-up brand copy, built in code, no image model) | Claude (code) | Placeholder | zach/gate-runner-city-depth |
 | Nov 1, 2026 | `prototype/v2/render.js` and `ui.js` (weapon projectiles, flashes, hit effects and gun sounds, built in code) | Claude (code) | Placeholder | zach/gate-runner-weapon-looks |
 | Nov 1, 2026 | `prototype/v2/ui.js` (original melodic house track at 122 BPM, synthesized in code, no samples) | Claude (code) | Placeholder | zach/gate-runner-melodic-house |
 | Oct 31, 2026 | `prototype/v2/ui.js` and `render.js` (gun sound effects and weapon fire effects, built in code) | Claude (code) | Placeholder | zach/gate-runner-weapon-fx, zach/gate-runner-sfx |
