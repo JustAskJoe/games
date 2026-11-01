@@ -9,6 +9,7 @@ Agents are written once here and assigned to games. Each game keeps only what's 
 | Artist | `artist.md` | Two Claude scheduled tasks: Concepts (scheduled, free) and Finals (button only, paid) | `tower-defense` |
 | Producer | `producer.md` | Stage 1: the Weekly digest workflow (`digest.js`), Mondays, free, no AI. Stage 2 (playtest summaries) is designed but off. | The whole studio |
 | Lead Artist | `lead-artist.md` | Hired Oct 31, 2026: on demand in a Claude Code session. Writes each game's `art/lead-plan.md`, reviews sets, and keeps `kit/art/art-rules.md` and `kit/art/lessons.md`. Never makes images or spends. | `card-trader` |
+| Balance | `balance.md` | Hired Nov 1, 2026: on demand in a Claude Code session. Reads a game's number targets and pass band, runs its bot sim, reports misses with the constants behind them, and flags degenerate strategies, dead mechanics, runaway compounding, cash-flow traps and stuck runs. Applies changes only when asked; never loosens a band, spends or merges. A house in Studio HQ needs it added to `AGENTS` in `JustAskJoe/forge` (follow-up). | `card-trader` |
 
 ## Artist setup
 

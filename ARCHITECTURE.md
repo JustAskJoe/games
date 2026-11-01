@@ -148,7 +148,8 @@ sequenceDiagram
 | Lead Artist | Claude Code agent (`kit/agents/lead-artist.md`) | Live (first plan: Card Trader) | On demand, one game at a time: writes `<game>/art/lead-plan.md`, reviews art sets, keeps `kit/art/art-rules.md` and `kit/art/lessons.md`; never makes images or spends |
 | App Engineer, Reviewer, Build Gate ("the Engineers") | Claude Code agents (`.claude/agents/` in the XR repo; the studio-crew plugin in review for every repo) | Live | In a Claude Code session, when someone asks. Each reads the repo's `STUDIO.md` card. The Engineer builds with tests and never commits; the Reviewer reviews and never edits; the Build Gate runs every check and commits only on a pass |
 | SDK Librarian, Headset test partner | Designed in the XR team plan (studio-private) | Planned | On demand |
-| Playtester, Balance | Not designed yet | Planned | Probably on-demand Claude Code agents, like the legal reviewer |
+| Balance | Claude Code agent (`kit/agents/balance.md`) | Live (first game: Card Trader) | On demand, in a Claude Code session, one game at a time: runs the game's bot sim against its design targets and pass band, reports misses and the constants behind them, writes findings to the game's patch notes; tunes only when asked, never loosens a band, spends or merges. No house in Studio HQ yet (needs `AGENTS` in `JustAskJoe/forge`) |
+| Playtester | Not designed yet | Planned | Probably an on-demand Claude Code agent, like the legal reviewer |
 
 ## 6. Accounts and who controls what
 
