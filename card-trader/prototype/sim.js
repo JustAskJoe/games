@@ -78,7 +78,7 @@ function bot(style) {
             if (watchful && schemer) return CT.act(G, { t: 'security' });
             if (watchful && !schemer && v.cards.length <= 2) return CT.act(G, { t: 'inform' });
           }
-          for (const c of v.cards) if (c.know.loupe && !c.flawUsed && (Math.min(c.cen, c.edg, c.sur) <= 6 || c.know.fake)) CT.act(G, { t: 'flaw', uid: c.uid });
+          for (const c of v.cards) if (c.know.loupe && !c.flawUsed && (c.eye && Math.min(c.eye.cen[0], c.eye.edg[0], c.eye.sur[0]) <= 6 || c.know.fake)) CT.act(G, { t: 'flaw', uid: c.uid });
           if (!G.visit) return;
         }
         let est = 0; for (const c of v.cards) est += pumped(G, c) && careful ? CT.estimate(G, c).value * 0.25 : CT.estimate(G, c).value;
@@ -114,15 +114,15 @@ function bot(style) {
     if (G.phase === 'close') {
       if (careful) {
         const rent = G.week[G.dayIdx].rent;
-        if (ups) for (const k of ['lens', 'spec', 'hands']) if (!G.up[k] && G.cash > rent + CT.UPGRADES[k].cost + 80) CT.act(G, { t: 'upgrade', k });
+        if (ups) for (const k of ['lens', 'spec', 'hands', 'eye1', 'eye2', 'eye3']) if (!G.up[k] && G.cash > rent + CT.UPGRADES[k].cost + 80) CT.act(G, { t: 'upgrade', k });
         if (G.dayIdx >= 1) CT.act(G, { t: 'policy', limit2: true });
         for (const c of G.stock.slice()) {
           if (!c.know.loupe) CT.act(G, { t: 'inspect', uid: c.uid, tool: 'loupe' });
           if (!c.know.uv || (G.up.spec && !c.know.spec)) CT.act(G, { t: 'inspect', uid: c.uid, tool: 'uv' });
           const e = CT.estimate(G, c);
           if (e.fake) continue;
-          const g = CT.trueGrade(c);
-          if (!c.graded && c.know.loupe && g >= 9 && e.value >= 20 && G.cash > 15 + rent) CT.act(G, { t: 'grade', uid: c.uid, co: 'halo' });
+          // v3.1: the bot sees a grade range, not the true grade: send when the range reaches 9 and its middle is 8+
+          if (!c.graded && c.know.loupe && e.gradeHi >= 9 && e.grade >= 8 && e.value >= 20 && G.cash > 15 + rent) CT.act(G, { t: 'grade', uid: c.uid, co: 'halo' });
           else if (!c.graded && e.rarity === 'c' && e.value < 2.5) CT.act(G, { t: 'toBulk', uid: c.uid });
         }
         if (G.store.up.sorter && G.bulk >= 150) CT.act(G, { t: 'repack', n: 8, per: 15, every: 4, min: 12, price: 12 });

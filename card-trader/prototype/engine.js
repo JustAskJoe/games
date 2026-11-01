@@ -47,6 +47,7 @@ const GRADERS = {
   quik: { name: 'QuikSlab', fee: 6, days: 1, mult: g => g >= 10 ? 2.4 : g >= 9 ? 1.6 : g >= 8 ? 1.05 : g >= 7 ? 0.8 : RAW(g) },
   halo: { name: 'Halo Bureau', fee: 15, days: 2, mult: g => g >= 10 ? 3.2 : g >= 9 ? 2.0 : g >= 8 ? 1.2 : g >= 7 ? 0.85 : RAW(g) },
 };
+const BLACK_LABEL = 2.5, BLACK_LOOK = 0.35; // v3.1: a Halo 10 with all three subgrades a true 10 is worth 2.5× a normal Halo 10
 const BOX = { packs: 6, cost: 120 };
 const PACK_RETAIL = 28;
 const TRANSLATE_FEE = 5;
@@ -67,6 +68,11 @@ const UPGRADES = {
   lens: { name: 'Print Lens', cost: 50, does: 'Shows set symbols (vintage vs reprint), verifies serials and signatures, and spots factory misprints.' },
   spec: { name: 'Spectrometer', cost: 70, does: 'The UV lamp also catches ring fakes that copy the watermark.' },
   hands: { name: 'Steady Hands', cost: 40, does: 'The first tool you use on each card costs no patience.' },
+  // v3.1 personal grading: each narrows your read of one subgrade from ±2 to ±1; the Trained Eye narrows all three
+  eye1: { name: 'Centering Card', cost: 25, does: 'Read centering to within ±1 grade (from ±2).' },
+  eye2: { name: 'Edge Light', cost: 30, does: 'Read edges to within ±1 grade (from ±2).' },
+  eye3: { name: 'Surface Lamp', cost: 35, does: 'Read surface to within ±1 grade (from ±2).' },
+  eye4: { name: 'Trained Eye', cost: 90, does: 'Every subgrade within ±1, and your read lands on the truth more often. Needs the other three. Never certain: only a slab is.' },
 };
 
 // Named regulars plus v2's bad actors. askMul/floorMul shape them as sellers (vs what they believe); ceilMul as buyers.
@@ -280,6 +286,7 @@ function makeCard(G, game, rarity, q, opts) {
   const k = U.card(d.id);
   const c = { uid: 'c' + (++G._uid), t: d.id, p: d.p, cen: at(), edg: at(), sur: at(), fake: null, graded: null,
     know: { loupe: false, uv: false, read: !!opts.read, fake: false, print: false, spec: false, free: false }, cost: 0, flawUsed: false,
+    prior: [clamp(Math.round(q - 2.5), 1, 8), clamp(Math.round(q + (opts.fresh ? 2 : 1.5)), 3, 10)],
     v: printV(G, k, d.p, opts.src) };
   if (opts.fake) {
     c.fake = opts.fake === 'ring' ? 'ring' : (R(G) < 0.5 ? 'uv' : 'stock');
@@ -328,21 +335,48 @@ function trueValue(G, c, demand) {
   if (c.fake) return 0;
   uni(G);
   const tm = tmpl(c.t), d = demand == null ? demandOf(G, tm.game) : demand;
-  const m = c.graded ? GRADERS[c.graded.co].mult(c.graded.grade) : RAW(trueGrade(c));
-  return baseOf(c) * m * d * (demand == null ? hot(G, c) : 1) * variantMult(G, c, null) * pumpMult(G, c) * (c.trim && !c.graded ? TRIM_VALUE : 1) * singleTrend(G, c);
+  return baseOf(c) * slabMult(c) * d * (demand == null ? hot(G, c) : 1) * variantMult(G, c, null) * pumpMult(G, c) * (c.trim && !c.graded ? TRIM_VALUE : 1) * singleTrend(G, c);
 }
-const readable = (G, c) => c.know.read || (G.fluency[tmpl(c.t).game] >= FLUENT_AT);
-// The player's best guess from what they've learned. Bots use only this.
+// What a raw card would be worth slabbed at grade g by grader co (black = Black Label), at today's market.
+function valueAt(G, c, co, g, black) { const e = estimate(G, c); if (e.fake || c.graded) return e.value; return e.k * (co ? GRADERS[co].mult(g) * (black ? BLACK_LABEL : 1) : RAW(g)); }
+function slabMult(c) { return c.graded ? GRADERS[c.graded.co].mult(c.graded.grade) * (c.graded.black ? BLACK_LABEL : 1) : RAW(trueGrade(c)); }
+// v3.1: you're an informed card owner. Every card's name, set and rarity is known; condition is what you can't be sure of.
+const readable = () => true;
+// ---------- condition reads (v3.1) ----------
+// A loupe look gives each subgrade as a range, never one number. The Eye upgrades narrow one subgrade each (±2 → ±1);
+// the Trained Eye narrows all three and centres the read on the truth more often. A range always spans 3 grades, so
+// your eye is never certain; only the slab is. Before any look, a card shows the range its source suggests.
+const EYE_TOOL = { cen: 'eye1', edg: 'eye2', sur: 'eye3' };
+function eyeLevel(G) { return ['eye1', 'eye2', 'eye3', 'eye4'].filter(k => G.up[k]).length; }
+function readCondition(G, c) {
+  c.eye = {};
+  for (const a of ['cen', 'edg', 'sur']) {
+    const h = G.up.eye4 || G.up[EYE_TOOL[a]] ? 1 : 2, w = 2 * h;
+    let k = Math.floor(R(G) * (w + 1)); if (G.up.eye4 && R(G) < 0.5) k = h;
+    const lo = clamp(c[a] - k, 1, 10 - w); c.eye[a] = [lo, lo + w];
+  }
+  c.eyeLv = eyeLevel(G);
+}
+const gradeOf = (cen, edg, sur) => clamp(Math.round(Math.min(cen, edg, sur) * 0.35 + (cen + edg + sur) / 3 * 0.65), 1, 10);
+// The grade range the player sees: from their read, or from the card's source before any look. null once slabbed.
+function gradeRange(c) {
+  if (c.graded) return null;
+  if (c.know.loupe && c.eye) return [gradeOf(c.eye.cen[0], c.eye.edg[0], c.eye.sur[0]), gradeOf(c.eye.cen[1], c.eye.edg[1], c.eye.sur[1])];
+  return c.prior || [4, 9];
+}
+// The player's best guess from what they've learned. Bots use only this. value is at the middle of the grade range;
+// lo and hi are the values at its ends.
 function estimate(G, c) {
   uni(G);
-  if (c.know.fake) return { value: 0, grade: null, rarity: tmpl(c.t).rarity, fake: true };
-  const tm = tmpl(c.t), rar = readable(G, c) ? tm.rarity : null;
-  const grade = c.graded ? c.graded.grade : c.know.loupe ? trueGrade(c) : null;
-  const m = c.graded ? GRADERS[c.graded.co].mult(c.graded.grade) : RAW(grade == null ? 7 : grade);
+  if (c.know.fake) return { value: 0, lo: 0, hi: 0, grade: null, rarity: tmpl(c.t).rarity, fake: true };
+  const tm = tmpl(c.t), rar = tm.rarity, rg = gradeRange(c);
+  const grade = c.graded ? c.graded.grade : c.know.loupe ? Math.round((rg[0] + rg[1]) / 2) : null;
   const vm = variantMult(G, c, c.know);
   const pm = G.pump && G.pump.t === c.t ? (G.dayIdx === 3 ? 1.8 : G.dayIdx >= 4 ? 0.5 : 1) : 1; // the market price is public
-  const v = baseOf(c, !rar) * m * demandOf(G, tm.game) * hot(G, c) * vm * pm * (c.trim && c.know.loupe && !c.graded ? TRIM_VALUE : 1) * singleTrend(G, c);
-  return { value: v, grade, rarity: rar, fake: c.know.uv ? false : null, vmult: vm };
+  const k = baseOf(c) * demandOf(G, tm.game) * hot(G, c) * vm * pm * (c.trim && c.know.loupe && !c.graded ? TRIM_VALUE : 1) * singleTrend(G, c);
+  if (c.graded) { const v = k * slabMult(c); return { value: v, lo: v, hi: v, grade, rarity: rar, fake: c.know.uv ? false : null, vmult: vm, black: !!c.graded.black }; }
+  const mid = (rg[0] + rg[1]) / 2, raw = g => RAW(Math.floor(g)) + (RAW(Math.ceil(g)) - RAW(Math.floor(g))) * (g - Math.floor(g));
+  return { value: k * raw(mid), lo: k * RAW(rg[0]), hi: k * RAW(rg[1]), k, grade, gradeLo: rg[0], gradeHi: rg[1], rarity: rar, fake: c.know.uv ? false : null, vmult: vm };
 }
 // What a seller believes their card is worth (home rate). They can't read other species' scripts, can't see
 // set symbols or misprints (a miscut just looks damaged to them), and dealers spot vintage.
@@ -443,15 +477,18 @@ function resolveGrades(G, all) {
       const f = gridSpot(G, 'shelf', o) ? 'shelf' : gridSpot(G, 'case', o) ? 'case' : null; if (f) { const sp = gridSpot(G, f, o); o.loc = f; [o.x, o.y, o.rot] = sp; G.goods.push(o); } else { G.store.crate = G.store.crate || { items: [] }; G.store.crate.items.push({ item: 'graded', good: o }); }
       continue; }
     const c = p.card;
-    if (c.fake) { c.loc = 'inbox'; c.know.uv = true; c.know.fake = true; G.stats.fakesCaught++; event(G, { t: 'grade', uid: c.uid, co: p.co, fake: true }); G.stock.push(c); continue; }
+    if (c.fake) { c.loc = 'inbox'; c.know.uv = true; c.know.fake = true; G.stats.fakesCaught++; event(G, { t: 'grade', uid: c.uid, co: p.co, fake: true, guess: p.guess || null }); G.stock.push(c); continue; }
     c.loc = pocketsFree(G, 'inbox') > 0 ? 'inbox' : pocketsFree(G, 'safe') > 0 ? 'safe' : 'inbox';
-    if (c.trim) { c.graded = { co: p.co, grade: 1, altered: true }; Object.assign(c.know, { loupe: true, uv: true, read: true, print: true }); G.store.stats.trimsCaught++; event(G, { t: 'grade', uid: c.uid, co: p.co, altered: true }); G.stock.push(c); continue; }
+    if (c.trim) { c.graded = { co: p.co, grade: 1, altered: true }; Object.assign(c.know, { loupe: true, uv: true, read: true, print: true }); G.store.stats.trimsCaught++; event(G, { t: 'grade', uid: c.uid, co: p.co, altered: true, guess: p.guess || null }); G.stock.push(c); continue; }
     let g = trueGrade(c);
     if (p.co === 'quik') { const x = p.roll; g = clamp(g + (x < 0.25 ? -1 : x > 0.75 ? 1 : 0), 1, 10); }
-    c.graded = { co: p.co, grade: g }; Object.assign(c.know, { loupe: true, uv: true, read: true, print: true });
+    // Black Label: a perfect card (every subgrade a true 10) that also passes Halo's second look (about 1 in 3)
+    const black = p.co === 'halo' && c.cen === 10 && c.edg === 10 && c.sur === 10 && p.roll < BLACK_LOOK;
+    c.graded = { co: p.co, grade: g, black }; Object.assign(c.know, { loupe: true, uv: true, read: true, print: true });
+    if (black) G.stats.blackLabels = (G.stats.blackLabels || 0) + 1;
     if (c.v && c.v.err) G.stats.misprints++;
     if (!G.stats.bestGrade || g > G.stats.bestGrade.grade || (g === G.stats.bestGrade.grade && p.co === 'halo')) G.stats.bestGrade = { grade: g, co: p.co, t: c.t };
-    event(G, { t: 'grade', uid: c.uid, co: p.co, grade: g });
+    event(G, { t: 'grade', uid: c.uid, co: p.co, grade: g, black, guess: p.guess || null });
     G.stock.push(c);
   }
   G.grading = keep;
@@ -611,9 +648,11 @@ function act(G, it) {
       }
       const key = { loupe: 'loupe', uv: 'uv', read: 'read' }[it.tool]; if (!key) return err('bad tool');
       if (key === 'read' && readable(G, c)) return err('already readable');
-      // the Spectrometer lets you re-scan a card you lamped before you owned it
+      // the Spectrometer lets you re-scan a card you lamped before you owned it; a new Eye tool lets you re-read condition
       const rescan = key === 'uv' && c.know.uv && G.up.spec && !c.know.spec;
-      if (c.know[key] && !rescan && !(key === 'loupe' && G.up.lens && !c.know.print)) return ok();
+      const reread = key === 'loupe' && c.know.loupe && (c.eyeLv || 0) < eyeLevel(G);
+      if (c.know[key] && !rescan && !reread && !(key === 'loupe' && G.up.lens && !c.know.print)) return ok();
+      if (key === 'loupe' && (!c.know.loupe || reread) && !c.graded) readCondition(G, c);
       c.know[key] = true;
       if (key === 'loupe' && G.up.lens) { c.know.print = true; if (c.v && c.v.err) G.stats.misprints++; }
       if (key === 'loupe' && c.v && (c.v.fin !== 'std' || c.v.first || c.v.serial || c.v.promo || c.v.signed)) G.stats.variants++;
@@ -706,7 +745,7 @@ function act(G, it) {
       if (G.cash < co.fee) return err('not enough cash');
       money(G, -co.fee, 'fee', co.name + ' grading fee');
       G.stock.splice(G.stock.indexOf(c), 1);
-      G.grading.push({ card: c, co: it.co, due: G.dayIdx + co.days, roll: R(G) });
+      G.grading.push({ card: c, co: it.co, due: G.dayIdx + co.days, roll: R(G), guess: c.know.loupe ? gradeRange(c) : null });
       return ok();
     }
     case 'restock': {
@@ -724,6 +763,7 @@ function act(G, it) {
       if (G.phase !== 'close') return err('buy upgrades at close');
       const U = UPGRADES[it.k]; if (!U) return err('no such upgrade');
       if (G.up[it.k]) return err('already have it');
+      if (it.k === 'eye4' && !(G.up.eye1 && G.up.eye2 && G.up.eye3)) return err('learn the three Eye tools first');
       if (G.cash < U.cost) return err('not enough cash');
       money(G, -U.cost, 'upgrade', 'Loupe upgrade: ' + U.name); G.up[it.k] = true; return ok();
     }
@@ -1636,6 +1676,6 @@ const CT = { newGame, load, act, DAYS, GAMES, SPECIES, PEOPLE, GRADERS, RARITY_N
   FINISH, SETS, ERRORS, PROMOS, UPGRADES, NIGHTS, NIGHT_FLYERS,
   RENT: RENT10, NIGHT_POOL, FIX, GOODS, GEAR, CATALOG, UNLOCKS, TELLS, WEAR_DAY, WEAR_SHOW, BULK_CAP, uni, setName,
   FOCUS, SPLIT, openChecklist, where, goodsAt, onGrid, gridFits, gridFree, gridSpot, shapeOf, sizeOf, pocketsFree, isFloor, placeRule, findThing, backPackTotal,
-  defaultTag, lookValue, goodValue, setMult, currentSet, boardHas, tmpl, trueGrade, centerRatio, estimate, readable, trueValue, shopValue, matches, wantsText, demandOf, variantMult, packTotal };
+  defaultTag, lookValue, goodValue, gradeRange, eyeLevel, BLACK_LABEL, valueAt, setMult, currentSet, boardHas, tmpl, trueGrade, centerRatio, estimate, readable, trueValue, shopValue, matches, wantsText, demandOf, variantMult, packTotal };
 if (typeof module !== 'undefined' && module.exports) module.exports = CT; else root.CT = CT;
 })(this);

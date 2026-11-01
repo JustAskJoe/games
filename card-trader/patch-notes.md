@@ -6,6 +6,54 @@ Newest on top. See the repo's CLAUDE.md for how patch notes work.
 
 ---
 
+## v3.1 grading rework · 2026-11-01 · Hunter (with Claude)
+Plan sections 1–3 from `design/v3.1-beta-plan.md` (on PR #70): known sets, condition ranges with an Eye track and a Black Label, and a grader-box reveal.
+
+### What's new
+- **You know your cards.** Every card shows its name, set and rarity. Decoding scripts and the translator are gone.
+- **Your eye gives a range, not a number.**
+  - The loupe reads centering, edges and surface as ranges (for example "edges 6–10"). A card's grade and value show as ranges too ("grade 7–9", "40–90₵").
+  - Before you look, a card shows the range its source suggests.
+  - Only a slab is certain.
+- **The Eye track** (Loupe upgrades at close): each tool narrows one subgrade's read; the Trained Eye narrows all three. Re-read a card after buying one.
+
+  | Upgrade | Cost |
+  | --- | --- |
+  | Centering Card | 25₵ |
+  | Edge Light | 30₵ |
+  | Surface Lamp | 35₵ |
+  | Trained Eye | 90₵ (needs the other three) |
+- **Grading is the gamble.**
+  - The grading form shows what each card is worth raw and at each grade in your range, including a Black Label.
+  - Halo is exact; QuikSlab can be one off.
+  - **Black Label 10:** a perfect card that passes Halo's second look. Very rare; worth 2.5× a normal 10.
+- **The grader box.** Returning slabs arrive in a taped box: tap to slit the tape, then flip each slab. You see the grade, your read beside it ("you read 8–9: spot on"), and the new value. A Black Label glows gold. Grade Day opens the last box.
+- **Balance** (`node sim.js 200`, full `build-and-test.py`: ALL GOOD):
+
+  | Bot | Before | After |
+  | --- | --- | --- |
+  | careful (now also buys the three Eye tools) | +231% | +246% |
+  | noupgrades | +210% | +211% |
+
+  - Loupe upgrades are worth +35 points (band floor 5).
+  - Careful beats sloppy 98%.
+
+### Next up
+- [ ] @Hunter: answer Q1–Q4 in `design/v3.1-beta-plan.md` (defaults are in `design/handoff.md`).
+- [ ] Re-run the agent playtests on this build (Tier A and a Claude no-API run). The persona bots need their grading rules switched from the true grade to the range first.
+- [ ] Next v3.1 pieces: guided day 1 and the QoL sweep.
+
+### Watch out
+- [ ] A true grade 10 only happens when all three subgrades are 10 (`trueGrade()` rounding): about 0.3% of cards in the sim. So nearly every 10 is a Black Label candidate, and a normal 10 is almost as rare. If 10s should be commoner than Black Labels, change `trueGrade()`, then re-tune the RAW and grader multipliers.
+- [ ] Ranges are wide at the start (±2 per subgrade gives grade ranges like 5–9). That's on purpose, but untested with humans. Watch whether new players find early grading guesswork frustrating.
+- [ ] Eye prices were tuned against the careful bot only. At 40/60/80₵ the bot lost 17 points against no upgrades, failing the band, so they're 25/30/35₵ now. The Trained Eye (90₵) isn't bought by any bot; its value is unmeasured.
+- [ ] Card art still draws wear from the true condition (art.js), so a sharp eye could read the art. Probably fine as flavour; check with testers.
+- [ ] The sim's careful bot now grades from your read (range reaches 9 and its middle is 8+) instead of the true grade, and its "point out a flaw" check uses your read. Its numbers moved for that reason too.
+- [ ] Checked with the full `build-and-test.py` (walkthrough at desktop and phone width) and Playwright screenshots of the grader box (taped, face down, flipped, Black Label) and the loupe. Not checked on a real phone.
+- [ ] `playtest-agents.js` and `play-driver.js` (PR #70) still call `CT.trueGrade` in a few persona rules. Update them when both PRs are in.
+
+---
+
 ## v3.0.1 · 2026-11-01 · Hunter (with Claude): continuing a save
 ### What's new
 - **Fix:** continuing a saved run on a freshly opened page showed card names as "undefined" until something rebuilt the card universe. Loading a save now rebuilds it from the run's seed. The agent playtesters found it; the fix was checked by loading a save in a fresh node process and through the full walkthrough.
