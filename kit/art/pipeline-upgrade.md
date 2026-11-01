@@ -99,7 +99,7 @@ Oct 31, 2026, from the bake-off in the Card Trader session and a read of the rep
 1. **Canva over the API returns 199×112 thumbnails.** Full size needs a person-attended browser session, so the scheduled Artist can't get finals on its own.
 2. **Canva throttles** at about 8 parallel jobs ("credit usage is cooling down").
 3. **Characters drift** even with a style anchor. Each game needs per-character anchors.
-4. **The Cloudflare roughs have never run:** the `ART_KEY` Actions secret isn't set (`kit/art/roughs.py` exits with "ART_KEY isn't set").
+4. **The Cloudflare roughs didn't run until Nov 1:** the `ART_KEY` Actions secret was missing. Hunter added it on Nov 1, 2026, and the Art roughs workflow now makes them (Flux Schnell, no reference images yet).
 5. **No manifest:** nothing lists what a game needs, so "is the art done?" has no answer.
 6. **No post-processing:** cropping, resizing to the sizes in `art-direction.md`, 2x exports, WebP, halo cleanup and atlas packing are all by hand.
 7. **No path to a human artist:** the Artist's finals mode assumes a tool makes the finals.
@@ -149,7 +149,7 @@ How to read each table:
 - **Falls short:** where a person or paid tool is still needed.
 - **Access:** 🔌 API (scriptable from a workflow), 🧩 MCP connector (Claude can drive it in a session, not from a plain GitHub Action), 🖱️ UI only (a person clicks).
 
-Our connectors right now: Canva 🧩, PixelLab 🧩. Cloudflare Workers AI 🔌 through the site endpoint (needs `ART_KEY`). Gemini API 🔌 would need a key Hunter adds.
+Our connectors right now: Canva 🧩, PixelLab 🧩. Cloudflare Workers AI 🔌 through the site endpoint (`ART_KEY` set Nov 1, 2026). Gemini API 🔌 would need a key Hunter adds.
 
 ### 4.1 2D
 
@@ -469,7 +469,7 @@ Each level says what changes in four places: **the Artist** (`kit/agents/artist.
 
 **Proposed `art-direction.md` additions (per game):**
 ```
-roughs: canva                 # until ART_KEY exists
+roughs: cloudflare            # free; or canva when the roughs must use anchors (Flux Schnell takes no reference images)
 final_art_source: canva       # one line only
 anchors: art/anchors/         # style-01 required before finals
 manifest: art/manifest.json
@@ -486,7 +486,7 @@ plus a filled-in cost table in **hours** as well as money.
 
 **Goal:** the Artist can make full-size finals on its own, headless, with anchors. About $0 to $30 a month.
 
-1. **Hunter adds `ART_KEY`** (Actions secret) so `art-roughs.yml` finally runs. Cost $0 inside the free tier.
+1. ~~**Hunter adds `ART_KEY`**~~ Done Nov 1, 2026: `art-roughs.yml` runs and makes roughs. Cost $0 inside the free tier.
 2. **Switch roughs to FLUX.2 klein** with the style anchor as a reference image. Prefer **4B (Apache 2.0)** until the legal reviewer clears 9B. Change in `roughs.py` and the site's `/art/api/rough` endpoint (Hunter deploys the site).
 3. **Gemini API as a headless finals source.** Activate the AI Pro $10 monthly Cloud credit (Hunter), create a Gemini API key, add it as a secret (Hunter). Nano Banana 2 with multi-reference anchors, batch mode at half price. About 70 kept 1K images a month inside the credit. Add `final_art_source: gemini` as an option.
 4. **A finals workflow** (`art-finals.yml`, own PR, Guard approval): runs on `art-approved`, reads the manifest rows for the issue, generates with anchors, runs `post.py`, commits to the `art/…` branch, opens the PR. Hard cap per run (like `MAX_PER_RUN`) and a monthly budget line in `art-direction.md`.
@@ -556,7 +556,7 @@ When a manifest row says `source: human` or `commission`, the Artist writes a **
 - [ ] A standard freelance art contract (work-for-hire, AI-assisted OK).
 
 **Level 2 (spend and secrets: only Hunter)**
-- [ ] Add `ART_KEY` to Actions secrets so the roughs run.
+- [x] Add `ART_KEY` to Actions secrets so the roughs run. (Hunter, Nov 1, 2026)
 - [ ] Activate the AI Pro $10/month Cloud credit and create a Gemini API key; add it as a secret.
 - [x] Monthly ceiling for headless finals: $10, the credit. (Hunter, Oct 31, 2026)
 - [ ] Deploy the updated `/art/api/rough` endpoint (FLUX.2 klein with references).

@@ -33,7 +33,7 @@ Art only, no build change.
 - [ ] @Hunter: add `art-approved` to #22 after the pick when you want the Canva finals run.
 
 ### Watch out
-- [ ] @Hunter: **no painted roughs.** The Art roughs workflow failed with "ART_KEY isn't set": the `ART_KEY` Actions secret is missing on `JustAskJoe/games` (likely lost in the repo move). Add it, then re-run the workflow on this branch (Actions → Art roughs → Run workflow) and the 6 roughs will land.
+- [x] @Hunter: **no painted roughs.** The Art roughs workflow failed with "ART_KEY isn't set": the `ART_KEY` Actions secret is missing on `JustAskJoe/games` (likely lost in the repo move). Add it, then re-run the workflow on this branch (Actions → Art roughs → Run workflow) and the 6 roughs will land. (Hunter with Claude, Nov 1, 2026: `ART_KEY` added; the Art roughs workflow made the roughs on this game's art branches)
 - [ ] "3D looking" was read as solid volume inside the painted 2D style (lit and shaded faces, visible tops), not a 3D render. Joe should confirm that's what he meant.
 - [ ] Sheets were checked only in headless Chromium (desktop and a 390 px phone viewport), not on a real iPhone or Android.
 - [ ] The prototype's Spark tower uses copper colors (`#B07A3C`, `#8E5F2C`) and a pale bolt (`#DCEFFF`) that aren't in `art/art-direction.md`, so the sheets use timber, stone and Frost instead. If copper matters to the look, add it to the palette.
@@ -102,7 +102,7 @@ Art only, no build change.
 - [ ] Canva roughs are links only: cloud runs can't fetch full-size Canva images (see `kit/art/README.md`).
 - [ ] The `#td-studio` Slack channel may not exist; the agent skips Slack if it doesn't.
 - [ ] The final-art cost table in `art/art-direction.md` is empty until a source is chosen.
-- [ ] @Hunter: add the `ART_KEY` Actions secret (Claude has the value) or the Art roughs workflow makes nothing.
+- [x] @Hunter: add the `ART_KEY` Actions secret (Claude has the value) or the Art roughs workflow makes nothing. (Hunter with Claude, Nov 1, 2026: `ART_KEY` added; the Art roughs workflow made the roughs on this game's art branches)
 - [ ] The Art roughs workflow hasn't run against the live endpoint yet; the first real run is the test. Its commits don't re-run Checks on the pull request.
 - [ ] Flux Schnell's license allows commercial use as far as we know; confirm before any rough becomes final art (roughs aren't meant to ship).
 

@@ -55,7 +55,7 @@ From the v1 prototype's tokens (`prototype/head.html`). Use only these.
 
 ## Pipeline settings
 ```
-roughs: canva                 # ART_KEY isn't set yet, so cloudflare can't run
+roughs: canva                 # canva passes our anchors; cloudflare (free since ART_KEY was added Nov 1) takes no reference images yet
 final_art_source: canva       # revisit after the legal reviewer's Canva answer (lead plan §8)
 anchors: builds/img/keyart.jpg plus the set and species anchors above
 vector_first: [ui, icons, frames, card-backs, glyphs, slabs, logo, vfx]

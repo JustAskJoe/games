@@ -85,7 +85,7 @@ Art only, no build change.
 ### Next up
 - [x] @Zach: open the three sheets on a phone and reply `Pick: A`, `B` or `C` (plus notes) on the concepts pull request. (done Oct 31, Zach: picked A, Street Ravers, in chat with Claude)
 - [ ] @Zach @Hunter @Joe: review the draft `art/art-direction.md` with the concepts (it's the same file as in the #24 pull request).
-- [ ] @Hunter: the `ART_KEY` Actions secret is missing on `JustAskJoe/games`, so the Art roughs workflow can't make roughs. Add it, then run **Art roughs** (Actions → Run workflow) on `art/cyberpunk-gate-runner-25-squad-enemies`.
+- [x] @Hunter: the `ART_KEY` Actions secret is missing on `JustAskJoe/games`, so the Art roughs workflow can't make roughs. Add it, then run **Art roughs** (Actions → Run workflow) on `art/cyberpunk-gate-runner-25-squad-enemies`. (Hunter with Claude, Nov 1, 2026: `ART_KEY` added; the Art roughs workflow made the roughs on this game's art branches)
 - [x] Whoever picks: decide the final-art source (Canva, a commission, or Claude building the models in `render.js`) and fill the cost table. (done Oct 31, Zach: Claude builds it in code, so no cost table needed)
 
 ### Watch out
@@ -109,7 +109,7 @@ Art only, no build change.
 ### Next up
 - [x] @Zach: open the three sheets on a phone and reply `Pick: A`, `B` or `C` (plus notes) on the concepts pull request. (done Oct 31, Zach: picked A, Clean Synthwave, in chat with Claude)
 - [ ] @Zach @Hunter @Joe: review the draft `art/art-direction.md` with the concepts: palette, color roles (the city avoids cyan and pink), the four extra P2 shades, sizes, and `final_art_source`.
-- [ ] @Hunter: the Art roughs workflow failed on this branch with "ART_KEY isn't set": the `ART_KEY` Actions secret is missing on `JustAskJoe/games` (probably lost in the move from onefiftylabs). Add it, then run **Art roughs** (Actions → Run workflow) on `art/cyberpunk-gate-runner-24-street` and the roughs will land on the branch.
+- [x] @Hunter: the Art roughs workflow failed on this branch with "ART_KEY isn't set": the `ART_KEY` Actions secret is missing on `JustAskJoe/games` (probably lost in the move from onefiftylabs). Add it, then run **Art roughs** (Actions → Run workflow) on `art/cyberpunk-gate-runner-24-street` and the roughs will land on the branch. (Hunter with Claude, Nov 1, 2026: `ART_KEY` added; the Art roughs workflow made the roughs on this game's art branches)
 - [x] Whoever picks: decide the final-art source (Canva, a commission, or Claude building it in code in `render.js`) and fill the cost table, so finals can be priced. (done Oct 31, Zach: Claude builds it in code, so no cost table needed)
 
 ### Watch out
