@@ -1,0 +1,35 @@
+{
+  "style": "2D expressionist painterly game background, loose oil-sketch brushwork with visible strokes and blocky planes of color, lamplit melancholy, a fictional snowbound railway mining town at night, muted coal-black, plum, slate blue and brass palette with warm amber lamp glow, faint Art Nouveau ironwork. Original design, not resembling any existing game or franchise. No text, no letters, no signage.",
+  "items": [
+    {
+      "file": "21-A-rough-1.jpg",
+      "subject": "Seen from straight above, top-down game map: a small snowy town square between a row of timber depot buildings with lit windows at the top and a railway platform with benches and a teal passenger train along the bottom, a trodden path in the snow, two street lamps, a few people in coats.",
+      "seed": 210
+    },
+    {
+      "file": "21-A-rough-2.jpg",
+      "subject": "Seen from straight above, top-down game map: the inside of an old station waiting hall used as a card room, plank floor, an iron stove glowing in one corner, a red rug, two round green card tables with players, a counter with shelves of card packs, tall arched windows with snow outside.",
+      "seed": 211
+    },
+    {
+      "file": "21-B-rough-1.jpg",
+      "subject": "Isometric three-quarter diorama of a small snowy railway depot at night: a long timber station house with a snowy roof and warm lit windows, a red door, a stone platform with benches, a teal passenger train beside it, two street lamps, a few people in winter coats.",
+      "seed": 212
+    },
+    {
+      "file": "21-B-rough-2.jpg",
+      "subject": "Isometric three-quarter diorama of the inside of an old station waiting hall used as a card room at night: two walls with tall arched frosted windows, a glowing iron stove, a red rug, one round green card table with four players under a hanging lamp, a counter with shelves of card packs.",
+      "seed": 213
+    },
+    {
+      "file": "21-C-rough-1.jpg",
+      "subject": "Side-on wide panorama like a stage set: a timber railway depot front with tall arched lit windows and a red door, a snowy platform with a lamp post and a few people, a teal steam train on the right, a mine headframe silhouette on the hills behind, dusk sky with falling snow.",
+      "seed": 214
+    },
+    {
+      "file": "21-C-rough-2.jpg",
+      "subject": "Side-on wide interior view of an old station waiting hall used as a card room at night: tall arched windows with snow outside, a black iron stove glowing on the left, card tables with players in silhouette under hanging brass lamps, a counter with a wall of card packs on the right.",
+      "seed": 215
+    }
+  ]
+}

@@ -21,6 +21,28 @@ Art only, no build change.
 ### Watch out
 - [ ] `canva_roughs: on` in the settings block isn't read by the Artist agent; `roughs:` is the setting that counts.
 
+## 1.1 · Oct 31, 2026 · Artist agent (with Claude)
+Art only, no build change.
+
+### What's new
+- **Spark (electricity) tower concepts (#22).** Brief in `art/briefs/22-electricity-tower.md`; three concept sheets: `art/concepts/22-A.svg` (Lantern Spire), `22-B.svg` (Cottage Dynamo), `22-C.svg` (Rune Conductor). Each shows the tower at 1x and 3x on grass and road, the button, a board scene, base / Storm II / Overload II, and the palette.
+- Painted roughs requested from the Art roughs workflow (`art/concepts/22-roughs.json`, 2 per direction), but none were made: see Watch out.
+
+### Next up
+- [ ] @Joe: open the three sheets on a phone and reply `Pick: A`, `B` or `C` (plus notes) on the #22 concepts pull request.
+- [ ] @Hunter: add `art-approved` to #22 after the pick when you want the Canva finals run.
+
+### Watch out
+- [ ] @Hunter: **no painted roughs.** The Art roughs workflow failed with "ART_KEY isn't set": the `ART_KEY` Actions secret is missing on `JustAskJoe/games` (likely lost in the repo move). Add it, then re-run the workflow on this branch (Actions → Art roughs → Run workflow) and the 6 roughs will land.
+- [ ] "3D looking" was read as solid volume inside the painted 2D style (lit and shaded faces, visible tops), not a 3D render. Joe should confirm that's what he meant.
+- [ ] Sheets were checked only in headless Chromium (desktop and a 390 px phone viewport), not on a real iPhone or Android.
+- [ ] The prototype's Spark tower uses copper colors (`#B07A3C`, `#8E5F2C`) and a pale bolt (`#DCEFFF`) that aren't in `art/art-direction.md`, so the sheets use timber, stone and Frost instead. If copper matters to the look, add it to the palette.
+- [ ] Direction C's blue crystal and Frost-colored glow sit close to the Frost tower's ice crystal; check them side by side before picking C.
+- [ ] Direction B (a cottage) is wider than the other towers and might read as the keep.
+- [x] `art/art-direction.md` lists `final_art_source` twice (`undecided`, then `canva`). The agent read it as `canva` (the Oct 28 decision) but didn't edit it; someone should delete the stale line. (Hunter with Claude, Oct 31, 2026: deleted, kept `canva`)
+- [ ] No dollar or credit estimate: Canva's cost per generation is still blank in the cost table. Count only: about 5 generations (4 images + 25%).
+- [ ] Brief reference links (Wikimedia Commons categories) weren't opened by the agent; check they still resolve.
+
 ## 1.1 · Oct 28, 2026 · Artist agent (with Claude)
 Art only, no build change.
 
