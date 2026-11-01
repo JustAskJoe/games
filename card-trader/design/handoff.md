@@ -62,7 +62,7 @@ From the v3.1 beta plan (`design/v3.1-beta-plan.md` on branch `hunter/playtester
 - **Graders tell the truth:** Halo is exact; QuikSlab can be one off. The grading form shows what a card is worth at each grade in your range.
 - **Black Label 10:** Halo only. The card must be perfect (all three subgrades a true 10) and pass Halo's second look (about 1 in 3). Worth 2.5× a normal Halo 10.
 - **Getting slabs back:** a grader box each morning that slabs return (and on Grade Day). Tap to slit the tape, then flip each slab to see the grade against your read. A Black Label glows.
-- **Defaults taken while the plan's questions are open** (Q1–Q4; easy to change):
+- **Q1–Q4, confirmed by Hunter on Nov 1, 2026 ("Keep defaults"):**
   - Q1: the "game you grew up on" opening question stays, with no new perk yet.
   - Q2: Lens, Spectrometer and Steady Hands stay; the Eye track is added rather than replacing them.
   - Q3: QuikSlab keeps its ±1.

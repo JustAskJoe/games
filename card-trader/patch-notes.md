@@ -39,7 +39,7 @@ Plan sections 1–3 from `design/v3.1-beta-plan.md` (on PR #70): known sets, con
   - Careful beats sloppy 98%.
 
 ### Next up
-- [ ] @Hunter: answer Q1–Q4 in `design/v3.1-beta-plan.md` (defaults are in `design/handoff.md`).
+- [x] @Hunter: answer Q1–Q4. Kept the defaults (Hunter, Nov 1); recorded in `design/handoff.md`.
 - [ ] Re-run the agent playtests on this build (Tier A and a Claude no-API run). The persona bots need their grading rules switched from the true grade to the range first.
 - [ ] Next v3.1 pieces: guided day 1 and the QoL sweep.
 
