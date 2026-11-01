@@ -61,16 +61,18 @@ const SCHEMA_MOVES = { type: 'object', additionalProperties: false, required: ['
   orders: { type: 'array', items: { type: 'object', additionalProperties: false, required: ['kind', 'moves'], properties: { kind: { type: 'string' }, moves: { type: 'array', items: { anyOf: [{ type: 'string' }, { type: 'object' }] } } } } },
   note: { type: 'string' } } };
 const SYS = ['opening', 'stockroom', 'fetch', 'browsers', 'tags', 'sleeves', 'sealed', 'vintage', 'reprints', 'repacks', 'rating', 'fakes', 'thieves', 'board', 'upgrades', 'loupe', 'nights'];
+const VERDICT = ['like', 'dislike', 'makesSense', 'confusing', 'keep', 'remove', 'change', 'add'];
 const n15 = { anyOf: [{ type: 'integer', minimum: 1, maximum: 5 }, { type: 'null' }] }, band = (...e) => ({ type: 'string', enum: e });
 const PACE = { type: 'object', additionalProperties: false, required: ['money', 'energy'], properties: { money: band('broke', 'tight', 'ok', 'flush'), energy: band('drag', 'fine', 'exciting') } };
 const SCHEMA_ANSWERS = { type: 'object', additionalProperties: false,
-  required: ['setupClear', 'setupFeel', 'floorBack', 'counterFloor', 'grids', 'rearranged', 'sys', 'pace', 'drag', 'contra', 'confused', 'best', 'worst', 'change', 'bugs', 'again'],
+  required: ['setupClear', 'setupFeel', 'floorBack', 'counterFloor', 'grids', 'rearranged', 'sys', 'pace', 'drag', 'contra', 'confused', 'best', 'worst', 'change', 'bugs', 'again', 'verdict'],
   properties: { setupClear: n15, setupFeel: band('fun', 'fine', 'busywork', 'confusing'), floorBack: n15, counterFloor: n15, grids: n15, rearranged: band('yes', 'no', 'once'),
     sys: { type: 'object', additionalProperties: false, required: SYS, properties: Object.fromEntries(SYS.map(k => [k, { type: 'object', additionalProperties: false, required: ['clear', 'fun', 'missed'], properties: { clear: n15, fun: n15, missed: { type: 'boolean' } } }])) },
     pace: { type: 'object', additionalProperties: false, required: ['early', 'mid', 'late'], properties: { early: PACE, mid: PACE, late: PACE } },
     drag: { anyOf: [band('1', '2', '3', '4', '5', '6', '7', '8', '9', '10'), { type: 'null' }] },
-    contra: { type: 'string' }, confused: { type: 'string' }, best: { type: 'string' }, worst: { type: 'string' }, change: { type: 'string' }, bugs: { type: 'string' }, again: { type: 'integer', minimum: 1, maximum: 5 } } };
-const FINAL = `The run is over. Fill in the playtest questionnaire as the persona, in their own voice, using only what happened (your notes and the day log below). 1-5 scales: 5 = very clear / very fun. "missed" = you never used that system. Systems: ${SYS.join(', ')}. pace: early = days 1-3, mid = 4-7, late = 8-10. drag = the day it started to drag, or null. Cite days and numbers in the text answers. Reply with JSON only.`;
+    contra: { type: 'string' }, confused: { type: 'string' }, best: { type: 'string' }, worst: { type: 'string' }, change: { type: 'string' }, bugs: { type: 'string' }, again: { type: 'integer', minimum: 1, maximum: 5 },
+    verdict: { type: 'object', additionalProperties: false, required: VERDICT, properties: Object.fromEntries(VERDICT.map(k => [k, { type: 'array', items: { type: 'string' } }])) } } };
+const FINAL = `The run is over. Fill in the playtest questionnaire as the persona, in their own voice, using only what happened (your notes and the day log below). 1-5 scales: 5 = very clear / very fun. "missed" = you never used that system. Systems: ${SYS.join(', ')}. pace: early = days 1-3, mid = 4-7, late = 8-10. drag = the day it started to drag, or null. Cite days and numbers in the text answers. verdict: short lists in your own words of what you liked, disliked, what made sense, what confused you, and what the designers should keep, remove, change and add so the 10 days feel solid end to end (one item per line, each tied to something that happened). Reply with JSON only.`;
 
 // ---------- one run ----------
 function validMove(m) { return typeof m === 'string' ? /^(setup|showBest|sell|inspectAll|sleeveFloor|buyBelow:0?\.\d+)$/.test(m) : m && typeof m === 'object' && typeof m.t === 'string' && m.t.length < 20; }
@@ -139,7 +141,7 @@ function mockAsk() {
     const usage = { in: T(system) + T(user), cached: T(system), cacheWrite: 0, out: 120 };
     if (schema === SCHEMA_ANSWERS) {
       const sys = Object.fromEntries(SYS.map(k => [k, { clear: 3, fun: 3, missed: false }]));
-      return { usage, json: { setupClear: 4, setupFeel: 'fine', floorBack: 3, counterFloor: 3, grids: 3, rearranged: 'once', sys, pace: { early: { money: 'ok', energy: 'fine' }, mid: { money: 'ok', energy: 'fine' }, late: { money: 'ok', energy: 'fine' } }, drag: null, contra: 'mock', confused: 'mock', best: 'mock', worst: 'mock', change: 'mock', bugs: '', again: 3 } };
+      return { usage, json: { setupClear: 4, setupFeel: 'fine', floorBack: 3, counterFloor: 3, grids: 3, rearranged: 'once', sys, pace: { early: { money: 'ok', energy: 'fine' }, mid: { money: 'ok', energy: 'fine' }, late: { money: 'ok', energy: 'fine' } }, drag: null, contra: 'mock', confused: 'mock', best: 'mock', worst: 'mock', change: 'mock', bugs: '', again: 3, verdict: Object.fromEntries(VERDICT.map(k => [k, ['mock']])) } };
     }
     const G = S.G, p = G.phase, v = G.visit;
     let moves = [];

@@ -80,6 +80,19 @@ Each heuristic is in the script next to `answers()`. In short:
 - **Fakes a persona never found** don't appear in its answers, since the player wouldn't know. They go in the summary as "Never noticed (telemetry only)".
 - **mins** is an estimate (4 s a move, 10 s a visit, 30 s a morning), not measured.
 
+### The verdict
+Every run (Tier A and both Tier B routes) also returns `verdict: { like, dislike, makesSense, confusing, keep, remove, change, add }`, so testers say plainly what to keep, cut, change and add.
+- **Tier A** builds the lists from its numbers:
+  - like and dislike: the biggest good and bad moments;
+  - makes sense and confusing: systems with clear 4+ and 2-;
+  - keep: fun 4+ and clear 4+;
+  - remove: systems that never came up;
+  - change: clear 2- (with the refusal quoted) or fun 2-;
+  - add: from patterns (3+ sleeve refusals means auto-sleeve; 3+ placement refusals means a stock-the-floor button; fakes never found means a rescan reminder; a drag day means a mid-run event; broke mid-run means a safer cash floor; an unclear rating means a morning explanation).
+- **The summary** tallies each item across all runs ("Verdict across all runs").
+- **Tier B** writes the lists in the persona's voice; the API schema requires them.
+- The v3.1 change list built from them is `card-trader/design/v3.1-beta-plan.md`.
+
 ### What Tier A can and can't tell you
 It can: which refusals players hit, which systems a play style never touches, where money runs out, when value growth flattens, which systems undercut each other in a real run. It can't: whether anything is fun, whether text is readable, whether a screen is confusing to look at. A bot's "fun" is a payoff ratio. Weigh agent answers below human ones, and treat a system several personas flag as a reason to watch a human play it.
 

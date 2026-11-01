@@ -177,6 +177,58 @@
      "source": "agent",
      "persona": "kid",
      "seed": 1017,
+     "verdict": {
+      "like": [
+       "Day 9: Tournament: 10 players, 66₵ in fees and deck sales",
+       "Day 2: Tournament: 11 players, 60₵ in fees and deck sales",
+       "Day 7: Tournament: 10 players, 55₵ in fees and deck sales"
+      ],
+      "dislike": [
+       "Day 1: Paid 53₵ for 1 card and 1 turned out fake (worth about 0₵ in all)",
+       "Day 2: Paid 39₵ for 9 cards and 2 turned out fake (worth about 10₵ in all)",
+       "Day 4: Paid 27₵ for Hare of Faeno while it was on the reprint list"
+      ],
+      "makesSense": [
+       "the opening",
+       "fetching from the back",
+       "browsers",
+       "price tags",
+       "sealed product",
+       "vintage",
+       "the loupe",
+       "After Hours nights"
+      ],
+      "confusing": [
+       "sleeves and wear (raw cards need a hard sleeve or mag case in the case)",
+       "fakes (not enough cash)"
+      ],
+      "keep": [
+       "fetching from the back",
+       "browsers",
+       "sealed product",
+       "vintage",
+       "After Hours nights"
+      ],
+      "remove": [
+       "repacks: never came up for me (cut it, or surface it)",
+       "the board: never came up for me (cut it, or surface it)",
+       "upgrades: never came up for me (cut it, or surface it)"
+      ],
+      "change": [
+       "sleeves and wear: In sleeves and wear, the game said \"raw cards need a hard sleeve or mag case in the case\" 12 times and \"out of sleeves\" 8×.",
+       "fakes: In fakes, the game said \"not enough cash\" 2 times.",
+       "the opening: 0 payoffs vs 1 setbacks; give it a better payoff",
+       "the stock room: 0 payoffs vs 2 setbacks; give it a better payoff"
+      ],
+      "add": [
+       "Auto-sleeve when placing a card (I hit 27 sleeve refusals)",
+       "Auto-sort / \"stock the floor\" button (21 placement refusals)",
+       "A reminder to re-check stock for fakes (3 fake buys never found)",
+       "Something new around day 4 (shop value flat from there)",
+       "A safer way to cover rent mid-run (closed mid and late days broke)",
+       "A morning line that says why the rating moved"
+      ]
+     },
      "_pace": {
       "early": {
        "money": "tight",
@@ -667,6 +719,58 @@
      "source": "agent",
      "persona": "kid",
      "seed": 1034,
+     "verdict": {
+      "like": [
+       "Day 4: Bought 3 cards for 3₵, worth about 248₵",
+       "Day 10: Fetched a card from the inbox tray and sold it for 130₵",
+       "Day 2: Bought 3 cards for 8₵, worth about 137₵"
+      ],
+      "dislike": [
+       "Day 1: Paid 95₵ for 1 card and 1 turned out fake (worth about 0₵ in all)",
+       "Day 5: Paid 90₵ for 9 cards and 3 turned out fake (worth about 12₵ in all)",
+       "Day 4: Bought 3 \"factory sealed\" packs for 60₵: resealed, hits already taken"
+      ],
+      "makesSense": [
+       "the opening",
+       "browsers",
+       "sealed product",
+       "vintage",
+       "the loupe",
+       "After Hours nights"
+      ],
+      "confusing": [
+       "sleeves and wear (raw cards need a hard sleeve or mag case in the case)",
+       "fakes (not enough cash)",
+       "thieves (buy a case lock at close first)"
+      ],
+      "keep": [
+       "browsers",
+       "sealed product",
+       "vintage",
+       "After Hours nights"
+      ],
+      "remove": [
+       "price tags: never came up for me (cut it, or surface it)",
+       "repacks: never came up for me (cut it, or surface it)",
+       "the board: never came up for me (cut it, or surface it)",
+       "upgrades: never came up for me (cut it, or surface it)"
+      ],
+      "change": [
+       "sleeves and wear: In sleeves and wear, the game said \"raw cards need a hard sleeve or mag case in the case\" 12 times and \"counter binder cards need at least a penny sleeve\" 11×.",
+       "fakes: In fakes, the game said \"not enough cash\" 1 time.",
+       "thieves: In thieves, the game said \"buy a case lock at close first\" 1 time.",
+       "the opening: 0 payoffs vs 1 setbacks; give it a better payoff",
+       "the stock room: 0 payoffs vs 2 setbacks; give it a better payoff"
+      ],
+      "add": [
+       "Auto-sleeve when placing a card (I hit 31 sleeve refusals)",
+       "Auto-sort / \"stock the floor\" button (25 placement refusals)",
+       "A reminder to re-check stock for fakes (4 fake buys never found)",
+       "Something new around day 8 (shop value flat from there)",
+       "A safer way to cover rent mid-run (closed mid and late days broke)",
+       "A morning line that says why the rating moved"
+      ]
+     },
      "_pace": {
       "early": {
        "money": "tight",
@@ -1159,6 +1263,59 @@
      "source": "agent",
      "persona": "kid",
      "seed": 1051,
+     "verdict": {
+      "like": [
+       "Day 3: A browser found something on the floor and paid 419₵",
+       "Day 6: Tournament: 12 players, 66₵ in fees and deck sales",
+       "Day 3: Bought 3 cards for 43₵, worth about 103₵"
+      ],
+      "dislike": [
+       "Day 4: Bought 3 \"factory sealed\" packs for 60₵: resealed, hits already taken",
+       "Day 7: Paid 39₵ for 2 cards and 2 turned out fake (worth about 0₵ in all)",
+       "Day 4: Paid 52₵ for 9 cards and 1 turned out fake (worth about 21₵ in all)"
+      ],
+      "makesSense": [
+       "the opening",
+       "the stock room",
+       "fetching from the back",
+       "browsers",
+       "price tags",
+       "sealed product",
+       "vintage",
+       "the loupe"
+      ],
+      "confusing": [
+       "sleeves and wear (raw cards need a hard sleeve or mag case in the case)",
+       "fakes (not enough cash)",
+       "thieves"
+      ],
+      "keep": [
+       "fetching from the back",
+       "browsers",
+       "sealed product",
+       "vintage"
+      ],
+      "remove": [
+       "repacks: never came up for me (cut it, or surface it)",
+       "the board: never came up for me (cut it, or surface it)",
+       "upgrades: never came up for me (cut it, or surface it)"
+      ],
+      "change": [
+       "sleeves and wear: In sleeves and wear, the game said \"raw cards need a hard sleeve or mag case in the case\" 12 times and \"out of sleeves\" 8×.",
+       "fakes: In fakes, the game said \"not enough cash\" 1 time.",
+       "thieves: In thieves: Let a group feel the packs on the rack; some packs went dead (hits taken) (day 2), and I couldn't tell what I should have done.",
+       "the opening: 0 payoffs vs 1 setbacks; give it a better payoff",
+       "the stock room: 0 payoffs vs 0 setbacks; give it a better payoff"
+      ],
+      "add": [
+       "Auto-sleeve when placing a card (I hit 24 sleeve refusals)",
+       "Auto-sort / \"stock the floor\" button (16 placement refusals)",
+       "A reminder to re-check stock for fakes (6 fake buys never found)",
+       "Something new around day 4 (shop value flat from there)",
+       "A safer way to cover rent mid-run (closed mid and late days broke)",
+       "A morning line that says why the rating moved"
+      ]
+     },
      "_pace": {
       "early": {
        "money": "flush",
@@ -1659,6 +1816,57 @@
      "source": "agent",
      "persona": "minmax",
      "seed": 1017,
+     "verdict": {
+      "like": [
+       "Day 10: Fetched Crab of Selol from the safe and sold it for 88₵",
+       "Day 9: Tournament: 13 players, 70₵ in fees and deck sales",
+       "Day 4: Tournament: 13 players, 67₵ in fees and deck sales"
+      ],
+      "dislike": [],
+      "makesSense": [
+       "the opening",
+       "the stock room",
+       "fetching from the back",
+       "browsers",
+       "price tags",
+       "sleeves and wear",
+       "sealed product",
+       "vintage",
+       "reprints",
+       "the store rating",
+       "fakes",
+       "thieves",
+       "the board",
+       "upgrades",
+       "the loupe",
+       "After Hours nights"
+      ],
+      "confusing": [],
+      "keep": [
+       "fetching from the back",
+       "browsers",
+       "price tags",
+       "sealed product",
+       "reprints",
+       "the store rating",
+       "fakes",
+       "thieves",
+       "the board",
+       "upgrades",
+       "the loupe",
+       "After Hours nights"
+      ],
+      "remove": [
+       "repacks: never came up for me (cut it, or surface it)"
+      ],
+      "change": [
+       "sleeves and wear: 0 payoffs vs 5 setbacks; give it a better payoff"
+      ],
+      "add": [
+       "Something new around day 7 (shop value flat from there)",
+       "A safer way to cover rent mid-run (closed late days broke)"
+      ]
+     },
      "_pace": {
       "early": {
        "money": "ok",
@@ -2134,6 +2342,59 @@
      "source": "agent",
      "persona": "minmax",
      "seed": 1034,
+     "verdict": {
+      "like": [
+       "Day 4: Bought 3 cards for 4₵, worth about 591₵",
+       "Day 5: Tournament: 14 players, 120₵ in fees and deck sales",
+       "Day 1: Bought 2 cards for 145₵, worth about 244₵"
+      ],
+      "dislike": [
+       "Day 4: Won a Dock Auction crate for 15₵; it was worth about 10₵",
+       "Day 9: Won a Dock Auction crate for 15₵; it was worth about 13₵",
+       "Day 7: Sent a card to the graders and it came back FAKE"
+      ],
+      "makesSense": [
+       "the opening",
+       "the stock room",
+       "fetching from the back",
+       "browsers",
+       "price tags",
+       "sleeves and wear",
+       "sealed product",
+       "vintage",
+       "reprints",
+       "the store rating",
+       "fakes",
+       "thieves",
+       "the board",
+       "upgrades",
+       "the loupe",
+       "After Hours nights"
+      ],
+      "confusing": [],
+      "keep": [
+       "fetching from the back",
+       "browsers",
+       "price tags",
+       "sealed product",
+       "reprints",
+       "fakes",
+       "thieves",
+       "the board",
+       "upgrades",
+       "the loupe"
+      ],
+      "remove": [
+       "repacks: never came up for me (cut it, or surface it)"
+      ],
+      "change": [
+       "sleeves and wear: 0 payoffs vs 5 setbacks; give it a better payoff"
+      ],
+      "add": [
+       "A reminder to re-check stock for fakes (2 fake buys never found)",
+       "Something new around day 7 (shop value flat from there)"
+      ]
+     },
      "_pace": {
       "early": {
        "money": "tight",
@@ -2612,6 +2873,52 @@
      "source": "agent",
      "persona": "minmax",
      "seed": 1051,
+     "verdict": {
+      "like": [
+       "Day 5: A browser found something on the floor and paid 428₵",
+       "Day 4: Bought 3 cards for 5₵, worth about 386₵",
+       "Day 9: Bought 2 cards for 7₵, worth about 145₵"
+      ],
+      "dislike": [],
+      "makesSense": [
+       "the opening",
+       "the stock room",
+       "fetching from the back",
+       "browsers",
+       "price tags",
+       "sleeves and wear",
+       "sealed product",
+       "vintage",
+       "reprints",
+       "the store rating",
+       "fakes",
+       "thieves",
+       "the board",
+       "upgrades",
+       "the loupe",
+       "After Hours nights"
+      ],
+      "confusing": [],
+      "keep": [
+       "browsers",
+       "price tags",
+       "sealed product",
+       "reprints",
+       "fakes",
+       "thieves",
+       "the board",
+       "upgrades",
+       "the loupe",
+       "After Hours nights"
+      ],
+      "remove": [
+       "repacks: never came up for me (cut it, or surface it)"
+      ],
+      "change": [
+       "sleeves and wear: 0 payoffs vs 6 setbacks; give it a better payoff"
+      ],
+      "add": []
+     },
      "_pace": {
       "early": {
        "money": "tight",
@@ -3096,6 +3403,60 @@
      "source": "agent",
      "persona": "cozy",
      "seed": 1017,
+     "verdict": {
+      "like": [
+       "Day 9: Tournament: 12 players, 66₵ in fees and deck sales",
+       "Day 2: Tournament: 11 players, 60₵ in fees and deck sales",
+       "Day 1: A browser found something on the floor and paid 29₵"
+      ],
+      "dislike": [
+       "Day 5: Paid 51₵ for 9 cards and 2 turned out fake (worth about 28₵ in all)",
+       "Day 4: Paid 4₵ for Newt of Thiou while it was on the reprint list",
+       "Day 2: Paid 20₵ for 9 cards and 1 turned out fake (worth about 17₵ in all)"
+      ],
+      "makesSense": [
+       "the opening",
+       "the stock room",
+       "fetching from the back",
+       "browsers",
+       "price tags",
+       "sleeves and wear",
+       "sealed product",
+       "vintage",
+       "reprints",
+       "the store rating",
+       "thieves",
+       "upgrades",
+       "the loupe",
+       "After Hours nights"
+      ],
+      "confusing": [
+       "fakes (not enough cash)"
+      ],
+      "keep": [
+       "fetching from the back",
+       "browsers",
+       "price tags",
+       "sealed product",
+       "upgrades",
+       "the loupe",
+       "After Hours nights"
+      ],
+      "remove": [
+       "repacks: never came up for me (cut it, or surface it)",
+       "the board: never came up for me (cut it, or surface it)"
+      ],
+      "change": [
+       "fakes: In fakes, the game said \"not enough cash\" 1 time.",
+       "reprints: 0 payoffs vs 1 setbacks; give it a better payoff",
+       "the store rating: 2 payoffs vs 6 setbacks; give it a better payoff"
+      ],
+      "add": [
+       "A reminder to re-check stock for fakes (4 fake buys never found)",
+       "Something new around day 4 (shop value flat from there)",
+       "A safer way to cover rent mid-run (closed mid and late days broke)"
+      ]
+     },
      "_pace": {
       "early": {
        "money": "tight",
@@ -3580,6 +3941,56 @@
      "source": "agent",
      "persona": "cozy",
      "seed": 1034,
+     "verdict": {
+      "like": [
+       "Day 4: Bought 3 cards for 3₵, worth about 120₵",
+       "Day 8: Tournament: 13 players, 99₵ in fees and deck sales",
+       "Day 1: Bought 2 cards for 83₵, worth about 169₵"
+      ],
+      "dislike": [
+       "Day 9: Paid 19₵ for 2 cards and 1 turned out fake (worth about 2₵ in all)",
+       "Day 9: Paid 20₵ for 9 cards and 1 turned out fake (worth about 19₵ in all)",
+       "Day 3: Something was stolen from the case (Sprite of Wifi) and I never saw who"
+      ],
+      "makesSense": [
+       "the opening",
+       "the stock room",
+       "browsers",
+       "price tags",
+       "sleeves and wear",
+       "sealed product",
+       "vintage",
+       "reprints",
+       "the store rating",
+       "upgrades",
+       "the loupe",
+       "After Hours nights"
+      ],
+      "confusing": [
+       "thieves"
+      ],
+      "keep": [
+       "browsers",
+       "price tags",
+       "sealed product",
+       "reprints",
+       "upgrades",
+       "the loupe",
+       "After Hours nights"
+      ],
+      "remove": [
+       "repacks: never came up for me (cut it, or surface it)",
+       "the board: never came up for me (cut it, or surface it)"
+      ],
+      "change": [
+       "thieves: In thieves: Something was stolen from the case (Sprite of Wifi) and I never saw who (day 3), and I couldn't tell what I should have done."
+      ],
+      "add": [
+       "A reminder to re-check stock for fakes (2 fake buys never found)",
+       "Something new around day 5 (shop value flat from there)",
+       "A safer way to cover rent mid-run (closed mid and late days broke)"
+      ]
+     },
      "_pace": {
       "early": {
        "money": "tight",
@@ -4058,6 +4469,59 @@
      "source": "agent",
      "persona": "cozy",
      "seed": 1051,
+     "verdict": {
+      "like": [
+       "Day 4: Bought 3 cards for 3₵, worth about 116₵",
+       "Day 5: Tournament: 12 players, 69₵ in fees and deck sales",
+       "Day 2: Tournament: 11 players, 66₵ in fees and deck sales"
+      ],
+      "dislike": [
+       "Day 4: Paid 104₵ for 9 cards and 1 turned out fake (worth about 72₵ in all)",
+       "Day 4: Paid 6₵ for Siren of Shari while it was on the reprint list",
+       "Day 3: Something was stolen from the rack (a Starweave pack)"
+      ],
+      "makesSense": [
+       "the opening",
+       "the stock room",
+       "fetching from the back",
+       "browsers",
+       "price tags",
+       "sleeves and wear",
+       "sealed product",
+       "vintage",
+       "reprints",
+       "the store rating",
+       "fakes",
+       "upgrades",
+       "the loupe",
+       "After Hours nights"
+      ],
+      "confusing": [],
+      "keep": [
+       "the stock room",
+       "browsers",
+       "price tags",
+       "sealed product",
+       "fakes",
+       "upgrades",
+       "the loupe",
+       "After Hours nights"
+      ],
+      "remove": [
+       "repacks: never came up for me (cut it, or surface it)",
+       "the board: never came up for me (cut it, or surface it)"
+      ],
+      "change": [
+       "fetching from the back: 2 payoffs vs 5 setbacks; give it a better payoff",
+       "reprints: 0 payoffs vs 1 setbacks; give it a better payoff",
+       "thieves: 1 payoffs vs 3 setbacks; give it a better payoff"
+      ],
+      "add": [
+       "A reminder to re-check stock for fakes (1 fake buy never found)",
+       "Something new around day 7 (shop value flat from there)",
+       "A safer way to cover rent mid-run (closed mid and late days broke)"
+      ]
+     },
      "_pace": {
       "early": {
        "money": "tight",
@@ -4544,6 +5008,56 @@
      "source": "agent",
      "persona": "vintage",
      "seed": 1017,
+     "verdict": {
+      "like": [
+       "Day 3: Tournament: 11 players, 60₵ in fees and deck sales",
+       "Day 4: Bought 3 \"factory sealed\" packs for 60₵: they were real",
+       "Day 1: A browser found something on the floor and paid 18₵"
+      ],
+      "dislike": [
+       "Day 3: Paid 13₵ for 2 cards and 1 turned out fake (worth about 10₵ in all)",
+       "Day 5: Paid 15₵ for 9 cards and 2 turned out fake (worth about 13₵ in all)",
+       "Day 5: Something was stolen from the rack (a Shellstorm pack) and I never saw who"
+      ],
+      "makesSense": [
+       "the opening",
+       "the stock room",
+       "fetching from the back",
+       "browsers",
+       "price tags",
+       "sleeves and wear",
+       "sealed product",
+       "vintage",
+       "reprints",
+       "the store rating",
+       "thieves",
+       "the board",
+       "the loupe"
+      ],
+      "confusing": [],
+      "keep": [
+       "browsers",
+       "price tags",
+       "sealed product",
+       "reprints",
+       "thieves",
+       "the board",
+       "the loupe"
+      ],
+      "remove": [
+       "repacks: never came up for me (cut it, or surface it)",
+       "upgrades: never came up for me (cut it, or surface it)"
+      ],
+      "change": [
+       "fetching from the back: 0 payoffs vs 1 setbacks; give it a better payoff",
+       "the store rating: 0 payoffs vs 5 setbacks; give it a better payoff"
+      ],
+      "add": [
+       "A reminder to re-check stock for fakes (2 fake buys never found)",
+       "Something new around day 5 (shop value flat from there)",
+       "A safer way to cover rent mid-run (closed early and mid and late days broke)"
+      ]
+     },
      "_pace": {
       "early": {
        "money": "broke",
@@ -5026,6 +5540,60 @@
      "source": "agent",
      "persona": "vintage",
      "seed": 1034,
+     "verdict": {
+      "like": [
+       "Day 4: Bought 3 cards for 4₵, worth about 2045₵",
+       "Day 4: A browser found something on the floor and paid 110₵",
+       "Day 1: Bought 2 cards for 71₵, worth about 142₵"
+      ],
+      "dislike": [
+       "Day 8: Something was stolen from the rack (a Hive Gambit pack) and I never saw who"
+      ],
+      "makesSense": [
+       "the opening",
+       "the stock room",
+       "fetching from the back",
+       "browsers",
+       "price tags",
+       "sleeves and wear",
+       "sealed product",
+       "vintage",
+       "reprints",
+       "the store rating",
+       "fakes",
+       "thieves",
+       "the board",
+       "upgrades",
+       "the loupe",
+       "After Hours nights"
+      ],
+      "confusing": [],
+      "keep": [
+       "fetching from the back",
+       "browsers",
+       "price tags",
+       "sealed product",
+       "vintage",
+       "reprints",
+       "fakes",
+       "thieves",
+       "the board",
+       "upgrades",
+       "the loupe",
+       "After Hours nights"
+      ],
+      "remove": [
+       "repacks: never came up for me (cut it, or surface it)"
+      ],
+      "change": [
+       "the store rating: 3 payoffs vs 6 setbacks; give it a better payoff"
+      ],
+      "add": [
+       "A reminder to re-check stock for fakes (6 fake buys never found)",
+       "Something new around day 5 (shop value flat from there)",
+       "A safer way to cover rent mid-run (closed mid and late days broke)"
+      ]
+     },
      "_pace": {
       "early": {
        "money": "tight",
@@ -5508,6 +6076,57 @@
      "source": "agent",
      "persona": "vintage",
      "seed": 1051,
+     "verdict": {
+      "like": [
+       "Day 4: Bought 3 cards for 5₵, worth about 417₵",
+       "Day 2: Fetched a card from the back binder and sold it for 167₵",
+       "Day 9: Tournament: 13 players, 71₵ in fees and deck sales"
+      ],
+      "dislike": [
+       "Day 9: Paid 95₵ for 9 cards and 1 turned out fake (worth about 14₵ in all)",
+       "Day 3: Paid 13₵ for 2 cards and 1 turned out fake (worth about 11₵ in all)",
+       "Day 8: Went to the back binder for Rrix Cricket and the customer ran out of patience"
+      ],
+      "makesSense": [
+       "the opening",
+       "the stock room",
+       "fetching from the back",
+       "browsers",
+       "price tags",
+       "sleeves and wear",
+       "sealed product",
+       "vintage",
+       "reprints",
+       "the store rating",
+       "thieves",
+       "the board",
+       "upgrades",
+       "the loupe",
+       "After Hours nights"
+      ],
+      "confusing": [],
+      "keep": [
+       "browsers",
+       "price tags",
+       "sealed product",
+       "vintage",
+       "reprints",
+       "thieves",
+       "the board",
+       "upgrades",
+       "the loupe",
+       "After Hours nights"
+      ],
+      "remove": [
+       "repacks: never came up for me (cut it, or surface it)"
+      ],
+      "change": [],
+      "add": [
+       "A reminder to re-check stock for fakes (8 fake buys never found)",
+       "Something new around day 6 (shop value flat from there)",
+       "A safer way to cover rent mid-run (closed late days broke)"
+      ]
+     },
      "_pace": {
       "early": {
        "money": "tight",
@@ -5999,6 +6618,60 @@
      "source": "agent",
      "persona": "sealed",
      "seed": 1017,
+     "verdict": {
+      "like": [
+       "Day 9: Fetched Lynx of Orawi from the safe and sold it for 262₵",
+       "Day 9: Fetched collector box from the back shelves and sold it for 183₵",
+       "Day 9: Sold sealed product to a collector for 183₵"
+      ],
+      "dislike": [
+       "Day 5: Paid 16₵ for 9 cards and 1 turned out fake (worth about 7₵ in all)",
+       "Day 8: Paid 28₵ for 9 cards and 2 turned out fake (worth about 19₵ in all)",
+       "Day 4: Paid 7₵ for Siren of Mari while it was on the reprint list"
+      ],
+      "makesSense": [
+       "the opening",
+       "the stock room",
+       "fetching from the back",
+       "browsers",
+       "price tags",
+       "sleeves and wear",
+       "sealed product",
+       "vintage",
+       "reprints",
+       "the store rating",
+       "thieves",
+       "the board",
+       "upgrades",
+       "the loupe",
+       "After Hours nights"
+      ],
+      "confusing": [],
+      "keep": [
+       "fetching from the back",
+       "browsers",
+       "price tags",
+       "sealed product",
+       "thieves",
+       "the board",
+       "upgrades",
+       "the loupe",
+       "After Hours nights"
+      ],
+      "remove": [
+       "repacks: never came up for me (cut it, or surface it)"
+      ],
+      "change": [
+       "sleeves and wear: 2 payoffs vs 5 setbacks; give it a better payoff",
+       "reprints: 0 payoffs vs 1 setbacks; give it a better payoff",
+       "the store rating: 2 payoffs vs 7 setbacks; give it a better payoff"
+      ],
+      "add": [
+       "A reminder to re-check stock for fakes (3 fake buys never found)",
+       "Something new around day 5 (shop value flat from there)",
+       "A safer way to cover rent mid-run (closed early and mid days broke)"
+      ]
+     },
      "_pace": {
       "early": {
        "money": "broke",
@@ -6478,6 +7151,59 @@
      "source": "agent",
      "persona": "sealed",
      "seed": 1034,
+     "verdict": {
+      "like": [
+       "Day 2: A browser found something on the floor and paid 107₵",
+       "Day 6: Tournament: 15 players, 82₵ in fees and deck sales",
+       "Day 9: Tournament: 15 players, 82₵ in fees and deck sales"
+      ],
+      "dislike": [
+       "Day 5: Went to the inbox tray for Firefly of Xa'zek and the customer ran out of patience",
+       "Day 6: Went to the back binder for Firefly of Xa'zek and the customer ran out of patience",
+       "Day 7: Went to the back binder for Swan of Wiva and the customer ran out of patience"
+      ],
+      "makesSense": [
+       "the opening",
+       "the stock room",
+       "fetching from the back",
+       "browsers",
+       "price tags",
+       "sleeves and wear",
+       "sealed product",
+       "vintage",
+       "reprints",
+       "the store rating",
+       "fakes",
+       "thieves",
+       "the board",
+       "upgrades",
+       "the loupe",
+       "After Hours nights"
+      ],
+      "confusing": [],
+      "keep": [
+       "browsers",
+       "price tags",
+       "sealed product",
+       "fakes",
+       "thieves",
+       "the board",
+       "upgrades",
+       "the loupe",
+       "After Hours nights"
+      ],
+      "remove": [
+       "repacks: never came up for me (cut it, or surface it)"
+      ],
+      "change": [
+       "sleeves and wear: 1 payoffs vs 5 setbacks; give it a better payoff",
+       "the store rating: 2 payoffs vs 6 setbacks; give it a better payoff"
+      ],
+      "add": [
+       "A reminder to re-check stock for fakes (1 fake buy never found)",
+       "A safer way to cover rent mid-run (closed mid and late days broke)"
+      ]
+     },
      "_pace": {
       "early": {
        "money": "tight",
@@ -6955,6 +7681,60 @@
      "source": "agent",
      "persona": "sealed",
      "seed": 1051,
+     "verdict": {
+      "like": [
+       "Day 8: Fetched Phoenix of Shiva from the safe and sold it for 461₵",
+       "Day 10: Fetched Siren of Ole from the safe and sold it for 123₵",
+       "Day 10: Fetched Firefly of Driza from the safe and sold it for 107₵"
+      ],
+      "dislike": [
+       "Day 9: Tournament prize turned out fake under UV; the crowd turned on me",
+       "Day 7: Tournament prize turned out fake under UV; the crowd turned on me",
+       "Day 9: Paid 23₵ for 9 cards and 2 turned out fake (worth about 21₵ in all)"
+      ],
+      "makesSense": [
+       "the opening",
+       "the stock room",
+       "fetching from the back",
+       "browsers",
+       "price tags",
+       "sleeves and wear",
+       "sealed product",
+       "vintage",
+       "reprints",
+       "the store rating",
+       "fakes",
+       "thieves",
+       "the board",
+       "upgrades",
+       "the loupe",
+       "After Hours nights"
+      ],
+      "confusing": [],
+      "keep": [
+       "fetching from the back",
+       "browsers",
+       "price tags",
+       "sealed product",
+       "reprints",
+       "fakes",
+       "thieves",
+       "the board",
+       "upgrades",
+       "the loupe"
+      ],
+      "remove": [
+       "repacks: never came up for me (cut it, or surface it)"
+      ],
+      "change": [
+       "sleeves and wear: 1 payoffs vs 6 setbacks; give it a better payoff"
+      ],
+      "add": [
+       "A reminder to re-check stock for fakes (2 fake buys never found)",
+       "Something new around day 6 (shop value flat from there)",
+       "A safer way to cover rent mid-run (closed early and mid days broke)"
+      ]
+     },
      "_pace": {
       "early": {
        "money": "broke",
@@ -7442,6 +8222,60 @@
      "source": "agent",
      "persona": "goblin",
      "seed": 1017,
+     "verdict": {
+      "like": [
+       "Day 6: Tournament: 12 players, 67₵ in fees and deck sales",
+       "Day 9: Tournament: 9 players, 49₵ in fees and deck sales",
+       "Day 2: Bought 3 cards for 5₵, worth about 24₵"
+      ],
+      "dislike": [
+       "Day 1: Called security and was wrong: rep and rating hit",
+       "Day 1: Called security and was wrong: rep and rating hit",
+       "Day 2: Let a group feel the packs on the rack; some packs went dead (hits taken)"
+      ],
+      "makesSense": [
+       "the opening",
+       "fetching from the back",
+       "browsers",
+       "price tags",
+       "sealed product",
+       "repacks",
+       "fakes",
+       "the board",
+       "the loupe"
+      ],
+      "confusing": [
+       "the stock room (singles don't hang on the rack)",
+       "sleeves and wear (raw cards need a hard sleeve or mag case in the case)",
+       "thieves (buy a case lock at close first)"
+      ],
+      "keep": [
+       "fetching from the back",
+       "browsers",
+       "price tags",
+       "sealed product",
+       "repacks",
+       "fakes",
+       "the loupe"
+      ],
+      "remove": [
+       "reprints: never came up for me (cut it, or surface it)"
+      ],
+      "change": [
+       "the stock room: In the stock room, the game said \"not enough cash\" 3 times and \"singles don't hang on the rack\" 1×.",
+       "sleeves and wear: In sleeves and wear, the game said \"raw cards need a hard sleeve or mag case in the case\" 12 times and \"out of sleeves\" 9×.",
+       "thieves: In thieves, the game said \"buy a case lock at close first\" 1 time and \"you already have that\" 1×.",
+       "the opening: 0 payoffs vs 1 setbacks; give it a better payoff",
+       "the board: 0 payoffs vs 1 setbacks; give it a better payoff"
+      ],
+      "add": [
+       "Auto-sleeve when placing a card (I hit 29 sleeve refusals)",
+       "Auto-sort / \"stock the floor\" button (22 placement refusals)",
+       "A reminder to re-check stock for fakes (1 fake buy never found)",
+       "Something new around day 4 (shop value flat from there)",
+       "A safer way to cover rent mid-run (closed mid and late days broke)"
+      ]
+     },
      "_pace": {
       "early": {
        "money": "tight",
@@ -7941,6 +8775,61 @@
      "source": "agent",
      "persona": "goblin",
      "seed": 1034,
+     "verdict": {
+      "like": [
+       "Day 4: Bought 3 cards for 8₵, worth about 589₵",
+       "Day 8: Bought 2 cards for 6₵, worth about 184₵",
+       "Day 4: Tournament: 9 players, 50₵ in fees and deck sales"
+      ],
+      "dislike": [
+       "Day 4: Bought 3 \"factory sealed\" packs for 60₵: resealed, hits already taken",
+       "Day 9: Bought 3 \"factory sealed\" packs for 60₵: resealed, hits already taken",
+       "Day 7: Tournament prize turned out fake under UV; the crowd turned on me"
+      ],
+      "makesSense": [
+       "the opening",
+       "the stock room",
+       "fetching from the back",
+       "browsers",
+       "price tags",
+       "sealed product",
+       "vintage",
+       "the board",
+       "upgrades",
+       "the loupe"
+      ],
+      "confusing": [
+       "sleeves and wear (raw cards need a hard sleeve or mag case in the case)",
+       "fakes",
+       "thieves (you already have that)"
+      ],
+      "keep": [
+       "fetching from the back",
+       "browsers",
+       "price tags",
+       "sealed product",
+       "upgrades",
+       "the loupe"
+      ],
+      "remove": [
+       "reprints: never came up for me (cut it, or surface it)",
+       "repacks: never came up for me (cut it, or surface it)"
+      ],
+      "change": [
+       "sleeves and wear: In sleeves and wear, the game said \"raw cards need a hard sleeve or mag case in the case\" 13 times and \"out of sleeves\" 8×.",
+       "fakes: In fakes: Bought 3 \"factory sealed\" packs for 60₵: resealed, hits already taken (day 4), and I couldn't tell what I should have done.",
+       "thieves: In thieves, the game said \"buy a case lock at close first\" 2 times and \"you already have that\" 1×.",
+       "the opening: 0 payoffs vs 1 setbacks; give it a better payoff",
+       "the board: 0 payoffs vs 4 setbacks; give it a better payoff"
+      ],
+      "add": [
+       "Auto-sleeve when placing a card (I hit 29 sleeve refusals)",
+       "Auto-sort / \"stock the floor\" button (20 placement refusals)",
+       "A reminder to re-check stock for fakes (3 fake buys never found)",
+       "Something new around day 5 (shop value flat from there)",
+       "A morning line that says why the rating moved"
+      ]
+     },
      "_pace": {
       "early": {
        "money": "broke",
@@ -8439,6 +9328,62 @@
      "source": "agent",
      "persona": "goblin",
      "seed": 1051,
+     "verdict": {
+      "like": [
+       "Day 4: Bought 3 cards for 6₵, worth about 5825₵",
+       "Day 5: A browser found something on the floor and paid 2359₵",
+       "Day 3: Bought 3 cards for 3₵, worth about 494₵"
+      ],
+      "dislike": [
+       "Day 8: Paid 99₵ for 9 cards and 1 turned out fake (worth about 10₵ in all)",
+       "Day 5: Paid 60₵ for 9 cards and 3 turned out fake (worth about 50₵ in all)",
+       "Day 1: Went to the inbox tray for Stag of Faela and the customer ran out of patience"
+      ],
+      "makesSense": [
+       "the opening",
+       "fetching from the back",
+       "browsers",
+       "price tags",
+       "sealed product",
+       "vintage",
+       "repacks",
+       "the board",
+       "the loupe",
+       "After Hours nights"
+      ],
+      "confusing": [
+       "sleeves and wear (raw cards need a hard sleeve or mag case in the case)",
+       "fakes (not enough cash)",
+       "thieves (not enough cash)"
+      ],
+      "keep": [
+       "browsers",
+       "price tags",
+       "sealed product",
+       "repacks",
+       "the loupe",
+       "After Hours nights"
+      ],
+      "remove": [
+       "reprints: never came up for me (cut it, or surface it)"
+      ],
+      "change": [
+       "sleeves and wear: In sleeves and wear, the game said \"raw cards need a hard sleeve or mag case in the case\" 12 times and \"out of sleeves\" 8×.",
+       "fakes: In fakes, the game said \"not enough cash\" 2 times.",
+       "thieves: In thieves, the game said \"not enough cash\" 1 time and \"you already have that\" 1×.",
+       "the opening: 0 payoffs vs 1 setbacks; give it a better payoff",
+       "the stock room: 4 payoffs vs 3 setbacks; give it a better payoff",
+       "the board: 0 payoffs vs 2 setbacks; give it a better payoff"
+      ],
+      "add": [
+       "Auto-sleeve when placing a card (I hit 25 sleeve refusals)",
+       "Auto-sort / \"stock the floor\" button (19 placement refusals)",
+       "A reminder to re-check stock for fakes (3 fake buys never found)",
+       "Something new around day 6 (shop value flat from there)",
+       "A safer way to cover rent mid-run (closed mid and late days broke)",
+       "A morning line that says why the rating moved"
+      ]
+     },
      "_pace": {
       "early": {
        "money": "tight",
@@ -8948,6 +9893,59 @@
      "source": "agent",
      "persona": "newbie",
      "seed": 1017,
+     "verdict": {
+      "like": [
+       "Day 4: Bought 2 cards for 5₵, worth about 401₵",
+       "Day 3: Fetched Vee Otter from the inbox tray and sold it for 169₵",
+       "Day 9: Tournament: 14 players, 87₵ in fees and deck sales"
+      ],
+      "dislike": [
+       "Day 8: Paid 55₵ for 9 cards and 2 turned out fake (worth about 32₵ in all)",
+       "Day 3: Ran out of sleeves: new cards went unsleeved",
+       "Day 5: Went to the back binder for Dragon of Meelo and the customer ran out of patience"
+      ],
+      "makesSense": [
+       "the opening",
+       "the stock room",
+       "fetching from the back",
+       "browsers",
+       "sleeves and wear",
+       "sealed product",
+       "vintage",
+       "reprints",
+       "the store rating",
+       "fakes",
+       "thieves",
+       "upgrades",
+       "the loupe",
+       "After Hours nights"
+      ],
+      "confusing": [],
+      "keep": [
+       "the stock room",
+       "browsers",
+       "sealed product",
+       "reprints",
+       "fakes",
+       "thieves",
+       "upgrades",
+       "the loupe",
+       "After Hours nights"
+      ],
+      "remove": [
+       "price tags: never came up for me (cut it, or surface it)",
+       "repacks: never came up for me (cut it, or surface it)",
+       "the board: never came up for me (cut it, or surface it)"
+      ],
+      "change": [
+       "sleeves and wear: 0 payoffs vs 6 setbacks; give it a better payoff"
+      ],
+      "add": [
+       "A reminder to re-check stock for fakes (1 fake buy never found)",
+       "Something new around day 7 (shop value flat from there)",
+       "A safer way to cover rent mid-run (closed late days broke)"
+      ]
+     },
      "_pace": {
       "early": {
        "money": "tight",
@@ -9425,6 +10423,56 @@
      "source": "agent",
      "persona": "newbie",
      "seed": 1034,
+     "verdict": {
+      "like": [
+       "Day 7: Bought 2 cards for 119₵, worth about 256₵",
+       "Day 4: Tournament: 16 players, 88₵ in fees and deck sales",
+       "Day 6: Tournament: 13 players, 81₵ in fees and deck sales"
+      ],
+      "dislike": [
+       "Day 8: Tournament prize turned out fake under UV; the crowd turned on me",
+       "Day 7: Paid 11₵ for 2 cards and 1 turned out fake (worth about 0₵ in all)",
+       "Day 8: Paid 18₵ for 9 cards and 1 turned out fake (worth about 10₵ in all)"
+      ],
+      "makesSense": [
+       "the opening",
+       "the stock room",
+       "fetching from the back",
+       "browsers",
+       "sleeves and wear",
+       "sealed product",
+       "vintage",
+       "reprints",
+       "the store rating",
+       "thieves",
+       "upgrades",
+       "the loupe",
+       "After Hours nights"
+      ],
+      "confusing": [],
+      "keep": [
+       "the stock room",
+       "browsers",
+       "sealed product",
+       "reprints",
+       "thieves",
+       "upgrades",
+       "the loupe",
+       "After Hours nights"
+      ],
+      "remove": [
+       "price tags: never came up for me (cut it, or surface it)",
+       "repacks: never came up for me (cut it, or surface it)",
+       "the board: never came up for me (cut it, or surface it)"
+      ],
+      "change": [
+       "sleeves and wear: 0 payoffs vs 6 setbacks; give it a better payoff"
+      ],
+      "add": [
+       "A reminder to re-check stock for fakes (7 fake buys never found)",
+       "A safer way to cover rent mid-run (closed early and mid and late days broke)"
+      ]
+     },
      "_pace": {
       "early": {
        "money": "broke",
@@ -9908,6 +10956,58 @@
      "source": "agent",
      "persona": "newbie",
      "seed": 1051,
+     "verdict": {
+      "like": [
+       "Day 4: Bought 3 cards for 5₵, worth about 608₵",
+       "Day 5: Tournament: 14 players, 77₵ in fees and deck sales",
+       "Day 7: Tournament: 14 players, 77₵ in fees and deck sales"
+      ],
+      "dislike": [
+       "Day 9: Paid 38₵ for 9 cards and 1 turned out fake (worth about 23₵ in all)",
+       "Day 4: Paid 6₵ for Hornet of Zo'tik while it was on the reprint list",
+       "Day 3: Paid 7₵ for 2 cards and 1 turned out fake (worth about 3₵ in all)"
+      ],
+      "makesSense": [
+       "the opening",
+       "the stock room",
+       "fetching from the back",
+       "browsers",
+       "sleeves and wear",
+       "sealed product",
+       "vintage",
+       "reprints",
+       "the store rating",
+       "thieves",
+       "upgrades",
+       "the loupe",
+       "After Hours nights"
+      ],
+      "confusing": [],
+      "keep": [
+       "the stock room",
+       "browsers",
+       "sealed product",
+       "thieves",
+       "upgrades",
+       "the loupe",
+       "After Hours nights"
+      ],
+      "remove": [
+       "price tags: never came up for me (cut it, or surface it)",
+       "repacks: never came up for me (cut it, or surface it)",
+       "the board: never came up for me (cut it, or surface it)"
+      ],
+      "change": [
+       "sleeves and wear: 0 payoffs vs 5 setbacks; give it a better payoff",
+       "reprints: 0 payoffs vs 1 setbacks; give it a better payoff",
+       "the store rating: 2 payoffs vs 6 setbacks; give it a better payoff"
+      ],
+      "add": [
+       "A reminder to re-check stock for fakes (5 fake buys never found)",
+       "Something new around day 5 (shop value flat from there)",
+       "A safer way to cover rent mid-run (closed early and mid and late days broke)"
+      ]
+     },
      "_pace": {
       "early": {
        "money": "broke",
@@ -10396,6 +11496,57 @@
      "source": "agent",
      "persona": "trusting",
      "seed": 1017,
+     "verdict": {
+      "like": [
+       "Day 2: Fetched a card from the back binder and sold it for 179₵",
+       "Day 7: Tournament: 11 players, 62₵ in fees and deck sales",
+       "Day 2: Tournament: 11 players, 58₵ in fees and deck sales"
+      ],
+      "dislike": [
+       "Day 4: Bought 3 \"factory sealed\" packs for 60₵: resealed, hits already taken",
+       "Day 1: Paid 80₵ for 2 cards and 1 turned out fake (worth about 43₵ in all)",
+       "Day 4: Paid 27₵ for Lalo Phoenix while it was on the reprint list"
+      ],
+      "makesSense": [
+       "the opening",
+       "the stock room",
+       "browsers",
+       "sealed product",
+       "vintage",
+       "reprints",
+       "the store rating",
+       "upgrades",
+       "the loupe"
+      ],
+      "confusing": [
+       "fakes (not enough cash)",
+       "thieves"
+      ],
+      "keep": [
+       "the stock room",
+       "browsers",
+       "sealed product",
+       "the store rating",
+       "upgrades",
+       "the loupe"
+      ],
+      "remove": [
+       "price tags: never came up for me (cut it, or surface it)",
+       "repacks: never came up for me (cut it, or surface it)",
+       "the board: never came up for me (cut it, or surface it)"
+      ],
+      "change": [
+       "fakes: In fakes, the game said \"not enough cash\" 1 time.",
+       "thieves: In thieves: Something was stolen from the rack (a Starweave pack) and I never saw who (day 3), and I couldn't tell what I should have done.",
+       "sleeves and wear: 0 payoffs vs 7 setbacks; give it a better payoff",
+       "reprints: 0 payoffs vs 1 setbacks; give it a better payoff"
+      ],
+      "add": [
+       "A reminder to re-check stock for fakes (5 fake buys never found)",
+       "Something new around day 7 (shop value flat from there)",
+       "A safer way to cover rent mid-run (closed mid and late days broke)"
+      ]
+     },
      "_pace": {
       "early": {
        "money": "ok",
@@ -10881,6 +12032,59 @@
      "source": "agent",
      "persona": "trusting",
      "seed": 1034,
+     "verdict": {
+      "like": [
+       "Day 2: Tournament: 16 players, 89₵ in fees and deck sales",
+       "Day 2: Bought 3 cards for 11₵, worth about 93₵",
+       "Day 4: Bought 3 \"factory sealed\" packs for 60₵: they were real"
+      ],
+      "dislike": [
+       "Day 6: Tournament prize turned out fake under UV; the crowd turned on me",
+       "Day 3: Paid 97₵ for 9 cards and 1 turned out fake (worth about 56₵ in all)",
+       "Day 5: Paid 38₵ for 9 cards and 2 turned out fake (worth about 11₵ in all)"
+      ],
+      "makesSense": [
+       "the opening",
+       "the stock room",
+       "browsers",
+       "sleeves and wear",
+       "sealed product",
+       "vintage",
+       "reprints",
+       "the store rating",
+       "thieves",
+       "upgrades",
+       "the loupe"
+      ],
+      "confusing": [
+       "fakes (not enough cash)",
+       "After Hours nights (you don't have the card they want anymore)"
+      ],
+      "keep": [
+       "the stock room",
+       "browsers",
+       "sealed product",
+       "upgrades",
+       "the loupe"
+      ],
+      "remove": [
+       "price tags: never came up for me (cut it, or surface it)",
+       "repacks: never came up for me (cut it, or surface it)",
+       "the board: never came up for me (cut it, or surface it)"
+      ],
+      "change": [
+       "fakes: In fakes, the game said \"not enough cash\" 1 time.",
+       "After Hours nights: In After Hours nights, the game said \"you don't have the card they want anymore\" 7 times.",
+       "sleeves and wear: 1 payoffs vs 6 setbacks; give it a better payoff",
+       "reprints: 0 payoffs vs 1 setbacks; give it a better payoff",
+       "the store rating: 0 payoffs vs 3 setbacks; give it a better payoff"
+      ],
+      "add": [
+       "A reminder to re-check stock for fakes (8 fake buys never found)",
+       "Something new around day 5 (shop value flat from there)",
+       "A safer way to cover rent mid-run (closed mid and late days broke)"
+      ]
+     },
      "_pace": {
       "early": {
        "money": "tight",
@@ -11369,6 +12573,58 @@
      "source": "agent",
      "persona": "trusting",
      "seed": 1051,
+     "verdict": {
+      "like": [
+       "Day 4: Bought 3 cards for 3₵, worth about 153₵",
+       "Day 7: Tournament: 10 players, 55₵ in fees and deck sales",
+       "Day 3: Fetched a card from the back binder and sold it for 30₵"
+      ],
+      "dislike": [
+       "Day 1: Paid 50₵ for 1 card and 1 turned out fake (worth about 0₵ in all)",
+       "Day 2: Paid 30₵ for 9 cards and 1 turned out fake (worth about 12₵ in all)",
+       "Day 4: Paid 13₵ for Shrimp of Ollo while it was on the reprint list"
+      ],
+      "makesSense": [
+       "the opening",
+       "the stock room",
+       "fetching from the back",
+       "browsers",
+       "sleeves and wear",
+       "sealed product",
+       "vintage",
+       "reprints",
+       "the store rating",
+       "the loupe"
+      ],
+      "confusing": [
+       "fakes (not enough cash)",
+       "After Hours nights (you don't have the card they want anymore)"
+      ],
+      "keep": [
+       "the stock room",
+       "fetching from the back",
+       "browsers",
+       "sealed product",
+       "the loupe"
+      ],
+      "remove": [
+       "price tags: never came up for me (cut it, or surface it)",
+       "repacks: never came up for me (cut it, or surface it)",
+       "the board: never came up for me (cut it, or surface it)",
+       "upgrades: never came up for me (cut it, or surface it)"
+      ],
+      "change": [
+       "fakes: In fakes, the game said \"not enough cash\" 2 times.",
+       "After Hours nights: In After Hours nights, the game said \"you don't have the card they want anymore\" 4 times.",
+       "sleeves and wear: 2 payoffs vs 5 setbacks; give it a better payoff",
+       "reprints: 0 payoffs vs 1 setbacks; give it a better payoff",
+       "thieves: 0 payoffs vs 3 setbacks; give it a better payoff"
+      ],
+      "add": [
+       "Something new around day 5 (shop value flat from there)",
+       "A safer way to cover rent mid-run (closed early and mid and late days broke)"
+      ]
+     },
      "_pace": {
       "early": {
        "money": "broke",

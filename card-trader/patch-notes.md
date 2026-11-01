@@ -17,6 +17,19 @@ Agents now fill in the same playtest questionnaire as human testers. Eight scrip
   - **Back-room asks look alike:** in 12 runs, a buyer's "check the back, I'll wait" paid off and a distractor's "the good stuff, in the back" got the floor robbed.
   - **Money:** 6 of 8 personas close mid- and late-run days broke (cash under the next rent). Only the min-maxer and the sealed speculator are "ok" late. Value growth flattens around day 4–7 (median drag day per persona).
   - **Never touched:** repacks by 7 of 8 personas (matches the Balance report: repacks are dead), and the board by 4 of 8.
+- **Verdicts:** every agent run now also lists like / dislike / makes sense / confusing / keep / remove / change / add. Across 24 Tier A runs:
+  - keep: browsers (24), sealed (24), loupe (21);
+  - change: sleeves (18);
+  - remove: repacks (22), the board (12);
+  - add: a fake-rescan reminder (21), a safer mid-run cash floor (21), something new around day 4–7.
+- **v3.1 beta plan (draft):** `design/v3.1-beta-plan.md` turns the playtests and Hunter's notes into one change list:
+  - sets and rarities always known;
+  - condition shown as a range, with an Eye upgrade track and a Black Label 10;
+  - a grader-shipment reveal;
+  - a guided day 1 and a simpler back room;
+  - a QoL sweep (auto-sleeve, auto-file, stock the floor);
+  - scalper, rating and tell fixes, a mid-run spine, cheaper vintage;
+  - a beta gate. Ten questions for Hunter.
 - New tool: `node card-trader/prototype/play-driver.js` lets a person or a Claude Code session play the real engine one step at a time, seeing only player-visible text, with standing orders for routine visitors and in-the-moment notes. No API.
 - What Claude found playing (newbie 542₵ → 1,614₵, min-maxer 690₵ → 2,383₵, both Lane Favorite):
   - **Star rating can't be read** (both rated it clear 1/5). It falls on good days with no reason given; rep hits 100 while stars fall to 3.7. Reviews describe things that never happened: "Pulled a hit from their repack!" with no repacks, "Saw a vintage box on display", "Case is always stocked" with one card in the case.
@@ -31,6 +44,8 @@ Agents now fill in the same playtest questionnaire as human testers. Eight scrip
 - [ ] @Hunter: OK pushing `playtests/claude-2026-11-01-batch.json` (2 docs `agent-claude-<persona>`).
 - [x] Build the Tier B API runner (`card-trader/prototype/playtest-llm.js`: dry-run by default, `--go` to spend, `--max-runs`, `--max-tokens`, `--mock` for a free test) and the manual `.github/workflows/playtest-llm.yml` on `PLAYTEST_ANTHROPIC_API_KEY` (Haiku 5.5). Claude, Nov 1, 2026.
 - [ ] @Hunter: create the `PLAYTEST_ANTHROPIC_API_KEY` org secret (own Console workspace, $5/month hard limit), then OK the first real run (estimate for all 8 personas on Haiku: about $0.75, cautious).
+- [ ] @Hunter: answer Q1–Q10 in `design/v3.1-beta-plan.md`.
+- [ ] Paid API playtest: OK'd by Hunter (Nov 1) for after the v3.1 fixes land and the key exists. Run `go: false` first.
 - [ ] Balance agent: add an "always sell to the scalper" bot, and check whether rep loss should cost something.
 - [ ] Fix the review lines so they only mention what the shop actually has, and say why the rating moved each morning.
 - [ ] Results page: show `source: 'agent'` docs apart from human ones (or behind a filter) so bot answers don't drown out people.

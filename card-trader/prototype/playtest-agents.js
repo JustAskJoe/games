@@ -576,7 +576,28 @@ function answers(P, seed, G, T) {
     rearranged: T.rearr > 5 ? 'yes' : T.rearr > 0 ? 'once' : 'no', sys,
     pace: { early: { money: pace.early.money, energy: pace.early.energy }, mid: { money: pace.mid.money, energy: pace.mid.energy }, late: { money: pace.late.money, energy: pace.late.energy } },
     drag: drag == null ? null : String(drag), contra, confused, best, worst, change, bugs: T.bugs.join(' '), again, at: AT, build: 'v3', source: 'agent', persona: P.id, seed,
+    verdict: verdict(P, G, T, sys, good, badM, drag, pace),
     _pace: pace };
+}
+// The general verdict: like / dislike, makes sense / confusing, keep / remove / change / add. Each line comes from this
+// run's numbers or logged moments (rules in kit/agents/playtester.md, "The verdict").
+function verdict(P, G, T, sys, good, badM, drag, pace) {
+  const top = (arr, n) => arr.slice(0, n).map(m => 'Day ' + m.day + ': ' + m.text);
+  const on = SYS.filter(k => sys[k].clear != null && !sys[k].missed);
+  const V = { like: top(good, 3), dislike: top(badM, 3),
+    makesSense: on.filter(k => sys[k].clear >= 4).map(k => NAMES[k]), confusing: on.filter(k => sys[k].clear <= 2).map(k => NAMES[k] + (T.sys[k].err ? ' (' + Object.keys(T.sys[k].errMsgs)[0] + ')' : '')),
+    keep: on.filter(k => sys[k].fun >= 4 && sys[k].clear >= 4).map(k => NAMES[k]), remove: [], change: [], add: [] };
+  for (const k of SYS) if (sys[k].missed && sys[k].clear == null) V.remove.push(NAMES[k] + ': never came up for me (cut it, or surface it)');
+  for (const k of on) if (sys[k].clear <= 2) V.change.push(NAMES[k] + ': ' + (confusedText(T, k) || 'unclear'));
+  for (const k of on) if (sys[k].fun <= 2 && sys[k].clear > 2) V.change.push(NAMES[k] + ': ' + T.sys[k].good + ' payoffs vs ' + (T.sys[k].bad + T.sys[k].err) + ' setbacks; give it a better payoff');
+  const sleeveErr = Object.entries(T.sys.sleeves.errMsgs).reduce((s, [, n]) => s + n, 0);
+  if (sleeveErr >= 3) V.add.push('Auto-sleeve when placing a card (I hit ' + sleeveErr + ' sleeve refusals)');
+  if (T.gridErr >= 3 || T.floorErr >= 3) V.add.push('Auto-sort / "stock the floor" button (' + (T.gridErr + T.floorErr) + ' placement refusals)');
+  if (T.hidden.length) V.add.push('A reminder to re-check stock for fakes (' + T.hidden.length + ' fake buy' + (T.hidden.length > 1 ? 's' : '') + ' never found)');
+  if (drag) V.add.push('Something new around day ' + drag + ' (shop value flat from there)');
+  if (['mid', 'late'].some(r => pace[r].money === 'broke')) V.add.push('A safer way to cover rent mid-run (closed ' + ['early', 'mid', 'late'].filter(r => pace[r].money === 'broke').join(' and ') + ' days broke)');
+  if (sys.rating.clear != null && sys.rating.clear <= 3) V.add.push('A morning line that says why the rating moved');
+  return V;
 }
 function confusedText(T, k) {
   const s = T.sys[k], msgs = Object.entries(s.errMsgs).sort((a, b) => b[1] - a[1]);
@@ -661,6 +682,11 @@ function summary(full) {
     if (missed.length >= 4) flags.push('- **' + k + '** never touched by ' + missed.length + ' of ' + Object.keys(docs).length + ' personas (' + missed.join(', ') + ').');
   }
   L.push('## Flags', '', ...(flags.length ? flags : ['- Nothing that two or more personas agree on.']), '');
+  // the verdict, tallied: how many runs say keep / remove / change / add for each item (text before the first colon or bracket)
+  const runsAll = Object.values(docs).flatMap(d => d.runs), tally = cat => { const c = {}; for (const r of runsAll) for (const line of new Set(r.verdict[cat].map(x => x.split(/[:(]/)[0].trim()))) c[line] = (c[line] || 0) + 1; return Object.entries(c).sort((a, b) => b[1] - a[1]).map(([k, n]) => k + ' (' + n + '/' + runsAll.length + ')'); };
+  L.push('## Verdict across all runs', '', '| | Items (runs that said so) |', '| --- | --- |');
+  for (const cat of ['keep', 'change', 'remove', 'add']) L.push('| ' + cat + ' | ' + (tally(cat).slice(0, 8).join(', ') || '-') + ' |');
+  L.push('');
   // pacing
   L.push('## Pacing', '', '| Persona | Early money / energy | Mid | Late | Drag day (median) | Rank (median gain) | Again |', '| --- | --- | --- | --- | --- | --- | --- |');
   for (const d of Object.values(docs)) {

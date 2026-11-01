@@ -241,7 +241,55 @@
      "phase": "close",
      "text": "Day 8 close: DJ Vee says 'Tomorrow: Wave 4 Release Day ... Wave 3 reprint list is out: Phoenix of Faelo is on it', the same line as day 4. Wave 3 already happened, so it reads like a stale message."
     }
-   ]
+   ],
+   "verdict": {
+    "like": [
+     "The day 1 checklist: I set up with zero refusals.",
+     "DJ Vee's warnings paid off: the Scale Gang tip (sold behind the counter) and the perfect-promo tip (the Spectrometer caught a 208c fake).",
+     "Watching thieves: caught a kid, a drifter and Sticky, and the parent scene and 'buy my finds' are lovely.",
+     "Ordering a 60c blister and selling it off the rack for 135c the next day."
+    ],
+    "dislike": [
+     "The star rating fell all run (4.25 to 3.69) while rep hit 100, and nothing said why.",
+     "Reviews about things I never had (repacks, a vintage box).",
+     "Days 5-6 felt like watching my standing orders: singles all 1-10c, sellers walk.",
+     "Vintage at 944c when I had 94c. I could only look at it."
+    ],
+    "makesSense": [
+     "Opening checklist",
+     "Watching vs calling security",
+     "Pack buyers and the rack",
+     "The Spectrometer catching ring fakes"
+    ],
+    "confusing": [
+     "Why the star rating moves",
+     "What a tell means when most honest people show one",
+     "Box value 250c that I can only sell as 170c of packs",
+     "Card values swinging overnight with demand",
+     "Cards I couldn't read because they're from another game's script"
+    ],
+    "keep": [
+     "Day 1 checklist",
+     "DJ Vee warnings that teach a counter",
+     "Thief encounters with kid/drifter choices",
+     "Sealed ordering loop"
+    ],
+    "remove": [
+     "Reviews that describe things the shop never had",
+     "Tells on honest customers (or make them much rarer)",
+     "Unreadable cards: I'm a card shop owner, I know the sets"
+    ],
+    "change": [
+     "Rating: show the three biggest reasons it moved each morning",
+     "Let a booster box go on the rack, or stop showing a value I can't reach",
+     "Swap meets: stop asking for my best card for junk every time"
+    ],
+    "add": [
+     "A day 5-6 event so the middle isn't routine",
+     "A cheaper first taste of vintage (a single old pack around 100-150c)",
+     "A \"stock the floor\" button for routine mornings"
+    ]
+   }
   },
   "minmax": {
    "day": "end",
@@ -441,7 +489,53 @@
      "phase": "close",
      "text": "Day 9: a third Skrimp sale. Rep is down to 43 (from 73) while the star rating sits at 4.00. Rep seems to do nothing I can feel."
     }
-   ]
+   ],
+   "verdict": {
+    "like": [
+     "Day 1 binder page for 14c hiding a big card: that rush is the game at its best.",
+     "Vault paying 762c on Collector's Fair day.",
+     "Bounties for catching thieves.",
+     "Opening premium boxes onto a full rack."
+    ],
+    "dislike": [
+     "The scalper being strictly the best move (about 1,300c from three sales) with no felt cost.",
+     "Days 4 and 6: 26 packs, one sale.",
+     "Buying the scale and riser for vintage I could never afford.",
+     "Allocation and reprint surprises that wiped margin with no warning."
+    ],
+    "makesSense": [
+     "Loupe and Spectrometer upgrades",
+     "Watch, then security with proof",
+     "Release days drive pack buyers"
+    ],
+    "confusing": [
+     "Rep vs stars: rep fell to 43 and nothing changed",
+     "The first estimate (498c) before the loupe (280c)",
+     "Allocation refusal on a set the gossip never named",
+     "Rack capacity (16 packs) only shows as \"no room\""
+    ],
+    "keep": [
+     "Gems in cheap lots (but rarer and smaller)",
+     "Collector's Fair big buyer",
+     "Bounties",
+     "Premium boxes"
+    ],
+    "remove": [
+     "Unlimited scalper buyouts",
+     "Board refusals that add nothing over watching"
+    ],
+    "change": [
+     "Scalper: cap him, make him cost real buyers tomorrow, or make Limit 2 the default answer",
+     "Vintage: earlier, cheaper first lot, or a layaway deposit",
+     "Show allocation and reprint risk before I order",
+     "Show a condition range before the loupe, not a perfect-card number"
+    ],
+    "add": [
+     "A rep payoff or penalty I can feel (prices, buyers, events)",
+     "Mid-run goals (a contract or a fair to prep for around day 5)",
+     "A rack-full warning with \"move the rest to the shelf\""
+    ]
+   }
   }
  }
 }
