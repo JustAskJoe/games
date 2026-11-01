@@ -991,6 +991,7 @@ function load(json) {
   if (typeof G._s !== 'number') throw new Error('not a Card Trader save');
   if (G.version !== 4) throw new Error('this save is from an older version; start a new run');
   if (!G.week) G.week = DAYS.map((D, i) => Object.assign(JSON.parse(JSON.stringify(D)), { rent: RENT[i] }));
+  if (G.store) uni(G); // rebuild this run's card universe from its seed, or card names read as undefined on a fresh page
   return G;
 }
 // ---------- v3: the shop floor and the back (rev 2) ----------

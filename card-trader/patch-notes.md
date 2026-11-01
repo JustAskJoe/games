@@ -6,6 +6,15 @@ Newest on top. See the repo's CLAUDE.md for how patch notes work.
 
 ---
 
+## v3.0.1 · 2026-11-01 · Hunter (with Claude): continuing a save
+### What's new
+- **Fix:** continuing a saved run on a freshly opened page showed card names as "undefined" until something rebuilt the card universe. Loading a save now rebuilds it from the run's seed. The agent playtesters found it; the fix was checked by loading a save in a fresh node process and through the full walkthrough.
+
+### Watch out
+- [ ] Other findings from the free agent playtests (unreadable star rating, the scalper as best strategy, days 4–7 flatline, ring fakes passing the basic tools) are in `playtests/findings-2026-11-01.md` (PR #70) and the playtest results page, and still need tuning.
+
+---
+
 ## v3 rev 2.2 balance · 2026-11-01 · Balance agent for Hunter (with Claude)
 The Balance agent's first pass: a report, then tuning at Hunter's request. Full report and every scratch rerun: `design/balance-report-2026-11-01.md`.
 
