@@ -4,6 +4,8 @@
 
 This is how we get consistent, full-resolution AI mood art into decks and prototypes. It's proven on Tilebound and Trickbound.
 
+Planning to go further (anchors, a manifest, post-processing, final game art, cost and licensing)? See `pipeline-upgrade.md`.
+
 ## 1. Generate in Canva
 - Start every job at once: `mcp__Canva__generate-image` with `aspectRatio: LANDSCAPE_16_9` (it returns 1680×944).
 - Then poll each one with `get-generate-image-job`.
