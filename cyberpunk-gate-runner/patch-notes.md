@@ -6,6 +6,25 @@ Newest on top. Each entry covers **what's new** for players, **next up** for the
 
 ---
 
+## P2.4 · Nov 1, 2026 · Zach (with Claude)
+
+### What's new
+- **A real megacity:** the street is now a dense, rain-drenched neon city where every wall sells something: stacked ads, tall katakana signs jutting into the street, ads across overpasses, and our own made-up brands like Hotel 404, Orbit Loans and Sleep.exe.
+- **The street changes as the song plays:** a low night market with stalls and crowds, a stacked block, a tall canyon under overpasses, a packed street at the drop, and a quieter way out. It no longer repeats.
+- **Layers of life:** a deeper skyline, searchlights, flying traffic, fire escapes, string lights, vending machines, barriers, steam, rain and wet neon on the road. Signs pulse on the beat and the whole city brightens at the drop.
+
+### Next up
+- [ ] @Zach: play on your phone with `#fps` and check gates and enemies stay readable through the signs, then give a verdict on the density.
+
+### Watch out
+- [ ] **Frame rate on a real phone is unverified, and this is the biggest visual addition so far.** Scenery no longer moves on the CPU, which should help, but about 1,000 extra signs and props plus rain are unmeasured. The lowest quality tier halves crowds and props, thins rain and drops steam; it hasn't been tested on a real device.
+- [ ] Not tested on a real phone. Judged from stills on software graphics, not in motion.
+- [ ] Katakana signs are plain words (ramen, karaoke, hotel, game, neon, curry, soda, loan), but no Japanese reader has checked them, and they rely on the device's own font. A device without one would show empty boxes.
+- [ ] Brand names are made up, but no trademark search was done. Check them before any commercial release.
+- [ ] New sign colors go beyond the draft palette, and `art/art-direction.md` now says so. Hunter and Joe haven't reviewed that yet.
+- [ ] Rain, steam and tall signs can pass close to the camera on PC widescreen. Check they don't feel distracting at speed.
+- [ ] With reduced motion on, rain is hidden, but signs still pulse gently on the beat.
+
 ## P2.3 · Nov 1, 2026 · Zach (with Claude)
 
 ### What's new

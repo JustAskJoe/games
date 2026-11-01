@@ -10,6 +10,8 @@ The Artist agent (`kit/agents/artist.md`) reads this file as the only source of 
 - Street (#24): **A, Clean Synthwave**. Zach, Oct 31, 2026.
 - Squad and enemies (#25): **A, Street Ravers**. Zach, Oct 31, 2026.
 
+- City density (Oct 31 picks extended Nov 1): dense future-Tokyo-style megacity, rain drenched, every surface selling something. Zach, Nov 1, 2026. Clean Synthwave's street stays underneath; signage is the new layer. Original brands and art only: nothing copied from any book, cover, film or game.
+
 ## The look
 Polished neon low-poly: clean shapes, strong silhouettes and glow rather than fine detail. Flat-shaded facets, two or three tones per surface, light coming from neon and windows, not from a sun. It has to read instantly on a phone while hundreds of things move on screen. When in doubt, take detail out and add glow.
 
@@ -41,8 +43,10 @@ Working shades from Prototype 2 (`render.js`), for low-poly facets only, never a
 | Plum | `#3A1050` |
 | Fog | `#1C0B3E` |
 
+City signage may also use amber `#FF8A3D`, lime `#C6FF4B`, orchid `#C77DFF` and yellow `#FFD94A`. These are signage only, never units or gates.
+
 ## Readability rules
-- **Cyan belongs to the player, pink to enemies.** The city never uses cyan or pink as a large lit area; its neon is violet, gold and off-white, dimmer than anything on the road. Hush propaganda may use pink, because Hush is the enemy.
+- **Cyan belongs to the player, pink to enemies.** The city never uses exact squad cyan or Hush pink as a large lit area. Its signage can be loud and colorful, but always dimmer than anything on the road, and it stays off the road surface. Hush propaganda may use pink, because Hush is the enemy.
 - The road is the brightest, cleanest area on screen. Buildings sit back in fog and never cut into it.
 - Every unit is identifiable by silhouette alone at in-game size. Squad: upright and narrow. Swarm: tiny and simple. Drone: floating, wide. Biker: long and low.
 - The squad is seen **from behind**, enemies **from the front**. Design both views, but judge the squad by its back.
