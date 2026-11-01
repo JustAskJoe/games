@@ -44,6 +44,12 @@ For Zach and the kids, in the Lab preview. Play on a phone if you can, with soun
 - [ ] Feels like one more step, not an ending. The clear screen should say more streets are coming.
 - [ ] Crimson and gold. Track: 124 BPM, F# minor, bright saw lead, full groove.
 
+## Difficulty
+- [ ] Easy: the kids can get through all five without help. Does any boss die too fast to be fun?
+- [ ] Medium, Level 2: the "SHOOT THE PODS" warning and pod arrows make it clear what to do.
+- [ ] Hard: a real step up, and still worth retrying.
+- [ ] Switching difficulty keeps your unlocks and gun.
+
 ## Progress
 - [ ] Beat a boss, refresh the page: the next level is still open, with your squad and gun.
 - [ ] Level select shows what each level starts you with.
