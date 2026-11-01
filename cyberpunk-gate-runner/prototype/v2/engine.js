@@ -30,8 +30,11 @@
     { name: 'Signal Yards', bpm: 124, track: 'yards', pal: 'yards', start: [32, 40], wlvCap: 3, fight: 6, drop: 10,
       gates: { add: 0.5, mul: 1.25, trade: 1.5 }, hp: 0.8, bite: 0.8, dens: 0.9, walls: W0.concat([[20, 18, 16], [22, 18, 16], [24, 18, 16]]),
       boss: { id: 'carrier', hp: 37500, contact: 60, podHp: 900, open: 2, dive: 3 } },
+    { name: 'Glass Canyon', bpm: 120, track: 'glass', pal: 'glass', start: [48, 60], wlvCap: 4, fight: 8, drop: 12,
+      gates: { add: 0.6, mul: 1.3, trade: 1.6 }, hp: 1.1, bite: 1, dens: 1, walls: W0.concat([[20, 16, 16], [22, 16, 16], [24, 16, 16], [26, 16, 16]]),
+      boss: { id: 'warden', hp: 108000, contact: 60, every: 2, warn: 0.5, reflect: 0.03 } },
   ];
-  const MAX_LEVEL = 2;   // the last street the game offers. levelDef() already makes streets past the table: raise this to open them
+  const MAX_LEVEL = 3;   // the last street the game offers. levelDef() already makes streets past the table: raise this to open them
   // past the table the streets cycle: same boss, look and song order, a key shift, and every number scaled by how far past the table you are
   function levelDef(n) {
     const i = n - 1; if (i < LEVELS.length) return Object.assign({ n }, LEVELS[i]);
@@ -66,6 +69,15 @@
         if (st.open) { if (G.t >= st.until) { st.open = false; e.armor = true; for (const p of st.pods) { p.done = false; p.hp = p.maxHp; } G.ev.push({ type: 'armor', t: G.t, on: true }); } }
         else if (st.pods.every(p => p.done)) { st.open = true; st.until = G.t + b.open * BAR; e.armor = false; G.ev.push({ type: 'armor', t: G.t, on: false }); }
       } },
+    // positioning under fire: shots into the mirror come back at you, and it changes sides
+    warden: { name: 'MIRROR WARDEN', tip: 'Stay off the mirror side. Shots bounce back', lose: 'Shots that hit the mirror come back at your squad. Stay on the side with no mirror and move when it flashes.', win: 'The mirror shattered.',
+      init(G, st) { st.side = 1; st.next = DROP_T + G.def.boss.every * BAR; st.warn = false; },
+      tick(G, b, e, st) {
+        const every = (e.hp < e.maxHp * 0.4 ? Math.max(1, b.every - 1) : b.every) * BAR;
+        st.warn = G.t >= st.next - b.warn * BAR;
+        if (G.t >= st.next) { st.side = -st.side; st.next += every; st.warn = false; G.ev.push({ type: 'swap', t: G.t, side: st.side }); }
+      },
+      hit(G, b, e, st) { if (sideOf(G) !== st.side) return true; hurt(G, b.reflect, 'reflect'); return false; } },
   };
   // one gate every 2 bars from bar 4 to 18. Each run deals the slots from these pools (seeded), so two different kinds
   // always face each other: +N beats x1.5 while the squad is small, fire rate beats both once it's big, Overclock trades

@@ -74,6 +74,12 @@
         [[0, -2, 0.5], [0.75, 2, 0.5], [1.5, 5, 0.5], [2.25, 7, 0.5], [3, 5, 1]],
         [[0, -4, 0.5], [0.75, 0, 0.5], [1.5, 3, 0.5], [2.25, 0, 0.5], [3, -2, 1]]]
     },
+    glass: { // E minor at 120: a glassy bell lead with long notes and plenty of space
+      chords: [[64, 67, 71, 76], [62, 66, 69, 74], [60, 64, 67, 72], [62, 67, 71, 74]].map(HZ), roots: HZ([40, 35, 36, 43]), base: Hz(76),
+      arp: [0, 1, 2, 3, 2, 1, 4, 1], stabs: [1.5, 3.5], sparse: true,
+      lead: { osc: [['sine', 0], ['triangle', 12]], cut: 6000, atk: 0.003, v: 1.25, glide: 1 },
+      hook: [[[0, 7, 1.5], [1.5, 3, 0.5], [2, 0, 2]], [[0, 7, 1], [1, 10, 1], [2, 14, 2]], [[0, 8, 1], [1, 7, 1], [2, 3, 2]], [[0, 3, 1], [1, 7, 1], [2, 10, 2]]]
+    },
   };
   // streets past the table reuse a song in a new key
   function trackFor(def) {

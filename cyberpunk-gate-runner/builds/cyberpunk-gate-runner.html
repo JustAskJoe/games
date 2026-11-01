@@ -134,8 +134,11 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     { name: 'Signal Yards', bpm: 124, track: 'yards', pal: 'yards', start: [32, 40], wlvCap: 3, fight: 6, drop: 10,
       gates: { add: 0.5, mul: 1.25, trade: 1.5 }, hp: 0.8, bite: 0.8, dens: 0.9, walls: W0.concat([[20, 18, 16], [22, 18, 16], [24, 18, 16]]),
       boss: { id: 'carrier', hp: 37500, contact: 60, podHp: 900, open: 2, dive: 3 } },
+    { name: 'Glass Canyon', bpm: 120, track: 'glass', pal: 'glass', start: [48, 60], wlvCap: 4, fight: 8, drop: 12,
+      gates: { add: 0.6, mul: 1.3, trade: 1.6 }, hp: 1.1, bite: 1, dens: 1, walls: W0.concat([[20, 16, 16], [22, 16, 16], [24, 16, 16], [26, 16, 16]]),
+      boss: { id: 'warden', hp: 108000, contact: 60, every: 2, warn: 0.5, reflect: 0.03 } },
   ];
-  const MAX_LEVEL = 2;   // the last street the game offers. levelDef() already makes streets past the table: raise this to open them
+  const MAX_LEVEL = 3;   // the last street the game offers. levelDef() already makes streets past the table: raise this to open them
   // past the table the streets cycle: same boss, look and song order, a key shift, and every number scaled by how far past the table you are
   function levelDef(n) {
     const i = n - 1; if (i < LEVELS.length) return Object.assign({ n }, LEVELS[i]);
@@ -170,6 +173,15 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
         if (st.open) { if (G.t >= st.until) { st.open = false; e.armor = true; for (const p of st.pods) { p.done = false; p.hp = p.maxHp; } G.ev.push({ type: 'armor', t: G.t, on: true }); } }
         else if (st.pods.every(p => p.done)) { st.open = true; st.until = G.t + b.open * BAR; e.armor = false; G.ev.push({ type: 'armor', t: G.t, on: false }); }
       } },
+    // positioning under fire: shots into the mirror come back at you, and it changes sides
+    warden: { name: 'MIRROR WARDEN', tip: 'Stay off the mirror side. Shots bounce back', lose: 'Shots that hit the mirror come back at your squad. Stay on the side with no mirror and move when it flashes.', win: 'The mirror shattered.',
+      init(G, st) { st.side = 1; st.next = DROP_T + G.def.boss.every * BAR; st.warn = false; },
+      tick(G, b, e, st) {
+        const every = (e.hp < e.maxHp * 0.4 ? Math.max(1, b.every - 1) : b.every) * BAR;
+        st.warn = G.t >= st.next - b.warn * BAR;
+        if (G.t >= st.next) { st.side = -st.side; st.next += every; st.warn = false; G.ev.push({ type: 'swap', t: G.t, side: st.side }); }
+      },
+      hit(G, b, e, st) { if (sideOf(G) !== st.side) return true; hurt(G, b.reflect, 'reflect'); return false; } },
   };
   // one gate every 2 bars from bar 4 to 18. Each run deals the slots from these pools (seeded), so two different kinds
   // always face each other: +N beats x1.5 while the squad is small, fire rate beats both once it's big, Overclock trades
@@ -451,6 +463,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   const PALS = {
     market: { fog: '#1C0B3E', tone: ['#241038', '#160E44', '#2E1236'], a: [0.26, 0.11, 1], b: [1, 0.46, 0.06], arch: [COL.violet, COL.gold], far: 1, rain: 1, haze: 1 },
     yards: { fog: '#06242A', tone: ['#0B2C30', '#0A2038', '#2A2410'], a: [0.05, 0.55, 0.6], b: [1, 0.62, 0.1], arch: ['#2FD6C4', '#FFB547'], far: 0.6, rain: 0.5, haze: 1 },
+    glass: { fog: '#0E2A4A', tone: ['#12304E', '#0C2448', '#1E3A5C'], a: [0.2, 0.5, 1], b: [0.85, 0.92, 1], arch: ['#6FB8FF', '#E8F4FF'], far: 1.6, rain: 1, haze: 1 },
   };
 
   // ---------- geometry helpers: non-indexed parts merged into one mesh, with colour and glow per vertex ----------
@@ -1142,6 +1155,12 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
         [[0, 3, 0.5], [0.75, 7, 0.5], [1.5, 10, 0.5], [2.25, 7, 0.5], [3, 10, 1]],
         [[0, -2, 0.5], [0.75, 2, 0.5], [1.5, 5, 0.5], [2.25, 7, 0.5], [3, 5, 1]],
         [[0, -4, 0.5], [0.75, 0, 0.5], [1.5, 3, 0.5], [2.25, 0, 0.5], [3, -2, 1]]]
+    },
+    glass: { // E minor at 120: a glassy bell lead with long notes and plenty of space
+      chords: [[64, 67, 71, 76], [62, 66, 69, 74], [60, 64, 67, 72], [62, 67, 71, 74]].map(HZ), roots: HZ([40, 35, 36, 43]), base: Hz(76),
+      arp: [0, 1, 2, 3, 2, 1, 4, 1], stabs: [1.5, 3.5], sparse: true,
+      lead: { osc: [['sine', 0], ['triangle', 12]], cut: 6000, atk: 0.003, v: 1.25, glide: 1 },
+      hook: [[[0, 7, 1.5], [1.5, 3, 0.5], [2, 0, 2]], [[0, 7, 1], [1, 10, 1], [2, 14, 2]], [[0, 8, 1], [1, 7, 1], [2, 3, 2]], [[0, 3, 1], [1, 7, 1], [2, 10, 2]]]
     },
   };
   // streets past the table reuse a song in a new key
