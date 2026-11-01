@@ -4,7 +4,7 @@ Working title. A cozy card shop on a market station where the galaxy's trade lan
 
 Other · solo pitch · approved in Forge on 2026-10-31 by Hunter
 
-**Status:** Prototype v3, "the Back Room": a second screen for physical stock, a display case, gear and a sleeving policy, deliveries and 5 more bad actors, on top of the v2 week (desktop landscape). v3 art is placeholder (code-drawn, $0) until Hunter OKs the Gemini shot list. Next: a crew playtest. v2 was merged Nov 1.
+**Status:** Prototype v3 rev 2, "the Back Room": a 10-day run where stock lives on the floor or in the back and selling uses both, with 3 eras, sealed and vintage sealed product, repacks, a store rating and a known-offenders board (desktop landscape). v3 art is placeholder (code-drawn, $0) until Hunter OKs the Gemini shot list. Next: a crew playtest. v2 was merged Nov 1.
 
 - **Play:** [`builds/card-trader.html`](builds/card-trader.html) (keep its `img/` folder next to it), or in the Lab.
 - **Build and test:** `python3 card-trader/build-and-test.py` (`--quick` skips the browser).

@@ -346,6 +346,7 @@ function shopValue(G) {
   for (const g in S.backPacks) v += S.backPacks[g] * PACK_RETAIL;
   for (const g in S.dead) v -= Math.min(S.dead[g], G.packs[g] + S.backPacks[g]) * (PACK_RETAIL - DEAD_PACK);
   for (const o of G.goods) v += goodValue(G, o, true);
+  for (const k in S.up) if (UNLOCKS[k]) v += UNLOCKS[k].cost * S.up[k] * 0.5; // fixtures resell for about half
   for (const p of G.grading) if (p.good) v += goodValue(G, p.good, true) - (p.card ? 0 : 0);
   for (const it of S.orders.concat(S.crate ? S.crate.items : [])) { const C = CATALOG[it.item]; if (C && !C.gear) v += it.good ? goodValue(G, it.good, true) : C.cost; }
   return v;

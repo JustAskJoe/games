@@ -12,15 +12,20 @@ errs = []
 BOT = """() => {
   const G = CTUI.G, q = s => document.querySelector(s), click = s => { const e = [...document.querySelectorAll(s)].find(e => !e.disabled); if (e) { e.click(); return true; } return false; };
   if (G.phase === 'morning') {
-    // v3: visit the back room each morning: unpack the crate, open boxes onto the rack, put a card in the display case
+    // v3 rev 2: each morning, unpack in the back, open a box, put loose packs on the rack, then stock the case on the floor
     if (window._rd !== G.dayIdx) {
-      if (!CTUI.room) return click('#hud [data-act=room]');
-      if (G.store.crate) return click('[data-act=unpack]');
-      if (click('[data-act=openBox]')) return true;
-      const c = G.stock.find(c => c.loc === 'inbox' && !c.know.fake && CT.estimate(G, c).value >= 5);
-      if (c) { click('[data-act=rsel][data-uid="' + c.uid + '"]'); if (!c.graded && c.prot !== 'hard' && c.prot !== 'mag') click('[data-act=sleeve][data-p=hard]'); click('[data-act=placeTo][data-to=case]'); }
+      const st = window._rs || 0;
+      if (st === 0) { window._rs = 1; return click('#hud [data-act=room]'); }
+      if (st === 1) { if (CTUI.room !== 'back') return click('[data-act=roomView][data-v=back]'); if (G.store.crate) return click('[data-act=unpack]');
+        const box = G.goods.find(o => o.type === 'box' && o.loc === 'shelf'); window._rs = 2;
+        if (box) { click('.good[data-uid="' + box.uid + '"]'); return click('[data-act=openGood]'); } return true; }
+      if (st === 2) { window._rs = 3; const g = ['shell', 'hive', 'star'].find(g => G.store.backPacks[g] > 0); if (g) { click('.looseP[data-game=' + g + '][data-f=shelf]'); return click('[data-act=movePacks][data-n]:not([data-n="1"])'); } return true; }
+      if (st === 3) { window._rs = 4; return click('[data-act=autoStore]'); }
+      if (st === 4) { window._rs = 5; if (CTUI.room !== 'floor') return click('[data-act=roomView][data-v=floor]'); }
+      if (st === 5) { window._rs = 6; const c = G.stock.find(c => c.loc === 'cbinder' && !c.know.fake && !c.graded);
+        if (c) { click('[data-act=rsel][data-uid="' + c.uid + '"]'); if (c.prot !== 'hard' && c.prot !== 'mag') click('[data-act=sleeve][data-p=hard]'); return click('[data-act=placeTo][data-to=case]'); } return true; }
       if (G.dayIdx === 1) click('[data-act=pol][data-k=penny][data-d="1"]');
-      window._rd = G.dayIdx; return true;
+      window._rd = G.dayIdx; window._rs = 0; return true;
     }
     if (CTUI.room) return click('#room [data-act=room]');
     return click('[data-act=open]');
@@ -30,7 +35,12 @@ BOT = """() => {
     const v = G.visit;
     if (v.role === 'scalp') return click('[data-act=pass]');
     if (v.role === 'weigh') return click('[data-act=sellBehind]') || click('[data-act=pass]');
-    if (v.role === 'thief') return click('[data-act=watch]');
+    if (v.role === 'thief') return v.caught ? (click('[data-act=letGo][data-parent]') || click('[data-act=letGo][data-work]') || click('[data-act=security]')) : click('[data-act=watch]');
+    if (v.role === 'distract') return (!v.watched && click('[data-act=watch]')) || click('[data-act=pass]');
+    if (v.role === 'browse') return click('#deal [data-act=accept]') || click('[data-act=pass]');
+    if (v.role === 'vintage') return (G.cash > v.ask + 200 && click('#deal [data-act=accept]')) || click('[data-act=pass]');
+    if (v.role === 'sealedc' && !v.showing) return click('#deal [data-act=show]') || click('[data-act=pass]');
+    if (v.react && v.cards.some(c => c.know.fake) && click('[data-act=inform]')) return true;
     if (v.role === 'switch') return (!v.watched && click('[data-act=watch]')) || click('#deal [data-act=show]') || click('[data-act=pass]');
     if (v.role === 'reseal') return (!v.knowSeal && click('[data-act=inspectPacks]')) || (!v.resealed && click('[data-act=accept]')) || click('[data-act=pass]');
     if (v.cards.length) {
@@ -43,7 +53,9 @@ BOT = """() => {
     if (!v.showing) return click('[data-act=show]') || click('[data-act=pass]');
     return click('[data-act=accept]');
   }
-  if (G.phase === 'close' && G.dayIdx === 0 && !G.store.lock) { if (!CTUI.catalog) return click('[data-act=catalog]'); click('[data-act=order][data-item=lock]'); click('[data-act=order][data-item=poster]'); return click('#loupe [data-act=catalog]'); }
+  if (G.phase === 'close' && G.dayIdx === 0 && !G.store.up.lock) { if (!CTUI.catalog) return click('[data-act=catalog]'); click('[data-act=unlock][data-k=lock]'); click('[data-act=order][data-item=poster]'); return click('#loupe [data-act=catalog]'); }
+  if (G.phase === 'close' && G.dayIdx === 2 && !CTUI.board && !window._bd) { window._bd = 1; return click('#hud [data-act=board]'); }
+  if (CTUI.board) return click('#loupe [data-act=board]');
   if (G.phase === 'close') { click('[data-act=grade][data-co=halo]'); if (G.dayIdx === 0) click('[data-act=upgrade][data-k=lens]'); if (G.dayIdx === 1) click('[data-act=policy]'); return click('[data-act=endDay]'); }
   if (G.phase === 'night') {
     const N = G.night;
@@ -73,7 +85,7 @@ with sync_playwright() as p:
     pg.click('[data-act=fe-slots]'); pg.wait_for_timeout(700); pg.screenshot(path=str(shots / 'f4_slots.png'))
     pg.click('[data-act=fe-new][data-slot="1"]'); pg.wait_for_timeout(300)
     seen, n, reloaded = set(), 0, False
-    while n < 900:
+    while n < 2400:
         # once, at the start of day 2: reload the page and continue slot 1, and check the run came back
         if not reloaded and pg.evaluate('CTUI.G.dayIdx') == 1 and pg.evaluate('CTUI.G.phase') == 'morning':
             reloaded = True; before = pg.evaluate('[CTUI.G.dayIdx, Math.round(CTUI.G.cash), CTUI.G.stock.length]')
@@ -85,8 +97,8 @@ with sync_playwright() as p:
             pg.click('[data-act=fe-menu]'); pg.wait_for_timeout(200); pg.screenshot(path=str(shots / 'f5_pause.png')); pg.click('[data-act=fe-resume]')
         ph = pg.evaluate('CTUI.G.phase')
         if ph == 'end': break
-        key = ph + str(pg.evaluate('CTUI.G.dayIdx')) + (('_' + str(pg.evaluate('CTUI.G.night && CTUI.G.night.pick'))) if ph == 'night' else '') + ('_room' if pg.evaluate('CTUI.room') else '') + ('_catalog' if pg.evaluate('CTUI.catalog') else '')
-        if ph == 'visit' and pg.evaluate('CTUI.G.visit.role') in ('weigh', 'thief', 'switch', 'reseal'): key += '_' + pg.evaluate('CTUI.G.visit.role')
+        key = ph + str(pg.evaluate('CTUI.G.dayIdx')) + (('_' + str(pg.evaluate('CTUI.G.night && CTUI.G.night.pick'))) if ph == 'night' else '') + (('_' + pg.evaluate('CTUI.room')) if pg.evaluate('CTUI.room') else '') + ('_board' if pg.evaluate('CTUI.board') else '') + ('_catalog' if pg.evaluate('CTUI.catalog') else '')
+        if ph == 'visit' and pg.evaluate('CTUI.G.visit.role') in ('weigh', 'thief', 'switch', 'reseal', 'distract', 'browse', 'vintage', 'sealedc'): key += '_' + pg.evaluate('CTUI.G.visit.role')
         if key not in seen:
             seen.add(key); pg.wait_for_timeout(250); pg.screenshot(path=str(shots / f'd2_{key}.png'))
         if ph == 'visit' and 'loupe' not in seen and pg.evaluate('CTUI.G.visit.cards.length') > 0:

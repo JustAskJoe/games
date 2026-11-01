@@ -16,9 +16,9 @@
   background: linear-gradient(160deg, rgba(180,240,255,.55), rgba(120,200,255,.25) 40%, rgba(255,255,255,.4) 60%, rgba(140,210,255,.3));
   box-shadow: inset 0 0 0 3px rgba(255,255,255,.6); overflow: hidden; }
 .case-glass.locked { box-shadow: inset 0 0 0 3px rgba(255,255,255,.6), inset 0 0 0 7px var(--sun); }
-.case-glass .cell { position: absolute; width: 52px; height: 70px; border-right: 1px dashed rgba(18,10,31,.18); border-bottom: 1px dashed rgba(18,10,31,.18); background: none; padding: 0; cursor: pointer; }
-.case-glass .cell:hover { background: rgba(255,46,147,.18); }
-.case-glass .cell.ok { background: rgba(166,240,30,.25); }
+.gridin .cell { position: absolute; width: 52px; height: 70px; border-right: 1px dashed rgba(18,10,31,.18); border-bottom: 1px dashed rgba(18,10,31,.18); background: none; padding: 0; cursor: pointer; }
+.gridin .cell:hover { background: rgba(255,46,147,.18); }
+.gridin .cell.ok { background: rgba(166,240,30,.25); }
 .cell-item { position: absolute; z-index: 2; display: flex; justify-content: center; padding-top: 2px; }
 .cell-item .tiny { transform: scale(.6); transform-origin: top center; }
 .cell-item .tiny .slab { transform: scale(.78); transform-origin: top center; }
@@ -62,3 +62,25 @@
 .catrow { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; padding: 6px 0; border-bottom: 2px dashed rgba(18,10,31,.2); }
 .catrow small { display: block; font-size: 12px; opacity: .8; }
 .glue { position: absolute; inset: 0; background: linear-gradient(115deg, transparent 30%, rgba(255,255,255,.85) 45%, transparent 55%); pointer-events: none; }
+
+/* rev 2: shape grids for the case, rack and shelves; goods tiles; loose packs; tells */
+.gridbox { position: relative; margin-top: 6px; border: 3px solid var(--ink); border-radius: 8px; padding: 0; background: linear-gradient(160deg, rgba(180,240,255,.5), rgba(255,255,255,.35)); overflow: hidden; }
+#room .zone[data-drop=rack] .gridbox { background: repeating-radial-gradient(circle at 10px 10px, #8a8a99 0 2px, transparent 3px 20px), #5a5a6e; }
+#room .zone[data-drop=shelf] .gridbox { background: repeating-linear-gradient(180deg, #7a5230 0 61px, #4a3018 61px 64px); }
+.gridin { position: absolute; left: 0; top: 0; right: 0; bottom: 0; }
+.gridin .cell { position: absolute; border-right: 1px dashed rgba(18,10,31,.2); border-bottom: 1px dashed rgba(18,10,31,.2); background: none; padding: 0; cursor: pointer; }
+.good { position: relative; border: 2.5px solid var(--ink); border-radius: 6px; background: linear-gradient(160deg, var(--tc), var(--gc)); box-shadow: 2px 2px 0 var(--ink); display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; cursor: pointer; overflow: hidden; margin: 2px; }
+.good.vint { border-color: #7a5a00; box-shadow: 0 0 0 2px #FFD21F, 2px 2px 0 var(--ink); background: repeating-linear-gradient(45deg, #C9A227 0 6px, #E8C65A 6px 12px); }
+.good .gl { font-family: var(--display); font-size: 10px; line-height: 1.05; color: #fff; text-shadow: 1px 1px 0 var(--ink); padding: 0 2px; }
+.good .gg { font-size: 9px; font-weight: 800; background: rgba(255,255,255,.85); border-radius: 4px; padding: 0 3px; margin-top: 2px; }
+.good .gb { position: absolute; right: 2px; top: 2px; font-family: var(--display); font-size: 9px; background: var(--sun); border: 1.5px solid var(--ink); border-radius: 4px; padding: 0 3px; }
+.good .gb.bad { background: var(--coral); }
+.looseP { position: absolute; z-index: 1; border: 2px solid var(--ink); border-radius: 4px; background: repeating-linear-gradient(45deg, var(--gc) 0 6px, #6A2BD9 6px 12px); color: #fff; font-family: var(--display); font-size: 10px; display: grid; place-items: center; text-shadow: 1px 1px 0 var(--ink); cursor: pointer; }
+.tells { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0; }
+.chip.tell { font-size: 11px; padding: 1px 7px; background: #fff3c4; }
+.chip.tell.sig { background: var(--sun); }
+#room .zone[data-drop=safe] .tray, #room .zone[data-drop=inbox] .tray { height: 104px; padding: 4px; }
+#room .zone[data-drop=safe] .tray .it, #room .zone[data-drop=inbox] .tray .it { width: 42px; }
+#room .zone[data-drop=safe] .tray .it .tiny, #room .zone[data-drop=inbox] .tray .it .tiny { transform: scale(.52); width: 40px; height: 60px; }
+#room .zone[data-drop=safe] .tray .pchip, #room .zone[data-drop=inbox] .tray .pchip { display: none; }
+#room .zone[data-drop=safe] .h, #room .zone[data-drop=inbox] .h { font-size: 14px; }

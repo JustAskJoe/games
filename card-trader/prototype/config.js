@@ -1,7 +1,7 @@
 // Intergalactic Card Trader's settings for the shared front end (frontend.js): words, art, colors, ticker, saves.
 // © 2026 justaskjoe. All rights reserved.
 this.FE_CONFIG = {
-  id: 'ict.v3', // older saves stay under ict.v1 and ict.v2 and are ignored (v3 adds the back room)
+  id: 'ict.v3r2', // older saves stay under ict.v1, ict.v2 and ict.v3 and are ignored (v3 rev 2 is a 10-day run)
   presenter: 'JustAskJoe',
   title1: 'INTERGALACTIC',
   title2: 'CARD TRADER',
