@@ -25,4 +25,4 @@ This list is for Steam's AI disclosure. Every image below was made with Canva's 
 
 **Drawn in code, not AI:** card frames, alien scripts, UV watermarks, wear marks, slabs, every UI element. The music is an original synth loop written in code (`prototype/music.js`).
 
-The build falls back to drawn stand-ins until they exist.
+Every painting the build needs is in. If one goes missing, the build falls back to a drawn stand-in (a game emblem for card art, an initial for a portrait).
