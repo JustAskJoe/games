@@ -6,6 +6,33 @@ Newest on top. Each entry covers **what's new** for players, **next up** for the
 
 ---
 
+## P2.1 · Oct 31, 2026 · Zach (with Claude)
+
+### What's new
+- **Every gun fires differently:** Arc throws jagged lightning, Scatter sprays pellets, Rail fires a solid beam, and Rockets lob shells that burst.
+- **Upgrades show on screen:** Overcharge adds a second strand, Forked branches out, Buckshot fires fat pellets, Wide Choke fans wider, Capacitor thickens the beam, Overpierce fires twin beams, Warheads hit bigger, and Cluster splits into small blasts.
+- **Gun colours:** Arc is violet, Rail is off-white and Rockets are gold, so no gun uses the enemy pink.
+- **Gates explain themselves:** each gate has a plain line under its number, like "more runners" or "shoot faster".
+- **"Charge" is gone:** those gates now read OVERCLOCK +30%, "stronger drop", and the meter shows your actual damage at the drop, like ×1.6.
+- **Clearer path choice:** a bouncing ▼ sits over the gate you're heading for, and the other gate dims much further.
+- **Weapons and gates screen:** a new start-menu button lists every gun, both of its upgrades and what each gate does.
+- **Random gates:** every run deals a new set of gates. The weapon fork and the upgrade fork stay in the same places, and the guns on offer still change. One side of every normal gate always grows your squad.
+- **Shots and gates are audible:** every gun has its own shot sound, upgrades change it a little, and gates play a clear whoosh and chime, or a low drop on red gates. The song dips for a moment at each gate so it's always heard.
+### Next up
+
+### Watch out
+- [ ] Weapon effects were judged from frozen stills, not in motion. Fire effects could feel busy with a big squad on a phone.
+- [ ] Overclock no longer turns shots white, so each gun keeps its identity at the drop. They get thicker instead.
+- [ ] Frame rate with Scatter or Arc at the drop isn't measured. Each shot segment is one instance (420 max).
+- [ ] The ▼ is a small mark above the gate, which is close to the floating text you removed earlier. If it feels like clutter, remove it from `drawLabels`.
+- [ ] Gate notes are about 10 px on a 390 px phone until the gate gets close. Check they're readable in time.
+- [ ] Sim before random gates: 99 / 89 / 10 / 12, casual boss kills 54%. After: 96 / 84 / 12 / 17, casual boss kills 60%, with boss HP 23000 to 24500 to keep the difficulty you liked. Bands still pass and weren't changed. Peak squads rose to about 130.
+- [ ] Upgrades still aren't equal for a casual bot: Rail Capacitor wins 94% and kills the boss in 81%, Scatter Wide Choke wins 45% and kills it in 31%. Rail is the strongest pick and Wide Choke the weakest (only 29 runs of 600). Not changed here, so it's a good next balance pass.
+- [ ] Boss HP is a very sharp lever: 27000 fails the smart and casual bands.
+- [ ] Random gates make some runs luckier than others. A deal with few squad gates can be rough before the drop. Sim results are averages, so note any run that feels unfair.
+- [ ] Nobody at Claude can hear these. Levels were measured, but only your ears can say if they're noticeable without being annoying. Adjust `A.shots.gain` in `ui.js` for gunfire and `A.sfx.gain` for everything.
+- [ ] The mute button silences everything, not only music, though its label says Music. Worth splitting when the music is redone.
+
 ## P2 art · Oct 31, 2026 · Zach (with Claude)
 
 ### What's new

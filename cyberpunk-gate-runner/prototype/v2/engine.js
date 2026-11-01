@@ -6,8 +6,8 @@
   const BPM = 122, B = 60 / BPM, BAR = 4 * B, DT = 1 / 60;
   const SEC = [ // bars
     { id: 'intro', name: 'Night Market', hint: 'Slide to grab runners', b0: 0, b1: 4 },
-    { id: 'build', name: 'The build', hint: 'Pick a gate. Bigger squad, more firepower', b0: 4, b1: 12 },
-    { id: 'riser', name: 'The riser', hint: 'Good gates charge Overclock', b0: 12, b1: 20 },
+    { id: 'build', name: 'The build', hint: 'Steer left or right of the line to pick a gate', b0: 4, b1: 12 },
+    { id: 'riser', name: 'The riser', hint: 'Every gate fills Overclock: more damage at the drop', b0: 12, b1: 20 },
     { id: 'drop', name: 'THE DROP', hint: 'Overclock! Melt the boss', b0: 20, b1: 28 },
     { id: 'outro', name: 'Cash out', hint: 'Street cleared', b0: 28, b1: 31 }
   ];
@@ -20,29 +20,33 @@
     drone: { hp: 12, bite: 3, w: 0.11, credits: 1 },
     biker: { hp: 110, bite: 9, w: 0.14, credits: 3, drift: 0.32 },
     crate: { hp: 30, bite: 0, w: 0.13, credits: 10 },
-    boss: { hp: 23000, bite: 0, w: 0.42, credits: 60 }
+    boss: { hp: 24500, bite: 0, w: 0.42, credits: 60 }
   };
-  // gate pairs: one every 2 bars from bar 4 to 18. Sides are shuffled per run (seeded). No pair has an obvious answer:
-  // +N beats x1.5 while the squad is small, fire rate beats both once it's big, charge trades growth for the drop,
-  // and a trade costs runners now for double later.
-  const GATES = [
-    [{ op: 'add', v: 8 }, { op: 'mul', v: 1.5 }],
-    [{ op: 'mul', v: 1.5 }, { op: 'rate', v: 0.25 }],
-    [{ op: 'add', v: 15 }, { op: 'oc', v: 30 }],
-    [{ op: 'weapon' }, { op: 'weapon' }],                    // the weapon fork: your one gun choice this run
-    [{ op: 'trade', lose: 10, v: 2 }, { op: 'rate', v: 0.25 }],
-    [{ op: 'add', v: 30 }, { op: 'mul', v: 1.5 }],
-    [{ op: 'mod', k: 0 }, { op: 'mod', k: 1 }],              // the upgrade fork: two ways to build that gun
-    [{ op: 'add', v: 40 }, { op: 'rate', v: 0.5 }]
-  ];
+  // one gate every 2 bars from bar 4 to 18. Each run deals the slots from these pools (seeded), so two different kinds
+  // always face each other: +N beats x1.5 while the squad is small, fire rate beats both once it's big, Overclock trades
+  // growth for the drop, and a trade costs runners now for double later. The weapon and upgrade forks stay on bars 10 and 16.
+  const POOLS = {
+    early: [{ op: 'add', v: 6 }, { op: 'add', v: 8 }, { op: 'add', v: 10 }, { op: 'mul', v: 1.5 }, { op: 'rate', v: 0.25 }],
+    mid: [{ op: 'add', v: 15 }, { op: 'add', v: 20 }, { op: 'mul', v: 1.5 }, { op: 'rate', v: 0.25 }, { op: 'oc', v: 30 }, { op: 'trade', lose: 6, v: 2 }],
+    late: [{ op: 'add', v: 30 }, { op: 'add', v: 40 }, { op: 'mul', v: 1.5 }, { op: 'rate', v: 0.25 }, { op: 'rate', v: 0.5 }, { op: 'oc', v: 30 }, { op: 'trade', lose: 10, v: 2 }]
+  };
+  const SLOTS = ['early', 'early', 'mid', 'weapon', 'mid', 'late', 'mod', 'late'];
+  function dealGates(r) {
+    return SLOTS.map(s => {
+      if (s === 'weapon') return [{ op: 'weapon' }, { op: 'weapon' }];         // your one gun choice this run
+      if (s === 'mod') return [{ op: 'mod', k: 0 }, { op: 'mod', k: 1 }];      // two ways to build that gun
+      const P = POOLS[s], grow = P.filter(g => g.op === 'add' || g.op === 'mul'), a = grow[Math.floor(r() * grow.length)], rest = P.filter(g => g.op !== a.op);
+      return [a, rest[Math.floor(r() * rest.length)]];   // one side always grows the squad, so no deal is a dud
+    });
+  }
   // mult scales damage. aim widens or narrows the cone, pierce hits a line of targets at full damage,
   // splash hits neighbours of each target. val is how much the bots value the extras.
   const WEAPONS = {
     pulse: { name: 'Pulse rifle', short: 'Pulse', mult: 1, aim: 0, val: 1, col: '#3DF0FF', tip: '', mods: [{ name: 'Hot Rounds', mult: 0.3, tip: 'Hot Rounds: more damage' }, { name: 'Long Barrel', aim: 0.1, tip: 'Long Barrel: a wider stream' }] },
-    arc: { name: 'Arc gun', short: 'Arc', mult: 1.5, aim: 0, val: 1, col: '#FFB547', tip: 'Arc gun: heavy damage, tight stream', mods: [{ name: 'Overcharge', mult: 0.45, tip: 'Overcharge: far more damage' }, { name: 'Forked', mult: 0.25, aim: 0.1, tip: 'Forked: the arc spreads wider' }] },
-    scatter: { name: 'Scatter', short: 'Scatter', mult: 1.35, aim: 0.24, val: 1.15, col: '#4BFFA5', tip: 'Scatter: a wide cone, less aiming', mods: [{ name: 'Buckshot', mult: 0.4, tip: 'Buckshot: more damage per blast' }, { name: 'Wide Choke', mult: 0.3, aim: 0.14, tip: 'Wide Choke: covers most of the road' }] },
-    rail: { name: 'Railgun', short: 'Rail', mult: 1.45, aim: 0.04, pierce: 24, val: 1.05, col: '#C9B8FF', tip: 'Railgun: pierces a whole line', mods: [{ name: 'Capacitor', mult: 0.4, tip: 'Capacitor: harder hits' }, { name: 'Overpierce', mult: 0.2, pierce: 24, aim: 0.03, tip: 'Overpierce: twice as many targets' }] },
-    rocket: { name: 'Rockets', short: 'Rockets', mult: 1.5, aim: 0, splash: 0.5, radius: 0.35, val: 1.1, col: '#FF7AD0', tip: 'Rockets: blasts hit nearby enemies', mods: [{ name: 'Warheads', mult: 0.3, splash: 0.35, tip: 'Warheads: bigger blast damage' }, { name: 'Cluster', mult: 0.25, radius: 0.25, tip: 'Cluster: a wider blast' }] }
+    arc: { name: 'Arc gun', short: 'Arc', mult: 1.5, aim: 0, val: 1, col: '#8B5CFF', note: 'heavy, tight stream', tip: 'Arc gun: heavy damage, tight stream', mods: [{ name: 'Overcharge', mult: 0.45, note: 'far more damage', tip: 'Overcharge: far more damage' }, { name: 'Forked', mult: 0.25, aim: 0.1, note: 'arcs spread wider', tip: 'Forked: the arc spreads wider' }] },
+    scatter: { name: 'Scatter', short: 'Scatter', mult: 1.35, aim: 0.24, val: 1.15, col: '#4BFFA5', note: 'wide cone', tip: 'Scatter: a wide cone, less aiming', mods: [{ name: 'Buckshot', mult: 0.4, note: 'harder blasts', tip: 'Buckshot: more damage per blast' }, { name: 'Wide Choke', mult: 0.3, aim: 0.14, note: 'covers the road', tip: 'Wide Choke: covers most of the road' }] },
+    rail: { name: 'Railgun', short: 'Rail', mult: 1.45, aim: 0.04, pierce: 24, val: 1.05, col: '#F2EFE6', note: 'pierces a line', tip: 'Railgun: pierces a whole line', mods: [{ name: 'Capacitor', mult: 0.4, note: 'harder hits', tip: 'Capacitor: harder hits' }, { name: 'Overpierce', mult: 0.2, pierce: 24, aim: 0.03, note: 'twice the targets', tip: 'Overpierce: twice as many targets' }] },
+    rocket: { name: 'Rockets', short: 'Rockets', mult: 1.5, aim: 0, splash: 0.5, radius: 0.35, val: 1.1, col: '#FFB547', note: 'splash blasts', tip: 'Rockets: blasts hit nearby enemies', mods: [{ name: 'Warheads', mult: 0.3, splash: 0.35, note: 'stronger blast', tip: 'Warheads: bigger blast damage' }, { name: 'Cluster', mult: 0.25, radius: 0.25, note: 'wider blast', tip: 'Cluster: a wider blast' }] }
   };
   const FINDS = ['arc', 'scatter', 'rail', 'rocket'], POWER = 0.3; // each weapon level adds 30% damage
   // a gun with its upgrade applied
@@ -62,7 +66,7 @@
     for (let i = 0; i < 10; i++) add('runner', at(1, 0) + i * B, zz[i], { w: 0.1 });
     // gates on the downbeat every 2 bars
     const offer = FINDS.slice().sort(() => r() - 0.5); let oi = 0;
-    GATES.forEach((pair, i) => { const sw = r() < 0.5, opts = pair.map(g => g.op === 'weapon' ? { op: 'weapon', w: offer[oi++ % offer.length] } : g); add('gate', at(4 + i * 2, 0), 0, { L: sw ? opts[1] : opts[0], R: sw ? opts[0] : opts[1] }); });
+    dealGates(r).forEach((pair, i) => { const sw = r() < 0.5, opts = pair.map(g => g.op === 'weapon' ? { op: 'weapon', w: offer[oi++ % offer.length] } : g); add('gate', at(4 + i * 2, 0), 0, { L: sw ? opts[1] : opts[0], R: sw ? opts[0] : opts[1] }); });
     // horde walls fill the road on the odd bars, between gates. You carve a path; whatever's left reaches you.
     const wall = (bar, rows, across) => {
       for (let i = 0; i < rows; i++) for (let k = 0; k < across; k++) add('swarm', at(bar, 0) + i * 0.085, -0.92 + 1.84 * (k + 0.5) / across + (r() - 0.5) * 0.08);

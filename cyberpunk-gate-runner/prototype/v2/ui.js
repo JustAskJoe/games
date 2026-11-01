@@ -21,7 +21,8 @@
     A.ctx = new C({ latencyHint: 'interactive' });
     const comp = A.ctx.createDynamicsCompressor(); comp.threshold.value = -14; comp.ratio.value = 8; comp.attack.value = 0.004; comp.release.value = 0.12;
     A.out = A.ctx.createGain(); A.out.gain.value = U.muted ? 0 : 0.7; A.out.connect(comp); comp.connect(A.ctx.destination);
-    A.sfx = A.ctx.createGain(); A.sfx.gain.value = 0.7; A.sfx.connect(A.out);
+    A.sfx = A.ctx.createGain(); A.sfx.gain.value = 1; A.sfx.connect(A.out);
+    A.shots = A.ctx.createGain(); A.shots.gain.value = 1.8; A.shots.connect(A.sfx);   // one dial for how loud gunfire sits against the song
     const len = A.ctx.sampleRate, b = A.ctx.createBuffer(1, len, A.ctx.sampleRate), d = b.getChannelData(0);
     for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
     A.noise = b; return A.ctx;
@@ -135,12 +136,26 @@
   }
   // sound effects play right away on the sfx bus (gates already land on the beat)
   function sfx(kind) { try { sfx0(kind); } catch (e) {} }
+  // every gun has its own shot, on the same eighth notes as the song. Quieter than a gate, and under the kick
+  function shot(t, d) {
+    const w = U.G.weapon, M = U.G.mod, sweep = (type, a, b, dur, v, cut) => { const o = X().createOscillator(), f = X().createBiquadFilter(); o.type = type; o.frequency.setValueAtTime(a, t); o.frequency.exponentialRampToValueAtTime(b, t + dur); f.type = 'lowpass'; f.frequency.value = cut || 6000; o.connect(f); f.connect(envG(t, 0.002, v, dur, d)); o.start(t); o.stop(t + dur + 0.04); };
+    const hiss = (type, fr, q, dur, v) => { const n = noiseSrc(t, dur + 0.04), f = X().createBiquadFilter(); f.type = type; f.frequency.value = fr; f.Q.value = q; n.connect(f); f.connect(envG(t, 0.002, v, dur, d)); };
+    if (w === 'pulse') sweep('square', 1500, 420, 0.06, 0.1);
+    else if (w === 'arc') { hiss('bandpass', M === 1 ? 5200 : 3400, 6, 0.08, 0.3); sweep('sawtooth', 2400, 900, 0.07, M === 0 ? 0.11 : 0.07); }
+    else if (w === 'scatter') { hiss('lowpass', M === 1 ? 4200 : 2600, 0.7, M === 0 ? 0.09 : 0.06, M === 0 ? 0.3 : 0.22); sweep('square', 240, 90, 0.05, 0.1); }
+    else if (w === 'rail') { sweep('sawtooth', M === 0 ? 1500 : 2600, 130, 0.17, 0.13, 4200); hiss('highpass', 5000, 0.7, 0.05, 0.1); }
+    else if (w === 'rocket') { sweep('sine', 210, 50, 0.16, 0.34); hiss('bandpass', M === 1 ? 2200 : 1100, 1.2, 0.14, 0.14); }
+  }
+  // the song dips for a moment so a gate is always heard
+  function duck(t) { if (!A.bus) return; const g = A.bus.gain; g.cancelScheduledValues(t); g.setValueAtTime(1, t); g.linearRampToValueAtTime(0.55, t + 0.02); g.linearRampToValueAtTime(1, t + 0.32); }
   function sfx0(kind) {
     if (!A.ctx || A.ctx.state !== 'running') return;
     const t = A.ctx.currentTime + 0.01, d = A.sfx;
-    if (kind === 'good') { osc('triangle', 659.3, t, 0.12, envG(t, 0.004, 0.12, 0.12, d)); osc('triangle', 880, t + 0.07, 0.18, envG(t + 0.07, 0.004, 0.12, 0.18, d)); }
-    else if (kind === 'bad') { const o = X().createOscillator(); o.type = 'sawtooth'; o.frequency.setValueAtTime(220, t); o.frequency.exponentialRampToValueAtTime(90, t + 0.3); const f = X().createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 900; o.connect(f); f.connect(envG(t, 0.005, 0.12, 0.3, d)); o.start(t); o.stop(t + 0.4); }
-    else if (kind === 'kill') { if (t - (A.lastKill || 0) < 0.05) return; A.lastKill = t; osc('square', [880, 1046.5, 1318.5, 1568][(Math.random() * 4) | 0], t, 0.05, envG(t, 0.002, 0.025, 0.05, d)); }
+    if (kind === 'good' || kind === 'bad') duck(t);
+    if (kind === 'good') { const n = noiseSrc(t, 0.22), f = X().createBiquadFilter(); f.type = 'bandpass'; f.Q.value = 1.2; f.frequency.setValueAtTime(700, t); f.frequency.exponentialRampToValueAtTime(5200, t + 0.18); n.connect(f); f.connect(envG(t, 0.01, 0.22, 0.2, d)); [659.3, 880, 1318.5].forEach((fr, i) => osc('square', fr, t + i * 0.055, 0.14, envG(t + i * 0.055, 0.003, 0.13, 0.15, d))); }
+    else if (kind === 'bad') { const o = X().createOscillator(); o.type = 'sawtooth'; o.frequency.setValueAtTime(220, t); o.frequency.exponentialRampToValueAtTime(90, t + 0.3); const f = X().createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 1400; o.connect(f); f.connect(envG(t, 0.005, 0.3, 0.3, d)); o.start(t); o.stop(t + 0.4); }
+    else if (kind === 'kill') { if (t - (A.lastKill || 0) < 0.05) return; A.lastKill = t; osc('square', [880, 1046.5, 1318.5, 1568][(Math.random() * 4) | 0], t, 0.05, envG(t, 0.002, 0.04, 0.05, d)); }
+    else if (kind === 'shot') shot(t, A.shots);
     else if (kind === 'runner') osc('triangle', 1318.5, t, 0.08, envG(t, 0.002, 0.06, 0.08, d));
     else if (kind === 'hurt') { const n = noiseSrc(t, 0.15), f = X().createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 500; n.connect(f); f.connect(envG(t, 0.002, 0.25, 0.14, d)); }
     else if (kind === 'weapon') [659.3, 880, 1046.5, 1318.5].forEach((fr, i) => osc('square', fr, t + i * 0.06, 0.1, envG(t + i * 0.06, 0.003, 0.05, 0.1, d)));
@@ -171,10 +186,15 @@
     if (U.flash > 0) { g.fillStyle = `rgba(255,255,255,${U.flash})`; g.fillRect(0, 0, W, H); U.flash *= Math.pow(RM ? 0.5 : 0.88, U.fdt * 60); if (U.flash < 0.02) U.flash = 0; }
   }
   function label(txt, x, y, size, col) { g.font = `700 ${Math.max(9, size)}px ${FONT}`; g.textAlign = 'center'; g.fillStyle = col; g.fillText(txt, x, y); }
-  function gateText(o) { return o.op === 'add' ? '+' + o.v : o.op === 'mul' ? '×' + o.v : o.op === 'trade' ? '−' + o.lose + ' ×' + o.v : o.op === 'oc' ? 'CHARGE +' + o.v + '%' : o.op === 'weapon' ? GR.WEAPONS[o.w].name.toUpperCase() : o.op === 'mod' ? GR.WEAPONS[U.G.weapon].mods[o.k].name.toUpperCase() : 'FIRE +' + Math.round(o.v * 100) + '%'; }
+  function gateText(o) { return o.op === 'add' ? '+' + o.v : o.op === 'mul' ? '×' + o.v : o.op === 'trade' ? '−' + o.lose + ' ×' + o.v : o.op === 'oc' ? 'OVERCLOCK +' + o.v + '%' : o.op === 'weapon' ? GR.WEAPONS[o.w].name.toUpperCase() : o.op === 'mod' ? GR.WEAPONS[U.G.weapon].mods[o.k].name.toUpperCase() : 'FIRE +' + Math.round(o.v * 100) + '%'; }
+  // the small line under each gate says what it does in plain words
+  function gateNote(o) { return o.op === 'add' ? 'more runners' : o.op === 'mul' ? 'multiply squad' : o.op === 'trade' ? 'lose ' + o.lose + ', then double' : o.op === 'oc' ? 'stronger drop' : o.op === 'weapon' ? GR.WEAPONS[o.w].note : o.op === 'mod' ? GR.WEAPONS[U.G.weapon].mods[o.k].note : 'shoot faster'; }
   function hpBar(x, y, w, fr) { g.fillStyle = 'rgba(0,0,0,.55)'; g.fillRect(x - w / 2, y, w, 4); g.fillStyle = '#4BFFA5'; g.fillRect(x - w / 2, y, w * Math.max(0, fr), 4); }
   // labels and health bars sit over the 3D models, sized by how close the thing is
   function drawLabels(G) {
+    // an arrow over the gate you're heading for, flipping as you cross the line
+    const ng = G.ents.find(e => e.kind === 'gate' && !e.done && e.ta > G.t);
+    if (ng && ng.ta - G.t < 4.2) { const sd = G.sx < 0 ? -1 : 1, z = ng.ta - G.t, k = 1 / (1 + z * 0.4), p = R.project(sd * 0.52, z, 4.1); label('▼', p.x, p.y - Math.abs(Math.sin(G.t * 7)) * 5, 34 * k + 8, '#3DF0FF'); }
     for (let i = G.ei; i < G.ents.length; i++) {
       const e = G.ents[i], z = e.ta - G.t; if (z > GR.BOSS_RANGE + 0.2) break; if (e.done || (z > 4.6 && e.kind !== 'boss')) continue;
       const k = 1 / (1 + Math.max(0, z) * 0.55), fr = e.hp / e.maxHp;
@@ -198,7 +218,7 @@
     if (hud.sec !== s.id) { hud.sec = s.id; $('secName').textContent = s.name; $('secHint').textContent = s.hint; say(s.name + '. ' + s.hint); }
     $('squadN').textContent = G.n;
     $('ocBar').style.width = (G.oc.on ? 100 : G.meter) + '%';
-    $('ocLbl').textContent = G.oc.on ? 'OVERCLOCK ×' + G.oc.mult.toFixed(1) : 'OVERCLOCK ' + Math.round(G.meter) + '%';
+    $('ocLbl').textContent = 'OVERCLOCK ×' + (G.oc.on ? G.oc.mult : 1 + 2 * G.meter / 100).toFixed(1);
     $('hudR').classList.toggle('on', G.oc.on);
     const bs = U.boss, on = bs && !G.over && !bs.done && bs.ta - G.t < GR.BOSS_RANGE;
     $('bossBar').hidden = !on;
@@ -215,8 +235,11 @@
       const e = G.ev[U.evi++];
       const sq = R.project(G.sx, 0), sx = sq.x, sy = sq.y;
       if (e.type === 'volley') {
-        const col = G.oc.on ? '#FFFFFF' : GR.WEAPONS[G.weapon].col;
-        for (const id of e.hits.slice(0, 6)) { const en = G.ents.find(q => q.id === id); if (en) R.tracer(G.sx + (Math.random() - 0.5) * GR.width(G.n), en.x, en.ta - G.t, col, en.kind === 'boss' ? 3.8 : 1.1); }
+        if (e.hits.length) {
+          sfx('shot');
+          const tg = []; for (const id of e.hits.slice(0, 8)) { const en = G.ents.find(q => q.id === id); if (en) tg.push({ x: en.x, z: Math.max(0.05, en.ta - G.t), y: en.kind === 'boss' ? 3.8 : 1.1 }); }
+          R.volley({ weapon: G.weapon, mod: G.mod, lv: G.wlv, col: GR.WEAPONS[G.weapon].col, oc: G.oc.on, x: G.sx, w: GR.width(G.n), t: tg });
+        }
       } else if (e.type === 'kill') {
         sfx('kill'); const en = G.ents.find(q => q.id === e.id), z = en ? en.ta - G.t : 1;
         const c = e.kind === 'crate' ? '#FFB547' : e.kind === 'boss' ? '#FFFFFF' : '#FF3DA8', nP = RM ? 2 : e.kind === 'boss' ? 160 : e.kind === 'swarm' ? 4 : 10;
@@ -226,11 +249,11 @@
         if (!firstSeen.kill) { firstSeen.kill = 1; hint('Your squad fires on its own. Line up with enemies'); }
       } else if (e.type === 'gate') {
         sfx(e.good ? 'good' : 'bad'); R.punch(2.4); U.popups.push({ t0: t, txt: gateText(e.g) + '  →  ' + e.n, x: sx, y: sy - 90, c: e.good ? '#4BFFA5' : '#FF4D6D', big: true });
-        if (e.g.op === 'oc' && G.t < GR.DROP_T) U.popups.push({ t0: t + 0.15, txt: 'Overclock +', x: W - 70, y: 110, c: '#FF7AD0' });
+        if (e.g.op === 'oc' && G.t < GR.DROP_T) U.popups.push({ t0: t + 0.15, txt: 'Stronger drop', x: W - 70, y: 110, c: '#FF7AD0' });
         say('Gate ' + gateText(e.g) + '. Squad ' + e.n);
       } else if (e.type === 'runner') { sfx('runner'); U.popups.push({ t0: t, txt: '+1', x: sx, y: sy - 60, c: '#BFF8FF' }); }
       else if (e.type === 'hurt' || e.type === 'bossHit') { sfx('hurt'); U.shake = e.type === 'bossHit' ? 16 : 6; U.popups.push({ t0: t, txt: '−' + e.lost, x: sx, y: sy - 70, c: '#FF4D6D', big: e.type === 'bossHit' }); }
-      else if (e.type === 'weapon') { sfx('weapon'); const wp = GR.WEAPONS[e.w], md = wp.mods[e.mod], up = md ? md.name.toUpperCase() : e.pick ? wp.name.toUpperCase() : wp.short.toUpperCase() + ' LV ' + e.lv; U.popups.push({ t0: t, txt: up + '!', x: W / 2, y: H * 0.45, c: wp.col, big: true, life: 1.4 }); const tip = md ? md.tip : e.pick ? wp.tip : ''; if (tip) hint(tip); if (e.pick) R.gates(G, gateText); say('Weapon: ' + up); }
+      else if (e.type === 'weapon') { sfx('weapon'); const wp = GR.WEAPONS[e.w], md = wp.mods[e.mod], up = md ? md.name.toUpperCase() : e.pick ? wp.name.toUpperCase() : wp.short.toUpperCase() + ' LV ' + e.lv; U.popups.push({ t0: t, txt: up + '!', x: W / 2, y: H * 0.45, c: wp.col, big: true, life: 1.4 }); const tip = md ? md.tip : e.pick ? wp.tip : ''; if (tip) hint(tip); if (e.pick) R.gates(G, gateText, gateNote); say('Weapon: ' + up); }
       else if (e.type === 'drop') { U.flash = 0.8; U.shake = 12; R.punch(9); R.shock(G.sx, 0, '#FFFFFF', 26, 0.4); U.popups.push({ t0: t, txt: 'OVERCLOCK ×' + e.mult.toFixed(1), x: W / 2, y: H * 0.42, c: '#FFFFFF', big: true, life: 1.6 }); say('The drop. Overclock times ' + e.mult.toFixed(1)); }
       else if (e.type === 'bossDown') { sfx('bossDown'); U.flash = 0.6; U.shake = 22; R.punch(7); U.popups.push({ t0: t, txt: 'BOSS DOWN', x: W / 2, y: H * 0.4, c: '#FFB547', big: true, life: 1.6 }); say('Boss down'); }
       else if (e.type === 'lost') { sfx('lose'); stopClock(true); U.endAt = performance.now() + 1100; }
@@ -260,12 +283,12 @@
     const ctx = audioInit(); U.noAudio = !ctx;
     if (ctx && ctx.state !== 'running') ctx.resume();
     SONG = SONG || (ctx ? buildSong() : []);
-    U.G = GR.newGame({ seed: (Math.random() * 1e9) | 0 }); R.setRun(U.G, gateText); U.boss = U.G.ents.find(e => e.kind === 'boss'); U.evi = 0; U.popups = []; U.queue = []; U.lastSent = null; U.endAt = 0; hud.sec = null;
+    U.G = GR.newGame({ seed: (Math.random() * 1e9) | 0 }); R.setRun(U.G, gateText, gateNote); U.boss = U.G.ents.find(e => e.kind === 'boss'); U.evi = 0; U.popups = []; U.queue = []; U.lastSent = null; U.endAt = 0; hud.sec = null;
     for (const k in firstSeen) delete firstSeen[k];
     U.test = !!fromBar;
     if (fromBar) { // tester jump: the smart bot plays the street up to that bar, then you take over
       const r = GR.rng(5); let k = 0; while (U.G.t < fromBar * GR.BAR) { if (++k % 6 === 0) GR.act(U.G, { type: 'steer', x: GR.BOTS.smart(U.G, r) }); GR.step(U.G); }
-      U.G.test = true; U.evi = U.G.ev.length; R.gates(U.G, gateText);
+      U.G.test = true; U.evi = U.G.ev.length; R.gates(U.G, gateText, gateNote);
     }
     const off = U.G.t;
     U.clock0 = performance.now() + 450 - off * 1000;
@@ -305,15 +328,28 @@
       <p>Neon City, 2089. Hush banned music. Your squad brings the beat back.</p>
       <button class="btn pri" data-act="play" type="button">Run</button>
       <button class="btn" data-act="how" type="button">How to play</button>
+      <button class="btn" data-act="arsenal" type="button">Weapons and gates</button>
       <p class="foot">Sound on, silent mode off. About one minute per run.</p>`);
   }
   function howScreen() {
     showSheet(`<h2>How to play</h2><ol class="steps">
       <li><b class="c">Drag left and right</b> anywhere to steer your squad. Arrow keys work too.</li>
-      <li><b class="gr">Pick a gate.</b> Flat numbers suit a small squad, multipliers a big one. <b class="r">Red</b> trades runners now for double later.</li>
+      <li><b class="gr">Steer left or right of the line</b> to pick a gate. The ▼ shows your pick. Flat numbers suit a small squad, multipliers a big one. <b class="r">Red</b> trades runners now for double later.</li>
       <li><b class="p">Your squad fires on its own.</b> Hordes fill the road. Carve a path through them, because whatever reaches you eats runners.</li>
       <li><b class="g">Pick your gun</b> at the weapon fork, then an upgrade for it later. Shoot gold crates to level it up.</li>
-      <li><b class="p">Gates charge Overclock.</b> Charge gates charge it most. When the beat drops, it fires. Melt the boss.</li></ol>
+      <li><b class="p">Gates fill Overclock.</b> It multiplies your damage during the drop, up to ×3. Overclock gates fill it fastest. Red gates fill none.</li></ol>
+      <button class="btn pri" data-act="play" type="button">Run</button><button class="btn" data-act="title" type="button">Back</button>`);
+  }
+  function arsenalScreen() {
+    const gun = k => { const w = GR.WEAPONS[k]; return `<div class="gun"><div class="gn" style="color:${w.col}">${w.name}</div><p>${w.note[0].toUpperCase() + w.tip.split(': ')[1].slice(1)}.</p><div class="ups">${w.mods.map(m => `<div><b>${m.name}</b> ${m.tip.split(': ')[1]}</div>`).join('')}</div></div>`; };
+    showSheet(`<h2>Weapons</h2><p>You start with the Pulse rifle. Pick one gun at the weapon fork, then one of its two upgrades later. Gold crates level it up.</p>
+      ${['arc', 'scatter', 'rail', 'rocket'].map(gun).join('')}
+      <h2 style="margin-top:16px">Gates</h2><ul class="gl">
+      <li><b class="gr">+8</b> Adds runners. Best while your squad is small.</li>
+      <li><b class="gr">×1.5</b> Multiplies your squad. Best once it's big.</li>
+      <li><b class="g">FIRE +25%</b> Everyone shoots faster.</li>
+      <li><b class="p">OVERCLOCK +30%</b> Multiplies your damage during the drop, up to ×3.</li>
+      <li><b class="r">−10 ×2</b> Lose runners now, then double what's left. Adds no Overclock.</li></ul>
       <button class="btn pri" data-act="play" type="button">Run</button><button class="btn" data-act="title" type="button">Back</button>`);
   }
   const FQ = [
@@ -349,6 +385,7 @@
     const a = b.dataset.act;
     if (a === 'play' || a === 'restart') startRun(0);
     else if (a === 'how') howScreen();
+    else if (a === 'arsenal') arsenalScreen();
     else if (a === 'title') titleScreen();
     else if (a === 'resume') resume();
     else if (a === 'jumpRiser') startRun(12);

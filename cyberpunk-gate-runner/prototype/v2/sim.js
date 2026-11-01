@@ -15,4 +15,9 @@ const run = () => { const G = GR.newGame({ seed: 42 }), r = GR.rng(9); let k = 0
 const h1 = run(), h2 = run();
 console.log(h1 === h2 ? 'ok   replay hash matches ' + h1 : 'FAIL replay hash differs');
 if (h1 !== h2) ok = false;
+// gates are dealt per run: different seeds have to give different streets
+const deal = s => GR.newGame({ seed: s }).ents.filter(e => e.kind === 'gate').map(e => JSON.stringify([e.L, e.R])).join();
+const deals = new Set(); for (let s = 1; s <= 50; s++) deals.add(deal(s * 7919));
+console.log(deals.size >= 40 ? 'ok   ' + deals.size + ' different gate deals in 50 seeds' : 'FAIL gates barely change: ' + deals.size + ' deals in 50 seeds');
+if (deals.size < 40) ok = false;
 process.exit(ok ? 0 : 1);
