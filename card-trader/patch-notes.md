@@ -6,6 +6,61 @@ Newest on top. See the repo's CLAUDE.md for how patch notes work.
 
 ---
 
+## v3.1 floor, tutorial and vintage · 2026-11-01 · Hunter (with Claude)
+Built on the grading rework (PR #74). Hunter's answers to the v3.1 plan's Q5–Q10 are in `design/handoff.md`.
+
+### What's new
+- **A guided first morning** (skippable). DJ Vee walks you through it, and the spot to tap glows:
+  1. Open the crate.
+  2. Put your best card in the case.
+  3. Stock the floor.
+  4. Open.
+  5. Show your first customer, an easy buyer, a card.
+- **The shop does the chores** (each can be turned off in the back room):
+  - Placing a card puts on the sleeve it needs.
+  - New cards get filed.
+  - The rack refills itself from the shelves between customers.
+  - **STOCK THE FLOOR** puts your best cards in the case, mid cards in the counter binder and packs on the rack. Its label says what it will do.
+- **A warnings bar** with fix buttons: crate waiting, slabs back, case nearly empty, rack empty, sleeves low.
+- **The rating says why.** The morning report lists the day's biggest reasons the stars moved.
+- **Rep matters at the counter:** sellers ask up to about 10% less when your rep is high, and more when it's low.
+- **A stranger with old packs.** On day 3, a shady guy in a long coat hands you three real vintage packs for free. The wrappers are beat up, so they're worth little sealed, but the cards inside are real. Rip them, sell them, or weigh them first. Vintage commons are a bit cheaper now; rare vintage and all vintage sealed stay expensive.
+- **Skrimp the scalper** takes at most 6 packs a visit.
+- **Fewer tells on honest customers** (4%, was 12%), so a tell means more.
+- **Repacks are off** for this version; the bulk sorter is gone from the catalog.
+- **Balance** (`node sim.js 200`; full `build-and-test.py`: ALL GOOD):
+
+  | Check | Result |
+  | --- | --- |
+  | careful vs noupgrades (Loupe upgrades worth 5+) | +269% vs +257% |
+  | noupgrades vs lazy (organized back room worth 30+) | +257% vs +210% |
+  | greedy theft (5–15% of final) | 9% |
+  | browser share (25–45%) | 37% |
+  | paranoid stars vs organized (a star or more lower) | 2.47 vs 4.64 |
+  | naive theft (10%+) | 17% |
+  | careful beats sloppy | 98% |
+
+### Next up
+- [ ] A mid-run spine: a collector contract on day 4 and a regional show on day 6 (plan section 6).
+- [ ] Re-run the agent playtests on this build. The persona bots in PR #70 need rules for the stranger, Stock the floor and grading ranges first.
+- [ ] Then the paid API playtest (OK'd by Hunter, about $0.75), after a `go: false` estimate.
+
+### Watch out
+- [ ] **The balance band is very noisy at 200 seeds.** The same change moved "careful vs noupgrades" between −34 and +39 points. Two settings were chosen at 400 seeds:
+  - Vintage commons at 75% (60% cost the Loupe upgrades their edge).
+  - The careful bot buys the Eye tools only once it holds a raw card worth 40₵+ whose read could reach 9; with all three bought up front it lost to noupgrades.
+  - The Balance agent should look at a bigger sample or a steadier statistic.
+- [ ] The lazy and sloppy sim bots turn the new automation off, because they stand for players who skip the chores. With it on, the organized-vs-lazy band would have nothing to measure.
+- [ ] Found and fixed while testing:
+  - CASE stayed disabled for unsleeved cards even with auto-sleeve on (the button didn't know auto-sleeve would handle it).
+  - Stock the floor couldn't meet the day 1 minimums when the opening crate held only cheap cards.
+  - A sim stall: an estate bot retried a vintage buy with no room to put it.
+- [ ] The tutorial was checked with Playwright screenshots of every step at 1280×720, plus the full walkthrough at phone widths. Not played by a human or on a real phone.
+- [ ] The stranger's portrait is the letter fallback (no art for Mox yet). Add him to the Lead Artist's list.
+- [ ] The warnings bar sits under the HUD and can overlap the top of tall panels. Check on small screens.
+
+---
+
 ## v3.1 grading rework · 2026-11-01 · Hunter (with Claude)
 Plan sections 1–3 from `design/v3.1-beta-plan.md` (on PR #70): known sets, condition ranges with an Eye track and a Black Label, and a grader-box reveal.
 

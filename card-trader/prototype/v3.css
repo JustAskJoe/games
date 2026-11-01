@@ -128,3 +128,11 @@
 .bl-txt { background: #000; color: #f5d77a; padding: 0 4px; border-radius: 3px; letter-spacing: 1px; }
 .gbox-tile { border: 3px solid var(--sun, #ffd23f); border-radius: 12px; background: #c9a46a; color: var(--ink, #1b1030); font-weight: 800; padding: 10px 14px; cursor: pointer; font-size: 15px; }
 .slabface.black .card { color: var(--ink, #1b1030); }
+
+/* v3.1 tutorial glow, skip button and the warnings bar */
+.tut-glow { outline: 4px solid var(--sun, #ffd23f) !important; outline-offset: 3px; animation: tutpulse 1s ease-in-out infinite alternate; position: relative; z-index: 5; }
+@keyframes tutpulse { from { box-shadow: 0 0 0 0 rgba(255, 210, 63, .9); } to { box-shadow: 0 0 22px 6px rgba(255, 210, 63, .9); } }
+#tutskip { position: absolute; right: 24px; bottom: 102px; z-index: 35; }
+#warnbar { position: absolute; left: 50%; top: 64px; transform: translateX(-50%); z-index: 30; display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; max-width: 90%; pointer-events: none; }
+#warnbar .warn { pointer-events: auto; font-weight: 800; font-size: 12px; padding: 4px 10px; border-radius: 999px; border: 2px solid var(--ink, #1b1030); background: var(--sun, #ffd23f); color: var(--ink, #1b1030); cursor: pointer; }
+#warnbar span.warn { cursor: default; background: #fff; }
