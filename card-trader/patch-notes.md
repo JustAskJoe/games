@@ -24,6 +24,7 @@ The first playable build: 3 station days at Stall 7 on Crosslane Market, desktop
 - **DJ Vee on Lane FM** coaches one hint at a time. The beat is an original synth loop (♪ toggles it).
 - **Art:** Canva AI paintings for the key art, the shop, the docking bay, Card Night, the grader office, DJ Vee, all 9 regulars, and card art for all 3 games, each made with the key art as a style reference. Each customer lineup is one painting cut into portraits in code. Card frames, scripts, wear and UV are drawn in code.
 - Balance sim (`node sim.js`): the careful bot doubles the shop's value (+105% median), a bot that never inspects gets about +4%, and a sloppy bot loses about 29%.
+- Art only, no build change: the Lead Artist's **lead art plan** (`art/lead-plan.md`) and **art direction** (`art/art-direction.md`), both approved by Hunter. They lock the v1 look, the key art as the style anchor, the card sheets as set anchors, the v1 palette, and "stay 2D". The studio art rules gained R21 to R25.
 
 ### Next up
 - [ ] @Hunter @Zach @Joe: play all 3 days on desktop and say whether inspecting, haggling and Grade Day are fun. Pass bar: you start a second run without being asked.
@@ -31,6 +32,7 @@ The first playable build: 3 station days at Stall 7 on Crosslane Market, desktop
 - [ ] Crew deck (about 12 slides) from the brief, using the v1 art and screenshots.
 - [ ] Add a playtest feedback form (the kit has one in Tower Defense).
 - [ ] v2 ideas are parked in `design/v2-ideas.md`: a 5-day week, scalpers, pump-and-dump, fake rings and more. Decide after the v1 playtest.
+- [ ] Before the key art goes on a store page or in a sold build, cover the made-up lettering on its big pink sign (rule R1; `art/art-direction.md` "Cleanup before release").
 
 ### Watch out
 - [ ] Tested in headless Chromium and Claude's browser pane only (1280×720, plus a 390/320 px check that nothing scrolls sideways). Not checked on a real desktop browser or with real players.
@@ -41,6 +43,7 @@ The first playable build: 3 station days at Stall 7 on Crosslane Market, desktop
 - [ ] CI's **Build and test** doesn't run Card Trader yet, like the other games except Tower Defense. Run `python3 card-trader/build-and-test.py` by hand before pushing.
 - [ ] Canva's terms limit reselling raw AI images. Check with the legal reviewer before any of this art ships in a sold game.
 - [ ] Theme check (from the 0.0 note): the setting is a happy station market with alien card games, trade lanes and grading. None of the names, UI or systems come from the reference game. Keep checking this at review.
+- [ ] The lead plan's first-release asset counts and hours are estimates, not measured.
 
 ## 0.0 · 2026-10-31 · Hunter (with Claude): new direction
 Theme shift before any build: from a Tokyo back-alley card shop to **Intergalactic Card Trader**, "happy space Akihabara". The brief in `pitch/brief.md` is rewritten for it.
@@ -48,19 +51,13 @@ Theme shift before any build: from a Tokyo back-alley card shop to **Intergalact
 ### What's new
 - Trade lanes decide who docks each day; many species' card games, scripts you have to decode, and competing grading companies.
 - Tone rule: warm and funny, never grim or cyberpunk, so it stays clearly apart from the reference game.
-- Art only, no build change: first draft of the lead art plan (`art/lead-plan.md`) and art direction (`art/art-direction.md`) from the Lead Artist agent. It proposes a 2D counter view, card condition and fakes as code layers, and alien scripts as SVG glyph sets.
 
 ### Next up
 - [ ] @Zach @Joe: answer the pitch in Forge, or react to the new direction.
 - [ ] Crew deck (about 12 slides) from the brief.
-- [ ] @Hunter: the decisions at the end of `art/lead-plan.md` (look, counter view or first person, glyph scripts, condition as code, the two in-world card games).
-- [ ] @Hunter: commit the bake-off key art from `hunter/card-trader-v1` as `art/anchors/style-01.webp`, then fill in the palette in `art/art-direction.md`.
 
 ### Watch out
 - [ ] A shop on a space station shares the reference game's setting; keep checking we're building our own systems and tone.
-- [ ] The lead plan's hours and the first-release asset counts are estimates, not measured. Sizes in `art-direction.md` aren't checked against the phone prototype kit yet.
-- [ ] The brief's PC first-person 3D doesn't fit AI-only art (lead plan risk 5).
-- [ ] Card art might ship from Canva as raw files; the legal reviewer's answer on Canva's terms is still open.
 
 ## 0.0 · 2026-10-31 · Hunter (with Forge)
 Project folder created from the approved pitch. Nothing built yet.

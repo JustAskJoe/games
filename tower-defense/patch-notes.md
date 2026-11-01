@@ -8,6 +8,19 @@ Say **"add to patch notes"** to Claude any time to add to the top entry. Claude 
 
 ---
 
+## 1.1 · Oct 31, 2026 · Hunter (with Claude)
+Art only, no build change.
+
+### What's new
+- Nothing player-facing.
+
+### Next up
+- [x] `art/art-direction.md` listed `final_art_source` twice (`undecided`, then `canva`). Kept `canva`, the Oct 28 pick. (Hunter with Claude, Oct 31, 2026)
+- [ ] Give Tower Defense a Lead Artist plan (`art/lead-plan.md`, see `kit/agents/lead-artist.md`) before its next concepts run. New studio rule: every game needs an approved lead plan first.
+
+### Watch out
+- [ ] `canva_roughs: on` in the settings block isn't read by the Artist agent; `roughs:` is the setting that counts.
+
 ## 1.1 · Oct 28, 2026 · Artist agent (with Claude)
 Art only, no build change.
 

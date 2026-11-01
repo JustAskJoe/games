@@ -43,7 +43,6 @@ Taken from Prototype 1 (`prototype/head.html` tokens and `prototype/art.js`). Us
 ## Pipeline settings
 ```
 roughs: cloudflare            # cloudflare (free, full size) | canva (links only) | off
-final_art_source: undecided   # candidates: pixellab | canva | commission
 canva_roughs: on
 final_art_source: canva       # picked Oct 28, 2026 by Hunter (painted won the #9 test)
 slack_channel: #td-studio     # the agent skips Slack if this channel doesn't exist

@@ -542,12 +542,12 @@ When a manifest row says `source: human` or `commission`, the Artist writes a **
 ## 10. Decisions Hunter must make
 
 **Now (Level 1, no spend)**
-- [ ] Approve this plan as the direction, or say what to change.
-- [ ] OK the Level 1 PRs: `artist.md` changes ([8.1](#81-level-1-now-no-new-spend)) and the new `kit/art/` scripts.
-- [ ] Pick the first game to pilot anchors + manifest (suggest **Card Trader**, where the bake-off happened).
-- [ ] Approve the Card Trader style anchor and the first character anchors.
-- [ ] Fix `tower-defense/art/art-direction.md`'s duplicate `final_art_source` (keep `canva`?).
-- [ ] Is "Vector first" (UI, icons, frames, logos, VFX drawn by Claude) the studio rule?
+- [x] Approve this plan as the direction. (Hunter, Oct 31, 2026)
+- [x] OK the Level 1 PRs: `artist.md` changes ([8.1](#81-level-1-now-no-new-spend)) and the new `kit/art/` scripts. (Hunter, Oct 31, 2026)
+- [x] Pilot game: **Card Trader**. (Hunter, Oct 31, 2026)
+- [x] Card Trader's style anchor (v1 title key art) and set and species anchors: see `card-trader/art/art-direction.md`. (Hunter, Oct 31, 2026)
+- [x] Fix `tower-defense/art/art-direction.md`'s duplicate `final_art_source`: kept `canva`. (Hunter, Oct 31, 2026)
+- [x] "Vector first" is the studio rule (R2 in `art-rules.md`). (Hunter, Oct 31, 2026)
 
 **Legal (ask the legal reviewer)**
 - [ ] Can we ship raw Canva AI images inside a commercial game build, given the "not standalone / as-is" reading of Canva's AI Product Terms?
@@ -558,7 +558,7 @@ When a manifest row says `source: human` or `commission`, the Artist writes a **
 **Level 2 (spend and secrets: only Hunter)**
 - [ ] Add `ART_KEY` to Actions secrets so the roughs run.
 - [ ] Activate the AI Pro $10/month Cloud credit and create a Gemini API key; add it as a secret.
-- [ ] Set a monthly ceiling for headless finals (suggest $10, the credit).
+- [x] Monthly ceiling for headless finals: $10, the credit. (Hunter, Oct 31, 2026)
 - [ ] Deploy the updated `/art/api/rough` endpoint (FLUX.2 klein with references).
 - [ ] Budget per game for hero paint-overs (suggest $150 to $600).
 
