@@ -885,7 +885,8 @@ function closeShop(G) {
   const n = Math.min(G.bulk, 3 + Math.floor(G.rep / 25)); if (n) { G.bulk -= n; money(G, n, 'bulk', 'Bulk bin: ' + n + ' commons sold'); }
   const next = G.week[G.dayIdx + 1];
   let msg = next ? 'Closing time! Tomorrow: ' + next.name + '. ' + Object.keys(next.demand).map(g => GAMES[g].name + ' ×' + next.demand[g]).join(', ') + '.' : 'Last close! Send anything to the graders: tonight is Grade Day and every slab comes home.';
-  if (next && next.release && G.pump) msg += ' Wave 3 reprint list is out: ' + tmpl(G.pump.t).name + ' is on it.';
+  // the pump card's reprint only lands on the first release day; later release eves have nothing to say about it
+  if (next && next.release && G.pump && !G.week.slice(0, G.dayIdx + 1).some(D => D.release)) msg += ' ' + next.name.replace(/ Release Day$/, '') + ' reprint list is out: ' + tmpl(G.pump.t).name + ' is on it.';
   say(G, 'vee', msg);
 }
 function summaryOfDay(G) {
@@ -953,7 +954,7 @@ function nightCardNight(G, g, nIn) {
   for (let i = 0; i < 2; i++) { const c = makeCard(G, g, i ? 'r' : 'u', 9, { fresh: true, promo: 'cardnight', src: 'plain' }); c.know.uv = true; addStock(G, c); promos.push(c.uid); }
   G.rep = clamp(G.rep + 6, 0, 100); N.done = true;
   event(G, { t: 'cardNight', game: g, n, holo, grail, hype, sold, uids: pulls.map(c => c.uid), promos });
-  say(G, 'vee', n ? 'What a stream! ' + GAMES[g].name + ' hype +' + Math.round(hype * 100) + '% for tomorrow, and 2 Card Night promos for you.' : 'Chill night. The crowd still bought some packs, and you keep 2 promos.');
+  say(G, 'vee', n ? 'What a stream! ' + GAMES[g].name + ' hype +' + Math.round(hype * 100) + '% for tomorrow, and 2 Card Night promos for you.' : sold ? 'Chill night. The crowd still bought ' + sold + (sold === 1 ? ' pack' : ' packs') + ', and you keep 2 promos.' : 'Chill night. No packs on the rack for the crowd, but you keep 2 promos.');
   return ok();
 }
 function nightTourney(G, g, prizeUid) {
@@ -1288,10 +1289,27 @@ const SEALED_GRADE = g => g >= 10 ? 2.4 : g >= 9 ? 1.7 : g >= 8 ? 1.3 : 1.05;
 // A fictional star rating with a review count. Each day nudges it; the morning report quotes a few reviews.
 function bump(G, d, why) { if (!G.rating) return; G.rating.today += d; if (why && Math.abs(d) >= 0.02) G.rating.why.push([+d.toFixed(2), why]); }
 function ratingMod(G) { const R_ = G.rating; return R_ && R_.stars != null ? (R_.stars - 4) * Math.min(1, R_.n / 12) : 0; }
+// Each review line comes with a check: a line is only picked if it's true of the shop today.
 const REVIEW = {
-  up: ['Fair prices, and they actually know their stuff.', 'Saw a vintage box on display. Unreal.', 'Pulled a hit from their repack!', 'They told my kid the card was fake and helped us out. Class act.', 'Case is always stocked.'],
-  down: ['Sold me a fake. Never again.', 'Repacks are a scam.', 'Half the case was empty.', 'Accused my friend of stealing. Rude.', 'Overpriced and pushy.'],
+  up: [['Fair prices, and they actually know their stuff.', () => true],
+    ['Saw a vintage box on display. Unreal.', (G, t) => t.vintage],
+    ['Pulled a hit from their repack!', (G, t) => t.ev('repackHit')],
+    ['They told my kid the card was fake and helped us out. Class act.', (G, t) => t.why("helped a fake-seller's victim")],
+    ['Case is always stocked.', (G, t) => t.caseN >= 6]],
+  down: [['Sold me a fake. Never again.', (G, t) => t.ev('complaint') || t.why('tried to sell a fake')],
+    ['Repacks are a scam.', (G, t) => G.store.repack.warned && G.store.repack.sold > 0],
+    ['Half the case was empty.', (G, t) => t.caseN <= 2],
+    ['Accused my friend of stealing. Rude.', (G, t) => t.why('accused an innocent customer')],
+    ['Overpriced and pushy.', (G, t) => t.pricey]],
 };
+// One R() call either way, so seeds stay put; when no line is true today, there's no review.
+function pickReview(G, lines, t) { const r = R(G), ok = lines.filter(l => l[1](G, t)); return ok.length ? ok[Math.floor(r * ok.length)][0] : null; }
+function reviewFacts(G, caseN) {
+  const floor = ['case', 'cbinder', 'tlbinder', 'rack'].reduce((a, f) => a.concat(onGrid(G, f)), []);
+  return { caseN, ev: k => G.events.some(e => e.t === k), why: w => G.rating.why.some(x => x[1] === w),
+    vintage: goodsAt(G, 'case').some(o => GOODS[o.type].vintage),
+    pricey: floor.some(o => o.type !== 'repack' && !(o.t && o.know.fake) && o.tag && o.tag > defaultTag(G, o) * 1.25) };
+}
 function closeRating(G) {
   const R_ = G.rating; let d = R_.today;
   const caseN = where(G, 'case').length + goodsAt(G, 'case').length;
@@ -1303,7 +1321,8 @@ function closeRating(G) {
   for (let i = 0; i < k; i++) R_.sum += clamp(Math.round(3.7 + d * 9 + gauss(G) * 0.8), 1, 5);
   R_.n += k; R_.stars = +(R_.sum / R_.n).toFixed(2);
   R_.reviews = [];
-  if (d > 0.02) R_.reviews.push(pick(G, REVIEW.up)); if (d < -0.02) R_.reviews.push(pick(G, REVIEW.down));
+  const t = reviewFacts(G, caseN), say_ = l => { const x = pickReview(G, l, t); if (x) R_.reviews.push(x); };
+  if (d > 0.02) say_(REVIEW.up); if (d < -0.02) say_(REVIEW.down);
   R_.last = +d.toFixed(2); R_.today = 0; R_.why = [];
 }
 

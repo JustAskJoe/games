@@ -380,6 +380,10 @@
   }
   function writeSave() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(U.save)); } catch (e) {} }   // private modes can refuse; the run still works
   U.save = loadSave(); U.lv = U.save.unlocked;
+  // for playtesting, every street is open from level select. Set this to false to bring the locks back. A street you haven't earned starts with a fair squad, not the minimum
+  const OPEN_ALL = true;
+  function loadFor(L) { const d = LD(L); return U.save.loads[L] || (L > 1 && OPEN_ALL ? { n: d.start[1], wlv: d.wlvCap - 1 } : undefined); }
+  U.openAll = OPEN_ALL;
   // a clear unlocks the next street. Replays keep your best squad, and the street's start limits stop that being farmed
   function bankClear(G) {
     const S = U.save, L = G.def.n, next = L + 1, c = GR.carryOut(G), old = S.loads[next];
@@ -391,7 +395,7 @@
     const ctx = audioInit(); U.noAudio = !ctx;
     if (ctx && ctx.state !== 'running') ctx.resume();
     U.lv = level || U.lv; const def = LD(U.lv);
-    U.armorAt = 0; U.G = GR.newGame({ seed: U.seedFix || (Math.random() * 1e9) | 0, def, loadout: U.save.loads[U.lv] }); U.T = trackFor(def);
+    U.armorAt = 0; U.G = GR.newGame({ seed: U.seedFix || (Math.random() * 1e9) | 0, def, loadout: loadFor(U.lv) }); U.T = trackFor(def);
     const SONG = SONGS[U.lv] = SONGS[U.lv] || (ctx ? buildSong(U.T) : []);
     R.setLevel(def); R.setRun(U.G, gateText, gateNote); $('bossName').textContent = GR.BOSS[def.boss.id].name; U.boss = U.G.ents.find(e => e.kind === 'boss'); U.evi = 0; U.popups = []; U.queue = []; U.lastSent = null; U.endAt = 0; hud.sec = null;
     for (const k in firstSeen) delete firstSeen[k];
@@ -451,9 +455,9 @@
     return `<div class="fq"><div class="q">Difficulty</div><div class="opts diff">${Object.keys(GR.DIFFS).map(k => `<button class="opt" type="button" data-diff="${k}" aria-pressed="${diff() === k}">${GR.DIFFS[k].name}</button>`).join('')}</div><p class="foot">${GR.DIFFS[diff()].note} Change it any time.</p></div>`;
   }
   function levelScreen() {
-    const S = U.save, rows = []; for (let L = 1; L <= GR.MAX_LEVEL; L++) { const d = LD(L), open = L <= S.unlocked, ld = GR.enter(d, S.loads[L]), wp = GR.WEAPONS[ld.weapon];
+    const S = U.save, rows = []; for (let L = 1; L <= GR.MAX_LEVEL; L++) { const d = LD(L), open = OPEN_ALL || L <= S.unlocked, ld = GR.enter(d, loadFor(L)), wp = GR.WEAPONS[ld.weapon];
       rows.push(open ? `<button class="lv" type="button" data-lv="${L}"><span>${L}. ${d.name}${S.beaten[L] ? ' <span class="ok">✓</span>' : ''}</span><small>${GR.BOSS[d.boss.id].name} · start ${ld.n} runners, ${wp.short}${ld.wlv > 1 ? ' Lv ' + ld.wlv : ''}</small></button>` : `<button class="lv" type="button" disabled><span>${L}. Locked</span><small>Beat level ${L - 1}'s boss</small></button>`); }
-    showSheet(`<h2>Level select</h2><p>Beat a boss to open the next street. Your squad and guns carry over.</p>${diffPicker()}${rows.join('')}
+    showSheet(`<h2>Level select</h2><p>${OPEN_ALL ? 'Every street is open for testing. Beating a boss still carries your squad and guns forward.' : 'Beat a boss to open the next street. Your squad and guns carry over.'}</p>${diffPicker()}${rows.join('')}
       <button class="btn" data-act="reset" type="button">Reset progress</button><button class="btn" data-act="title" type="button">Back</button>`);
   }
   function resetScreen() {

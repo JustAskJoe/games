@@ -19,6 +19,7 @@ The current decisions in one page. Keep this up to date when one changes.
 - **Easy, Medium, Hard.** Medium is the level table as written, and its balance must not move when Easy or Hard is tuned. `DIFFS` in `engine.js` scales everything else. One save holds one difficulty, and unlocks and guns are shared across all three. (Zach, Nov 1)
 - **Armored bosses say so.** Shots hitting armor bring up a warning that points at the way in, and the boss bar keeps showing health. Added after a playtest got stuck on Level 2 doing no damage from the middle of the road. (Zach, Nov 1)
 - **Easy's Carrier pods sit at ±0.42, not ±0.72,** so a squad in the middle of the road opens the armor without steering.
+- **Every street is open for now** (`OPEN_ALL` in `ui.js`), so Zach can try each one. Temporary. Saving and carryover still run. (Zach, Nov 1)
 - **Tempos stay inside the brief's 118–124 BPM.** Difficulty doesn't come from speed. Level 1's track is unchanged.
 - **Looks change by colors, fog, skyline height and rain only.** The city is built once, so switching levels costs nothing on a phone.
 - **`MAX_LEVEL = 5`.** Beating Level 5 says more streets are coming. It is not an ending.
