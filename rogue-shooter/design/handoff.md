@@ -5,7 +5,7 @@
 The one page to read before touching this game.
 
 **Team:** Joe, with Claude.
-**Status (Oct 31, 2026):** Prototype 1 playable, solo, desktop only.
+**Status (Nov 1, 2026):** Prototype 1 with Stardew-style pixel art, solo, desktop only.
 
 ## The game in one line
 An isometric rogue-like auto-shooter where you pick a class, collect and evolve weapons, unlock synergies, and survive 10 waves plus a boss.
@@ -17,7 +17,9 @@ Single HTML file, pure Canvas + vanilla JS. No libraries, no build step.
 - **Depth sorting** by `entity.x + entity.y`.
 - **State machine:** `start | playing | levelup | stats | dead | won`.
 - **Lateral movement boost:** `1.4×` on all directions so the player doesn't feel slow on the iso grid.
-- **Google Fonts:** Orbitron (headings), Rajdhani (body/HUD).
+- **Google Fonts:** Press Start 2P (headings/HUD), Rajdhani (body).
+- **Pixel art system:** sprites defined as comma-separated string rows, palette-mapped and rendered to offscreen canvases via `renderSprite()`. Cached by data+palette+scale key. `stamp()` draws them centered at a world position with optional horizontal flip. `tileHash()` gives deterministic per-tile decoration.
+- **Canvas config:** `imageSmoothingEnabled=false` + CSS `image-rendering: pixelated` for crisp pixel art.
 
 ## Systems
 
@@ -41,7 +43,7 @@ Each weapon has a legendary evolution at LV 5+ gated by a stat threshold:
 All 10 weapon pairs have a passive bonus (stat multipliers + behavioral flags like "slow on hit" or "fire patch on impact"). Applied in `getWpnCfg()` and checked in each weapon's update function.
 
 ### Enemies (5 + boss)
-Slime (basic), Bat (fast), Skeleton (tanky), Demon (ranged), Boss (wave 10 only). All drawn with multi-stop gradients, rim lights and animated details.
+Slime (basic), Bat (fast), Skeleton (tanky), Demon (ranged), Boss (wave 10 only). All drawn as pixel art sprites with animation frames (slime squish, bat wing flap, skeleton sway). Hit-flash uses white palette override.
 
 ## What's built
 Everything above, in `builds/rogue-shooter.html`.
