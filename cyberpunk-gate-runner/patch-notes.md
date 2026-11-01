@@ -12,12 +12,17 @@ Newest on top. Each entry covers **what's new** for players, **next up** for the
 - **Every gun fires differently:** Arc throws jagged lightning, Scatter sprays pellets, Rail fires a solid beam, and Rockets lob shells that burst.
 - **Upgrades show on screen:** Overcharge adds a second strand, Forked branches out, Buckshot fires fat pellets, Wide Choke fans wider, Capacitor thickens the beam, Overpierce fires twin beams, Warheads hit bigger, and Cluster splits into small blasts.
 - **Gun colours:** Arc is violet, Rail is off-white and Rockets are gold, so no gun uses the enemy pink.
+- **Gates explain themselves:** each gate has a plain line under its number, like "more runners" or "shoot faster".
+- **"Charge" is gone:** those gates now read OVERCLOCK +30%, "stronger drop", and the meter shows your actual damage at the drop, like ×1.6.
+- **Clearer path choice:** a bouncing ▼ sits over the gate you're heading for, and the other gate dims much further.
 ### Next up
 
 ### Watch out
 - [ ] Weapon effects were judged from frozen stills, not in motion. Fire effects could feel busy with a big squad on a phone.
 - [ ] Overclock no longer turns shots white, so each gun keeps its identity at the drop. They get thicker instead.
 - [ ] Frame rate with Scatter or Arc at the drop isn't measured. Each shot segment is one instance (420 max).
+- [ ] The ▼ is a small mark above the gate, which is close to the floating text you removed earlier. If it feels like clutter, remove it from `drawLabels`.
+- [ ] Gate notes are about 10 px on a 390 px phone until the gate gets close. Check they're readable in time.
 
 ## P2 art · Oct 31, 2026 · Zach (with Claude)
 
