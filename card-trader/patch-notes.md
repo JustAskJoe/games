@@ -6,6 +6,44 @@ Newest on top. See the repo's CLAUDE.md for how patch notes work.
 
 ---
 
+## v3 rev 2.2 balance · 2026-11-01 · Balance agent for Hunter (with Claude)
+The Balance agent's first pass: a report, then tuning at Hunter's request. Full report and every scratch rerun: `design/balance-report-2026-11-01.md`.
+
+### What's new
+- **Rent is gentler late in the run:** 30, 40, 50, 55, 60, 65, 70, 80, 85, 90 over the 10 days (it was 30 to 120). Good shops that skip an upgrade or two rarely end on a tab now.
+- **An unlocked case gets hit every night** from day 3 (it was 60% of nights). Lock it.
+- **Distraction thieves miss sometimes:** if you fetch from the back without watching, their friend gets something about 70% of the time (it was every time).
+- **Telling a victim their card is fake** earns +4 rep (it was +3).
+
+  | Bot | Median gain | Tab at end | Notes |
+  |---|---|---|---|
+  | careful | +231% | 2% | |
+  | careful without Loupe upgrades | +210% | 10% | upgrades worth +21 (was +60) |
+  | lazy | +128% | 10% | |
+  | greedy | +132% | 3% | 13% lost to theft |
+  | naive | +140% | 14% | 22% lost to theft |
+  | paranoid | +73% | 32% | 2.04★ vs 4.26★ |
+  | sloppy | −95% | 95% | careful beats it 98% of the time |
+
+  `build-and-test.py` (full, with the walkthrough): ALL GOOD.
+
+### Next up
+- [ ] @Hunter: answer the report's 4 questions (upgrade ceiling band line, schemer bounty size, era target vs economy, OK to add sim bots and lines).
+- [ ] Add `floorOnly` and `backOnly` bots plus "floor full on day N", "sales lost to fetch walkouts" and repack-payoff lines to `sim.js`, so those targets get measured (needs Hunter's OK).
+
+### Watch out
+- [ ] @Hunter: Loupe upgrades are now worth +21 (no ceiling in the band). Their value is very sensitive to when the Spectrometer is bought: at 140₵ it fell to +37 from +60 before tuning, at 210₵ to +3.
+- [ ] Greedy now loses 13% to theft, near the band's 15% ceiling. A future change that makes cases hold more could tip it over.
+- [ ] Paranoid still ends on a tab in 32% of runs. That follows from 20 wrong calls a run, which is intended, but check it doesn't feel like a debt spiral.
+- [ ] Repacks are dead in the sim. The sorter is bought in 2% of careful runs, and a forced repack bot sold 0 of 48 repacks. A repack's value counts its bulk at 0.4₵ a card, below loose bulk's 1₵. Cause not confirmed; the "+20% over loose" target can't be measured.
+- [ ] Vintage is 23% of incoming cards and 52% of value (target 10% / 35%). Lowering estate vintage weights to 25/45/30 gives 15% / 42% but costs careful 49 points. The target fights the 150% careful floor. Not tuned.
+- [ ] The schemer bounty is 18₵ vs a ~70–90₵ day (target: about a day's profit). A 60₵ bounty adds 40–60 points to every honest bot. Not tuned.
+- [ ] Not measured: floor-only full by day 4, fetch-everything loses ~15%. Proxies are in the report.
+- [ ] Noise: unrelated one-line changes move medians about ±10 points and tabs about ±6 at 200 runs. Don't trust a tuning effect under 10 points.
+- [ ] The new rent and theft odds were only checked in the sim, not in a real playthrough.
+
+---
+
 ## v3 rev 2.1 · 2026-11-01 · Hunter (with Claude): a new shop, setup before you open, the floor at the counter, the card generator
 Fixes from Hunter's playtest: the grid has to feed the day. It's set up before you open and used while you sell.
 
@@ -42,7 +80,7 @@ Fixes from Hunter's playtest: the grid has to feed the day. It's set up before y
 
 ### Next up
 - [ ] @Hunter: playtest the opening and day 1 setup, and sell a few cards from the floor at the counter. Does the grid feel part of selling now?
-- [ ] The Balance agent's first report on this build (session "Card Trader v3: first Balance agent report"), then any tuning it suggests.
+- [x] The Balance agent's first report on this build (session "Card Trader v3: first Balance agent report"), then any tuning it suggests. (Balance agent, Nov 1: see v3 rev 2.2 balance above.)
 - [ ] PR #68 (Balance agent) needs a second teammate to approve it.
 
 ### Watch out
@@ -130,8 +168,8 @@ After the first playtest, Hunter widened v3 (`design/v3-design.md`, rev 2). Your
 - [ ] Portraits for the new cast (Dash, Rook, Tad, Pip, Moma, Nova, Kiri, Vault, Hoard, the Estate): they show a letter for now.
 
 ### Watch out
-- [ ] The Loupe upgrades are worth about 190 points over 10 days, against about 35 in the 5-day v2. Their value compounds; check that they don't feel mandatory.
-- [ ] Middling bots run a tab in 50–65% of runs: 10 days of rent is tight. Check that a real first run doesn't feel like a debt spiral.
+- [x] The Loupe upgrades are worth about 190 points over 10 days, against about 35 in the 5-day v2. Their value compounds; check that they don't feel mandatory. (Balance agent, Nov 1: +60 after the CardGen rebalance, +21 after the rev 2.2 rent change.)
+- [x] Middling bots run a tab in 50–65% of runs: 10 days of rent is tight. Check that a real first run doesn't feel like a debt spiral. (Balance agent, Nov 1: 10–14% at the end of the run after rev 2.2; still worth checking in a real first run.)
 - [ ] Loose packs are generic per game (no wave). Only sealed product carries its wave, so the no-reprint play is about sealed boxes, not loose packs.
 - [ ] Customers can't see vintage sealed's real value, but the market guide in the deal panel shows it. Decide whether that should need an upgrade.
 - [ ] Drag and drop is desktop only. On touch, tap then tap. Not tested on a real phone.
