@@ -32,7 +32,7 @@
 Every card and product is always in one of three states. The HUD shows all three:
 - **Available today (the shop floor).** Customers can see it and buy it, and thieves can reach it.
 - **Holding (the back).** It's safe and it doesn't sell. You fetch from it.
-- **Out.** At the graders, on hold for a customer, or (later) on consignment.
+- **Out.** At the graders (later, maybe consignment). No customer holds (Hunter: no).
 
 **Morning:** move stock from Holding to Available, re-tag against today's market and unpack the crate. Doors don't open until the crate is unpacked or pushed to the back.
 **Counter:** sell from Available. Fetching from Holding costs patience (see C).
@@ -58,7 +58,6 @@ Bulk doesn't eat real space: it's a count in the bin, or bricks of 500 on a shel
 ### C. Selling with space
 - **Fetching:** the case, counter binders and rack are instant. Back binders cost 1 patience. The safe and the shelves cost 2.
 - **Browsers:** some customers arrive as browsers. They look at the case and the binders and walk up with a pick at your tag, then haggle down from there. A good tag sells, and a greedy tag gets haggled or put back.
-- **Holds:** "Hold it for me till tomorrow?" moves the card to Out for one day. Most come back to buy. Some don't (a no-show).
 
 ### D. Cards and products
 **Three eras** per game (our own names in the lore; the structure mirrors how the real hobby grew):
@@ -72,7 +71,13 @@ Promos and stamps run across every era: dock, event, staff and prerelease stamps
 
 **Six sealed types:** pack (1×1), 3-pack blister (1×2), tin (2×2), collector box (2×2), booster box (2×3), premium box (3×2). Each has its own buyer: kids buy blisters, collectors buy premium boxes, players buy packs and boxes. Old sealed product from earlier eras is rare and pricey, and it's a resealer magnet.
 
-**Bulk:** commons and uncommons by count. Bulk bricks go on the shelves. The bulk sorter unlock lets you build repacks: pick how many cards and whether to seed a hit. Seeded repacks sell faster and build rep. All-dud repacks still sell, but they cost rep once buyers catch on.
+**Vintage sealed** (Hunter, Nov 1):
+- **Rare and expensive.** It only shows up after a few days of the run: at auctions, in estates, from a dealer who visits once.
+- **On display it pulls people in.** It sits in the case or on a riser and isn't really for sale. It raises your **store rating** (a fictional star rating, not a real company's), and a higher rating brings more and better customers.
+- **Heavy vs light.** Vintage packs can be weighed (a scale unlock). Heavy packs are more likely to hold a hit and sell higher. Light packs sell lower. Weighing your own stock is legal but frowned on: the Scale Gang does it to you.
+- **Graded sealed.** Packs and boxes can be sent to a grader for a sealed grade. They come back in an acrylic case. A sealed grade proves the product isn't resealed.
+
+**Bulk:** commons and uncommons by count. Bulk bricks go on the shelves. The bulk sorter unlock lets you build repacks. You post a **hit sign** ("1 in N has a hit worth X₵+") and decide how big the hits are, how often they come, and how good the floor of each pack is. Shoppers judge your repacks against that sign. Honest, decent repacks become a draw and raise your rating. A stingy floor, or hits rarer than the sign says, gets you called a scam and costs rep.
 
 ### E. People who are working you (and people who aren't)
 **Fake sellers aren't all crooks.** When you prove a fake (UV, Loupe or a grader stamp), you **note it**. Then you work out who you're dealing with:
@@ -92,7 +97,7 @@ Promos and stamps run across every era: dock, event, staff and prerelease stamps
 
 Honest customers sometimes show one tell too, so you need two before you act.
 
-**The Known Offenders board** (Most Wanted style) shows mugshots, tells, and what each person did. It fills only from your reports. Offenders come back later in the run, sometimes disguised; the board lists their tells as well as their faces. Spot one at the door and you can refuse them.
+**The Known Offenders board** (Most Wanted style) shows mugshots, tells, and what each person did. It fills only from your reports. Offenders come back later in the run, sometimes disguised; the board lists their tells as well as their faces. Spot one at the door and you can refuse them. Disguises (a hat, a new coat, a different name) make them harder to spot but never impossible. Every offender keeps one **signature tell** that no disguise hides (a voice line, a tic, a missing antenna). That tell is on the board once you've seen it.
 
 The rev 1 bad actors stay (Skrimp, Quill, the Hype Bros, the Scale Gang, Sticky, the trimmer, the switcher, the resealer). They feed the board.
 
@@ -106,6 +111,8 @@ The rev 1 bad actors stay (Skrimp, Quill, the Hype Bros, the Scale Gang, Sticky,
 - a grading drop-box (send cards out in the morning too)
 - a vintage vault (the safe gets bigger)
 - a security camera (shows one tell more clearly)
+- a pack scale (weigh vintage packs)
+- a display riser (vintage sealed on show, raises your store rating)
 
 Loupe upgrades stay.
 
@@ -164,8 +171,11 @@ We use a real card database only as a **template**: set sizes, rarity mix, pull 
    - close filing
 4. **Tests,** patch notes and a PR. Art stays placeholder until Hunter OKs a shot list.
 
-## 5. Still open
-- Is Zach's database available, and where do its prices come from?
-- Customer holds: in or out?
-- Should repacks have a visible "seeded" sticker (an honest shop) or not (a gamble)?
-- How many days of offender history before disguises start?
+## 5. Answered (Hunter, Nov 1)
+- **Zach's database:** yes, from several places. Hunter will send it. See `design/card-generator.md`.
+- **Customer holds:** no.
+- **Repacks:** a posted hit sign. The shop sets how big and how often hits are and the floor of each pack, and that drives whether shoppers like them or call them a scam.
+- **Disguises:** offenders can get harder to spot, but you can always tell from a signature tell.
+
+## 6. Still open
+See the holes list in `design/card-generator.md` and the rev 2 notes in `design/handoff.md`.
