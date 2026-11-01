@@ -1,7 +1,8 @@
-// Intergalactic Card Trader · v2 engine. Pure: seeded RNG, no DOM, runs in node (sim.js) and the browser.
+// Intergalactic Card Trader · v3 engine. Pure: seeded RNG, no DOM, runs in node (sim.js) and the browser.
 // Every player action goes through act(G, intent). The UI and the bots only read G and call act.
 // v2 ("the market fights back"): a 5-day week, card variants and promos, After Hours events, scalpers, ring fakes,
 // a pump-and-dump, Loupe upgrades and a store policy. Design: design/v2-design.md.
+// v3 ("the Back Room"): physical stock, gear and a sleeving policy, wear, a display case, deliveries, five more bad actors.
 // © 2026 justaskjoe. All rights reserved.
 (function (root) {
 'use strict';
@@ -180,7 +181,7 @@ function buildWeek(G) {
     let ships = Object.keys(demand).filter(g => demand[g] >= 1.1).map(g => GAMES[g].species);
     if (!ships.length) ships = [GAMES[Object.keys(demand).sort((a, b) => demand[b] - demand[a])[0]].species];
     if (B.release) ships = ['mollu', 'zekk', 'puffi'];
-    const specials = SPECIALS[i] || [];
+    const specials = (SPECIALS[i] || []).concat(V3_SPECIALS[i] || []);
     const kinds = ['sell', 'lot', 'buy', 'buy', 'sealed'];
     while (kinds.length + specials.length < 8) kinds.push(pick(G, ['sell', 'lot', 'buy', 'flip', 'sealed', 'bulk', 'sell', 'buy']));
     const visitors = kinds.map(k => fillerVisitor(G, k, i));
@@ -190,6 +191,7 @@ function buildWeek(G) {
     const hot = Object.keys(demand).sort((a, b) => demand[b] - demand[a])[0];
     const shipLine = ships.map(s => SPECIES[s].name).join(' and ') + ' ships on the lanes. ' + GAMES[hot].name + ' is hottest at ×' + demand[hot] + '.';
     const extra = { 2: ' Word on the strip: a scalper called Skrimp is working the shops, and someone is passing perfect-looking promos.',
+      1: ' Heads up: a crew called the Scale Gang has been feeling up pack racks on the strip.',
       3: ' And the rumor mill says {pump} is about to spike. Me? I read the docking schedule.',
       4: ' WAVE 3 DROPS TODAY! Release promos every few packs, reprints everywhere ({pump} got reprinted: ouch). Grade Day tonight!' }[i] || '';
     week.push({ name: B.name, ships, demand, rent: RENT[i], pump: !!B.pump, release: !!B.release, visitors, dj: shipLine + extra });
@@ -275,7 +277,7 @@ function trueValue(G, c, demand) {
   if (c.fake) return 0;
   const tm = tmpl(c.t), d = demand == null ? demandOf(G, tm.game) : demand;
   const m = c.graded ? GRADERS[c.graded.co].mult(c.graded.grade) : RAW(trueGrade(c));
-  return BASE[tm.rarity] * m * d * (demand == null ? hot(G, c) : 1) * variantMult(G, c, null) * pumpMult(G, c);
+  return BASE[tm.rarity] * m * d * (demand == null ? hot(G, c) : 1) * variantMult(G, c, null) * pumpMult(G, c) * (c.trim && !c.graded ? TRIM_VALUE : 1);
 }
 const readable = (G, c) => c.know.read || (G.fluency[tmpl(c.t).game] >= FLUENT_AT);
 // The player's best guess from what they've learned. Bots use only this.
@@ -286,7 +288,7 @@ function estimate(G, c) {
   const m = c.graded ? GRADERS[c.graded.co].mult(c.graded.grade) : RAW(grade == null ? 7 : grade);
   const vm = variantMult(G, c, c.know);
   const pm = G.pump && G.pump.t === c.t ? (G.dayIdx === 3 ? 1.8 : G.dayIdx >= 4 ? 0.5 : 1) : 1; // the market price is public
-  const v = BASE[rar || 'u'] * m * demandOf(G, tm.game) * hot(G, c) * vm * pm;
+  const v = BASE[rar || 'u'] * m * demandOf(G, tm.game) * hot(G, c) * vm * pm * (c.trim && c.know.loupe && !c.graded ? TRIM_VALUE : 1);
   return { value: v, grade, rarity: rar, fake: c.know.uv ? false : null, vmult: vm };
 }
 // What a seller believes their card is worth (home rate). They can't read other species' scripts, can't see
@@ -308,13 +310,14 @@ function newGame(seed) {
     visitIdx: -1, visit: null, ledger: [], days: [], say: null, events: [], complaints: [],
     up: { lens: false, spec: false, hands: false }, policy: { limit2: false }, scalped: 0, pump: null, night: null, packsSoldToday: 0,
     stats: { bestFlip: null, bestGrade: null, fakesCaught: 0, fakesSold: 0, deals: 0, walkouts: 0, cracked: 0, promos: 0, variants: 0, misprints: 0, bestPull: null, scalpedPacks: 0 },
-    startValue: 0, log: [], version: 2, week: null, lastNight: null };
+    startValue: 0, log: [], version: 3, week: null, lastNight: null };
   G._s = (seed || 1) >>> 0;
   G.week = buildWeek(G);
   // starting case: a few singles you already know
   for (const [g, r] of [['shell', 'u'], ['shell', 'c'], ['hive', 'u'], ['star', 'r'], ['star', 'c'], ['hive', 'c']]) {
     const c = makeCard(G, g, r, 7.2, { read: true }); c.know.loupe = true; c.know.uv = true; c.cost = Math.round(trueValue(G, c, 1)); G.stock.push(c);
   }
+  initStore(G);
   G.demand = { shell: 1, hive: 1, star: 1 };
   G.startValue = Math.round(shopValue(G));
   return G;
@@ -324,6 +327,11 @@ function shopValue(G) {
   for (const c of G.stock) v += trueValue(G, c, 1);
   for (const g in G.packs) v += G.packs[g] * PACK_RETAIL;
   for (const p of G.grading) v += trueValue(G, p.card, 1);
+  const S = G.store; if (!S) return v;
+  for (const g in S.dead) v -= Math.min(S.dead[g], G.packs[g]) * (PACK_RETAIL - DEAD_PACK);
+  for (const g in S.boxes) v += S.boxes[g] * CATALOG.box.cost + S.merch.collector[g] * CATALOG.collector.cost;
+  for (const k of ['poster', 'playmat', 'deckbox']) v += S.merch[k] * CATALOG[k].cost;
+  for (const it of S.orders.concat(S.crate ? S.crate.items : [])) if (CATALOG[it.item] && !CATALOG[it.item].gear) v += CATALOG[it.item].cost;
   return v;
 }
 function money(G, amt, kind, label) { G.cash += amt; G.ledger.push({ day: G.dayIdx, kind, amt: Math.round(amt), label }); }
@@ -338,6 +346,7 @@ function nightCard(G, uid) {
   return null;
 }
 function addStock(G, c) {
+  if (G.store) arrive(G, c);
   G.stock.push(c);
   if (c.v && c.v.promo && !c.fake) G.stats.promos++;
   const pull = trueValue(G, c, 1); if (!G.stats.bestPull || pull > G.stats.bestPull.value) G.stats.bestPull = { value: Math.round(pull), t: c.t, v: c.v };
@@ -346,6 +355,8 @@ function addStock(G, c) {
 // ---------- days ----------
 function startDay(G) {
   G.dayIdx++; const D = G.week[G.dayIdx];
+  G.events = [];
+  if (G.store) deliver(G);
   G.demand = Object.assign({}, D.demand);
   // last night's hype lands on today
   for (const g in G.hype) if (G.hype[g]) { G.demand[g] = +(G.demand[g] + G.hype[g]).toFixed(2); G.hype[g] = 0; }
@@ -356,7 +367,7 @@ function startDay(G) {
   const games = Object.keys(G.demand).sort((a, b) => G.demand[b] - G.demand[a]);
   G.hotList = [tid(games[0], 12 + Math.floor(R(G) * 5)), tid(games[1], 12 + Math.floor(R(G) * 3))];
   if (G.pump) G.hotList = G.hotList.filter(t => t !== G.pump.t);
-  G.visitIdx = -1; G.visit = null; G.phase = 'morning'; G.events = []; G.night = null;
+  G.visitIdx = -1; G.visit = null; G.phase = 'morning'; G.night = null;
   resolveGrades(G, false);
   for (const k of G.complaints) { money(G, -k.price, 'refund', 'Refund: ' + k.who + ' found a fake'); G.rep = clamp(G.rep - 8, 0, 100); event(G, { t: 'complaint', who: k.who, price: k.price }); }
   G.complaints = [];
@@ -367,7 +378,9 @@ function resolveGrades(G, all) {
   for (const p of G.grading) {
     if (!all && p.due > G.dayIdx) { keep.push(p); continue; }
     const c = p.card;
-    if (c.fake) { c.know.uv = true; c.know.fake = true; G.stats.fakesCaught++; event(G, { t: 'grade', uid: c.uid, co: p.co, fake: true }); G.stock.push(c); continue; }
+    if (c.fake) { c.loc = 'inbox'; c.know.uv = true; c.know.fake = true; G.stats.fakesCaught++; event(G, { t: 'grade', uid: c.uid, co: p.co, fake: true }); G.stock.push(c); continue; }
+    c.loc = 'inbox';
+    if (c.trim) { c.graded = { co: p.co, grade: 1, altered: true }; Object.assign(c.know, { loupe: true, uv: true, read: true, print: true }); G.store.stats.trimsCaught++; event(G, { t: 'grade', uid: c.uid, co: p.co, altered: true }); G.stock.push(c); continue; }
     let g = trueGrade(c);
     if (p.co === 'quik') { const x = p.roll; g = clamp(g + (x < 0.25 ? -1 : x > 0.75 ? 1 : 0), 1, 10); }
     c.graded = { co: p.co, grade: g }; Object.assign(c.know, { loupe: true, uv: true, read: true, print: true });
@@ -412,6 +425,8 @@ function spawnVisit(G, spec) {
   } else if (spec.role === 'sealed') {
     v.packs = Math.max(1, spec.n - Math.ceil((G.scalpedToday || 0) / 2)); // Skrimp already sold them some
   }
+  if (spec.role === 'reseal') { v.packs = 3; v.packGame = pick(G, ['shell', 'hive', 'star']); v.resealed = R(G) < 0.8; }
+  if (spec.src === 'trim') for (const c of v.cards) { c.trim = true; c.edg = 10; c.cen = Math.max(c.cen, 9); c.sur = Math.max(c.sur, 9); }
   if (spec.wants && spec.wants.pump && G.pump) v.wants = { t: G.pump.t };
   v.maxPatience = v.patience;
   return v;
@@ -429,7 +444,7 @@ function matches(G, wants, c) {
 // Zekk for serials and misprints. Flippers want margin.
 function buyerValue(G, v, c) {
   const P = PEOPLE[v.who], pv = c.v || {};
-  let bv = trueValue(G, c);
+  let bv = c.trim ? lookValue(G, c) : trueValue(G, c); // a trim fools buyers; a fake doesn't (they check it)
   // buyers only pay for a misprint or a vintage print you can show them (Print Lens); otherwise it's just a card
   if (!c.know.print && !c.graded && !c.fake) { const shown = variantMult(G, c, { loupe: true, print: false }), all = variantMult(G, c, null); if (all > 0) bv *= shown / all; }
   if (v.species === 'puffi' && (c.graded ? c.graded.grade : trueGrade(c)) >= 9) bv *= 1.4;
@@ -459,6 +474,7 @@ const LINES = {
 };
 const BAD_LINES = {
   quill: 'Fresh from the Glyphsmiths\' workshop, I mean, from a collector. Perfect condition, see? {n} for {p}.',
+  snip: 'Every one of these is a perfect 10. Look at those edges! Razor sharp. {n} for {p}.',
   hype: 'Psst. {card} is about to MOON. Everyone knows. We\'ll let you have {n} copies at {p}. You\'re welcome.',
 };
 function line(G, v, key, p) { const L = LINES[v.species][key]; if (!L || !L.length) return null; return pick(G, L).replace('{p}', p != null ? p + '₵' : '').replace('{w}', wantsText(v.wants)); }
@@ -480,7 +496,7 @@ function costPatience(G, n) {
   return true;
 }
 function packTotal(G) { return G.packs.shell + G.packs.hive + G.packs.star; }
-function takePacks(G, n) { let k = n; for (const g of ['shell', 'hive', 'star']) while (k > 0 && G.packs[g] > 0) { G.packs[g]--; k--; } return n - k; }
+function takePacks(G, n) { let k = n; for (const g of ['shell', 'hive', 'star']) { while (k > 0 && G.packs[g] > 0) { G.packs[g]--; k--; } if (G.store) G.store.dead[g] = Math.min(G.store.dead[g], G.packs[g]); } return n - k; }
 // Release Day: every 3rd pack sold earns a release promo (the distributor's launch deal).
 function releasePromos(G, sold) {
   if (!G.week[G.dayIdx].release) return;
@@ -491,6 +507,7 @@ function releasePromos(G, sold) {
 // ---------- act: the only way state changes ----------
 function act(G, it) {
   const v = G.visit;
+  if (G.store) { const r3 = v3Act(G, it); if (r3) return r3; }
   switch (it.t) {
     case 'start': if (G.phase !== 'title') return err('not now'); startDay(G); return ok();
     case 'open': if (G.phase !== 'morning') return err('not now'); G.phase = 'shop'; say(G, 'vee', 'Doors open! First customer\'s at the counter.'); return ok();
@@ -498,9 +515,11 @@ function act(G, it) {
       if (G.phase !== 'shop') return err('finish this customer first');
       const D = G.week[G.dayIdx];
       if (G.visitIdx + 1 >= D.visitors.length) { closeShop(G); return ok(); }
+      if (G.store && G.visitIdx >= 0) browseCase(G);
       G.visitIdx++; G.visit = spawnVisit(G, D.visitors[G.visitIdx]); G.phase = 'visit';
-      const nv = G.visit, P = PEOPLE[nv.who];
-      if (nv.role === 'bulk') {
+      const nv = G.visit, P = PEOPLE[nv.who], hello3 = G.store && v3Hello(G, nv);
+      if (hello3) { say(G, nv.who, hello3); if (nv.role === 'weigh' && G.store.noTouch) endVisit(G, 'pass'); }
+      else if (nv.role === 'bulk') {
         const n = Math.min(G.bulk, 8); if (n) { G.bulk -= n; money(G, n, 'bulk', P.name + ' dug ' + n + ' from the bulk bin'); }
         say(G, nv.who, (n ? 'I dug ' + n + ' cards outta your bin! ' : '') + 'Wanna buy my whole shoebox? ' + nv.ask + '₵!');
       } else if (nv.role === 'scalp') {
@@ -550,9 +569,11 @@ function act(G, it) {
       return ok();
     }
     case 'show': {
-      if (G.phase !== 'visit' || !v || !(v.role === 'buy' || v.role === 'flip')) return err('not now');
+      if (G.phase !== 'visit' || !v || !(v.role === 'buy' || v.role === 'flip' || v.role === 'switch')) return err('not now');
       const c = findStock(G, it.uid); if (!c) return err('no card');
       if (!matches(G, v.wants, c)) { say(G, v.who, 'Hmm, that\'s not what I\'m after.'); costPatience(G, 1); return ok(); }
+      if (G.store) wearRoll(G, c, WEAR_SHOW);
+      if (v.role === 'switch') return switchCard(G, c);
       v.showing = c.uid; startHaggleBuyer(G, v, buyerValue(G, v, c)); v.rounds = 0;
       say(G, v.who, 'Ooh. I\'d pay ' + v.bid + '₵ for that.');
       return ok();
@@ -570,19 +591,24 @@ function act(G, it) {
     case 'accept': {
       if (G.phase !== 'visit' || !v) return err('not now');
       if (v.role === 'scalp') return dealScalp(G);
+      if (v.role === 'weigh') return dealWeigh(G, false);
+      if (v.role === 'reseal') return dealReseal(G);
+      if (v.role === 'thief' || v.role === 'switch') return err('they\'re not selling anything');
       if (v.role === 'buy' || v.role === 'flip' || v.role === 'sealed') { if (!v.showing) return err('show something first'); return dealSell(G, v.bid); }
       return dealBuy(G, v.ask);
     }
     case 'pass': {
       if (G.phase !== 'visit' || !v) return err('not now');
+      if (v.role === 'thief') { const got = steal(G, G.store.locked || !where(G, 'case').length || R(G) < 0.5 ? 'rack' : 'case'); say(G, v.who, 'Byeee! *suspiciously lumpy fluff*'); endVisit(G, 'pass'); return ok({ stolen: !!got }); }
       say(G, v.who, v.role === 'scalp' ? 'Your loss. The strip will pay me double anyway.' : v.role === 'buy' || v.role === 'flip' || v.role === 'sealed' ? 'Oh well, next time!' : 'Your loss!');
       endVisit(G, 'pass'); return ok();
     }
     case 'crack': {
       if (G.phase !== 'shop') return err('only between customers');
       if (!G.packs[it.game]) return err('no packs of that game');
-      G.packs[it.game]--; G.stats.cracked++;
-      const pulled = crackPack(G, it.game);
+      const dead = G.store && G.store.dead[it.game] > 0 && R(G) < G.store.dead[it.game] / G.packs[it.game];
+      G.packs[it.game]--; G.stats.cracked++; if (dead) G.store.dead[it.game]--;
+      const pulled = crackPack(G, it.game, dead);
       event(G, { t: 'crack', game: it.game, uids: pulled.map(c => c.uid) });
       return ok({ pulled });
     }
@@ -604,7 +630,8 @@ function act(G, it) {
     case 'restock': {
       if (G.phase !== 'close') return err('restock at close');
       if (G.cash < BOX.cost) return err('not enough cash');
-      money(G, -BOX.cost, 'restock', 'Booster box: ' + GAMES[it.game].name); G.packs[it.game] += BOX.packs;
+      // v3: the box is an order; it arrives in tomorrow morning's crate
+      if (G.store) { const r = order(G, 'box', it.game, 1); if (!r.ok) return r; } else { money(G, -BOX.cost, 'restock', 'Booster box: ' + GAMES[it.game].name); G.packs[it.game] += BOX.packs; }
       // box topper: restock tomorrow's hottest game and the distributor sometimes adds a promo
       const next = G.week[G.dayIdx + 1]; let topper = null;
       if (next) { const hottest = Object.keys(next.demand).sort((a, b) => next.demand[b] - next.demand[a])[0];
@@ -624,6 +651,7 @@ function act(G, it) {
     }
     case 'endDay': {
       if (G.phase !== 'close') return err('not now');
+      if (G.store) nightly(G);
       const rent = G.week[G.dayIdx].rent, paid = Math.min(rent, Math.max(0, G.cash));
       money(G, -paid, 'rent', 'Dock rent'); if (paid < rent) { G.tab += rent - paid; event(G, { t: 'tab', amt: rent - paid }); }
       if (G.tab && G.cash > 60) { const pay = Math.min(G.tab, G.cash - 60); G.tab -= pay; money(G, -pay, 'rent', 'Paid down the tab'); }
@@ -655,10 +683,11 @@ function act(G, it) {
 function ok(x) { return Object.assign({ ok: true }, x || {}); }
 function err(m) { return { ok: false, error: m }; }
 
-function crackPack(G, game) {
+// A dead pack (searched by the Scale Gang, or resealed) has had its hit taken: the rare slot is a common.
+function crackPack(G, game, dead) {
   const out = [];
   for (const r of ['c', 'c', 'c', 'u']) out.push(makeCard(G, game, r, 9.0, { fresh: true, src: 'pack' }));
-  out.push(makeCard(G, game, rollRarity(G, true), 9.0, { fresh: true, src: 'rareslot' }));
+  out.push(dead ? makeCard(G, game, 'c', 9.0, { fresh: true, src: 'plain' }) : makeCard(G, game, rollRarity(G, true), 9.0, { fresh: true, src: 'rareslot' }));
   for (const c of out) { c.know.uv = true; addStock(G, c); }
   return out;
 }
@@ -705,9 +734,9 @@ function dealSell(G, price) {
     const c = findStock(G, v.showing);
     const catchChance = c.fake === 'ring' ? 0.2 : 0.5;
     if (c.fake && v.species !== 'zekk' && R(G) < catchChance) { say(G, v.who, 'Wait... this is a FAKE!'); G.rep = clamp(G.rep - 5, 0, 100); v.insulted = true; c.know.fake = true; endVisit(G, 'walk'); return ok({ caught: true }); }
-    G.stock.splice(G.stock.indexOf(c), 1);
+    G.stock.splice(G.stock.indexOf(c), 1); if (G.store) G.store.stats.counterCardSales++;
     money(G, price, 'sell', 'Sold ' + (readable(G, c) ? tmpl(c.t).name : 'a card') + ' to ' + PEOPLE[v.who].name);
-    if (c.fake) { G.complaints.push({ who: PEOPLE[v.who].name, price }); G.stats.fakesSold++; }
+    if (c.fake || c.trim && !c.graded) { G.complaints.push({ who: PEOPLE[v.who].name, price }); if (c.fake) G.stats.fakesSold++; }
     const flip = price - (c.cost || 0);
     if (!G.stats.bestFlip || flip > G.stats.bestFlip.flip) G.stats.bestFlip = { flip: Math.round(flip), t: c.t, price };
   }
@@ -879,12 +908,277 @@ function finale(G) {
 function load(json) {
   const G = typeof json === 'string' ? JSON.parse(json) : json;
   if (typeof G._s !== 'number') throw new Error('not a Card Trader save');
-  if (G.version !== 2) throw new Error('this save is from v1; start a new week');
+  if (G.version !== 3) throw new Error('this save is from an older version; start a new week');
   if (!G.week) G.week = DAYS.map((D, i) => Object.assign(JSON.parse(JSON.stringify(D)), { rent: RENT[i] }));
   return G;
 }
+// ---------- v3: The Back Room ----------
+// Stock is physical. Every card has a place (c.loc: inbox, binder, case, safe); packs hang on the rack, booster boxes
+// sit on shelves, merch hangs on rack hooks. Gear protects cards from gentle wear, the display case sells on its own,
+// and five new bad actors work the shop. Design: design/v3-design.md.
+const STORE = { caseW: 12, caseH: 4, rackCap: 16, shelfCap: 24, shelfUp: 12, binderPockets: 54, safeCap: 6, inboxCap: 20 };
+const HOOKS = { collector: 2, poster: 2, playmat: 2, deckbox: 1 };            // a pack takes 1 hook
+const GEAR = { penny: { name: 'Penny sleeves', per: 100 }, hard: { name: 'Hard sleeves', per: 25 }, mag: { name: 'Mag cases', per: 5 } };
+const CATALOG = {
+  box:       { name: 'Booster box (6 packs)', cost: 120, game: true, shelf: 6 },
+  collector: { name: 'Collector box', blurb: 'a promo, 3 packs and a pin', cost: 80, retail: 110, game: true, hooks: 2, nightly: 0.35 },
+  poster:    { name: 'Poster set', cost: 8, retail: 18, hooks: 2, nightly: 0.3 },
+  playmat:   { name: 'Playmat', cost: 12, retail: 25, hooks: 2, nightly: 0.25 },
+  deckbox:   { name: 'Deck box', cost: 3, retail: 7, hooks: 1, nightly: 0.4 },
+  penny:     { name: 'Penny sleeves ×100', cost: 4, gear: 'penny' },
+  hard:      { name: 'Hard sleeves ×25', cost: 6, gear: 'hard' },
+  mag:       { name: 'Mag cases ×5', cost: 10, gear: 'mag' },
+  binder:    { name: 'Binder (54 pockets)', cost: 15, now: true },
+  shelves:   { name: 'Shelf unit (+12 slots)', cost: 60, now: true, once: true },
+  lock:      { name: 'Display case lock', cost: 30, now: true, once: true },
+};
+const WEAR_DAY = 0.12, WEAR_BINDER = 0.06, WEAR_SHOW = 0.03, TRIM_VALUE = 0.3, DEAD_PACK = 12, RESEAL_PRICE = 20;
+// v3's bad actors join the week's signature visitors (day index -> visitors). Day 1 stays the tutorial.
+const V3_SPECIALS = {
+  1: [{ who: 'gang', role: 'weigh' }],
+  2: [{ who: 'sticky', role: 'thief' }, { who: 'snip', role: 'sell', n: 2, games: ['star', 'hive'], q: 7, gem: 'h', src: 'trim' }],
+  3: [{ who: 'flick', role: 'switch', wants: { min: 'r' } }, { who: 'gloss', role: 'reseal' }],
+  4: [{ who: 'sticky', role: 'thief' }, { who: 'gang', role: 'weigh' }],
+};
+Object.assign(PEOPLE, {
+  gang:   { name: 'The Scale Gang', species: 'zekk', askMul: 1, floorMul: 1, ceilMul: 1, line: 'three Zekk who "just want to feel the packs"', bad: true },
+  sticky: { name: 'Sticky', species: 'puffi', askMul: 1, floorMul: 1, ceilMul: 1, line: 'a very fluffy browser with very deep fluff', bad: true },
+  snip:   { name: 'Snip', species: 'mollu', askMul: 1.1, floorMul: 0.85, ceilMul: 1, line: 'a trimmer: every card is "a perfect 10"', bad: true },
+  flick:  { name: 'Flick', species: 'zekk', askMul: 1, floorMul: 1, ceilMul: 1.05, line: 'a switcher: four hands, and one of them is always busy', bad: true },
+  gloss:  { name: 'Gloss', species: 'mollu', askMul: 1, floorMul: 1, ceilMul: 1, line: 'a resealer with "factory sealed" packs, cheap', bad: true },
+});
+
+function initStore(G) {
+  G.store = { binders: 1, shelves: STORE.shelfCap, lock: false, locked: false, noTouch: false,
+    gear: { penny: 60, hard: 10, mag: 0 }, sleeve: { penny: 5, hard: 25, mag: 150 },
+    boxes: { shell: 0, hive: 0, star: 0 }, merch: { collector: { shell: 0, hive: 0, star: 0 }, poster: 0, playmat: 0, deckbox: 0 },
+    dead: { shell: 0, hive: 0, star: 0 }, orders: [], crate: null, gearWarned: false,
+    stats: { displaySales: 0, displayCash: 0, counterCardSales: 0, stolen: 0, stolenValue: 0, wearHits: 0, wearValue: 0, switched: 0, trimsCaught: 0, merchSales: 0, deadPacks: 0 } };
+  for (const c of G.stock) { c.loc = c.loc || 'binder'; c.prot = c.prot || 'penny'; }
+}
+const where = (G, loc) => G.stock.filter(c => c.loc === loc);
+function binderFree(G) { return G.store.binders * STORE.binderPockets - where(G, 'binder').length; }
+function safeFree(G) { return STORE.safeCap - where(G, 'safe').length; }
+function inboxFree(G) { return STORE.inboxCap - where(G, 'inbox').length; }
+function merchHooks(G) { const m = G.store.merch; return HOOKS.collector * (m.collector.shell + m.collector.hive + m.collector.star) + HOOKS.poster * m.poster + HOOKS.playmat * m.playmat + HOOKS.deckbox * m.deckbox; }
+function rackFree(G) { return STORE.rackCap - packTotal(G) - merchHooks(G); }
+function shelfFree(G) { const b = G.store.boxes; return G.store.shelves - 6 * (b.shell + b.hive + b.star); }
+function cellSize(c) { return c.graded ? [1, 2] : [1, 1]; }
+function caseFits(G, c, x, y) {
+  const [w, h] = cellSize(c);
+  if (x < 0 || y < 0 || x + w > STORE.caseW || y + h > STORE.caseH) return false;
+  for (const o of where(G, 'case')) { if (o === c) continue; const [ow, oh] = cellSize(o); if (x < o.cx + ow && o.cx < x + w && y < o.cy + oh && o.cy < y + h) return false; }
+  return true;
+}
+function caseSpot(G, c) { for (let y = 0; y < STORE.caseH; y++) for (let x = 0; x < STORE.caseW; x++) if (caseFits(G, c, x, y)) return [x, y]; return null; }
+function defaultTag(G, c) { return Math.max(1, Math.round(estimate(G, c).value * 1.15)); }
+
+// Sleeving policy: new stock gets gear by its value while gear lasts. Penny stops surface wear; a hard sleeve (with a
+// penny inside) stops edge wear too; a mag case stops everything and display buyers pay +10%.
+function protect(G, c) {
+  if (c.graded || c.fake && c.know.fake || c.prot === 'mag') return;
+  const S = G.store, g = S.gear, v = estimate(G, c).value;
+  const want = v >= S.sleeve.mag ? 'mag' : v >= S.sleeve.hard ? 'hard' : v >= S.sleeve.penny ? 'penny' : 'none';
+  c.prot = c.prot || 'none';
+  if (want === 'mag' && g.mag > 0) { g.mag--; c.prot = 'mag'; return; }
+  if ((want === 'mag' || want === 'hard') && c.prot !== 'hard' && g.hard > 0 && (c.prot === 'penny' || g.penny > 0)) { if (c.prot !== 'penny') g.penny--; g.hard--; c.prot = 'hard'; return; }
+  if (want !== 'none' && c.prot === 'none' && g.penny > 0) { g.penny--; c.prot = 'penny'; return; }
+  if (want !== 'none' && c.prot === 'none' && !S.gearWarned) { S.gearWarned = true; event(G, { t: 'gearOut' }); }
+}
+function wearRoll(G, c, chance) {
+  if (c.graded || c.prot === 'mag' || R(G) >= chance) return false;
+  const attr = R(G) < 0.5 ? 'sur' : 'edg';
+  if (attr === 'sur' && (c.prot === 'penny' || c.prot === 'hard')) return false;
+  if (attr === 'edg' && c.prot === 'hard') return false;
+  if (c[attr] <= 1) return false;
+  const before = trueValue(G, c, 1); c[attr]--; G.store.stats.wearHits++; G.store.stats.wearValue += before - trueValue(G, c, 1); return true;
+}
+// New stock lands in the inbox tray (or a binder if the tray is full).
+function arrive(G, c) {
+  c.loc = inboxFree(G) > 0 ? 'inbox' : binderFree(G) > 0 ? 'binder' : 'inbox';
+  protect(G, c);
+}
+function roomFor(G, n) { return inboxFree(G) + binderFree(G) >= n; }
+function autoStore(G) {
+  for (const c of where(G, 'inbox').sort((a, b) => estimate(G, b).value - estimate(G, a).value)) {
+    const v = estimate(G, c).value;
+    if ((v >= 100 || c.graded) && safeFree(G) > 0) c.loc = 'safe';
+    else if (binderFree(G) > 0) c.loc = 'binder';
+  }
+}
+function place(G, c, to, x, y) {
+  if (to === 'case') {
+    if (!c.graded && c.prot !== 'hard' && c.prot !== 'mag') return err('raw cards need a hard sleeve or mag case to go in the case');
+    const spot = x == null ? caseSpot(G, c) : caseFits(G, c, x, y) ? [x, y] : null;
+    if (!spot) return err('no room there in the case');
+    c.loc = 'case'; c.cx = spot[0]; c.cy = spot[1]; if (!c.tag) c.tag = defaultTag(G, c); return ok();
+  }
+  if (to === 'safe') { if (c.loc !== 'safe' && safeFree(G) <= 0) return err('the safe is full'); c.loc = 'safe'; return ok(); }
+  if (to === 'binder') { if (c.loc !== 'binder' && binderFree(G) <= 0) return err('your binders are full (buy another at close)'); c.loc = 'binder'; return ok(); }
+  if (to === 'inbox') { c.loc = 'inbox'; return ok(); }
+  return err('nowhere to put it');
+}
+// Display case: between customers, a browser may buy straight from the case. Fair tags sell; greedy tags sit.
+function browseCase(G) {
+  const items = where(G, 'case'); if (!items.length) return null;
+  if (R(G) > 0.19 * (G.store.locked ? 0.85 : 1)) return null;
+  const pool = [];
+  for (const c of items) {
+    const val = (c.trim ? lookValue(G, c) : trueValue(G, c)) * (c.prot === 'mag' ? 1.1 : 1);
+    const fair = val / Math.max(1, c.tag || defaultTag(G, c));
+    if (fair >= 0.87) pool.push([c, fair]);
+  }
+  if (!pool.length) return null;
+  let tot = 0; for (const [, f] of pool) tot += f; let r = R(G) * tot, pickC = pool[0][0];
+  for (const [c, f] of pool) { r -= f; if (r <= 0) { pickC = c; break; } }
+  const price = pickC.tag || defaultTag(G, pickC);
+  G.stock.splice(G.stock.indexOf(pickC), 1);
+  money(G, price, 'sell', 'Display case: ' + (readable(G, pickC) ? tmpl(pickC.t).name : 'a card') + ' sold');
+  if (pickC.fake || pickC.trim) { G.complaints.push({ who: 'a display-case buyer', price }); if (pickC.fake) G.stats.fakesSold++; }
+  G.store.stats.displaySales++; G.store.stats.displayCash += price;
+  event(G, { t: 'displaySale', t2: pickC.t, price });
+  return pickC;
+}
+function steal(G, what) {
+  const S = G.store;
+  if (what === 'case') {
+    const items = where(G, 'case'); if (!items.length) return null;
+    const c = pick(G, items);
+    G.stock.splice(G.stock.indexOf(c), 1); S.stats.stolen++; S.stats.stolenValue += trueValue(G, c, 1);
+    event(G, { t: 'theft', from: 'case', card: c.t }); return c;
+  }
+  const games = ['shell', 'hive', 'star'].filter(g => G.packs[g] > 0);
+  if (games.length) { const g = pick(G, games); G.packs[g]--; S.dead[g] = Math.min(S.dead[g], G.packs[g]); S.stats.stolen++; S.stats.stolenValue += PACK_RETAIL; event(G, { t: 'theft', from: 'rack', game: g }); return g; }
+  return null;
+}
+// Nightly: unsleeved cards wear (loose ones in the inbox tray or case faster than ones in binder pockets), an unlocked case gets lifted from (day 3+), merch sells.
+function nightly(G) {
+  const S = G.store;
+  for (const c of where(G, 'case').concat(where(G, 'inbox'))) wearRoll(G, c, WEAR_DAY);
+  for (const c of where(G, 'binder')) wearRoll(G, c, WEAR_BINDER); // raw cards rub in binder pockets too
+  if (G.dayIdx >= 2 && !S.locked && where(G, 'case').length && R(G) < 0.25) steal(G, 'case');
+  for (const k of ['poster', 'playmat', 'deckbox']) { let sold = 0; for (let i = 0; i < S.merch[k]; i++) if (R(G) < CATALOG[k].nightly) sold++; if (sold) { S.merch[k] -= sold; S.stats.merchSales += sold; money(G, sold * CATALOG[k].retail, 'sell', 'Rack: ' + sold + ' × ' + CATALOG[k].name); } }
+  for (const g of ['shell', 'hive', 'star']) { let sold = 0; for (let i = 0; i < S.merch.collector[g]; i++) if (R(G) < CATALOG.collector.nightly) sold++; if (sold) { S.merch.collector[g] -= sold; S.stats.merchSales += sold; money(G, sold * CATALOG.collector.retail, 'sell', 'Rack: ' + sold + ' × ' + GAMES[g].name + ' collector box'); } }
+  S.gearWarned = false;
+}
+function order(G, item, game, qty) {
+  const C = CATALOG[item]; if (!C) return err('not in the catalog');
+  if (C.game && !GAMES[game]) return err('pick a card game');
+  const n = Math.max(1, qty | 0), cost = C.cost * n;
+  if (G.cash < cost) return err('not enough cash');
+  if (C.once && (item === 'lock' ? G.store.lock : G.store.shelves > STORE.shelfCap)) return err('you already have that');
+  money(G, -cost, item === 'box' ? 'restock' : 'order', (n > 1 ? n + ' × ' : '') + C.name + (C.game ? ': ' + GAMES[game].name : ''));
+  if (item === 'binder') G.store.binders += n;
+  else if (item === 'shelves') G.store.shelves += STORE.shelfUp;
+  else if (item === 'lock') { G.store.lock = true; G.store.locked = true; }
+  else for (let i = 0; i < n; i++) G.store.orders.push({ item, game: C.game ? game : null });
+  return ok();
+}
+// Morning: yesterday's orders arrive in a crate. Unpacking puts each thing where it goes, if there's room.
+function deliver(G) { const S = G.store; if (S.orders.length) { S.crate = { items: (S.crate ? S.crate.items : []).concat(S.orders) }; S.orders = []; event(G, { t: 'crate', n: S.crate.items.length }); } }
+function unpack(G) {
+  const S = G.store; if (!S.crate) return err('no crate to unpack');
+  const left = [], placed = [];
+  for (const it of S.crate.items) {
+    const C = CATALOG[it.item];
+    if (C && C.gear) { S.gear[C.gear] += GEAR[C.gear].per; placed.push(it); }
+    else if (it.item === 'box') { if (shelfFree(G) >= 6) { S.boxes[it.game]++; placed.push(it); } else left.push(it); }
+    else if (it.item === 'collector') { if (rackFree(G) >= 2) { S.merch.collector[it.game]++; placed.push(it); } else left.push(it); }
+    else if (it.item === 'card') { const c = it.card; if (roomFor(G, 1)) { arrive(G, c); G.stock.push(c); placed.push(it); } else left.push(it); }
+    else if (HOOKS[it.item]) { if (rackFree(G) >= HOOKS[it.item]) { S.merch[it.item]++; placed.push(it); } else left.push(it); }
+  }
+  S.crate = left.length ? { items: left } : null;
+  return ok({ placed: placed.length, left: left.length });
+}
+function openBox(G, game) {
+  const S = G.store; if (!S.boxes[game]) return err('no ' + GAMES[game].name + ' box on the shelves');
+  if (rackFree(G) < 6) return err('the rack needs 6 free hooks');
+  S.boxes[game]--; G.packs[game] += 6; return ok();
+}
+function openCollector(G, game) {
+  const S = G.store; if (!S.merch.collector[game]) return err('no collector box of that game');
+  if (rackFree(G) + 2 < 3) return err('the rack needs room for 3 packs');
+  S.merch.collector[game]--; G.packs[game] += 3;
+  const c = makeCard(G, game, R(G) < 0.3 ? 'h' : 'r', 9, { fresh: true, promo: 'collector', src: 'plain' }); c.know.uv = true; addStock(G, c);
+  return ok({ promo: c });
+}
+// ---------- v3 bad actors at the counter ----------
+function v3Hello(G, nv) {
+  const S = G.store;
+  if (nv.role === 'weigh') return S.noTouch ? 'A "no touching" sign? Lame. We\'re out.' : 'Yo. We\'ll take 3 packs. But we pick. We like to... feel them first.';
+  if (nv.role === 'thief') return 'Oh, just browsing! Don\'t mind me. *drifts toward the ' + (S.locked || !where(G, 'case').length ? 'rack' : 'display case') + '*';
+  if (nv.role === 'switch') return 'Got ' + wantsText(nv.wants) + '? Can I see it? Up close? In my hands?';
+  if (nv.role === 'reseal') return nv.packs + ' ' + GAMES[nv.packGame].name + ' packs, factory sealed, ' + RESEAL_PRICE + '₵ each. Way under retail. Don\'t ask.';
+  return null;
+}
+function dealWeigh(G, behind) {
+  const v = G.visit, S = G.store;
+  if (S.noTouch) { endVisit(G, 'pass'); return ok(); }
+  const n = takePacks(G, Math.min(behind ? 2 : 3, packTotal(G)));
+  if (!n) { say(G, v.who, 'No packs? Pfft.'); endVisit(G, 'pass'); return ok(); }
+  money(G, n * PACK_RETAIL, 'sell', PEOPLE[v.who].name + ' bought ' + n + ' packs' + (behind ? ' (from behind the counter)' : ''));
+  if (!behind) { for (const g of ['shell', 'hive', 'star']) { const add = Math.min(G.packs[g] - S.dead[g], 2); if (add > 0) { S.dead[g] += add; S.stats.deadPacks += add; } } event(G, { t: 'searched' }); }
+  say(G, v.who, behind ? 'Tch. Fine. You pick, I guess.' : 'Nice and heavy. Pleasure!'); endVisit(G, 'deal'); return ok();
+}
+function dealReseal(G) {
+  const v = G.visit, S = G.store, price = v.packs * RESEAL_PRICE;
+  if (G.cash < price) return err('not enough cash');
+  if (rackFree(G) < v.packs) return err('the rack needs ' + v.packs + ' free hooks');
+  money(G, -price, 'buy', 'Bought ' + v.packs + ' "sealed" packs from ' + PEOPLE[v.who].name);
+  G.packs[v.packGame] += v.packs; if (v.resealed) { S.dead[v.packGame] += v.packs; S.stats.deadPacks += v.packs; }
+  say(G, v.who, 'Pleasure. No refunds.'); endVisit(G, 'deal'); return ok();
+}
+function v3Act(G, it) {
+  const v = G.visit, S = G.store;
+  switch (it.t) {
+    case 'watch': {
+      if (G.phase !== 'visit' || !v || (v.role !== 'thief' && v.role !== 'switch')) return err('not now');
+      v.watched = true;
+      if (v.role === 'thief') { say(G, v.who, '...okay okay, I\'m going! *fluff deflates*'); endVisit(G, 'pass'); return ok(); }
+      say(G, v.who, 'Wh- why are you watching my hands like that? ...Fine. Just show me the card.'); return ok();
+    }
+    case 'sellBehind': if (G.phase !== 'visit' || !v || v.role !== 'weigh') return err('not now'); return dealWeigh(G, true);
+    case 'inspectPacks': {
+      if (G.phase !== 'visit' || !v || v.role !== 'reseal') return err('not now');
+      if (v.knowSeal) return ok(); v.knowSeal = true; costPatience(G, 1);
+      if (G.visit) say(G, v.who, v.resealed ? '*the wrappers shine where the glue is* ...Those creases? Shipping damage. Obviously.' : 'See? Real factory seams. Cheap because I owe someone money.');
+      return ok();
+    }
+    case 'place': { const c = findStock(G, it.uid); if (!c) return err('no card'); return place(G, c, it.to, it.x, it.y); }
+    case 'tag': { const c = findStock(G, it.uid); if (!c) return err('no card'); c.tag = Math.max(1, Math.round(it.price)); return ok(); }
+    case 'sleeve': {
+      const c = findStock(G, it.uid); if (!c) return err('no card'); if (c.graded) return err('slabs are already protected');
+      const p = it.prot, g = S.gear, cur = c.prot || 'none';
+      if (p === 'penny') { if (cur !== 'none') return err('already sleeved'); if (!g.penny) return err('out of penny sleeves'); g.penny--; c.prot = 'penny'; return ok(); }
+      if (p === 'hard') { if (cur === 'hard' || cur === 'mag') return err('already protected'); if (!g.hard || (cur === 'none' && !g.penny)) return err('out of sleeves'); if (cur === 'none') g.penny--; g.hard--; c.prot = 'hard'; return ok(); }
+      if (p === 'mag') { if (cur === 'mag') return err('already in a mag case'); if (!g.mag) return err('out of mag cases'); g.mag--; c.prot = 'mag'; return ok(); }
+      return err('bad sleeve');
+    }
+    case 'lockCase': if (!S.lock) return err('buy a case lock at close first'); S.locked = !!it.on; return ok();
+    case 'sign': S.noTouch = !!it.noTouch; return ok();
+    case 'sleevePolicy': for (const k of ['penny', 'hard', 'mag']) if (it[k] != null) S.sleeve[k] = Math.max(0, +it[k]); return ok();
+    case 'autoStore': autoStore(G); return ok();
+    case 'order': if (G.phase !== 'close') return err('order at close'); return order(G, it.item, it.game, it.qty);
+    case 'unpack': if (['morning', 'shop', 'close'].indexOf(G.phase) < 0) return err('not now'); return unpack(G);
+    case 'openBox': if (['morning', 'shop', 'close'].indexOf(G.phase) < 0) return err('not now'); return openBox(G, it.game);
+    case 'openCollector': if (['morning', 'shop', 'close'].indexOf(G.phase) < 0) return err('not now'); return openCollector(G, it.game);
+  }
+  return null;
+}
+// What a card looks like it's worth if you can't see that it's fake or trimmed.
+function lookValue(G, c) { return c.fake || c.trim ? trueValue(G, Object.assign({}, c, { fake: null, trim: false })) : trueValue(G, c); }
+// The Switcher: unwatched, a raw card in a plain penny sleeve (or none) comes back as a fake. Your stamped hard sleeves
+// and mag cases can't be swapped without you noticing.
+function switchCard(G, c) {
+  const v = G.visit;
+  if (v.watched || c.graded || c.prot === 'hard' || c.prot === 'mag') { say(G, v.who, 'Hm. Nah, not for me. *hands it back, all four hands visible*'); endVisit(G, 'pass'); return ok(); }
+  c.fake = 'uv'; c.know.uv = false; c.know.spec = false; c.prot = 'none'; G.store.stats.switched++;
+  event(G, { t: 'switched', uid: c.uid });
+  say(G, v.who, 'Eh, changed my mind. Here you go! *hands back a card in a fresh sleeve*'); endVisit(G, 'pass'); return ok();
+}
+
 const CT = { newGame, load, act, DAYS, GAMES, SPECIES, PEOPLE, GRADERS, RARITY_NAME, RANK, BASE, BOX, PACK_RETAIL, TRANSLATE_FEE, FLUENT_AT,
   FINISH, SETS, ERRORS, PROMOS, UPGRADES, NIGHTS, NIGHT_FLYERS,
-  RENT, NIGHT_POOL, tmpl, trueGrade, centerRatio, estimate, readable, trueValue, shopValue, matches, wantsText, demandOf, variantMult, packTotal };
+  RENT, NIGHT_POOL, STORE, HOOKS, GEAR, CATALOG, WEAR_DAY, WEAR_SHOW, where, binderFree, safeFree, inboxFree, rackFree, shelfFree, caseFits, cellSize, defaultTag, lookValue, tmpl, trueGrade, centerRatio, estimate, readable, trueValue, shopValue, matches, wantsText, demandOf, variantMult, packTotal };
 if (typeof module !== 'undefined' && module.exports) module.exports = CT; else root.CT = CT;
 })(this);

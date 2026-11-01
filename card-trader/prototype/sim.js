@@ -1,18 +1,32 @@
 // Balance sim: bots play the full 5-day week through act(). Run: node sim.js [games]
 // Bots only read what a player could see (estimate(), the visit's ask/bid, patience, the morning report).
+// v3 back-room styles: careful and noupgrades are organized (policy, locks, a curated case, watch the floor); lazy trades
+// like noupgrades but never sleeves or uses the case; greedy packs the case with grails, high tags, no lock.
 // © 2026 justaskjoe. All rights reserved.
 const CT = require('./engine.js');
 
 function bot(style) {
-  const careful = style !== 'sloppy', loupe = careful, ups = style === 'careful';
+  const careful = style !== 'sloppy', loupe = careful, ups = style === 'careful', org = style === 'careful' || style === 'noupgrades';
   // A careful player heard the rumor and read the reprint list: never pay hype prices for the pumped card.
   const pumped = (G, c) => G.pump && G.pump.t === c.t;
   return function play(G) {
     const v = G.visit;
     if (G.phase === 'title') return CT.act(G, { t: 'start' });
-    if (G.phase === 'morning') return CT.act(G, { t: 'open' });
+    if (G.phase === 'morning') { backRoom(G, style); return CT.act(G, { t: 'open' }); }
     if (G.phase === 'shop') return CT.act(G, { t: 'next' });
     if (G.phase === 'visit') {
+      if (v.role === 'weigh') return CT.act(G, { t: org ? 'sellBehind' : 'accept' });
+      if (v.role === 'thief') { if (org) CT.act(G, { t: 'watch' }); return G.visit && CT.act(G, { t: 'pass' }); }
+      if (v.role === 'reseal') {
+        if (org) { CT.act(G, { t: 'inspectPacks' }); if (G.visit && G.visit.resealed) return CT.act(G, { t: 'pass' }); }
+        if (G.visit && CT.act(G, { t: 'accept' }).ok) return; return G.visit && CT.act(G, { t: 'pass' });
+      }
+      if (v.role === 'switch') {
+        if (org) CT.act(G, { t: 'watch' });
+        const fit = G.stock.filter(c => CT.matches(G, v.wants, c) && !c.know.fake && !c.graded).sort((a, b) => CT.estimate(G, b).value - CT.estimate(G, a).value)[0];
+        if (fit && G.visit) CT.act(G, { t: 'show', uid: fit.uid });
+        return G.visit && CT.act(G, { t: 'pass' });
+      }
       if (v.role === 'scalp') return careful ? CT.act(G, { t: 'pass' }) : CT.act(G, { t: 'accept' });
       if (v.role === 'sell' || v.role === 'lot' || v.role === 'bulk') {
         if (loupe) {
@@ -74,11 +88,35 @@ function bot(style) {
           const hot = Object.keys(next.demand).sort((a, b) => next.demand[b] - next.demand[a])[0];
           CT.act(G, { t: 'restock', game: hot });
         }
+        // back-room spending comes after restock: packs pay rent
+        if (org && !G.store.lock && G.cash > rent + 30 + 40) CT.act(G, { t: 'order', item: 'lock' });
+        if (org && G.dayIdx < 4 && G.cash > rent + 80) { CT.act(G, { t: 'order', item: 'poster', qty: 2 }); CT.act(G, { t: 'order', item: 'deckbox', qty: 2 }); }
+        if (style !== 'lazy') { if (G.store.gear.hard < 6 && G.cash > rent + 20) CT.act(G, { t: 'order', item: 'hard' }); if (G.store.gear.penny < 25 && G.cash > rent + 20) CT.act(G, { t: 'order', item: 'penny' }); }
       }
       return CT.act(G, { t: 'endDay' });
     }
     if (G.phase === 'night') return playNight(G, style);
   };
+}
+// Morning in the back room: unpack the crate, open boxes onto the rack, then (organized/greedy) stock the display case.
+function backRoom(G, style) {
+  const S = G.store;
+  if (style === 'lazy' && S.sleeve.penny < 1e6) CT.act(G, { t: 'sleevePolicy', penny: 1e9, hard: 1e9, mag: 1e9 });
+  if (S.crate) CT.act(G, { t: 'unpack' });
+  for (const g of ['shell', 'hive', 'star']) while (S.boxes[g] && CT.act(G, { t: 'openBox', game: g }).ok);
+  if (S.crate) CT.act(G, { t: 'unpack' });
+  if (style === 'lazy' || style === 'sloppy') return;
+  CT.act(G, { t: 'autoStore' });
+  const want = style === 'greedy' ? 14 : 8;
+  const pool = G.stock.filter(c => c.loc !== 'case' && !c.know.fake && (style === 'greedy' || c.loc !== 'safe'))
+    .map(c => [c, CT.estimate(G, c).value]).filter(([, v]) => v >= 12).sort((a, b) => b[1] - a[1]);
+  for (const [c, v] of pool) {
+    if (CT.where(G, 'case').length >= want) break;
+    if (!c.graded && c.prot !== 'hard' && c.prot !== 'mag') CT.act(G, { t: 'sleeve', uid: c.uid, prot: 'hard' });
+    if (CT.act(G, { t: 'place', uid: c.uid, to: 'case' }).ok) CT.act(G, { t: 'tag', uid: c.uid, price: Math.round(v * (style === 'greedy' ? 1.25 : 1.1)) });
+  }
+  // re-tag what's already there to today's prices
+  for (const c of CT.where(G, 'case')) CT.act(G, { t: 'tag', uid: c.uid, price: Math.round(CT.estimate(G, c).value * (style === 'greedy' ? 1.25 : 1.1)) });
 }
 function playNight(G, style) {
   const N = G.night;
@@ -136,7 +174,7 @@ function run(seed, style) {
 }
 
 if (require.main === module) {
-  const N = +(process.argv[2] || 200), styles = ['careful', 'noupgrades', 'sloppy'], res = {};
+  const N = +(process.argv[2] || 200), styles = ['careful', 'noupgrades', 'sloppy', 'lazy', 'greedy'], res = {};
   for (const s of styles) res[s] = [];
   let carefulWins = 0;
   for (let i = 1; i <= N; i++) {
@@ -148,6 +186,10 @@ if (require.main === module) {
     const gains = res[s].map(G => G.final.gain / G.final.start * 100), tabs = res[s].filter(G => G.final.tab > 0).length;
     const avg = k => (res[s].reduce((a, G) => a + G.stats[k], 0) / N).toFixed(1);
     const ranks = {}; for (const G of res[s]) ranks[G.final.rank] = (ranks[G.final.rank] || 0) + 1;
+    const st = k => res[s].reduce((a, G) => a + G.store.stats[k], 0) / N;
+    const stockV = res[s].reduce((a, G) => a + G.stock.reduce((b, c) => b + CT.trueValue(G, c, 1), 0), 0) / N;
+    const disp = st('displaySales') / Math.max(1, st('displaySales') + st('counterCardSales')) * 100;
+    console.log(`${s.padEnd(10)} back room: wear -${st('wearValue').toFixed(0)}₵ (${(st('wearValue') / (stockV + st('wearValue')) * 100).toFixed(1)}% of stock)  stolen ${st('stolen').toFixed(1)} (-${st('stolenValue').toFixed(0)}₵, ${(st('stolenValue') / (res[s].reduce((a, G) => a + G.final.value, 0) / N) * 100).toFixed(0)}% of final)  display ${disp.toFixed(0)}% of singles  switched ${st('switched').toFixed(1)}  dead packs ${st('deadPacks').toFixed(1)}  merch ${st('merchSales').toFixed(1)}`);
     console.log(`${s.padEnd(10)} median gain ${med(gains).toFixed(0)}%  tab ${Math.round(tabs / N * 100)}%  fakes sold ${avg('fakesSold')}  promos ${avg('promos')}  variants ${avg('variants')}  misprints ${avg('misprints')}  scalped ${avg('scalpedPacks')}  ranks ${JSON.stringify(ranks)}`);
   }
   console.log(`careful beats sloppy ${Math.round(carefulWins / N * 100)}%`);
