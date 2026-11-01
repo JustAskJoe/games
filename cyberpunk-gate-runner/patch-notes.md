@@ -12,12 +12,14 @@ Newest on top. Each entry covers **what's new** for players, **next up** for the
 - **Easy, Medium and Hard.** Pick one on the title screen or in level select, and change it any time. Medium is the game exactly as it was. Easy gives you a bigger squad and softer enemies and bosses. Hard is tougher all round, with shorter openings. Your unlocks and guns are shared across all three.
 - **The Mute Carrier now tells you when your shots are bouncing off.** A big warning points you at a speaker pod, each pod gets an arrow, and the boss bar keeps showing health while it's armored.
 - **On Easy, the Carrier's pods sit close enough to hit from the middle of the road,** so nobody gets stuck on Level 2.
+- **Every level is open in level select for now,** so you can try any of them. A level you haven't reached starts with a full squad and a levelled-up Pulse rifle.
 
 ### Next up
 - [ ] @Zach: see how the kids get on with Easy, and whether Medium Level 2 makes sense now that the game points at the pods.
 - [ ] Consider a nudge toward Easy after a few losses on one street.
 
 ### Watch out
+- [ ] @Zach: every street is open for playtesting (`OPEN_ALL` in `ui.js`). Set it to false before this counts as a real release, or the unlock flow does nothing. Jumping ahead skips the carried gun, so difficulty there isn't what a real run feels like, and the sim doesn't cover it.
 - [ ] **Root cause of "no damage on Level 2":** the fight worked, but nothing said so. From the middle of the road, shots hit armor and most guns can't reach the pods, so boss damage was 0%. Scatter was the exception. The fix is on-screen guidance only. Medium's numbers didn't change (sim output identical on the same seeds), so it's as hard as before once you know the trick.
 - [ ] **Easy and Hard are bot-tuned; no person has played them yet.** Easy first try: casual 99 to 100%, distracted kid bot 87 to 100%. Hard first try: smart 51 to 93%, casual 19 to 57%. Hard's Level 2 to 5 could feel steep: 19 to 27% casual, and about 1 in 5 casual campaigns fail Level 2 twelve times in a row.
 - [ ] On Easy, bosses die about 40 to 60% of the way through the fight for the casual bot, with Vale's script not fully seen. Fine for kids, but later mechanics can go unseen.
