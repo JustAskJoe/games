@@ -1,5 +1,6 @@
 # Phone test: plays a full run at 390x844 with an in-page bot that steers through real pointer drags,
-# then checks the results, feedback and pause screens, and 320px wide. Fails on any JS error or sideways scroll.
+# then checks the results, feedback and pause screens, saving and unlocking, level select and reset, every boss fight, and 320px wide.
+# Fails on any JS error or sideways scroll. The run uses a fixed seed, so a loss here means something broke, not bad luck.
 # Screenshots go to /tmp/gr-shots (pass a folder to change it).  © 2026 justaskjoe. All rights reserved.
 import os, sys
 from playwright.sync_api import sync_playwright
@@ -25,6 +26,11 @@ with sync_playwright() as p:
     pg.on('pageerror', lambda e: errs.append(str(e)))
     pg.on('console', lambda m: errs.append('console: ' + m.text) if m.type == 'error' and 'fonts.g' not in m.text else None)
     pg.goto('file://' + os.path.abspath(build)); pg.wait_for_timeout(1000); shot(pg, '01-title')
+    pg.evaluate('() => localStorage.clear()'); pg.reload(); pg.wait_for_timeout(800)
+    pg.evaluate('() => { GRUI.U.seedFix = 6920; }')
+    pg.click('[data-act=levels]'); pg.wait_for_timeout(200); shot(pg, '01-levels-fresh')
+    if pg.locator('.lv:not([disabled])').count() != 1 or pg.locator('.lv[disabled]').count() != 4: fails.append('a fresh save should open only level 1')
+    pg.click('[data-act=title]'); pg.wait_for_timeout(200)
     pg.click('[data-act=arsenal]'); pg.wait_for_timeout(200); shot(pg, '02-arsenal')
     if 'Overpierce' not in pg.inner_text('#card'): fails.append('weapons screen is missing upgrades')
     pg.click('[data-act=title]'); pg.wait_for_timeout(200)
@@ -41,7 +47,10 @@ with sync_playwright() as p:
     res = pg.evaluate('() => GRUI.U.lastRes'); print('result', res)
     aerr = pg.evaluate('() => GRUI.audioErrs'); print('audio errors', len(aerr))
     if aerr: fails.append('audio: %s' % aerr[:3])
-    if not res or not res.get('won'): fails.append('smart bot lost the browser run: %s' % res)
+    if not res or not res.get('cleared'): fails.append('smart bot did not clear the fixed-seed run: %s' % res)
+    sv = pg.evaluate('() => JSON.parse(localStorage.getItem("gr.save.v1"))'); print('save', sv)
+    if not sv or sv['unlocked'] != 2 or not sv['loads'].get('2'): fails.append('clearing level 1 did not save and unlock level 2: %s' % sv)
+    if pg.locator('[data-act=next]').count() != 1: fails.append('no next level button after a clear')
     pg.click('[data-act=feedback]'); pg.wait_for_timeout(200)
     pg.click('[data-act=fbSend]'); pg.wait_for_timeout(200)
     if 'Tap at least one' not in pg.inner_text('#fbErr'): fails.append('feedback form sent with no answers')
@@ -51,14 +60,44 @@ with sync_playwright() as p:
     sw = pg.evaluate('document.documentElement.scrollWidth'); print('scrollWidth 390:', sw)
     if sw > 390: fails.append('sideways scroll at 390')
     # tester jump + retry speed
-    pg.click('[data-act=title]'); pg.wait_for_timeout(200); pg.click('[data-act=play]'); pg.wait_for_timeout(500)
+    pg.reload(); pg.wait_for_timeout(800)   # a refresh keeps progress
+    if 'level 2' not in pg.inner_text('[data-act=play]'): fails.append('progress did not survive a refresh')
+    pg.click('[data-act=play]'); pg.wait_for_timeout(500)
+    ld = pg.evaluate('() => ({ n: GRUI.U.G.n, w: GRUI.U.G.weapon, lv: GRUI.U.G.def.n, bpm: GR.BPM })'); print('level 2 start', ld)
+    if ld['lv'] != 2 or ld['n'] < 15 or ld['w'] != sv['loads']['2']['weapon']: fails.append('squad or gun did not carry into level 2: %s' % ld)
     pg.click('#menuBtn'); pg.click('[data-act=jumpDrop]'); pg.wait_for_timeout(2500); shot(pg, '12-jump-drop')
     if not pg.evaluate('() => GRUI.U.test && GRUI.U.G.t > 19 * GR.BAR'): fails.append('jump to drop failed')
     pg.set_viewport_size({'width': 320, 'height': 640}); pg.wait_for_timeout(400); shot(pg, '13-320-play')
     pg.click('#menuBtn'); pg.click('[data-act=title]'); pg.wait_for_timeout(300); shot(pg, '14-320-title')
     pg.click('[data-act=how]'); pg.wait_for_timeout(200); shot(pg, '15-320-how')
+    pg.click('[data-act=title]'); pg.wait_for_timeout(200); pg.click('[data-act=levels]'); pg.wait_for_timeout(200); shot(pg, '15-320-levels')
     sw = pg.evaluate('document.documentElement.scrollWidth'); print('scrollWidth 320:', sw)
     if sw > 320: fails.append('sideways scroll at 320')
+    pg.click('[data-act=reset]'); pg.wait_for_timeout(200); shot(pg, '15-320-reset')
+    pg.click('[data-act=resetYes]'); pg.wait_for_timeout(300)
+    if pg.evaluate('() => GRUI.U.save.unlocked') != 1 or 'level 1' not in pg.inner_text('[data-act=play]'): fails.append('reset did not lock the streets')
+    pg.reload(); pg.wait_for_timeout(600)
+    if 'level 1' not in pg.inner_text('[data-act=play]'): fails.append('reset did not stick after a refresh')
+    # a broken save must not break the game
+    pg.evaluate('() => localStorage.setItem("gr.save.v1", "{nonsense")'); pg.reload(); pg.wait_for_timeout(600)
+    if 'level 1' not in pg.inner_text('[data-act=play]'): fails.append('a broken save broke the title screen')
+    # every boss: open the street from a carried save, jump to the fight, let the bot play it. Stills go to 20-L*.png
+    pg.set_viewport_size({'width': 390, 'height': 844})
+    for L in range(1, 6):
+        pg.evaluate('''L => { const loads = {}; for (let i = 2; i <= 5; i++) loads[i] = { n: 60 + i * 12, weapon: 'rail', mod: 0, wlv: i, owned: { rail: 0 } }; localStorage.setItem('gr.save.v1', JSON.stringify({ v: 1, unlocked: L, beaten: {}, loads })); }''', L)
+        pg.reload(); pg.wait_for_timeout(700)
+        pg.click('[data-act=levels]'); pg.wait_for_timeout(150); pg.click('[data-lv="%d"]' % L); pg.wait_for_timeout(400)
+        pg.click('#menuBtn'); pg.click('[data-act=jumpDrop]'); pg.wait_for_timeout(200); pg.evaluate(BOT)
+        if L in (1, 4, 5):   # catch a road warning mid-glow
+            pg.wait_for_function('() => GRUI.U.G && GRUI.U.G.ents.some(e => e.kind === "haz" && !e.done && e.ta - GRUI.U.G.t < 0.5 && e.ta > GRUI.U.G.t)', timeout=30000); shot(pg, '21-L%d-warn' % L)
+        pg.wait_for_function('() => GRUI.U.G && GRUI.U.G.t > GR.DROP_T + 1.2 * GR.BAR', timeout=30000); shot(pg, '20-L%d-a' % L)
+        if L == 5: pg.evaluate('() => { GRUI.U.G.boss.armor = false; }')
+        pg.wait_for_function('() => GRUI.U.G && GRUI.U.G.t > GR.DROP_T + 3.1 * GR.BAR', timeout=30000); shot(pg, '20-L%d-b' % L)
+        info = pg.evaluate('() => ({ lv: GRUI.U.G.def.n, boss: GRUI.U.G.boss.boss, track: GRUI.U.G.def.track, pal: GRR.pal, name: document.getElementById("bossName").textContent, audio: GRUI.audioErrs.length })'); print(info)
+        if info['lv'] != L or info['audio']: fails.append('level %d: %s' % (L, info))
+        pg.wait_for_function('() => !GRUI.U.playing', timeout=90000); pg.wait_for_timeout(300)
+    sw = pg.evaluate('document.documentElement.scrollWidth')
+    if sw > 390: fails.append('sideways scroll on the results sheet')
     # full quality stills: software GL drops to the low tier during the run above, so lock tier 2 here to check the real look
     for vw, vh, tag in [(390, 844, 'phone'), (1440, 900, 'pc')]:
         hq = b.new_page(viewport={'width': vw, 'height': vh}); hq.on('pageerror', lambda e: errs.append(str(e)))
