@@ -55,7 +55,7 @@ function cardHTML(c, o) {
   const shiny = tm.rarity === 'h' || tm.rarity === 'g' || (c.fake && tm.rarity !== 'c');
   const wm = c.fake === 'uv' ? '' : watermark(c.fake === 'stock' ? (tm.game === 'shell' ? 'hive' : 'shell') : tm.game);
   const badge = o.badge ? `<div class="badge ${o.badge === 'FAKE' ? 'fake' : ''}">${o.badge}</div>` : '';
-  const inner = `<div class="inner"><div class="art" style="${art}"><div class="glyph-art" aria-hidden="true"></div></div>
+  const inner = `<div class="inner"><div class="art" data-g="${tm.game}" style="${art}"><div class="glyph-art" aria-hidden="true">${F.ic}</div></div>
     <div class="name">${name}</div><div class="gem" style="background:${gem[0]};color:${gem[0] === '#000' ? '#FFD21F' : '#120A1F'}">${gem[1]}</div>
     <div class="gameic">${F.ic}</div></div>${shiny ? '<div class="holo"></div>' : ''}${wearSVG(c, o.loupe)}${wm}${badge}`;
   const cls = `card ${o.size || ''} ${o.uv ? 'uv' : ''} ${o.cls || ''}`;

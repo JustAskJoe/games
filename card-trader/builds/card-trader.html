@@ -69,8 +69,8 @@ button { font: inherit; }
 .portrait .nameplate { position: absolute; left: 8px; bottom: 8px; background: var(--ink); color: #fff; font-family: var(--display); padding: 4px 10px; border-radius: 8px; font-size: 20px; transform: rotate(-3deg); }
 .portrait .sp { position: absolute; right: 8px; top: 8px; }
 .fallback-face { position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--display); font-size: 120px; color: rgba(255,255,255,.9); text-shadow: 6px 6px 0 var(--ink); }
-.pips { display: flex; gap: 4px; align-items: center; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
-.pip { width: 16px; height: 16px; border: 2.5px solid var(--ink); border-radius: 50%; background: var(--lime); }
+.pips { display: flex; flex-wrap: wrap; gap: 3px; align-items: center; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
+.pip { width: 14px; height: 14px; border: 2.5px solid var(--ink); border-radius: 50%; background: var(--lime); }
 .pip.off { background: transparent; opacity: .35; }
 .bubble { position: relative; background: #fff; border: var(--ol); border-radius: 16px; padding: 10px 12px; font-size: 16px; line-height: 1.3; font-weight: 600; min-height: 64px; }
 .bubble::before { content: ''; position: absolute; left: 30px; top: -14px; border: 12px solid transparent; border-bottom-color: var(--ink); border-top: 0; }
@@ -82,7 +82,7 @@ button { font: inherit; }
 #idle { position: absolute; left: 360px; top: 300px; width: 548px; height: 290px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; z-index: 4; }
 
 /* deal box */
-#deal { right: 16px; top: 72px; width: 350px; height: 528px; padding: 14px; display: flex; flex-direction: column; gap: 10px; z-index: 5; overflow: auto; }
+#deal { right: 16px; top: 72px; width: 350px; height: 528px; padding: 14px; display: flex; flex-direction: column; gap: 10px; z-index: 5; overflow-y: auto; overflow-x: hidden; }
 .price-row { display: flex; justify-content: space-between; align-items: baseline; font-weight: 800; }
 .price-row .big { font-family: var(--display); font-size: 30px; }
 .slider { width: 100%; accent-color: var(--magenta); height: 32px; }
@@ -98,7 +98,10 @@ button { font: inherit; }
 .card.sm { --w: 92px; } .card.xs { --w: 74px; } .card.md { --w: 150px; } .card.lg { --w: 270px; cursor: default; } .card.lg:hover { transform: none; }
 .card .inner { position: absolute; left: var(--l, 7%); right: var(--r, 7%); top: var(--t, 6%); bottom: var(--b, 6%); border: 2px solid var(--ink); border-radius: calc(var(--w) * .04); background: var(--fr2, #222); overflow: hidden; }
 .card .art { position: absolute; left: 4%; right: 4%; top: 4%; height: 56%; border: 2px solid var(--ink); border-radius: 4px; background-color: #333; background-size: 200% 200%; overflow: hidden; }
-.card .art .glyph-art { position: absolute; inset: 0; display: grid; place-items: center; font-size: calc(var(--w) * .34); }
+.card .art .glyph-art { position: absolute; inset: 0; display: none; place-items: center; font-size: calc(var(--w) * .34); color: #fff; text-shadow: 3px 3px 0 var(--ink); }
+/* until a game's card sheet exists, draw its emblem on a halftone gradient instead */
+.noart-shell .card .art[data-g=shell], .noart-hive .card .art[data-g=hive], .noart-star .card .art[data-g=star] { background-image: radial-gradient(rgba(0,0,0,.25) 1px, transparent 1.5px), linear-gradient(160deg, var(--magenta), var(--violet)) !important; background-size: 5px 5px, 100% 100% !important; }
+.noart-shell .card .art[data-g=shell] .glyph-art, .noart-hive .card .art[data-g=hive] .glyph-art, .noart-star .card .art[data-g=star] .glyph-art { display: grid; }
 .card .name { position: absolute; left: 4%; right: 4%; top: 63%; height: 13%; background: rgba(255,255,255,.92); border: 2px solid var(--ink); border-radius: 4px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: calc(var(--w) * .085); line-height: 1; text-align: center; padding: 0 3px; overflow: hidden; }
 .card .name svg { height: 80%; width: 92%; }
 .card .gem { position: absolute; right: 6%; bottom: 5%; width: 18%; aspect-ratio: 1; border: 2px solid var(--ink); border-radius: 50%; display: grid; place-items: center; font-family: var(--display); font-size: calc(var(--w) * .08); background: #fff; }
@@ -727,7 +730,7 @@ function cardHTML(c, o) {
   const shiny = tm.rarity === 'h' || tm.rarity === 'g' || (c.fake && tm.rarity !== 'c');
   const wm = c.fake === 'uv' ? '' : watermark(c.fake === 'stock' ? (tm.game === 'shell' ? 'hive' : 'shell') : tm.game);
   const badge = o.badge ? `<div class="badge ${o.badge === 'FAKE' ? 'fake' : ''}">${o.badge}</div>` : '';
-  const inner = `<div class="inner"><div class="art" style="${art}"><div class="glyph-art" aria-hidden="true"></div></div>
+  const inner = `<div class="inner"><div class="art" data-g="${tm.game}" style="${art}"><div class="glyph-art" aria-hidden="true">${F.ic}</div></div>
     <div class="name">${name}</div><div class="gem" style="background:${gem[0]};color:${gem[0] === '#000' ? '#FFD21F' : '#120A1F'}">${gem[1]}</div>
     <div class="gameic">${F.ic}</div></div>${shiny ? '<div class="holo"></div>' : ''}${wearSVG(c, o.loupe)}${wm}${badge}`;
   const cls = `card ${o.size || ''} ${o.uv ? 'uv' : ''} ${o.cls || ''}`;
@@ -1085,7 +1088,7 @@ function closeScreen() {
     <div class="h" style="font-size:24px">SEND TO A GRADER</div>
     <div style="font-size:13px;margin:4px 0 8px"><b>QuikSlab</b> ${CT.GRADERS.quik.fee}₵, back tomorrow, ±1 grade. <b>Halo Bureau</b> ${CT.GRADERS.halo.fee}₵, back in 2 days, exact, pays the most. A slab only pays off at grade 9 or 10.${!next ? ' <b>Tonight is Grade Day: everything comes home.</b>' : ''}</div>
     <div class="stocklist">${gradeable.map(c => `<div style="text-align:center">${card(c, { size: 'xs', act: 'loupe' })}<div style="font-size:12px;font-weight:800">${estText(c)}</div>
-      <div class="row" style="gap:4px;margin-top:4px"><button class="btn sm cyan" data-act="grade" data-co="quik" data-uid="${c.uid}" style="padding:2px 6px">Q</button><button class="btn sm" data-act="grade" data-co="halo" data-uid="${c.uid}" style="padding:2px 6px">HALO</button></div></div>`).join('')}</div>
+      <div class="row" style="gap:4px;margin-top:4px"><button class="btn sm cyan" data-act="grade" data-co="quik" data-uid="${c.uid}" style="padding:2px 6px">QUIK</button><button class="btn sm" data-act="grade" data-co="halo" data-uid="${c.uid}" style="padding:2px 6px">HALO</button></div></div>`).join('')}</div>
     ${G.grading.length ? `<div style="margin-top:10px;font-size:13px">At the graders: ${G.grading.map(p => (CT.readable(G, p.card) ? CT.tmpl(p.card.t).name : 'a card') + ' (' + CT.GRADERS[p.co].name + ')').join(', ')}</div>` : ''}
   </div>
   <div class="panel tilt-r" style="right:20px;top:76px;width:360px;height:520px;padding:14px">
@@ -1181,8 +1184,10 @@ function onClick(e) {
 function onInput(e) { if (e.target.id === 'nightn') { UI.nightN = +e.target.value; const n = $('#nightv'); if (n) n.textContent = UI.nightN; } }
 function onKey(e) { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('.card[data-act]')) { e.preventDefault(); e.target.click(); } if (e.key === 'Escape' && (UI.sel || UI.stock)) { UI.sel = null; UI.stock = false; render(); } }
 
+// Mark card sheets that haven't been made yet, so cards fall back to a drawn emblem.
+function probeArt() { for (const g of Object.keys(CT.GAMES)) { const im = new Image(); im.onerror = () => document.body.classList.add('noart-' + g); im.src = 'img/cards-' + g + '.jpg'; } }
 function boot() {
-  fit(); addEventListener('resize', fit);
+  probeArt(); fit(); addEventListener('resize', fit);
   const st = $('#stage'); st.addEventListener('click', onClick); st.addEventListener('input', onInput); st.addEventListener('keydown', onKey);
   newRun();
 }

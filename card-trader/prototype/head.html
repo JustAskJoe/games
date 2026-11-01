@@ -66,8 +66,8 @@ button { font: inherit; }
 .portrait .nameplate { position: absolute; left: 8px; bottom: 8px; background: var(--ink); color: #fff; font-family: var(--display); padding: 4px 10px; border-radius: 8px; font-size: 20px; transform: rotate(-3deg); }
 .portrait .sp { position: absolute; right: 8px; top: 8px; }
 .fallback-face { position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--display); font-size: 120px; color: rgba(255,255,255,.9); text-shadow: 6px 6px 0 var(--ink); }
-.pips { display: flex; gap: 4px; align-items: center; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
-.pip { width: 16px; height: 16px; border: 2.5px solid var(--ink); border-radius: 50%; background: var(--lime); }
+.pips { display: flex; flex-wrap: wrap; gap: 3px; align-items: center; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
+.pip { width: 14px; height: 14px; border: 2.5px solid var(--ink); border-radius: 50%; background: var(--lime); }
 .pip.off { background: transparent; opacity: .35; }
 .bubble { position: relative; background: #fff; border: var(--ol); border-radius: 16px; padding: 10px 12px; font-size: 16px; line-height: 1.3; font-weight: 600; min-height: 64px; }
 .bubble::before { content: ''; position: absolute; left: 30px; top: -14px; border: 12px solid transparent; border-bottom-color: var(--ink); border-top: 0; }
@@ -79,7 +79,7 @@ button { font: inherit; }
 #idle { position: absolute; left: 360px; top: 300px; width: 548px; height: 290px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; z-index: 4; }
 
 /* deal box */
-#deal { right: 16px; top: 72px; width: 350px; height: 528px; padding: 14px; display: flex; flex-direction: column; gap: 10px; z-index: 5; overflow: auto; }
+#deal { right: 16px; top: 72px; width: 350px; height: 528px; padding: 14px; display: flex; flex-direction: column; gap: 10px; z-index: 5; overflow-y: auto; overflow-x: hidden; }
 .price-row { display: flex; justify-content: space-between; align-items: baseline; font-weight: 800; }
 .price-row .big { font-family: var(--display); font-size: 30px; }
 .slider { width: 100%; accent-color: var(--magenta); height: 32px; }
@@ -95,7 +95,10 @@ button { font: inherit; }
 .card.sm { --w: 92px; } .card.xs { --w: 74px; } .card.md { --w: 150px; } .card.lg { --w: 270px; cursor: default; } .card.lg:hover { transform: none; }
 .card .inner { position: absolute; left: var(--l, 7%); right: var(--r, 7%); top: var(--t, 6%); bottom: var(--b, 6%); border: 2px solid var(--ink); border-radius: calc(var(--w) * .04); background: var(--fr2, #222); overflow: hidden; }
 .card .art { position: absolute; left: 4%; right: 4%; top: 4%; height: 56%; border: 2px solid var(--ink); border-radius: 4px; background-color: #333; background-size: 200% 200%; overflow: hidden; }
-.card .art .glyph-art { position: absolute; inset: 0; display: grid; place-items: center; font-size: calc(var(--w) * .34); }
+.card .art .glyph-art { position: absolute; inset: 0; display: none; place-items: center; font-size: calc(var(--w) * .34); color: #fff; text-shadow: 3px 3px 0 var(--ink); }
+/* until a game's card sheet exists, draw its emblem on a halftone gradient instead */
+.noart-shell .card .art[data-g=shell], .noart-hive .card .art[data-g=hive], .noart-star .card .art[data-g=star] { background-image: radial-gradient(rgba(0,0,0,.25) 1px, transparent 1.5px), linear-gradient(160deg, var(--magenta), var(--violet)) !important; background-size: 5px 5px, 100% 100% !important; }
+.noart-shell .card .art[data-g=shell] .glyph-art, .noart-hive .card .art[data-g=hive] .glyph-art, .noart-star .card .art[data-g=star] .glyph-art { display: grid; }
 .card .name { position: absolute; left: 4%; right: 4%; top: 63%; height: 13%; background: rgba(255,255,255,.92); border: 2px solid var(--ink); border-radius: 4px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: calc(var(--w) * .085); line-height: 1; text-align: center; padding: 0 3px; overflow: hidden; }
 .card .name svg { height: 80%; width: 92%; }
 .card .gem { position: absolute; right: 6%; bottom: 5%; width: 18%; aspect-ratio: 1; border: 2px solid var(--ink); border-radius: 50%; display: grid; place-items: center; font-family: var(--display); font-size: calc(var(--w) * .08); background: #fff; }

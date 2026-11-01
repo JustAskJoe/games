@@ -383,8 +383,10 @@ function onClick(e) {
 function onInput(e) { if (e.target.id === 'nightn') { UI.nightN = +e.target.value; const n = $('#nightv'); if (n) n.textContent = UI.nightN; } }
 function onKey(e) { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('.card[data-act]')) { e.preventDefault(); e.target.click(); } if (e.key === 'Escape' && (UI.sel || UI.stock)) { UI.sel = null; UI.stock = false; render(); } }
 
+// Mark card sheets that haven't been made yet, so cards fall back to a drawn emblem.
+function probeArt() { for (const g of Object.keys(CT.GAMES)) { const im = new Image(); im.onerror = () => document.body.classList.add('noart-' + g); im.src = 'img/cards-' + g + '.jpg'; } }
 function boot() {
-  fit(); addEventListener('resize', fit);
+  probeArt(); fit(); addEventListener('resize', fit);
   const st = $('#stage'); st.addEventListener('click', onClick); st.addEventListener('input', onInput); st.addEventListener('keydown', onKey);
   newRun();
 }
