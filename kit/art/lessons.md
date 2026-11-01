@@ -24,6 +24,34 @@ What we learned making art, for every game. This is how the studio's art rules (
 
 ---
 
+### L15. Canva slows to one image every 10–30 minutes after a burst (Nov 1, 2026, card-trader)
+- What happened: making Card Trader v2's art, Canva throttled after the first few jobs and then gave about one image every 10 to 30 minutes. Only 4 of v2's 12 paintings came from Canva; Gemini made the other 8 for about $0.72.
+- Why: Canva rate-limits AI credit use, and the limit tightens as a session goes on (L11).
+- Next time: plan any shot list of more than a few images for Gemini (`kit/art/gemini.py`), with Hunter's OK on the money (R20). Keep Canva for one-off concepts and `remove-background`.
+- Source: `card-trader/patch-notes.md` v2; `kit/art/README.md` ("Gemini")
+- Rule: R16 (its "use Headless Finals for volume" line now means Gemini)
+
+### L14. With the key art as the only reference, Gemini copied its layout (Nov 1, 2026, card-trader)
+- What happened: the first Release Day scene reused the key art's composition and camera angle, even with the style-guide-only line. It was discarded and redone with "Do NOT reproduce its composition, its camera angle or any of its characters".
+- Why: with one reference, the model leans on all of it, layout included, not just the style.
+- Next time: give every scene a second reference for the subject or setting (an existing scene of ours), say what to borrow from each, and say "do not copy its layout" for the key art.
+- Source: `card-trader/art/v2-gemini-jobs.json` (`_reviews`); `card-trader/design/ai-assets.md` (release.jpg)
+- Rule: none yet (lead-plan-v3 suggests a proposal with L12)
+
+### L13. Shops and signs in a background bring back fake lettering (Nov 1, 2026, card-trader)
+- What happened: the first Hive Gambit full-art came back with made-up lettering on a shop sign behind the creature, so it failed R1 and was discarded. The redo asked for a plain backdrop with no shops, stalls, signs, screens or buildings and came back clean. Release Day's stall also got two letter-like graffiti tags.
+- Why: our style lead says "a market station full of card shops", and models put signage on shops (L0). "No text" alone doesn't stop it.
+- Next time: unless the picture needs a shop, say "no shops, no signs, no screens", and ask for graffiti as abstract shapes only. Zoom-check every sign and wall.
+- Source: `card-trader/art/v2-gemini-jobs.json` (`_reviews`); `card-trader/design/ai-assets.md`
+- Rule: R1 (second time after L0; lead-plan-v3 suggests adding it to R1's check)
+
+### L12. Gemini pasted reference image 1 into the picture (Nov 1, 2026, card-trader)
+- What happened: on `gemini.py`'s first try, the key art passed as a style reference turned up pasted into the new image's background. It worked once every prompt began "Reference image 1 is a style guide only: … do not include, copy or reuse its scene, characters or background anywhere in the new image."
+- Why: Gemini treats reference images as content to edit or combine unless told they're style only.
+- Next time: start every Gemini prompt with the style-guide-only line, and give each other reference one line on what to keep from it ("keep its creature designs, and nothing else").
+- Source: `card-trader/patch-notes.md` v2 watch-out; `card-trader/art/v2-gemini-jobs.json`
+- Rule: none yet (cost real money; lead-plan-v3 suggests a proposal)
+
 ### L11. Canva's cooldowns grow through a session (Oct 31, 2026, card-trader)
 - What happened: making Card Trader v1's art, Canva throttled after about 8 jobs, and the cooldowns grew to several minutes as the session went on.
 - Why: Canva rate-limits AI credit use in bursts.

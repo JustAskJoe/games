@@ -6,6 +6,189 @@ Newest on top. See the repo's CLAUDE.md for how patch notes work.
 
 ---
 
+## v3 rev 2.1 · 2026-11-01 · Hunter (with Claude): a new shop, setup before you open, the floor at the counter, the card generator
+Fixes from Hunter's playtest: the grid has to feed the day. It's set up before you open and used while you sell.
+
+### What's new
+- **A brand-new shop.** You start unrated, with no customers yet. Three questions decide your opening crate:
+  - your focus: singles, sealed or vintage hunter
+  - how you split your savings: mostly cash, balanced or mostly stock
+  - the game you grew up on, whose script you can read from day 1
+
+  Every combination starts at about the same value (530–555₵). Only the mix changes.
+- **Set up before you open.** On day 1, OPEN SHOP stays locked until you've unpacked the crate and put 3+ things in the case, 4+ cards in the counter binder and 3+ packs or sealed on the rack. The checklist shows in the morning, on the floor and in DJ Vee's line. On later mornings you open the crate first.
+- **The floor at the counter.** When a buyer is at the counter, your case, rack and counter binder show as small grids, and what fits their want lights up: tap it to show it. The **back drawer** holds everything else; each trip back costs patience, and some people send you back there on purpose.
+- **The card generator is plugged in** (`kit/cardgen`, PR #67): about 1,300 cards per game across vintage, mid and modern sets, with printings per era. That means first runs, early prints and misprints in vintage; reverse foils, star chases and the first full-arts in the mid era; and alt-art, illustrations, rainbow and gold in modern.
+  - Prices, sealed product, vintage drops (1–3 a run) and the modern reprint waves all come from it. Each game now has its own reprinted set and its own never-reprinted set.
+  - It prices like the real hobby: most modern singles are near bulk, and the money is in hits and vintage.
+- **Unrated start:** reviews pile up each day and the stars settle; early days swing hard.
+- **Rebalance on the generator economy:** rent is now 30 to 120 over the 10 days (it was 40 to 170), and an unlocked case gets hit 60% of nights from day 3.
+
+  | Bot | Median gain | Notes |
+  |---|---|---|
+  | careful | +222% | |
+  | careful without Loupe upgrades | +162% | |
+  | lazy | +99% | |
+  | greedy | +127% | 7% lost to theft |
+  | naive | +111% | 26% lost to theft |
+  | paranoid | +50% | rating about 2.1★ |
+
+  Careful beats sloppy 97% of the time. Every `build-and-test.py` band passes.
+- **Fixes:**
+  - The catalog crashed on the old wave names, which also stopped the stock room drawing.
+  - A generator price curve could go negative late in the run; it's now clamped in `kit/cardgen` and the tool page was rebuilt.
+  - The opening crate list showed "1 × packs" instead of the real count.
+  - In the morning, the back view now shows OPEN SHOP.
+
+### Next up
+- [ ] @Hunter: playtest the opening and day 1 setup, and sell a few cards from the floor at the counter. Does the grid feel part of selling now?
+- [ ] The Balance agent's first report on this build (session "Card Trader v3: first Balance agent report"), then any tuning it suggests.
+- [ ] PR #68 (Balance agent) needs a second teammate to approve it.
+
+### Watch out
+- [ ] On the counter floor, case cards are drawn very small (about 32 px). They're readable as lit or dim, not as card names. Check on a real screen.
+- [ ] Modern singles are mostly worth 1–3₵ now, so case tags look tiny early on. That's realistic, but check it doesn't feel pointless to stock the case on day 1.
+- [ ] The opening crate can't hold vintage sealed: a vintage pack is worth about 1,000₵. Vintage hunters get vintage singles instead.
+- [ ] Opening the generator for each run takes about 80 ms. It's fine in the browser; the 1,400-run sim is about a minute slower.
+
+---
+
+## v3 rev 2 · 2026-11-01 · Hunter (with Claude): "the Back Room", part of the selling day
+After the first playtest, Hunter widened v3 (`design/v3-design.md`, rev 2). Your stock is now part of how you sell. Art is still placeholder, drawn in code ($0). It replaces the rev 1 build below.
+
+### What's new
+- **A 10-day run.**
+  - Days 1–5 are the v2 week. Days 6–10 open the vintage market (estate sales), bring offenders back in disguise, and end with Wave 4 Release Day and Grade Day.
+  - Rent runs 40 to 170. There are new rank bands.
+- **The stock room, with two views** (STOCK ROOM button; F for the floor, B for the back):
+  - **The floor** is what customers can see and buy today, and what thieves can reach:
+    - the display case (a 6×4 shape grid, lockable)
+    - the wall rack (a 4×4 grid)
+    - the counter binder (18 pockets)
+    - a top-loader binder (an upgrade)
+    - the bulk bin
+  - **The back** is what you're holding: the back shelves (an 8×4 grid), back binders, the safe and the inbox tray.
+  - **Shapes:** raw card 1×1, slab 1×2, blister 1×2, tin and collector box 2×2, booster box 2×3, premium box 3×2. Loose packs fill the free cells. Tap a thing, then tap a spot (R rotates), or drag on desktop.
+- **Selling uses the room:**
+  - Buyers wait while you fetch from the back: back binders and the inbox cost 1 patience, the safe and shelves cost 2.
+  - **Browsers** walk up with something they found on your floor at your tag, and haggle if it's high.
+  - **Sealed collectors** buy sealed product to hold.
+  - Some collectors ask for "the stuff in the back".
+- **Three eras:** vintage (Wave 1), mid era and modern. Modern runs as five waves: 2a, 2b and 2c at the start, Wave 3 on day 5, Wave 4 on day 9.
+  - One wave gets a **reprint** (announced; its prices drop).
+  - One wave is **never reprinted** (it keeps climbing, and its allocation gets cut). Nobody tells you which one; the hints come from DJ Vee, the distributor and prices.
+- **Sealed product:** packs, 3-pack blisters, tins, collector boxes, booster boxes and premium boxes, each its own shape, buyer and price. You can open any of them into loose packs.
+- **Vintage sealed:** 1–3 a run from estate sales, at 5–30× a modern box.
+  - Weigh vintage packs heavy vs light with the pack scale.
+  - Grade sealed product (double fee): it proves it was never opened.
+  - With a riser, vintage on display raises your rating every day. Resealed vintage exists.
+- **Repacks** (bulk sorter): you post a hit sign ("1 in N has X₵+"), choose the floor of each pack, and decide whether to seed hits honestly. Buyers check your repacks against the sign.
+- **Store rating** (a fictional star rating with reviews):
+  - Fair tags, a stocked floor, honest repacks, helping victims, events and vintage on display raise it.
+  - Fakes, scam repacks, empty cases, walkouts and false accusations lower it.
+  - A higher rating brings more browsers and lets buyers accept tags a little over market.
+- **Fakes, thieves and the Known Offenders board:**
+  - **When you prove a fake,** you read the seller's reaction. Report a schemer to security for a bounty and a board entry. Inform a victim (a kid, a parent) for rep, and sometimes they come back with real cards.
+  - **Catch a thief** by watching them, then call security. The hard choices:
+    - Tad, a kid: call the parent or call security.
+    - Rook, a drifter: buy his bulk finds or call security.
+  - **Distraction thieves** (Dash) ask for "the good stuff in the back" while a friend works the floor. Their tells vary and honest people show one too, so act on two.
+  - **The board only holds people you caught.** Offenders come back in hats and new coats, but each keeps a signature tell. You can **refuse** anyone at the door; refusing an innocent costs rep.
+- **Shop upgrades** (at close, installed on the spot):
+  - more binders and counter-binder pages
+  - a shelf extension
+  - a case lock
+  - a top-loader binder
+  - a bigger case, then a second case
+  - a vintage vault
+  - a security camera (shows every tell)
+  - a pack scale
+  - a display riser
+  - the bulk sorter
+  - a grading drop-box
+
+  Fixtures count at half their price in shop value.
+- **Saves** move to new slots (v3 rev 1 saves are left alone).
+- **Balance** (200 runs per bot, 10 days):
+
+  | Bot | Median gain | Notes |
+  |---|---|---|
+  | careful | +411% | browsers make 40% of single sales |
+  | careful without Loupe upgrades | +220% | |
+  | lazy | +179% | |
+  | greedy | +193% | loses 9% to theft |
+  | naive (never watches) | +174% | loses 18% to theft |
+  | paranoid (security on any tell) | +46% | rating 1.5★ |
+  | sloppy | −175% | careful beats it 100% of the time |
+
+  `build-and-test.py` now also checks that the paranoid bot loses a star and the naive bot loses 10%+ to theft.
+
+### Next up
+- [ ] @Hunter: playtest rev 2. Is the floor vs back decision fun? Does fetching feel right? Can you spot the no-reprint wave?
+- [ ] Plug in the card generator (session `card-generator`, PR into this branch) for a few thousand cards per game, real-feeling set sizes and printings per era.
+- [ ] Hire the Balance agent (`kit/agents/balance.md`). It's planned in ARCHITECTURE.md but not designed yet.
+- [ ] Portraits for the new cast (Dash, Rook, Tad, Pip, Moma, Nova, Kiri, Vault, Hoard, the Estate): they show a letter for now.
+
+### Watch out
+- [ ] The Loupe upgrades are worth about 190 points over 10 days, against about 35 in the 5-day v2. Their value compounds; check that they don't feel mandatory.
+- [ ] Middling bots run a tab in 50–65% of runs: 10 days of rent is tight. Check that a real first run doesn't feel like a debt spiral.
+- [ ] Loose packs are generic per game (no wave). Only sealed product carries its wave, so the no-reprint play is about sealed boxes, not loose packs.
+- [ ] Customers can't see vintage sealed's real value, but the market guide in the deal panel shows it. Decide whether that should need an upgrade.
+- [ ] Drag and drop is desktop only. On touch, tap then tap. Not tested on a real phone.
+- [ ] Some fixtures are cramped at their largest sizes (bigger case plus second case, shelf extension). Not checked in the UI at full size.
+- [ ] The UI test bot plays badly (it ends deep in a tab). It's there to draw every screen, not to score.
+
+---
+
+## v3 · 2026-11-01 · Hunter (with Claude): "the Back Room" (rev 1, replaced by rev 2 above)
+Running the shop now matters as much as trading. Scope: `design/v3-design.md`. All v3 art is placeholder, drawn in code ($0). The Lead Artist's approved shot list (`art/v3-shotlist.md`) is on hold.
+
+### What's new
+- **The Back Room**, a second screen (BACK ROOM button or B). Everything you own has a place:
+  - a display case (12×4 grid, lockable, price tags)
+  - a wall rack (16 hooks)
+  - binders (54 pockets each)
+  - back shelves (24 slots)
+  - a safe (6 slots)
+  - an inbox tray where new stock lands
+
+  Tap a card, then tap where it goes, or drag it on desktop.
+- **The display case sells on its own.** Between customers a browser may buy from it, if the tag is fair against today's value. Raw cards need a hard sleeve or mag case to go in.
+- **Gear and a sleeving policy.** Penny sleeves (100 for 4₵), hard sleeves (25 for 6₵) and mag cases (5 for 10₵, display buyers pay +10%). You set the thresholds (penny at X₵+, hard at Y₵+, mag at Z₵+), and new stock is sleeved automatically while gear lasts.
+- **Gentle wear.** Unsleeved cards lose a condition point now and then, faster loose in the tray or case than in binder pockets. Showing a card to a buyer adds a little.
+- **Distributor catalog and crates.** You order at close: booster boxes, collector boxes (a promo and 3 packs), posters, playmats, deck boxes, gear, binders, a shelf unit and a case lock. Orders arrive as a crate the next morning; cut it open and everything goes where it belongs. Merch on the rack sells to walk-ins overnight.
+- **Five new bad actors**, each with a tell and a counter:
+  - **The Scale Gang** (day 2 and 5) feels your packs for the hits. Counter: sell from behind the counter, or put up a "no touching" sign.
+  - **Sticky** (days 3 and 5) lifts from an unlocked case or the rack. Counter: watch them, lock the case, use the safe.
+  - **Snip the trimmer** (day 3) sells "perfect 10s". Counter: the Loupe shows edges that are too perfect and a card 0.4 mm short, and graders stamp them ALTERED.
+  - **Flick the switcher** (day 4) swaps your card for a fake. Counter: watch their hands, or show only hard-sleeved, mag-cased or slabbed cards.
+  - **Gloss the resealer** (day 4) sells "sealed" packs under retail. Counter: check the seams for glue shine. Resealed and searched packs are dead: their rare slot is a common.
+- **Saves** move to new v3 slots. v1 and v2 saves are left alone.
+- **Balance** (200 random weeks per bot):
+  - careful +195% median, careful without upgrades +173%, sloppy −32%; careful beats sloppy 96%
+  - lazy (never sleeves, no case, ignores bad actors) +123%
+  - greedy (grails in an unlocked case) +134%, and loses 13% of its final value to theft
+  - the case makes 38% of the careful bot's single sales
+  - `build-and-test.py` now checks the v3 band too: organized beats lazy by 30+ points, greedy theft 5–15%, case share 25–45%.
+- **Fix:** buyers paid full price for fakes after the v3 rework, which made the Spectrometer worthless. Buyers pay nothing for fakes again; only trims fool them.
+
+### Next up
+- [ ] @Hunter: playtest the Back Room and confirm the build calls in `design/handoff.md` (binder wear, delayed boxes, Sticky, switcher, trims).
+- [ ] @Hunter: say when to spend on v3 art (6 Gemini images, about $0.40, in `art/v3-shotlist.md`). Until then the room, crates and new customers are placeholders.
+- [ ] Portraits for Zekk crew, Sticky, Snip, Flick and Gloss (they show a letter for now).
+- [ ] Crate unboxing animation (cut, lift, place) is a single button for now.
+
+### Watch out
+- [ ] Wear is gentler than the scope's target. A lazy player loses about 3% of stock value to wear, not 10–15%. Organized still beats lazy by 50 points, mostly from theft, dead packs, the switcher and the display case. Raise `WEAR_DAY` and `WEAR_BINDER` in `engine.js` if wear should hurt more.
+- [ ] The gear cost target (2–4% of protected value) isn't measured in the sim yet.
+- [ ] v3 is about 30 points harder than v2 for the careful bot, because boxes now arrive the next day.
+- [ ] Drag and drop is desktop only (HTML5 drag). On phones and touch it's tap a card, then tap a spot. Not tested on a real touch device.
+- [ ] The UI test bot plays badly (it sometimes runs a tab). It's there to draw every screen, not to score.
+- [ ] Day 4 now has 10 visitors (8 regulars plus 2 new bad actors). Check that it doesn't drag.
+- [ ] Rack labels cut off long game names ("SHELLSTO…") at this size.
+
+---
+
 ## v2 · 2026-11-01 · Hunter (with Claude): "the market fights back"
 A full 5-day week where the market pushes back. The design is in `design/v2-design.md`; the Lead Artist's v2 art plan is in `art/lead-plan-v2.md` (draft) with a shot list in `art/v2-shotlist.md`.
 

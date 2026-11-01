@@ -1,7 +1,7 @@
 // Intergalactic Card Trader's settings for the shared front end (frontend.js): words, art, colors, ticker, saves.
 // © 2026 justaskjoe. All rights reserved.
 this.FE_CONFIG = {
-  id: 'ict.v2', // v1 saves stay under ict.v1 and are ignored (the week is longer now)
+  id: 'ict.v3r2', // older saves stay under ict.v1, ict.v2 and ict.v3 and are ignored (v3 rev 2 is a 10-day run)
   presenter: 'JustAskJoe',
   title1: 'INTERGALACTIC',
   title2: 'CARD TRADER',
@@ -11,7 +11,7 @@ this.FE_CONFIG = {
   tickerLabel: 'LANE FM',
   ticker: ['Lane FM, the only station on the station!', 'Mollu pearl-haulers inbound on lane 3.', 'Reminder: Zazza\'s binder is "totally legit".',
     'Grade Day is coming. Shine those slabs.', 'Puffi festival ship spotted near the ring!', 'Hive Gambit prices are buzzing.'],
-  credits: `<p><b>Intergalactic Card Trader</b> · v2 prototype</p>
+  credits: `<p><b>Intergalactic Card Trader</b> · v3 prototype</p>
     <p>Made by <b>JustAskJoe</b>: Hunter, with Claude.</p>
     <p>Paintings: Canva AI, directed in-house (the full list is in <code>design/ai-assets.md</code>). Cards, scripts, UI and effects are drawn in code.</p>
     <p>Music: an original synth loop written in code. No licensed music.</p>`,

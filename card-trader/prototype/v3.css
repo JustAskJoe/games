@@ -1,0 +1,108 @@
+/* v3 · The Back Room. Placeholder look, all drawn in code (no paintings yet: art/v3-shotlist.md is on hold at $0).
+   © 2026 justaskjoe. All rights reserved. */
+#room { position: absolute; inset: 58px 0 0 0; z-index: 5;
+  background: linear-gradient(180deg, rgba(27,14,51,.15), rgba(27,14,51,.55)),
+    repeating-linear-gradient(0deg, #3a1f5c 0 22px, #301a4d 22px 24px),
+    #2a1450; }
+#room::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 250px; pointer-events: none;
+  background: repeating-linear-gradient(90deg, #6b3d1f 0 80px, #5c3319 80px 82px); opacity: .55; z-index: -1; }
+#room .zone { position: absolute; background: var(--paper); border: var(--ol); border-radius: 12px; box-shadow: var(--shadow); padding: 8px 10px; }
+#room .zone .h { font-size: 16px; display: flex; align-items: center; gap: 8px; }
+#room .zone .h small { font-family: var(--body); font-size: 12px; font-weight: 800; opacity: .75; }
+#room .zone.drop-on { outline: 4px dashed var(--magenta); outline-offset: 2px; }
+
+/* display case: a glass box with a 12x4 grid */
+.case-glass { position: relative; width: 630px; height: 286px; box-sizing: border-box; margin-top: 6px; border: 3px solid var(--ink); border-radius: 8px;
+  background: linear-gradient(160deg, rgba(180,240,255,.55), rgba(120,200,255,.25) 40%, rgba(255,255,255,.4) 60%, rgba(140,210,255,.3));
+  box-shadow: inset 0 0 0 3px rgba(255,255,255,.6); overflow: hidden; }
+.case-glass.locked { box-shadow: inset 0 0 0 3px rgba(255,255,255,.6), inset 0 0 0 7px var(--sun); }
+.gridin .cell { position: absolute; width: 52px; height: 70px; border-right: 1px dashed rgba(18,10,31,.18); border-bottom: 1px dashed rgba(18,10,31,.18); background: none; padding: 0; cursor: pointer; }
+.gridin .cell:hover { background: rgba(255,46,147,.18); }
+.gridin .cell.ok { background: rgba(166,240,30,.25); }
+.cell-item { position: absolute; z-index: 2; display: flex; justify-content: center; padding-top: 2px; }
+.cell-item .tiny { transform: scale(.6); transform-origin: top center; }
+.cell-item .tiny .slab { transform: scale(.78); transform-origin: top center; }
+.cell-item .tagp { position: absolute; bottom: 1px; left: 50%; transform: translateX(-50%) rotate(-4deg); background: var(--sun); border: 2px solid var(--ink); border-radius: 4px; font-family: var(--display); font-size: 11px; padding: 0 4px; white-space: nowrap; z-index: 3; }
+.selring { outline: 4px solid var(--magenta); outline-offset: 2px; border-radius: 8px; }
+
+/* gear rings on cards: shows how a card is protected */
+.prot { position: relative; display: inline-block; border-radius: 9px; }
+.prot.penny { box-shadow: 0 0 0 3px rgba(255,255,255,.95); }
+.prot.hard { box-shadow: 0 0 0 3px #fff, 0 0 0 7px #8fd3ff; }
+.prot.mag { box-shadow: 0 0 0 4px #1b1b1b, 0 0 0 8px #d9d9d9; }
+.pchip { display: inline-block; font-size: 10px; font-weight: 800; padding: 0 5px; border: 2px solid var(--ink); border-radius: 999px; background: #fff; }
+.pchip.none { background: var(--coral); } .pchip.penny { background: #fff; } .pchip.hard { background: #8fd3ff; } .pchip.mag { background: #d9d9d9; }
+
+/* wall rack: 16 hooks */
+.rack { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); grid-auto-rows: 46px; gap: 5px; margin-top: 6px; padding: 6px; border: 3px solid var(--ink); border-radius: 8px;
+  background: repeating-radial-gradient(circle at 10px 10px, #8a8a99 0 2px, transparent 3px 20px), #5a5a6e; }
+.hook { border: 2.5px solid var(--ink); border-radius: 6px; display: grid; place-items: center; font-family: var(--display); font-size: 11px; color: #fff; text-align: center; line-height: 1.05; padding: 2px; text-shadow: 1px 1px 0 var(--ink); }
+.hook.empty { border-style: dashed; border-color: rgba(255,255,255,.35); background: none; }
+.hook.pack { background: repeating-linear-gradient(45deg, var(--gc) 0 7px, #6A2BD9 7px 14px); }
+.hook.merch { background: var(--mc, var(--orange)); }
+.hook[data-act] { cursor: pointer; }
+
+/* safe, shelves, tray */
+.safe { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(0, 1fr)); gap: 6px; margin-top: 6px; padding: 6px; background: #4b4f5c; border: 3px solid var(--ink); border-radius: 8px; height: 112px; }
+.safe .vault { border: 2px dashed rgba(255,255,255,.35); border-radius: 6px; display: flex; justify-content: center; overflow: hidden; min-height: 0; }
+.safe .vault .tiny { height: 0; }
+.safe .vault .tiny { transform: scale(.42); transform-origin: top center; }
+.tray { display: flex; gap: 6px; overflow-x: auto; overflow-y: hidden; padding: 6px 4px; height: 150px; margin-top: 6px; border: 3px solid var(--ink); border-radius: 8px; background: #c79a63; align-items: flex-start; }
+.tray .it { flex: none; text-align: center; width: 62px; }
+.tray .it .tiny { transform: scale(.8); transform-origin: top left; width: 60px; height: 86px; display: block; }
+.shelfrow { display: flex; align-items: center; gap: 6px; margin: 5px 0; }
+.boxtile { width: 46px; height: 34px; border: 2.5px solid var(--ink); border-radius: 4px; background: var(--gc); box-shadow: 2px 2px 0 var(--ink); }
+.cap { height: 10px; border: 2px solid var(--ink); border-radius: 6px; background: #fff; overflow: hidden; margin-top: 4px; }
+.cap > i { display: block; height: 100%; background: var(--magenta); }
+.crate { position: absolute; display: grid; place-items: center; }
+.cratebox { width: 170px; height: 120px; border: 4px solid var(--ink); border-radius: 6px; background: repeating-linear-gradient(90deg, #c98a4b 0 26px, #b4743a 26px 30px); box-shadow: var(--shadow); display: grid; place-items: center; font-family: var(--display); font-size: 22px; color: #fff; text-shadow: 2px 2px 0 var(--ink); animation: pop .35s both; }
+.gear { display: grid; grid-template-columns: auto 1fr; gap: 3px 10px; font-size: 13px; margin-top: 4px; }
+.step { display: inline-flex; align-items: center; gap: 4px; }
+.step .btn { min-height: 26px; padding: 0 8px; font-size: 12px; box-shadow: 2px 2px 0 var(--ink); }
+.catrow { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; padding: 6px 0; border-bottom: 2px dashed rgba(18,10,31,.2); }
+.catrow small { display: block; font-size: 12px; opacity: .8; }
+.glue { position: absolute; inset: 0; background: linear-gradient(115deg, transparent 30%, rgba(255,255,255,.85) 45%, transparent 55%); pointer-events: none; }
+
+/* rev 2: shape grids for the case, rack and shelves; goods tiles; loose packs; tells */
+.gridbox { position: relative; margin-top: 6px; border: 3px solid var(--ink); border-radius: 8px; padding: 0; background: linear-gradient(160deg, rgba(180,240,255,.5), rgba(255,255,255,.35)); overflow: hidden; }
+#room .zone[data-drop=rack] .gridbox { background: repeating-radial-gradient(circle at 10px 10px, #8a8a99 0 2px, transparent 3px 20px), #5a5a6e; }
+#room .zone[data-drop=shelf] .gridbox { background: repeating-linear-gradient(180deg, #7a5230 0 61px, #4a3018 61px 64px); }
+.gridin { position: absolute; left: 0; top: 0; right: 0; bottom: 0; }
+.gridin .cell { position: absolute; border-right: 1px dashed rgba(18,10,31,.2); border-bottom: 1px dashed rgba(18,10,31,.2); background: none; padding: 0; cursor: pointer; }
+.good { position: relative; border: 2.5px solid var(--ink); border-radius: 6px; background: linear-gradient(160deg, var(--tc), var(--gc)); box-shadow: 2px 2px 0 var(--ink); display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; cursor: pointer; overflow: hidden; margin: 2px; }
+.good.vint { border-color: #7a5a00; box-shadow: 0 0 0 2px #FFD21F, 2px 2px 0 var(--ink); background: repeating-linear-gradient(45deg, #C9A227 0 6px, #E8C65A 6px 12px); }
+.good .gl { font-family: var(--display); font-size: 10px; line-height: 1.05; color: #fff; text-shadow: 1px 1px 0 var(--ink); padding: 0 2px; }
+.good .gg { font-size: 9px; font-weight: 800; background: rgba(255,255,255,.85); border-radius: 4px; padding: 0 3px; margin-top: 2px; }
+.good .gb { position: absolute; right: 2px; top: 2px; font-family: var(--display); font-size: 9px; background: var(--sun); border: 1.5px solid var(--ink); border-radius: 4px; padding: 0 3px; }
+.good .gb.bad { background: var(--coral); }
+.looseP { position: absolute; z-index: 1; border: 2px solid var(--ink); border-radius: 4px; background: repeating-linear-gradient(45deg, var(--gc) 0 6px, #6A2BD9 6px 12px); color: #fff; font-family: var(--display); font-size: 10px; display: grid; place-items: center; text-shadow: 1px 1px 0 var(--ink); cursor: pointer; }
+.tells { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0; }
+.chip.tell { font-size: 11px; padding: 1px 7px; background: #fff3c4; }
+.chip.tell.sig { background: var(--sun); }
+#room .zone[data-drop=safe] .tray, #room .zone[data-drop=inbox] .tray { height: 104px; padding: 4px; }
+#room .zone[data-drop=safe] .tray .it, #room .zone[data-drop=inbox] .tray .it { width: 42px; }
+#room .zone[data-drop=safe] .tray .it .tiny, #room .zone[data-drop=inbox] .tray .it .tiny { transform: scale(.52); width: 40px; height: 60px; }
+#room .zone[data-drop=safe] .tray .pchip, #room .zone[data-drop=inbox] .tray .pchip { display: none; }
+#room .zone[data-drop=safe] .h, #room .zone[data-drop=inbox] .h { font-size: 14px; }
+
+/* opening questions, the setup checklist, the floor at the counter */
+.introopt { flex: 1; display: flex; flex-direction: column; gap: 8px; text-align: left; padding: 16px; border: var(--ol); border-radius: 14px; background: #fff; box-shadow: 5px 5px 0 var(--ink); cursor: pointer; border-top: 10px solid var(--gc, var(--magenta)); font: inherit; color: var(--ink); }
+.introopt:hover { transform: translate(-2px, -2px) rotate(-1deg); }
+.introopt b { font-family: var(--display); font-size: 22px; }
+.introopt span { font-size: 14px; }
+.check { font-size: 15px; font-weight: 800; padding: 3px 0; }
+.check.done { opacity: .6; text-decoration: line-through; }
+#cfloor { position: absolute; left: 360px; top: 300px; width: 548px; height: 300px; padding: 8px 10px; z-index: 4; overflow: hidden; }
+.lbl2 { font-family: var(--display); font-size: 11px; margin-bottom: 2px; }
+.cgrid { position: relative; border: 2.5px solid var(--ink); border-radius: 6px; background: linear-gradient(160deg, rgba(180,240,255,.6), rgba(255,255,255,.4)); }
+.cgrid .cpk { position: absolute; left: 4px; bottom: 4px; font-size: 10px; padding: 0 6px; }
+.mini { position: relative; display: inline-block; border-radius: 6px; }
+.mini.fit { cursor: pointer; outline: 3px solid var(--lime); outline-offset: -1px; box-shadow: 0 0 10px var(--lime); }
+.mini.dim { opacity: .35; filter: grayscale(.6); }
+.mini .tiny2 { transform: scale(.42); transform-origin: top left; width: 32px; height: 44px; }
+.mini .tiny2 .card:hover { transform: none; }
+.cbind { display: flex; flex-wrap: wrap; gap: 3px; max-height: 230px; overflow: hidden; }
+.cbind .mini { width: 32px; height: 44px; }
+.drawer { display: flex; flex-wrap: wrap; gap: 5px; max-height: 250px; overflow: hidden; }
+.drawer .mini { width: 46px; min-height: 44px; }
+.drawer .mini .fetch { position: absolute; right: -4px; top: -6px; font-size: 10px; font-weight: 800; background: var(--sun); border: 1.5px solid var(--ink); border-radius: 6px; padding: 0 3px; z-index: 3; }

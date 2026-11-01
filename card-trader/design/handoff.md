@@ -23,6 +23,34 @@ This is the list of decisions as they stand. Change it when a decision changes. 
 - **The Lead Artist plans v2's art.** Paintings wait for Hunter's approval of `art/lead-plan-v2.md`.
 - Parked for v3: trust per species, a rival stall, customs, a campaign across several weeks, a second hub.
 
+## v3 decisions (Hunter, Nov 1, 2026)
+- **v3 scope approved** (`design/v3-design.md`): the Back Room (storage, display case, rack, binders, bulk bin, shelves, safe, inbox), gear and a sleeving policy with gentle wear, products and crate deliveries, and 5 new bad actors (the Scale Gang, Sticky, a Trimmer, the Switcher, a Resealer).
+- **Placeholder art first, $0.** The Lead Artist's v3 plan is approved, but its 6 Gemini images wait; v3 ships with code-drawn placeholders.
+- **Rev 2 after the first playtest** (`design/v3-design.md`, draft for approval):
+  - **Back room and selling:**
+    - Space becomes part of selling: stock is Available, Holding or Out.
+    - Every fixture is a shape grid, on the floor and in the back. Floor spots are fixed and upgradeable.
+    - Fetching costs patience by distance. Browsers bring picks up to the counter.
+  - **Cards and products:**
+    - 3 eras with their own variant tiers.
+    - 6 sealed product types.
+    - Repacks you build yourself.
+    - Unlocks are bought with cash at close.
+  - **The run:** 10 days, ranked by shop value. It ships as one v3.
+  - **Bad actors:**
+    - A Known Offenders board that you fill yourself.
+    - Fake sellers can be schemers (report them) or victims (inform them).
+    - Thieves get security, apart from a few hard choices.
+    - Distraction thieves have varied tells.
+  - **Data:** Zach's card database, if usable, is a stats template only. No real names or art.
+- **Build calls made while tuning (Claude; Hunter to confirm or change):**
+  - Unsleeved cards in binders wear a little (6% a night), not zero as the scope said. Without that, a player who never sleeves loses almost nothing. Loose cards in the inbox tray or the case wear at 12% a night, and showing a card to a buyer adds 3%.
+  - Booster boxes now arrive in the next morning's crate, not straight away. This costs about 30 points of growth against v2, so v3 is a harder week.
+  - Sticky takes from the case or the rack (50/50) unless you watch them. An unlocked case also loses an item 25% of nights from day 3.
+  - The Switcher only gets raw cards in a penny sleeve or no sleeve. Hard sleeves, mag cases and slabs count as "shop-stamped" and can't be swapped.
+  - Trimmed cards are worth ×0.3. The Loupe shows them; graders stamp them ALTERED.
+  - Buyers still won't pay for fakes (as in v2), but trims fool buyers. Selling a trim gets a complaint and a refund the next morning.
+
 ## Still open
 - Final title (Intergalactic Card Trader is a working title).
 - Whether the art direction holds after the crew sees it.

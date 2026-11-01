@@ -82,7 +82,7 @@ function cardHTML(c, o) {
     <div class="gameic">${F.ic}</div>${printBits(c)}</div>${v.fin === 'mirror' ? '<div class="mirrorfoil"></div>' : ''}${shiny ? '<div class="holo"></div>' : ''}${wearSVG(c, o.loupe)}${wm}${badge}`;
   const cls = `card ${o.size || ''} ${o.uv ? 'uv' : ''} ${v.fin === 'full' ? 'fullart' : ''} ${v.fin === 'alt' ? 'altart' : ''} ${o.cls || ''}`;
   const card = `<div class="${cls}" style="${vars}" data-uid="${c.uid}" ${o.act ? `data-act="${o.act}"` : ''} role="button" tabindex="0" aria-label="${o.readable ? tm.name : 'unread card'}">${inner}</div>`;
-  if (c.graded) { const co = c.graded.co; return `<div class="slab ${co}" data-uid="${c.uid}" ${o.act ? `data-act="${o.act}"` : ''}><div class="lbl"><span>${CT.GRADERS[co].name.split(' ')[0].toUpperCase()}</span><span>${c.graded.grade}</span></div>${card}</div>`; }
+  if (c.graded) { const co = c.graded.co; return `<div class="slab ${co}" data-uid="${c.uid}" ${o.act ? `data-act="${o.act}"` : ''}><div class="lbl"><span>${CT.GRADERS[co].name.split(' ')[0].toUpperCase()}</span><span>${c.graded.altered ? 'ALTERED' : c.graded.grade}</span></div>${card}</div>`; }
   return card;
 }
 // Fallback painted look when an img/ file is missing: a halftone gradient in the game's colors.
