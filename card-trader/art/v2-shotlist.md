@@ -2,11 +2,11 @@
 
 © 2026 justaskjoe. All rights reserved.
 
-status: draft
-updated: 2026-10-31
+status: approved
+updated: 2026-11-01
 generations: 12 (first tries)
 
-For the Artist (`kit/agents/artist.md`), from the Lead Artist's v2 addendum (`art/lead-plan-v2.md`). **Don't start until Hunter approves the addendum.** Rules from `kit/art/art-rules.md`.
+For the Artist (`kit/agents/artist.md`), from the Lead Artist's v2 addendum (`art/lead-plan-v2.md`). **Approved by Hunter on Nov 1, 2026: go.** Rules from `kit/art/art-rules.md`.
 
 ## How to run it
 

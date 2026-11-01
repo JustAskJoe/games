@@ -10,7 +10,8 @@ Newest on top. See the repo's CLAUDE.md for how patch notes work.
 A full 5-day week where the market pushes back. The design is in `design/v2-design.md`; the Lead Artist's v2 art plan is in `art/lead-plan-v2.md` (draft) with a shot list in `art/v2-shotlist.md`.
 
 ### What's new
-- **5 days:** Reef Run, Hive Swarm, Star Drift, The Rumor and Wave 3 Release Day. 39 customer visits. Rent 40/60/80/100/130.
+- **5 days:** Reef Run, Hive Swarm, Star Drift, The Rumor and Wave 3 Release Day. 39 customer visits. Rent 40/70/90/120/150.
+- **Every week is different, and day 1 is still the tutorial.** Day 1 keeps its fixed customers and order. Days 2–5 keep their signature visitors (Skrimp, Quill, the Hype Bros) and draw the rest from a pool, always with at least 2 sellers, 2 buyers and a pack buyer. Demand moves by up to ±0.15, the ships that dock follow the hot games, and after night 1 the two flyers are random (never last night's pick). Everything is seeded, so saves replay the same week.
 - **Card variants**, all drawn in code: mirror foil, full-art, alt-art, First Run stamps, vintage and reprint set symbols, serial numbers (#1/50 is worth ×10), misprints that look like damage, and signed cards. Each species has its own tastes: Puffi like full and alt art, Mollu like First Runs and vintage, Zekk like serials and misprints.
 - **Promo opportunities:** dock promos from docking ships, box toppers when you restock tomorrow's hottest game, 2 promos from Card Night, 2 from a Tournament, and release promos on day 5.
 - **After Hours:** each night you pick 1 of 2 flyers: Card Night, Tournament Night, Dock Auction (bid against Sheelo and Klik), Bulk Dig (16 face-down cards, 6 flips, read the glints), or Swap Meet (three 1-for-1 trades).
@@ -24,7 +25,12 @@ A full 5-day week where the market pushes back. The design is in `design/v2-desi
   - Steady Hands: the first tool on each card is free.
 - **Customers react** in code: they slide in, shake when insulted, bob when they counter, and get a DEAL or WALKED stamp as they leave.
 - **Saves** move to new v2 slots. v1 saves are left alone.
-- **Sim** (200 runs): careful +317% median, careful without upgrades +294%, sloppy +34%. Careful beats sloppy in 99% of runs.
+- **Balance pass** (200 random weeks): careful +241% median, careful without upgrades +213%, sloppy −45%. Careful beats sloppy in 96% of runs. Careful ranks now spread from Corner Stall (7%) to Legend of the Lanes (11%).
+  - Promos are weaker (×1.4–2.0) and box toppers rarer (35%).
+  - Misprints are commoner (6% of old cards) and worth ×3.
+  - Buyers pay for a misprint or a vintage print only if you prove it with the **Print Lens**.
+  - Ring fakes show up more from day 3.
+  - The upgrades cost 50/70/40.
 
 ### Next up
 - [ ] @Hunter: approve or edit the Lead Artist's v2 addendum (`art/lead-plan-v2.md`), so the Artist can make the 12 v2 paintings in `art/v2-shotlist.md`: 3 new characters, full-art and alt-art cards, and Release Day, Auction and Tournament scenes. Until then the game falls back to the v1 art.
@@ -32,8 +38,8 @@ A full 5-day week where the market pushes back. The design is in `design/v2-desi
 - [ ] Tune with real players: the auction rivals' caps, Bulk Dig gem odds, and Tournament entrant counts.
 
 ### Watch out
-- [ ] **Upgrades are worth only about +23 points** in the sim, mostly from not selling ring fakes. Humans may value them more or less. If they feel optional, make ring fakes more common or the Print Lens finds bigger.
-- [ ] **The sim is generous over 5 days:** 44 of 200 careful runs reached "Legend of the Lanes". Rank thresholds are 150/500/1000/1800; tune them with real players.
+- [ ] Upgrades are now worth about +28 points in the sim (they were about +23). Watch whether humans buy them, and when.
+- [ ] Careful bots still end with a small tab in about 20% of runs, from holding stock instead of cash at the end. It's a liquidity choice, but it may feel harsh. Rank thresholds are 150/500/1000/1800.
 - [ ] Full-art and alt-art cards show the v1 sheets until `full-*.jpg` and `cards-*-alt.jpg` exist. They're layered as CSS fallbacks.
 - [ ] The new characters (Skrimp, Quill, the Hype Bros) show an initial instead of a portrait until Batch A of the shot list is made.
 - [ ] Bots don't play the pump on purpose (careful bots just avoid buying it), and they never use the translator. Human results will differ.

@@ -35,7 +35,7 @@ function toast(msg) { const t = document.createElement('div'); t.className = 'to
 // ---------- shared bits ----------
 const money = n => Math.round(n) + '₵';
 function hud() {
-  const G = UI.G, D = CT.DAYS[G.dayIdx] || { name: '', visitors: [] };
+  const G = UI.G, D = G.week[G.dayIdx] || { name: '', visitors: [] };
   const custN = D.visitors.length, at = Math.max(0, G.visitIdx + 1);
   const ups = Object.keys(CT.UPGRADES).filter(k => G.up[k]).map(k => CT.UPGRADES[k].name.split(' ')[0]).join(' · ');
   return `<div id="hud">
@@ -104,7 +104,7 @@ function hint() {
     if (v.cards.some(c => c.know.loupe && !c.flawUsed && Math.min(c.cen, c.edg, c.sur) <= 6)) return G.up.lens ? 'You found a flaw! POINT OUT FLAW knocks their price down, unless the Print Lens says it\'s a factory misprint. Then keep quiet and buy it.' : 'You found a flaw! POINT OUT FLAW knocks their price down. (Is it damage, or a misprint? Only the Print Lens can tell.)';
     return v.species === 'mollu' ? 'Mollu love round numbers. They pay extra for First Runs and vintage when they buy.' : v.species === 'zekk' ? 'Zekk split the difference fast. As buyers they love serial numbers and misprints.' : 'Puffi care about condition and pay up for full-art and alt-art.';
   }
-  if (v.role === 'sealed') return v.showing ? 'Name your price for the packs, or take their bid.' : 'They want sealed packs. SHOW PACKS to hear an offer.' + (CT.DAYS[G.dayIdx].release ? ' Release Day: every 3rd pack sold earns you a release promo.' : '');
+  if (v.role === 'sealed') return v.showing ? 'Name your price for the packs, or take their bid.' : 'They want sealed packs. SHOW PACKS to hear an offer.' + (G.week[G.dayIdx].release ? ' Release Day: every 3rd pack sold earns you a release promo.' : '');
   if (!v.showing) return 'They want ' + CT.wantsText(v.wants) + '. Pick a card from your stock on the right.';
   return 'Name your price. Push too far past what it\'s worth and they\'ll get insulted.';
 }
@@ -140,7 +140,7 @@ function eventsHTML(evts) {
   return out.join('');
 }
 function morningScreen() {
-  const G = UI.G, D = CT.DAYS[G.dayIdx];
+  const G = UI.G, D = G.week[G.dayIdx];
   const ships = D.ships.map(s => `<span class="chip" style="background:${SP_COLOR[s]}">${CT.SPECIES[s].name} ships</span>`).join(' ');
   const hot = G.hotList.map(t => { const tm = CT.tmpl(t); return `<div class="chip" style="background:${GAME_COLOR[tm.game]}">🔥 ${esc(tm.name)} <small>(${CT.GAMES[tm.game].name})</small></div>`; }).join('');
   const rumor = G.pump ? (G.dayIdx === 3 ? `<div class="chip rumor">📣 RUMOR: ${esc(CT.tmpl(G.pump.t).name)} is "about to spike" (×1.8 today)</div>` : G.dayIdx >= 4 ? `<div class="chip rumor down">📉 ${esc(CT.tmpl(G.pump.t).name)} got reprinted: ×0.5</div>` : '') : '';
@@ -162,7 +162,7 @@ function shopScreen() {
   const G = UI.G, v = G.visit;
   let html = `${hud()}${bg('shop')}`;
   if (!v) {
-    const D = CT.DAYS[G.dayIdx], left = D.visitors.length - (G.visitIdx + 1), L = UI.lastResult;
+    const D = G.week[G.dayIdx], left = D.visitors.length - (G.visitIdx + 1), L = UI.lastResult;
     html += `<div id="idle">
       ${L ? `<div class="lastvisit ${L.result}">${portrait(L.who, 'mini')}<div class="stamp" style="font-size:30px">${L.result === 'deal' ? 'DEAL!' : L.result === 'walk' ? 'WALKED' : 'PASS'}</div></div>` : ''}
       <button class="btn big pink pop" data-act="next">${left ? 'NEXT CUSTOMER ▶' : 'CLOSE UP SHOP ▶'}</button>
@@ -259,7 +259,7 @@ function printLines(c) {
     out.push(['Stamps', st.length ? st.join(' · ') : 'none']);
   } else out.push(['Stamps', '?']);
   out.push(['Set', k.print ? CT.SETS[v.set || 'core'] : G.up.lens ? '? (use Condition)' : '<span class="muted">needs Print Lens</span>']);
-  out.push(['Misprint', k.print ? (v.err ? '<b style="color:#0a8a3e">' + CT.ERRORS[v.err] + ': worth more!</b>' : 'none') : G.up.lens ? '?' : '<span class="muted">needs Print Lens</span>']);
+  out.push(['Misprint', k.print ? (v.err ? '<b style="color:#0a8a3e">' + CT.ERRORS[v.err] + ': worth ×3, and now you can prove it to buyers!</b>' : 'none') : G.up.lens ? '?' : '<span class="muted">needs Print Lens</span>']);
   return out;
 }
 function uvLine(c) {
@@ -321,7 +321,7 @@ function stockDrawer() {
 }
 
 function closeScreen() {
-  const G = UI.G, D = CT.DAYS[G.dayIdx], next = CT.DAYS[G.dayIdx + 1];
+  const G = UI.G, D = G.week[G.dayIdx], next = G.week[G.dayIdx + 1];
   const rows = G.ledger.filter(l => l.day === G.dayIdx);
   const gradeable = G.stock.filter(c => !c.graded && !c.know.fake).sort((a, b) => CT.estimate(G, b).value - CT.estimate(G, a).value).slice(0, 12);
   return `${hud()}${bg('shop', .6)}
@@ -387,7 +387,7 @@ function nightTourneyHTML() {
       <div style="margin:8px 0">Entry fees ${money(done.entrants * 5)} · players bought ${done.sold} singles for ${money(done.sales)} · ${CT.GAMES[done.game].name} hype +10% tomorrow${done.fakePrize ? ' · <b style="color:#c41d1d">rep −10</b>' : ''}</div>
       <div class="row">${promos.map(c => `<div class="flipin">${card(c, { size: 'sm', act: 'loupe' })}</div>`).join('')}</div>`;
   }
-  const next = CT.DAYS[G.dayIdx + 1];
+  const next = G.week[G.dayIdx + 1];
   const g = UI.tourGame || Object.keys(next.demand).sort((a, b) => next.demand[b] - next.demand[a])[0]; UI.tourGame = g;
   const prizes = G.stock.filter(c => !c.graded && !c.know.fake).sort((a, b) => CT.estimate(G, b).value - CT.estimate(G, a).value).slice(0, 12);
   return `<div class="h" style="font-size:24px">TOURNAMENT NIGHT</div>

@@ -57,8 +57,8 @@ function bot(style) {
     }
     if (G.phase === 'close') {
       if (careful) {
-        const rent = CT.DAYS[G.dayIdx].rent;
-        if (ups) for (const k of ['lens', 'spec', 'hands']) if (!G.up[k] && G.cash > rent + CT.UPGRADES[k].cost + 60) CT.act(G, { t: 'upgrade', k });
+        const rent = G.week[G.dayIdx].rent;
+        if (ups) for (const k of ['lens', 'spec', 'hands']) if (!G.up[k] && G.cash > rent + CT.UPGRADES[k].cost + 80) CT.act(G, { t: 'upgrade', k });
         if (G.dayIdx >= 1) CT.act(G, { t: 'policy', limit2: true });
         for (const c of G.stock.slice()) {
           if (!c.know.loupe) CT.act(G, { t: 'inspect', uid: c.uid, tool: 'loupe' });
@@ -69,7 +69,7 @@ function bot(style) {
           if (!c.graded && c.know.loupe && g >= 9 && e.value >= 20 && G.cash > 15 + rent) CT.act(G, { t: 'grade', uid: c.uid, co: 'halo' });
           else if (!c.graded && e.rarity === 'c' && e.value < 2.5) CT.act(G, { t: 'toBulk', uid: c.uid });
         }
-        const next = CT.DAYS[G.dayIdx + 1];
+        const next = G.week[G.dayIdx + 1];
         if (next && G.cash > rent + CT.BOX.cost + 10) {
           const hot = Object.keys(next.demand).sort((a, b) => next.demand[b] - next.demand[a])[0];
           CT.act(G, { t: 'restock', game: hot });
@@ -91,7 +91,7 @@ function playNight(G, style) {
   if (!N.done) {
     if (N.pick === 'cardnight') { const g = Object.keys(G.packs).sort((a, b) => G.packs[b] - G.packs[a])[0]; CT.act(G, { t: 'cardNight', game: g, n: style === 'sloppy' ? 0 : Math.min(3, G.packs[g]) }); }
     else if (N.pick === 'tourney') {
-      const next = CT.DAYS[G.dayIdx + 1], g = Object.keys(next.demand).sort((a, b) => next.demand[b] - next.demand[a])[0];
+      const next = G.week[G.dayIdx + 1], g = Object.keys(next.demand).sort((a, b) => next.demand[b] - next.demand[a])[0];
       const prize = style === 'sloppy' ? null : G.stock.filter(c => !c.know.fake && !c.graded && CT.estimate(G, c).value >= 15 && CT.estimate(G, c).value <= 60).sort((a, b) => CT.estimate(G, a).value - CT.estimate(G, b).value)[0];
       CT.act(G, { t: 'tourney', game: g, prize: prize ? prize.uid : null });
     }

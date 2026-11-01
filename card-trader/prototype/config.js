@@ -17,7 +17,7 @@ this.FE_CONFIG = {
     <p>Music: an original synth loop written in code. No licensed music.</p>`,
   load: json => CT.load(json),
   slotLine: G => {
-    const done = G.phase === 'end', D = CT.DAYS[Math.max(0, G.dayIdx)];
+    const done = G.phase === 'end', D = G.week[Math.max(0, G.dayIdx)];
     return { done, top: done ? 'FINISHED' : 'DAY ' + (G.dayIdx + 1) + '/' + CT.DAYS.length, name: done ? G.final.rank : D.name,
       stats: ['₵ ' + Math.round(G.cash), 'Rep ' + G.rep, 'Value ' + Math.round(CT.shopValue(G))] };
   },

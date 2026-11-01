@@ -2,8 +2,8 @@
 
 © 2026 justaskjoe. All rights reserved.
 
-status: draft
-updated: 2026-10-31
+status: approved
+updated: 2026-11-01
 camera: 2d
 release_target: steam
 style_fit: good
@@ -15,7 +15,7 @@ money_estimate: $0 (Canva plan credits)
 team_needed: lead-artist, artist, ui-vector, tech-artist
 team_later: headless-finals, marketing-artist
 
-Written by the Lead Artist (`kit/agents/lead-artist.md`, JOB: plan) for `design/v2-design.md`. It adds to the approved `art/lead-plan.md` and changes nothing in it. Where the two disagree, the approved plan wins until Hunter approves this one. Rules are cited from `kit/art/art-rules.md` (R1, R2, …). The exact generation list is in [`v2-shotlist.md`](v2-shotlist.md).
+Written by the Lead Artist (`kit/agents/lead-artist.md`, JOB: plan) for `design/v2-design.md`. **Approved by Hunter on Nov 1, 2026** ("Approve, make the art"). It adds to the approved `art/lead-plan.md` and changes nothing in it. Where the two disagree, the approved plan wins until Hunter approves this one. Rules are cited from `kit/art/art-rules.md` (R1, R2, …). The exact generation list is in [`v2-shotlist.md`](v2-shotlist.md).
 
 ---
 

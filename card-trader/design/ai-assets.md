@@ -20,6 +20,7 @@ This list is for Steam's AI disclosure. Every image below was made with Canva's 
 | 2026-10-31 | `builds/img/p-klik.webp`, `p-vrrz.webp`, `p-zazza.webp` | Zekk lineup (Klik, Vrrz, Zazza), cropped into 3 portraits in code | MAHZohkB4CA | key art | prototype art |
 | 2026-10-31 | `builds/img/p-mimbo.webp`, `p-floss.webp`, `p-nubb.webp` | Puffi lineup (Mimbo, Floss, Nubb), cropped into 3 portraits in code | MAHZolQj-xw | key art | prototype art |
 | 2026-10-31 | `builds/img/p-tumbo.webp`, `p-sheelo.webp` | Mollu pair (Tumbo, Sheelo), cropped into 2 portraits in code | MAHZoqCSSc4 | key art + Pearla | prototype art |
+| 2026-11-01 | `builds/img/p-skrimp.webp` | Skrimp the scalper (Zekk), v2 shot 1, cropped to upper body in code. Look-alike check (R17): green + shell + visor sits near a famous turtle franchise; the antennae, four arms and sneakers keep him distinct | MAHZpUIVCjY | key art + Zekk lineup | prototype art |
 | 2026-10-31 | (not used) | Klik first try, grittier than the key art | MAHZoXqw04M | key art | replaced by the lineup |
 | 2026-10-31 | (not used) | Klik cut-out test for `remove-background` | MAHZoXDCym8 | | test only |
 

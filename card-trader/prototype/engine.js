@@ -56,15 +56,15 @@ const FINISH = { std: 'Standard', mirror: 'Mirror foil', full: 'Full-art', alt: 
 const SETS = { core: 'Wave 2', vintage: 'Wave 1 (vintage)', reprint: 'Wave 3 reprint' };
 const ERRORS = { offcut: 'Factory miscut', ink: 'Ink swap', nofoil: 'Missing foil' };
 const PROMOS = {
-  'dock-mollu': { name: 'Pearl Dock promo', mult: 1.8 }, 'dock-zekk': { name: 'Swarm Dock promo', mult: 1.8 }, 'dock-puffi': { name: 'Cloud Dock promo', mult: 1.8 },
-  topper: { name: 'Box topper promo', mult: 1.8 }, cardnight: { name: 'Card Night promo', mult: 2.0 }, tourney: { name: 'Tournament prize promo', mult: 2.5 },
-  release: { name: 'Wave 3 release promo', mult: 1.5 },
+  'dock-mollu': { name: 'Pearl Dock promo', mult: 1.6 }, 'dock-zekk': { name: 'Swarm Dock promo', mult: 1.6 }, 'dock-puffi': { name: 'Cloud Dock promo', mult: 1.6 },
+  topper: { name: 'Box topper promo', mult: 1.5 }, cardnight: { name: 'Card Night promo', mult: 1.6 }, tourney: { name: 'Tournament prize promo', mult: 2.0 },
+  release: { name: 'Wave 3 release promo', mult: 1.4 },
 };
 const VARIANT_CAP = 30;
 const UPGRADES = {
-  lens: { name: 'Print Lens', cost: 60, does: 'Shows set symbols (vintage vs reprint), verifies serials and signatures, and spots factory misprints.' },
-  spec: { name: 'Spectrometer', cost: 90, does: 'The UV lamp also catches ring fakes that copy the watermark.' },
-  hands: { name: 'Steady Hands', cost: 50, does: 'The first tool you use on each card costs no patience.' },
+  lens: { name: 'Print Lens', cost: 50, does: 'Shows set symbols (vintage vs reprint), verifies serials and signatures, and spots factory misprints.' },
+  spec: { name: 'Spectrometer', cost: 70, does: 'The UV lamp also catches ring fakes that copy the watermark.' },
+  hands: { name: 'Steady Hands', cost: 40, does: 'The first tool you use on each card costs no patience.' },
 };
 
 // Named regulars plus v2's bad actors. askMul/floorMul shape them as sellers (vs what they believe); ceilMul as buyers.
@@ -147,7 +147,55 @@ const DAYS = [
     ] },
 ];
 // After Hours: after days 1-4 you pick one of two flyers. Day 5's night is Grade Day.
+// Night 1 is always the same tutorial pair; later nights draw two from the pool, never repeating last night's pick.
 const NIGHT_FLYERS = [['dig', 'swap'], ['cardnight', 'auction'], ['tourney', 'dig'], ['cardnight', 'auction']];
+const NIGHT_POOL = ['cardnight', 'tourney', 'auction', 'dig', 'swap'];
+const RENT = [40, 70, 90, 120, 150];
+
+// ---------- the week (randomized past day 1) ----------
+// Day 1 is the tutorial: fixed customers in a fixed order. Days 2-5 keep their signature visitors (scalper, Glyphsmith,
+// Hype Bros) and draw the rest from a pool, always with at least 2 sellers, 2 buyers and a pack buyer. Demand moves by
+// up to ±0.15 and the ships that dock follow the hot games. Everything is seeded, so a seed always plays the same week.
+const SPECIALS = {
+  2: [{ who: 'skrimp', role: 'scalp' }, { who: 'quill', role: 'sell', n: 2, games: ['star', 'shell'], q: 8.2, gem: 'h', fakes: 1, src: 'ring' }],
+  3: [{ who: 'hype', role: 'sell', n: 3, pumpCards: true, q: 7.8 }, { who: 'tumbo', role: 'buy', wants: { pump: true } }, { who: 'mimbo', role: 'buy', wants: { pump: true } }],
+  4: [{ who: 'skrimp', role: 'scalp' }, { who: 'quill', role: 'lot', n: 9, games: ['star', 'hive', 'shell'], q: 8.0, gem: 'h', fakes: 3, src: 'ring' }],
+};
+function fillerVisitor(G, kind, day) {
+  const games = ['shell', 'hive', 'star'], own = { pearla: 'shell', sheelo: 'shell', tumbo: 'shell', klik: 'hive', zazza: 'hive', vrrz: 'hive', mimbo: 'star', floss: 'star', nubb: 'star' };
+  const ringy = day >= 2 && R(G) < 0.5;
+  if (kind === 'sell') { const who = pick(G, ['pearla', 'pearla', 'zazza', 'klik']); return { who, role: 'sell', n: 2 + Math.floor(R(G) * 2), games: [own[who], pick(G, games)], q: 6.4 + R(G) * 1.2, gem: pick(G, ['r', 'r', 'h', 'h', 'g']), fakes: R(G) < 0.4 ? 1 : 0, src: ringy && who === 'zazza' ? 'ring' : pick(G, ['old', 'old', 'dealer']) }; }
+  if (kind === 'lot') { const who = pick(G, ['sheelo', 'zazza']); return { who, role: 'lot', n: 9, games: [pick(G, games), pick(G, games), own[who]], q: 6.3 + R(G) * 0.7, gem: pick(G, ['h', 'h', 'g']), fakes: 1 + (R(G) < 0.4 ? 1 : 0), src: ringy ? 'ring' : who === 'sheelo' ? 'dealer' : 'old' }; }
+  if (kind === 'buy') { const who = pick(G, ['tumbo', 'mimbo', 'klik']); return { who, role: 'buy', wants: { game: own[who], min: pick(G, ['u', 'r', 'r']), cond: who === 'mimbo' && R(G) < 0.6 ? pick(G, [8, 9]) : undefined } }; }
+  if (kind === 'flip') { const who = pick(G, ['klik', 'mimbo']); return { who, role: 'flip', wants: { game: R(G) < 0.5 ? own[who] : undefined, min: 'u' } }; }
+  if (kind === 'sealed') { const who = pick(G, ['vrrz', 'floss']); return { who, role: 'sealed', n: 2 + Math.floor(R(G) * 3) + (day === 4 ? 1 : 0) }; }
+  return { who: 'nubb', role: 'bulk', n: 6, games: [pick(G, games), pick(G, games)] };
+}
+function buildWeek(G) {
+  const week = [JSON.parse(JSON.stringify(DAYS[0]))];
+  week[0].rent = RENT[0];
+  for (let i = 1; i < DAYS.length; i++) {
+    const B = DAYS[i], demand = {};
+    for (const g in B.demand) demand[g] = clamp(Math.round((B.demand[g] + (R(G) - 0.5) * 0.3) * 20) / 20, 0.7, 1.7);
+    let ships = Object.keys(demand).filter(g => demand[g] >= 1.1).map(g => GAMES[g].species);
+    if (!ships.length) ships = [GAMES[Object.keys(demand).sort((a, b) => demand[b] - demand[a])[0]].species];
+    if (B.release) ships = ['mollu', 'zekk', 'puffi'];
+    const specials = SPECIALS[i] || [];
+    const kinds = ['sell', 'lot', 'buy', 'buy', 'sealed'];
+    while (kinds.length + specials.length < 8) kinds.push(pick(G, ['sell', 'lot', 'buy', 'flip', 'sealed', 'bulk', 'sell', 'buy']));
+    const visitors = kinds.map(k => fillerVisitor(G, k, i));
+    for (let k = visitors.length - 1; k > 0; k--) { const j = Math.floor(R(G) * (k + 1)); [visitors[k], visitors[j]] = [visitors[j], visitors[k]]; }
+    // signature visitors land somewhere in the middle of the day, never first
+    for (const s of specials) visitors.splice(1 + Math.floor(R(G) * (visitors.length - 1)), 0, JSON.parse(JSON.stringify(s)));
+    const hot = Object.keys(demand).sort((a, b) => demand[b] - demand[a])[0];
+    const shipLine = ships.map(s => SPECIES[s].name).join(' and ') + ' ships on the lanes. ' + GAMES[hot].name + ' is hottest at ×' + demand[hot] + '.';
+    const extra = { 2: ' Word on the strip: a scalper called Skrimp is working the shops, and someone is passing perfect-looking promos.',
+      3: ' And the rumor mill says {pump} is about to spike. Me? I read the docking schedule.',
+      4: ' WAVE 3 DROPS TODAY! Release promos every few packs, reprints everywhere ({pump} got reprinted: ouch). Grade Day tonight!' }[i] || '';
+    week.push({ name: B.name, ships, demand, rent: RENT[i], pump: !!B.pump, release: !!B.release, visitors, dj: shipLine + extra });
+  }
+  return week;
+}
 const NIGHTS = {
   cardnight: { name: 'Card Night', blurb: 'Rip packs live on Floss\'s stream: hype for tomorrow, 2 Card Night promos, the crowd buys packs.' },
   tourney: { name: 'Tournament Night', blurb: 'Host a tournament: entry fees, players buy singles, you put up a prize and get 2 prize promos.' },
@@ -178,7 +226,7 @@ function rollPrint(G, rarity, src) {
   if ((v.fin === 'full' || v.fin === 'alt') && R(G) < 0.25) v.serial = 1 + Math.floor(R(G) * 50);
   if (src === 'old' || src === 'dealer') {
     if (R(G) < 0.2) v.set = 'vintage'; else if (R(G) < 0.15) v.first = true;
-    if (R(G) < 0.03) v.err = pick(G, v.fin === 'std' ? ['offcut', 'offcut', 'ink'] : ['offcut', 'ink', 'nofoil']);
+    if (R(G) < 0.06) v.err = pick(G, v.fin === 'std' ? ['offcut', 'offcut', 'ink'] : ['offcut', 'ink', 'nofoil']);
   }
   if (src === 'dealer' && R(G) < 0.06) v.signed = true;
   if (src === 'pack' && G.dayIdx === 4 && R(G) < 0.4) v.set = 'reprint';
@@ -215,7 +263,7 @@ function variantMult(G, c, known) {
   if (v.set === 'vintage' && sees('print')) m *= 1.8;
   if (v.set === 'reprint' && sees('print')) m *= 0.7;
   if (v.serial && sees('loupe')) m *= v.serial === 1 ? 10 : v.serial <= 5 ? 6 : 3;
-  if (v.err && sees('print')) m *= 2.5;
+  if (v.err && sees('print')) m *= 3;
   if (v.signed && sees('loupe')) m *= 2;
   if (v.promo && sees('loupe')) m *= PROMOS[v.promo].mult;
   return Math.min(m, VARIANT_CAP);
@@ -260,8 +308,9 @@ function newGame(seed) {
     visitIdx: -1, visit: null, ledger: [], days: [], say: null, events: [], complaints: [],
     up: { lens: false, spec: false, hands: false }, policy: { limit2: false }, scalped: 0, pump: null, night: null, packsSoldToday: 0,
     stats: { bestFlip: null, bestGrade: null, fakesCaught: 0, fakesSold: 0, deals: 0, walkouts: 0, cracked: 0, promos: 0, variants: 0, misprints: 0, bestPull: null, scalpedPacks: 0 },
-    startValue: 0, log: [], version: 2 };
+    startValue: 0, log: [], version: 2, week: null, lastNight: null };
   G._s = (seed || 1) >>> 0;
+  G.week = buildWeek(G);
   // starting case: a few singles you already know
   for (const [g, r] of [['shell', 'u'], ['shell', 'c'], ['hive', 'u'], ['star', 'r'], ['star', 'c'], ['hive', 'c']]) {
     const c = makeCard(G, g, r, 7.2, { read: true }); c.know.loupe = true; c.know.uv = true; c.cost = Math.round(trueValue(G, c, 1)); G.stock.push(c);
@@ -296,7 +345,7 @@ function addStock(G, c) {
 
 // ---------- days ----------
 function startDay(G) {
-  G.dayIdx++; const D = DAYS[G.dayIdx];
+  G.dayIdx++; const D = G.week[G.dayIdx];
   G.demand = Object.assign({}, D.demand);
   // last night's hype lands on today
   for (const g in G.hype) if (G.hype[g]) { G.demand[g] = +(G.demand[g] + G.hype[g]).toFixed(2); G.hype[g] = 0; }
@@ -332,7 +381,7 @@ function resolveGrades(G, all) {
 
 // ---------- customers ----------
 function spawnVisit(G, spec) {
-  const P = PEOPLE[spec.who], S = SPECIES[P.species], D = DAYS[G.dayIdx];
+  const P = PEOPLE[spec.who], S = SPECIES[P.species], D = G.week[G.dayIdx];
   const v = { who: spec.who, species: P.species, role: spec.role, wants: spec.wants || null, patience: S.patience + (spec.role === 'lot' ? 6 : 0),
     maxPatience: 0, cards: [], ask: 0, floor: 0, bid: 0, ceil: 0, showing: null, rounds: 0, done: false, packs: 0, result: null };
   if (spec.role === 'sell' || spec.role === 'lot' || spec.role === 'bulk') {
@@ -381,6 +430,8 @@ function matches(G, wants, c) {
 function buyerValue(G, v, c) {
   const P = PEOPLE[v.who], pv = c.v || {};
   let bv = trueValue(G, c);
+  // buyers only pay for a misprint or a vintage print you can show them (Print Lens); otherwise it's just a card
+  if (!c.know.print && !c.graded && !c.fake) { const shown = variantMult(G, c, { loupe: true, print: false }), all = variantMult(G, c, null); if (all > 0) bv *= shown / all; }
   if (v.species === 'puffi' && (c.graded ? c.graded.grade : trueGrade(c)) >= 9) bv *= 1.4;
   if (v.species === 'puffi' && (pv.fin === 'full' || pv.fin === 'alt')) bv *= 1.4;
   if (v.species === 'mollu' && (pv.first || pv.set === 'vintage')) bv *= 1.35;
@@ -432,7 +483,7 @@ function packTotal(G) { return G.packs.shell + G.packs.hive + G.packs.star; }
 function takePacks(G, n) { let k = n; for (const g of ['shell', 'hive', 'star']) while (k > 0 && G.packs[g] > 0) { G.packs[g]--; k--; } return n - k; }
 // Release Day: every 3rd pack sold earns a release promo (the distributor's launch deal).
 function releasePromos(G, sold) {
-  if (!DAYS[G.dayIdx].release) return;
+  if (!G.week[G.dayIdx].release) return;
   const before = Math.floor(G.packsSoldToday / 3); G.packsSoldToday += sold; const n = Math.floor(G.packsSoldToday / 3) - before;
   for (let i = 0; i < n; i++) { const g = pick(G, ['shell', 'hive', 'star']); const c = makeCard(G, g, R(G) < 0.3 ? 'r' : 'u', 9, { fresh: true, promo: 'release', src: 'plain' }); c.know.uv = true; addStock(G, c); event(G, { t: 'promo', uid: c.uid, from: 'release' }); }
 }
@@ -445,7 +496,7 @@ function act(G, it) {
     case 'open': if (G.phase !== 'morning') return err('not now'); G.phase = 'shop'; say(G, 'vee', 'Doors open! First customer\'s at the counter.'); return ok();
     case 'next': {
       if (G.phase !== 'shop') return err('finish this customer first');
-      const D = DAYS[G.dayIdx];
+      const D = G.week[G.dayIdx];
       if (G.visitIdx + 1 >= D.visitors.length) { closeShop(G); return ok(); }
       G.visitIdx++; G.visit = spawnVisit(G, D.visitors[G.visitIdx]); G.phase = 'visit';
       const nv = G.visit, P = PEOPLE[nv.who];
@@ -510,7 +561,7 @@ function act(G, it) {
       if (G.phase !== 'visit' || !v || v.role !== 'sealed') return err('not now');
       const have = packTotal(G); if (!have) return err('no packs');
       v.packs = Math.min(v.packs, have);
-      const per = PACK_RETAIL * (1 + (G.rep - 50) / 500) * (v.who === 'vrrz' ? 1.05 : 1) * (DAYS[G.dayIdx].release ? 1.15 : 1);
+      const per = PACK_RETAIL * (1 + (G.rep - 50) / 500) * (v.who === 'vrrz' ? 1.05 : 1) * (G.week[G.dayIdx].release ? 1.15 : 1);
       startHaggleBuyer(G, v, per * v.packs * PEOPLE[v.who].ceilMul); v.showing = 'packs';
       say(G, v.who, v.packs + ' packs? I\'ll give ' + v.bid + '₵ for the lot.');
       return ok();
@@ -555,9 +606,9 @@ function act(G, it) {
       if (G.cash < BOX.cost) return err('not enough cash');
       money(G, -BOX.cost, 'restock', 'Booster box: ' + GAMES[it.game].name); G.packs[it.game] += BOX.packs;
       // box topper: restock tomorrow's hottest game and the distributor sometimes adds a promo
-      const next = DAYS[G.dayIdx + 1]; let topper = null;
+      const next = G.week[G.dayIdx + 1]; let topper = null;
       if (next) { const hottest = Object.keys(next.demand).sort((a, b) => next.demand[b] - next.demand[a])[0];
-        if (hottest === it.game && R(G) < 0.5) { topper = makeCard(G, it.game, R(G) < 0.25 ? 'h' : 'r', 9, { fresh: true, promo: 'topper', src: 'plain' }); topper.know.uv = true; addStock(G, topper); event(G, { t: 'promo', uid: topper.uid, from: 'topper' }); } }
+        if (hottest === it.game && R(G) < 0.35) { topper = makeCard(G, it.game, R(G) < 0.25 ? 'h' : 'r', 9, { fresh: true, promo: 'topper', src: 'plain' }); topper.know.uv = true; addStock(G, topper); event(G, { t: 'promo', uid: topper.uid, from: 'topper' }); } }
       return ok({ topper });
     }
     case 'upgrade': {
@@ -573,13 +624,15 @@ function act(G, it) {
     }
     case 'endDay': {
       if (G.phase !== 'close') return err('not now');
-      const rent = DAYS[G.dayIdx].rent, paid = Math.min(rent, Math.max(0, G.cash));
+      const rent = G.week[G.dayIdx].rent, paid = Math.min(rent, Math.max(0, G.cash));
       money(G, -paid, 'rent', 'Dock rent'); if (paid < rent) { G.tab += rent - paid; event(G, { t: 'tab', amt: rent - paid }); }
       if (G.tab && G.cash > 60) { const pay = Math.min(G.tab, G.cash - 60); G.tab -= pay; money(G, -pay, 'rent', 'Paid down the tab'); }
       G.days.push(summaryOfDay(G));
       if (G.dayIdx >= DAYS.length - 1) { finale(G); return ok(); }
       G.phase = 'night'; G.events = [];
-      G.night = { flyers: NIGHT_FLYERS[G.dayIdx].slice(), pick: null, done: false };
+      let flyers = NIGHT_FLYERS[0].slice();
+      if (G.dayIdx > 0) { const pool = NIGHT_POOL.filter(k => k !== G.lastNight); const a = pick(G, pool); flyers = [a, pick(G, pool.filter(k => k !== a))]; }
+      G.night = { flyers, pick: null, done: false };
       say(G, 'vee', 'After hours! Two flyers on the board tonight: ' + G.night.flyers.map(k => NIGHTS[k].name).join(' or ') + '.');
       return ok();
     }
@@ -680,7 +733,7 @@ function dealScalp(G) {
 function closeShop(G) {
   G.phase = 'close';
   const n = Math.min(G.bulk, 3 + Math.floor(G.rep / 25)); if (n) { G.bulk -= n; money(G, n, 'bulk', 'Bulk bin: ' + n + ' commons sold'); }
-  const next = DAYS[G.dayIdx + 1];
+  const next = G.week[G.dayIdx + 1];
   let msg = next ? 'Closing time! Tomorrow: ' + next.name + '. ' + Object.keys(next.demand).map(g => GAMES[g].name + ' ×' + next.demand[g]).join(', ') + '.' : 'Last close! Send anything to the graders: tonight is Grade Day and every slab comes home.';
   if (next && next.release && G.pump) msg += ' Wave 3 reprint list is out: ' + tmpl(G.pump.t).name + ' is on it.';
   say(G, 'vee', msg);
@@ -694,7 +747,7 @@ function summaryOfDay(G) {
 function pickNight(G, ev) {
   if (G.phase !== 'night' || !G.night || G.night.pick) return err('not now');
   if (G.night.flyers.indexOf(ev) < 0) return err('not on tonight\'s board');
-  const n = G.night; n.pick = ev;
+  const n = G.night; n.pick = ev; G.lastNight = ev;
   if (ev === 'auction') {
     const g = pick(G, ['shell', 'hive', 'star']), count = 6 + Math.floor(R(G) * 5), roll = R(G);
     const kind = roll < 0.2 ? 'jackpot' : roll < 0.5 ? 'junk' : 'fair';
@@ -758,7 +811,7 @@ function nightTourney(G, g, prizeUid) {
   if (!GAMES[g]) return err('pick a game');
   const prize = prizeUid ? findStock(G, prizeUid) : null;
   if (prizeUid && !prize) return err('no such prize card');
-  const nextD = DAYS[G.dayIdx + 1], dem = nextD ? nextD.demand[g] : 1;
+  const nextD = G.week[G.dayIdx + 1], dem = nextD ? nextD.demand[g] : 1;
   const prizeVal = prize ? (prize.fake ? 0 : trueValue(G, prize, 1)) : 0;
   const entrants = Math.round(4 + G.rep / 20 + dem * 3 + Math.min(6, prizeVal / 12));
   money(G, entrants * 5, 'sell', 'Tournament: ' + entrants + ' entries at 5₵');
@@ -827,10 +880,11 @@ function load(json) {
   const G = typeof json === 'string' ? JSON.parse(json) : json;
   if (typeof G._s !== 'number') throw new Error('not a Card Trader save');
   if (G.version !== 2) throw new Error('this save is from v1; start a new week');
+  if (!G.week) G.week = DAYS.map((D, i) => Object.assign(JSON.parse(JSON.stringify(D)), { rent: RENT[i] }));
   return G;
 }
 const CT = { newGame, load, act, DAYS, GAMES, SPECIES, PEOPLE, GRADERS, RARITY_NAME, RANK, BASE, BOX, PACK_RETAIL, TRANSLATE_FEE, FLUENT_AT,
   FINISH, SETS, ERRORS, PROMOS, UPGRADES, NIGHTS, NIGHT_FLYERS,
-  tmpl, trueGrade, centerRatio, estimate, readable, trueValue, shopValue, matches, wantsText, demandOf, variantMult, packTotal };
+  RENT, NIGHT_POOL, tmpl, trueGrade, centerRatio, estimate, readable, trueValue, shopValue, matches, wantsText, demandOf, variantMult, packTotal };
 if (typeof module !== 'undefined' && module.exports) module.exports = CT; else root.CT = CT;
 })(this);
