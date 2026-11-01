@@ -43,22 +43,42 @@ function wearSVG(c, strong) {
   return `<svg class="wear" viewBox="0 0 100 140" preserveAspectRatio="none">${s}</svg>`;
 }
 
-// One card. opts: size ('xs'|'sm'|''|'lg'), readable, uv, loupe, badge
+// v2 prints, all drawn in code: promo crests (our own starburst shapes, never a real game's marks), the First Run
+// sticker, serial foil, signature, set symbol. Full-art and alt-art paintings layer over the base sheet, so the
+// base sheet shows until their own paintings exist.
+const PROMO_MARK = { 'dock-mollu': ['◎', '#19C8D8'], 'dock-zekk': ['⬢', '#A6F01E'], 'dock-puffi': ['✦', '#B28CFF'], topper: ['▲', '#FF7A1A'], cardnight: ['♪', '#FF2E93'], tourney: ['♛', '#FFD21F'], release: ['3', '#19D3F0'] };
+const SET_MARK = { core: '●', vintage: '◐', reprint: '◒' };
+function printBits(c) {
+  const v = c.v || {}; let s = '';
+  if (v.promo && PROMO_MARK[v.promo]) { const [ic, col] = PROMO_MARK[v.promo]; s += `<div class="promo" style="--pc:${col}" title="promo">${ic}</div>`; }
+  if (v.first) s += '<div class="first">RUN&nbsp;1</div>';
+  if (v.serial) s += `<div class="serial">${String(v.serial).padStart(2, '0')}/50</div>`;
+  if (v.signed) s += '<svg class="sig" viewBox="0 0 100 30"><path d="M4 22 C 14 2, 22 30, 32 14 S 48 4, 54 20 S 70 26, 78 10 S 92 18, 96 8" fill="none" stroke="#120A1F" stroke-width="3" stroke-linecap="round"/></svg>';
+  s += `<div class="setsym">${SET_MARK[v.set || 'core']}</div>`;
+  return s;
+}
+// One card. opts: size ('xs'|'sm'|''|'md'|'lg'), readable, uv, loupe, badge
 function cardHTML(c, o) {
   o = o || {};
-  const tm = CT.tmpl(c.t), F = FRAME[tm.game], h = hash(c.t), q = tm.idx % 4;
+  const tm = CT.tmpl(c.t), F = FRAME[tm.game], h = hash(c.t), q = tm.idx % 4, v = c.v || {};
   const off = (10 - c.cen) * 1.3 * ((h & 1) ? 1 : -1);
   const vars = `--fr:${F.fr};--fr2:${F.fr2};--l:${7 + off}%;--r:${7 - off}%;`;
-  const art = `background-image:url(img/cards-${tm.game}.jpg);background-position:${q % 2 ? 100 : 0}% ${q > 1 ? 100 : 0}%;filter:hue-rotate(${Math.floor(tm.idx / 4) * 38}deg)${tm.rarity === 'g' ? ' saturate(1.5) contrast(1.15)' : ''};`;
+  const pos = `${q % 2 ? 100 : 0}% ${q > 1 ? 100 : 0}%`, base = `url(img/cards-${tm.game}.jpg)`;
+  const hue = Math.floor(tm.idx / 4) * 38 + (v.err === 'ink' ? 160 : 0);
+  let layers = base, sizes = '200% 200%', poss = pos;
+  if (v.fin === 'alt') { layers = `url(img/cards-${tm.game}-alt.jpg), ${base}`; sizes = '200% 200%, 200% 200%'; poss = `${pos}, ${q % 2 ? 0 : 100}% ${q > 1 ? 0 : 100}%`; }
+  if (v.fin === 'full') { layers = `url(img/full-${tm.game}.jpg), ${base}`; sizes = '200% 100%, 220% 220%'; poss = `${tm.idx % 2 ? 100 : 0}% 50%, ${pos}`; }
+  const art = `background-image:${layers};background-size:${sizes};background-position:${poss};filter:hue-rotate(${hue}deg)${tm.rarity === 'g' ? ' saturate(1.5) contrast(1.15)' : ''};`;
   const name = o.readable ? `<span>${tm.name}</span>` : scriptSVG(CT.GAMES[tm.game].script, tm.name);
   const gem = o.readable ? GEM[tm.rarity] : ['#ddd', '?'];
-  const shiny = tm.rarity === 'h' || tm.rarity === 'g' || (c.fake && tm.rarity !== 'c');
+  const foilish = tm.rarity === 'h' || tm.rarity === 'g' || (c.fake && tm.rarity !== 'c');
+  const shiny = foilish && v.err !== 'nofoil';
   const wm = c.fake === 'uv' ? '' : watermark(c.fake === 'stock' ? (tm.game === 'shell' ? 'hive' : 'shell') : tm.game);
   const badge = o.badge ? `<div class="badge ${o.badge === 'FAKE' ? 'fake' : ''}">${o.badge}</div>` : '';
   const inner = `<div class="inner"><div class="art" data-g="${tm.game}" style="${art}"><div class="glyph-art" aria-hidden="true">${F.ic}</div></div>
     <div class="name">${name}</div><div class="gem" style="background:${gem[0]};color:${gem[0] === '#000' ? '#FFD21F' : '#120A1F'}">${gem[1]}</div>
-    <div class="gameic">${F.ic}</div></div>${shiny ? '<div class="holo"></div>' : ''}${wearSVG(c, o.loupe)}${wm}${badge}`;
-  const cls = `card ${o.size || ''} ${o.uv ? 'uv' : ''} ${o.cls || ''}`;
+    <div class="gameic">${F.ic}</div>${printBits(c)}</div>${v.fin === 'mirror' ? '<div class="mirrorfoil"></div>' : ''}${shiny ? '<div class="holo"></div>' : ''}${wearSVG(c, o.loupe)}${wm}${badge}`;
+  const cls = `card ${o.size || ''} ${o.uv ? 'uv' : ''} ${v.fin === 'full' ? 'fullart' : ''} ${v.fin === 'alt' ? 'altart' : ''} ${o.cls || ''}`;
   const card = `<div class="${cls}" style="${vars}" data-uid="${c.uid}" ${o.act ? `data-act="${o.act}"` : ''} role="button" tabindex="0" aria-label="${o.readable ? tm.name : 'unread card'}">${inner}</div>`;
   if (c.graded) { const co = c.graded.co; return `<div class="slab ${co}" data-uid="${c.uid}" ${o.act ? `data-act="${o.act}"` : ''}><div class="lbl"><span>${CT.GRADERS[co].name.split(' ')[0].toUpperCase()}</span><span>${c.graded.grade}</span></div>${card}</div>`; }
   return card;

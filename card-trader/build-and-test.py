@@ -6,8 +6,8 @@
 
 Fails (exit 1) if the build breaks, the sim leaves its pass band, or the walkthrough hits a JS error,
 doesn't reach the end screen, or scrolls sideways.
-Pass band: the careful bot grows the shop at least 40%, beats the sloppy bot in 75%+ of seeds,
-and skipping the Loupe costs at least 30 points of growth (inspecting has to matter).
+Pass band (v2, 5-day week): the careful bot grows the shop at least 150%, beats the sloppy bot in 90%+ of seeds,
+and the Loupe upgrades are worth at least 5 points of growth over the same bot without them.
 © 2026 justaskjoe. All rights reserved.
 """
 import pathlib, re, shutil, subprocess, sys
@@ -30,9 +30,9 @@ if shutil.which('node'):
     r = run('balance sim (200 runs per bot)', ['node', 'sim.js', '200'], proto)
     gain = {m.group(1): int(m.group(2)) for m in re.finditer(r'^(\w+)\s+median gain (-?\d+)%', r.stdout, re.M)}
     beats = re.search(r'careful beats sloppy (\d+)%', r.stdout)
-    if gain.get('careful', 0) < 40: fails.append('balance: careful gain under 40%')
-    if not beats or int(beats.group(1)) < 75: fails.append('balance: careful beats sloppy under 75%')
-    if gain.get('careful', 0) - gain.get('noloupe', 0) < 30: fails.append('balance: the Loupe matters less than 30 points')
+    if gain.get('careful', 0) < 150: fails.append('balance: careful gain under 150%')
+    if not beats or int(beats.group(1)) < 90: fails.append('balance: careful beats sloppy under 90%')
+    if gain.get('careful', 0) - gain.get('noupgrades', 0) < 5: fails.append('balance: Loupe upgrades worth under 5 points')
 else:
     print('!! node not found: install Node 18+ to run the sim'); fails.append('node')
 

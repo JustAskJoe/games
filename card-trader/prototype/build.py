@@ -2,7 +2,7 @@
 # © 2026 justaskjoe. All rights reserved.
 import pathlib
 here = pathlib.Path(__file__).parent
-head = (here / 'head.html').read_text(encoding='utf-8').replace('</style>', (here / 'frontend.css').read_text(encoding='utf-8') + '</style>', 1)
+head = (here / 'head.html').read_text(encoding='utf-8').replace('</style>', (here / 'frontend.css').read_text(encoding='utf-8') + (here / 'v2.css').read_text(encoding='utf-8') + '</style>', 1)
 parts = [head, (here / 'body.html').read_text(encoding='utf-8')]
 for f in ['config.js', 'engine.js', 'art.js', 'music.js', 'fx.js', 'frontend.js', 'ui.js']:
     parts.append('<script>\n' + (here / f).read_text(encoding='utf-8') + '\n</script>\n')

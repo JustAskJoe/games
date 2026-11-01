@@ -6,6 +6,40 @@ Newest on top. See the repo's CLAUDE.md for how patch notes work.
 
 ---
 
+## v2 · 2026-11-01 · Hunter (with Claude): "the market fights back"
+A full 5-day week where the market pushes back. The design is in `design/v2-design.md`; the Lead Artist's v2 art plan is in `art/lead-plan-v2.md` (draft) with a shot list in `art/v2-shotlist.md`.
+
+### What's new
+- **5 days:** Reef Run, Hive Swarm, Star Drift, The Rumor and Wave 3 Release Day. 39 customer visits. Rent 40/60/80/100/130.
+- **Card variants**, all drawn in code: mirror foil, full-art, alt-art, First Run stamps, vintage and reprint set symbols, serial numbers (#1/50 is worth ×10), misprints that look like damage, and signed cards. Each species has its own tastes: Puffi like full and alt art, Mollu like First Runs and vintage, Zekk like serials and misprints.
+- **Promo opportunities:** dock promos from docking ships, box toppers when you restock tomorrow's hottest game, 2 promos from Card Night, 2 from a Tournament, and release promos on day 5.
+- **After Hours:** each night you pick 1 of 2 flyers: Card Night, Tournament Night, Dock Auction (bid against Sheelo and Klik), Bulk Dig (16 face-down cards, 6 flips, read the glints), or Swap Meet (three 1-for-1 trades).
+- **Bad actors:**
+  - Skrimp the scalper (days 3 and 5), countered by a "Limit 2" sign.
+  - Quill of the Glyphsmiths, whose ring fakes pass the basic UV lamp.
+  - The Hype Bros' pump on day 4: the card is ×1.8 that day, then reprinted and ×0.5 from day 5. The close-up report shows the reprint list.
+- **Loupe upgrades** (bought at close):
+  - Print Lens: set symbols, misprints, verified serials.
+  - Spectrometer: catches ring fakes.
+  - Steady Hands: the first tool on each card is free.
+- **Customers react** in code: they slide in, shake when insulted, bob when they counter, and get a DEAL or WALKED stamp as they leave.
+- **Saves** move to new v2 slots. v1 saves are left alone.
+- **Sim** (200 runs): careful +317% median, careful without upgrades +294%, sloppy +34%. Careful beats sloppy in 99% of runs.
+
+### Next up
+- [ ] @Hunter: approve or edit the Lead Artist's v2 addendum (`art/lead-plan-v2.md`), so the Artist can make the 12 v2 paintings in `art/v2-shotlist.md`: 3 new characters, full-art and alt-art cards, and Release Day, Auction and Tournament scenes. Until then the game falls back to the v1 art.
+- [ ] @Hunter @Zach @Joe: play the full week. Pass bar: you finish and want to try a different strategy.
+- [ ] Tune with real players: the auction rivals' caps, Bulk Dig gem odds, and Tournament entrant counts.
+
+### Watch out
+- [ ] **Upgrades are worth only about +23 points** in the sim, mostly from not selling ring fakes. Humans may value them more or less. If they feel optional, make ring fakes more common or the Print Lens finds bigger.
+- [ ] **The sim is generous over 5 days:** 44 of 200 careful runs reached "Legend of the Lanes". Rank thresholds are 150/500/1000/1800; tune them with real players.
+- [ ] Full-art and alt-art cards show the v1 sheets until `full-*.jpg` and `cards-*-alt.jpg` exist. They're layered as CSS fallbacks.
+- [ ] The new characters (Skrimp, Quill, the Hype Bros) show an initial instead of a portrait until Batch A of the shot list is made.
+- [ ] Bots don't play the pump on purpose (careful bots just avoid buying it), and they never use the translator. Human results will differ.
+- [ ] Our variant marks (the RUN 1 sticker, starburst promo crests, set symbols) are original shapes. Have the legal reviewer confirm none echo real card games' marks (Lead Artist risk 2).
+- [ ] Tested in headless Chromium and the browser pane only.
+
 ## v1 · 2026-10-31 · Hunter (with Claude): three playable station days
 The first playable build: 3 station days at Stall 7 on Crosslane Market, desktop landscape, in a cel-shaded street-graffiti look. Design in `design/v1-design.md`, decisions in `design/handoff.md`.
 

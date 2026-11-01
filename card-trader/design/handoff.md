@@ -17,6 +17,12 @@ This is the list of decisions as they stand. Change it when a decision changes. 
 - **Worldbuilding:** Claude drafts it in `v1-design.md`, and Hunter vetoes in the pull request.
 - **Canva:** it uses plan credits, not real money, so generate what the art needs.
 
+## v2 decisions (Hunter, Nov 1, 2026: "build out v2")
+- **5-day week**, with card variants and promo opportunities, an **After Hours** event each night (pick 1 of 2 flyers), and **three bad actors**: a scalper, a fake ring and a pump crew.
+- **Loupe upgrades** and a "Limit 2" store policy. Customers react through code, not new art.
+- **The Lead Artist plans v2's art.** Paintings wait for Hunter's approval of `art/lead-plan-v2.md`.
+- Parked for v3: trust per species, a rival stall, customs, a campaign across several weeks, a second hub.
+
 ## Still open
 - Final title (Intergalactic Card Trader is a working title).
 - Whether the art direction holds after the crew sees it.

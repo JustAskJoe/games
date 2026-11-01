@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Intergalactic Card Trader · v1</title>
+<title>Intergalactic Card Trader · v2</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -252,7 +252,7 @@ button { font: inherit; }
 /* settings, credits, pause */
 .fe-panel { left: 50%; top: 50%; width: 560px; transform: translate(-50%, -50%) rotate(-1deg); padding: 24px; display: flex; flex-direction: column; gap: 12px; z-index: 3; }
 .fe-panel p { margin: 0; font-size: 16px; line-height: 1.4; }
-.toggle { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; background: #fff; border: 3px solid var(--ink); border-radius: 12px; padding: 10px 14px; cursor: pointer; text-align: left; box-shadow: 3px 3px 0 var(--ink); }
+.toggle { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; color: var(--ink); background: #fff; border: 3px solid var(--ink); border-radius: 12px; padding: 10px 14px; cursor: pointer; text-align: left; box-shadow: 3px 3px 0 var(--ink); }
 .toggle .tl { font-family: var(--display); font-size: 18px; display: flex; flex-direction: column; } .toggle small { font-family: var(--body); font-size: 13px; font-weight: 600; opacity: .7; }
 .sw { width: 64px; height: 34px; border: 3px solid var(--ink); border-radius: 999px; background: #ddd; position: relative; flex: none; transition: background .15s; }
 .sw span { position: absolute; top: 2px; left: 2px; width: 24px; height: 24px; border-radius: 50%; background: #fff; border: 2.5px solid var(--ink); transition: left .15s; }
@@ -264,6 +264,57 @@ body.calm .opening .presents, body.calm .halftone-wipe, body.calm .rgb-flash, bo
 body.calm .opening .par:first-child, body.calm .logo.big .lt, body.calm .logo.big .l3, body.calm .press, body.calm .mbtn, body.calm .slot { opacity: 1; animation: none; }
 body.calm .band { transform: rotate(-8deg) translateX(0); animation: none; opacity: .85; }
 body.calm .bg.pan, body.calm .marquee .track, body.calm .logo .sweep { animation: none; }
+/* v2 styles: card prints (mirror foil, full-art, alt-art, stamps, serials, signatures, set symbols), After Hours screens,
+   Loupe upgrades, the Limit 2 toggle, rumor chips and customer reactions. Folded into the build by build.py.
+   © 2026 justaskjoe. All rights reserved. */
+/* prints */
+.card .mirrorfoil { position: absolute; inset: 0; pointer-events: none; z-index: 1; mix-blend-mode: color-dodge; opacity: .5;
+  background: linear-gradient(125deg, transparent 15%, #9ff 30%, #f9f 42%, #ff9 54%, transparent 70%); background-size: 260% 260%; animation: sheen 4s linear infinite;
+  -webkit-mask: linear-gradient(#000 0 0) top/100% 6% no-repeat, linear-gradient(#000 0 0) bottom/100% 38% no-repeat, linear-gradient(#000 0 0) left/7% 100% no-repeat, linear-gradient(#000 0 0) right/7% 100% no-repeat;
+          mask: linear-gradient(#000 0 0) top/100% 6% no-repeat, linear-gradient(#000 0 0) bottom/100% 38% no-repeat, linear-gradient(#000 0 0) left/7% 100% no-repeat, linear-gradient(#000 0 0) right/7% 100% no-repeat; }
+.card.fullart .art { top: 0; left: 0; right: 0; height: 100%; border: 0; border-radius: 0; }
+.card.fullart .name { background: rgba(255,255,255,.78); }
+.card.altart .art { outline: 3px solid #FFD21F; outline-offset: -3px; }
+.card.altart::after { content: 'ALT'; position: absolute; left: 8%; top: 8%; z-index: 2; font-family: var(--display); font-size: calc(var(--w) * .07); background: #FFD21F; border: 1.5px solid var(--ink); border-radius: 4px; padding: 0 3px; }
+.card .promo { position: absolute; left: 6%; top: 6%; z-index: 2; width: 19%; aspect-ratio: 1; display: grid; place-items: center; font-family: var(--display); font-size: calc(var(--w) * .085); color: var(--ink);
+  background: var(--pc); clip-path: polygon(50% 0, 61% 30%, 95% 25%, 72% 52%, 90% 85%, 56% 72%, 50% 100%, 42% 72%, 8% 85%, 28% 52%, 5% 25%, 39% 30%); }
+.card.altart .promo { top: 16%; }
+.card .first { position: absolute; right: 27%; bottom: 5.5%; z-index: 2; font-family: var(--display); font-size: calc(var(--w) * .052); background: var(--ink); color: #FFD21F; padding: 1px 4px; border-radius: 3px; transform: rotate(-6deg); }
+.card .serial { position: absolute; left: 6%; bottom: 14%; z-index: 2; font-family: var(--display); font-size: calc(var(--w) * .062); color: #FFD21F; text-shadow: 1px 1px 0 var(--ink), 0 0 4px #fff7; }
+.card .sig { position: absolute; left: 20%; top: 46%; width: 60%; z-index: 2; opacity: .85; }
+.card .setsym { position: absolute; right: 6%; top: 63.5%; z-index: 2; font-size: calc(var(--w) * .07); color: var(--ink); line-height: 1; }
+/* rumor */
+.chip.rumor { background: #FFD21F; } .chip.rumor.down { background: var(--coral); color: #fff; }
+/* close: upgrades */
+.ups { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.up { display: flex; flex-direction: column; gap: 2px; text-align: left; border: 2.5px solid var(--ink); border-radius: 10px; padding: 6px 8px; background: #fff; cursor: pointer; box-shadow: 3px 3px 0 var(--ink); font: inherit; color: var(--ink); }
+.up b { font-family: var(--display); font-weight: 400; font-size: 13px; } .up span { font-weight: 800; color: var(--magenta); } .up small { font-size: 10.5px; line-height: 1.2; opacity: .75; }
+.up.owned { background: var(--lime); } .up.owned span { color: var(--ink); }
+.up:disabled { cursor: default; } .up:not(.owned):disabled { opacity: .5; }
+/* After Hours */
+.flyers { position: absolute; left: 0; right: 0; top: 170px; display: flex; justify-content: center; gap: 50px; z-index: 5; }
+.flyer { width: 420px; min-height: 300px; background: var(--paper); border: 4px solid var(--ink); border-radius: 14px; box-shadow: 8px 8px 0 var(--ink); padding: 22px; display: flex; flex-direction: column; gap: 12px;
+  transform: rotate(var(--tilt)); animation: slotIn .45s cubic-bezier(.2,1.4,.4,1) both; }
+.flyer p { margin: 0; font-size: 17px; line-height: 1.4; flex: 1; }
+.flyer::before { content: ''; position: absolute; left: 50%; top: -12px; width: 26px; height: 26px; margin-left: -13px; border-radius: 50%; background: var(--magenta); border: 3px solid var(--ink); }
+.panel.night { z-index: 6; }
+.crate { width: 130px; height: 110px; display: grid; place-items: center; font-size: 64px; background: repeating-linear-gradient(90deg, #b07a3c 0 18px, #9a6630 18px 22px); border: 4px solid var(--ink); border-radius: 8px; box-shadow: 5px 5px 0 var(--ink); }
+.crate.open { background: radial-gradient(circle, #fff7b0, #FFD21F 60%, #b07a3c 61%); animation: pop .5s both; }
+.dig { display: grid; grid-template-columns: repeat(8, 1fr); gap: 10px; margin-top: 10px; justify-items: center; }
+.digback { width: 74px; aspect-ratio: 5/7; border: 3px solid var(--ink); border-radius: 6px; box-shadow: 3px 3px 0 var(--ink); cursor: pointer; font-size: 24px;
+  background: radial-gradient(circle at 50% 40%, #fff3 0 20%, transparent 21%), repeating-linear-gradient(45deg, var(--gc) 0 6px, #0002 6px 12px); transition: transform .1s; }
+.digback:hover:not(:disabled) { transform: translateY(-5px) rotate(-3deg); }
+.digback:disabled { opacity: .5; cursor: default; }
+.swaprow { display: grid; grid-template-columns: 90px 110px 40px 110px 1fr; align-items: center; gap: 14px; padding: 8px 0; border-bottom: 2px dashed rgba(18,10,31,.2); }
+.portrait.mini { height: 90px; width: 90px; } .portrait.mini .nameplate { font-size: 12px; padding: 2px 6px; } .portrait.mini .sp { display: none; } .portrait.mini .fallback-face { font-size: 44px; }
+/* customer reactions (code stand-ins until expression art exists) */
+.portrait.enter { animation: custIn .4s cubic-bezier(.2,1.3,.4,1) both; }
+@keyframes custIn { from { transform: translateX(-60px) rotate(-6deg); opacity: 0; } to { transform: none; opacity: 1; } }
+.portrait.shake { animation: shakeP .45s; } @keyframes shakeP { 20%, 60% { transform: translateX(-10px) rotate(-3deg); } 40%, 80% { transform: translateX(10px) rotate(3deg); } }
+.portrait.bob .pic { animation: bob .45s ease-out; } @keyframes bob { 40% { transform: translateY(-10px) scaleY(1.04); } }
+.portrait.wobble .pic { animation: wob .5s ease-in-out; }
+.lastvisit { display: flex; align-items: center; gap: 10px; animation: pop .35s both; }
+.lastvisit.walk .portrait { filter: grayscale(.7); }
 </style>
 </head>
 <body>
@@ -273,7 +324,7 @@ body.calm .bg.pan, body.calm .marquee .track, body.calm .logo .sweep { animation
 // Intergalactic Card Trader's settings for the shared front end (frontend.js): words, art, colors, ticker, saves.
 // © 2026 justaskjoe. All rights reserved.
 this.FE_CONFIG = {
-  id: 'ict.v1',
+  id: 'ict.v2', // v1 saves stay under ict.v1 and are ignored (the week is longer now)
   presenter: 'JustAskJoe',
   title1: 'INTERGALACTIC',
   title2: 'CARD TRADER',
@@ -283,22 +334,24 @@ this.FE_CONFIG = {
   tickerLabel: 'LANE FM',
   ticker: ['Lane FM, the only station on the station!', 'Mollu pearl-haulers inbound on lane 3.', 'Reminder: Zazza\'s binder is "totally legit".',
     'Grade Day is coming. Shine those slabs.', 'Puffi festival ship spotted near the ring!', 'Hive Gambit prices are buzzing.'],
-  credits: `<p><b>Intergalactic Card Trader</b> · v1 prototype</p>
+  credits: `<p><b>Intergalactic Card Trader</b> · v2 prototype</p>
     <p>Made by <b>JustAskJoe</b>: Hunter, with Claude.</p>
     <p>Paintings: Canva AI, directed in-house (the full list is in <code>design/ai-assets.md</code>). Cards, scripts, UI and effects are drawn in code.</p>
     <p>Music: an original synth loop written in code. No licensed music.</p>`,
   load: json => CT.load(json),
   slotLine: G => {
     const done = G.phase === 'end', D = CT.DAYS[Math.max(0, G.dayIdx)];
-    return { done, top: done ? 'FINISHED' : 'DAY ' + (G.dayIdx + 1) + '/3', name: done ? G.final.rank : D.name,
+    return { done, top: done ? 'FINISHED' : 'DAY ' + (G.dayIdx + 1) + '/' + CT.DAYS.length, name: done ? G.final.rank : D.name,
       stats: ['₵ ' + Math.round(G.cash), 'Rep ' + G.rep, 'Value ' + Math.round(CT.shopValue(G))] };
   },
 };
 
 </script>
 <script>
-// Intergalactic Card Trader · v1 engine. Pure: seeded RNG, no DOM, runs in node (sim.js) and the browser.
+// Intergalactic Card Trader · v2 engine. Pure: seeded RNG, no DOM, runs in node (sim.js) and the browser.
 // Every player action goes through act(G, intent). The UI and the bots only read G and call act.
+// v2 ("the market fights back"): a 5-day week, card variants and promos, After Hours events, scalpers, ring fakes,
+// a pump-and-dump, Loupe upgrades and a store policy. Design: design/v2-design.md.
 // © 2026 justaskjoe. All rights reserved.
 (function (root) {
 'use strict';
@@ -347,7 +400,24 @@ const PACK_RETAIL = 28;
 const TRANSLATE_FEE = 5;
 const FLUENT_AT = 3;
 
-// Named regulars. askMul/floorMul shape them as sellers (vs what they believe it's worth); ceilMul as buyers.
+// ---------- variants (v2) ----------
+// Every copy carries a print: c.v = { fin, first, set, promo, serial, err, signed }. Most of it is drawn in code.
+const FINISH = { std: 'Standard', mirror: 'Mirror foil', full: 'Full-art', alt: 'Alt-art' };
+const SETS = { core: 'Wave 2', vintage: 'Wave 1 (vintage)', reprint: 'Wave 3 reprint' };
+const ERRORS = { offcut: 'Factory miscut', ink: 'Ink swap', nofoil: 'Missing foil' };
+const PROMOS = {
+  'dock-mollu': { name: 'Pearl Dock promo', mult: 1.8 }, 'dock-zekk': { name: 'Swarm Dock promo', mult: 1.8 }, 'dock-puffi': { name: 'Cloud Dock promo', mult: 1.8 },
+  topper: { name: 'Box topper promo', mult: 1.8 }, cardnight: { name: 'Card Night promo', mult: 2.0 }, tourney: { name: 'Tournament prize promo', mult: 2.5 },
+  release: { name: 'Wave 3 release promo', mult: 1.5 },
+};
+const VARIANT_CAP = 30;
+const UPGRADES = {
+  lens: { name: 'Print Lens', cost: 60, does: 'Shows set symbols (vintage vs reprint), verifies serials and signatures, and spots factory misprints.' },
+  spec: { name: 'Spectrometer', cost: 90, does: 'The UV lamp also catches ring fakes that copy the watermark.' },
+  hands: { name: 'Steady Hands', cost: 50, does: 'The first tool you use on each card costs no patience.' },
+};
+
+// Named regulars plus v2's bad actors. askMul/floorMul shape them as sellers (vs what they believe); ceilMul as buyers.
 const PEOPLE = {
   pearla: { name: 'Pearla', species: 'mollu', askMul: 0.9, floorMul: 0.45, ceilMul: 1.05, line: 'a grandma clearing out her late husband\'s binder' },
   tumbo:  { name: 'Tumbo',  species: 'mollu', askMul: 1.3, floorMul: 0.8, ceilMul: 1.15, line: 'a teen who is bad at hiding excitement' },
@@ -358,46 +428,83 @@ const PEOPLE = {
   mimbo:  { name: 'Mimbo',  species: 'puffi', askMul: 1.2, floorMul: 0.75, ceilMul: 1.1, line: 'only wants mint cards and cries at good centering' },
   floss:  { name: 'Floss',  species: 'puffi', askMul: 1.2, floorMul: 0.8, ceilMul: 1.1, line: 'a streamer who loves a pack rip' },
   nubb:   { name: 'Nubb',   species: 'puffi', askMul: 1.0, floorMul: 0.6, ceilMul: 1.0, line: 'a kid with a shoebox' },
+  skrimp: { name: 'Skrimp', species: 'zekk',  askMul: 1.3, floorMul: 0.9, ceilMul: 1.0, line: 'a scalper: buys everything, resells on the strip', bad: true },
+  quill:  { name: 'Quill',  species: 'mollu', askMul: 1.0, floorMul: 0.7, ceilMul: 1.0, line: 'a Glyphsmith courier with suspiciously perfect promos', bad: true },
+  hype:   { name: 'The Hype Bros', species: 'puffi', askMul: 1.0, floorMul: 0.85, ceilMul: 1.0, line: 'two Puffi with a "can\'t-miss" tip', bad: true },
 };
 
-// Three scripted days. Who comes is fixed so every run teaches the same lessons; what they bring is rolled.
+// Five scripted days. Who comes is fixed so every run teaches the same lessons; what they bring is rolled.
+// src picks how prints roll: 'old' binders (vintage, first runs, misprints), 'dealer' (more signed), 'ring' (ring fakes).
 const DAYS = [
   { name: 'Reef Run', ships: ['mollu', 'puffi'], demand: { shell: 1.0, hive: 0.9, star: 1.2 }, rent: 40,
-    dj: 'Mollu pearl-haulers and a Puffi cloud-liner on the lanes this morning. Starweave is warm, Hive Gambit is sleepy.',
+    dj: 'Mollu pearl-haulers and a Puffi cloud-liner on the lanes this morning. Starweave is warm, Hive Gambit is sleepy. Keep an eye out for mirror foils!',
     visitors: [
-      { who: 'pearla', role: 'sell', n: 2, games: ['shell'], q: 7.6, gem: 'h', read: true },
+      { who: 'pearla', role: 'sell', n: 2, games: ['shell'], q: 7.6, gem: 'h', read: true, src: 'old' },
       { who: 'tumbo',  role: 'buy',  wants: { game: 'shell', min: 'u' } },
       { who: 'nubb',   role: 'bulk', n: 6, games: ['star', 'shell'] },
       { who: 'klik',   role: 'sell', n: 2, games: ['hive'], q: 7.2, gem: 'h', fakes: 1 },
       { who: 'mimbo',  role: 'buy',  wants: { game: 'star', min: 'c', cond: 8 } },
-      { who: 'sheelo', role: 'lot',  n: 9, games: ['star', 'hive', 'shell'], q: 6.4, gem: 'g', gemGame: 'star', fakes: 1 },
+      { who: 'sheelo', role: 'lot',  n: 9, games: ['star', 'hive', 'shell'], q: 6.4, gem: 'g', gemGame: 'star', fakes: 1, src: 'old' },
       { who: 'floss',  role: 'sealed', n: 2 },
     ] },
-  { name: 'Hive Swarm', ships: ['zekk'], demand: { shell: 0.9, hive: 1.5, star: 1.0 }, rent: 60, cardNight: true,
-    dj: 'A whole Zekk swarm-fleet is docking! Hive Gambit is HOT today. Card Night after close, bring your packs.',
+  { name: 'Hive Swarm', ships: ['zekk'], demand: { shell: 0.9, hive: 1.5, star: 1.0 }, rent: 60,
+    dj: 'A whole Zekk swarm-fleet is docking, handing out Swarm Dock promos! Hive Gambit is HOT today.',
     visitors: [
       { who: 'vrrz',   role: 'sealed', n: 4 },
       { who: 'klik',   role: 'buy',  wants: { game: 'hive', min: 'r' } },
       { who: 'zazza',  role: 'lot',  n: 9, games: ['hive', 'hive', 'shell'], q: 6.8, gem: 'g', gemGame: 'hive', fakes: 2 },
-      { who: 'pearla', role: 'sell', n: 3, games: ['shell', 'star'], q: 6.8, gem: 'r' },
+      { who: 'pearla', role: 'sell', n: 3, games: ['shell', 'star'], q: 6.8, gem: 'r', src: 'old' },
       { who: 'tumbo',  role: 'buy',  wants: { game: 'shell', min: 'r' } },
       { who: 'klik',   role: 'flip', wants: { min: 'u' } },
       { who: 'floss',  role: 'sealed', n: 2 },
       { who: 'mimbo',  role: 'buy',  wants: { game: 'star', min: 'u', cond: 8 } },
     ] },
-  { name: 'Star Drift', ships: ['puffi', 'mollu'], demand: { shell: 1.1, hive: 1.0, star: 1.4 }, rent: 90,
-    dj: 'The Puffi festival ship is in! Starweave everywhere. Grade Day after close: every slab comes home tonight.',
+  { name: 'Star Drift', ships: ['puffi', 'mollu'], demand: { shell: 1.1, hive: 1.0, star: 1.4 }, rent: 80,
+    dj: 'The Puffi festival ship is in! Starweave everywhere. Word on the strip: a scalper called Skrimp is working the shops, and someone is passing perfect-looking promos.',
     visitors: [
       { who: 'mimbo',  role: 'buy',  wants: { game: 'star', min: 'r', cond: 9 } },
       { who: 'floss',  role: 'sealed', n: 3 },
-      { who: 'nubb',   role: 'bulk', n: 6, games: ['hive', 'star'] },
-      { who: 'sheelo', role: 'lot',  n: 9, games: ['shell', 'star', 'hive'], q: 6.6, gem: 'h', fakes: 1 },
+      { who: 'skrimp', role: 'scalp' },
+      { who: 'sheelo', role: 'lot',  n: 9, games: ['shell', 'star', 'hive'], q: 6.6, gem: 'h', fakes: 1, src: 'dealer' },
       { who: 'tumbo',  role: 'buy',  wants: { game: 'shell', min: 'u' } },
-      { who: 'zazza',  role: 'sell', n: 2, games: ['star'], q: 7.4, gem: 'h', fakes: 1 },
+      { who: 'quill',  role: 'sell', n: 2, games: ['star', 'shell'], q: 8.2, gem: 'h', fakes: 1, src: 'ring' },
       { who: 'vrrz',   role: 'sealed', n: 3 },
       { who: 'mimbo',  role: 'flip', wants: { game: 'star', min: 'u' } },
     ] },
+  { name: 'The Rumor', ships: ['mollu', 'zekk'], demand: { shell: 1.2, hive: 1.1, star: 0.9 }, rent: 100, pump: true,
+    dj: 'Lane FM rumor mill is ON FIRE: everyone says {pump} is about to spike. Me? I just read the docking schedule.',
+    visitors: [
+      { who: 'hype',   role: 'sell', n: 3, pumpCards: true, q: 7.8 },
+      { who: 'tumbo',  role: 'buy',  wants: { pump: true } },
+      { who: 'pearla', role: 'sell', n: 3, games: ['shell', 'star'], q: 6.6, gem: 'r', src: 'old' },
+      { who: 'klik',   role: 'flip', wants: { min: 'u' } },
+      { who: 'zazza',  role: 'lot',  n: 9, games: ['hive', 'star', 'shell'], q: 6.8, gem: 'h', fakes: 2, src: 'ring' },
+      { who: 'nubb',   role: 'bulk', n: 6, games: ['hive', 'shell'] },
+      { who: 'vrrz',   role: 'sealed', n: 3 },
+      { who: 'mimbo',  role: 'buy',  wants: { pump: true } },
+    ] },
+  { name: 'Wave 3 Release Day', ships: ['mollu', 'zekk', 'puffi'], demand: { shell: 1.2, hive: 1.2, star: 1.2 }, rent: 130, release: true,
+    dj: 'WAVE 3 DROPS TODAY! Lines out the dock, release promos with every few packs, reprints everywhere ({pump} got reprinted: ouch). Watch for scalpers and fakes. Grade Day tonight!',
+    visitors: [
+      { who: 'skrimp', role: 'scalp' },
+      { who: 'vrrz',   role: 'sealed', n: 5 },
+      { who: 'quill',  role: 'lot',  n: 9, games: ['star', 'hive', 'shell'], q: 8.0, gem: 'h', fakes: 2, src: 'ring' },
+      { who: 'floss',  role: 'sealed', n: 4 },
+      { who: 'sheelo', role: 'lot',  n: 9, games: ['shell', 'star', 'hive'], q: 6.4, gem: 'g', fakes: 1, src: 'old' },
+      { who: 'tumbo',  role: 'buy',  wants: { game: 'shell', min: 'r' } },
+      { who: 'mimbo',  role: 'buy',  wants: { game: 'star', min: 'r', cond: 9 } },
+      { who: 'klik',   role: 'flip', wants: { min: 'u' } },
+    ] },
 ];
+// After Hours: after days 1-4 you pick one of two flyers. Day 5's night is Grade Day.
+const NIGHT_FLYERS = [['dig', 'swap'], ['cardnight', 'auction'], ['tourney', 'dig'], ['cardnight', 'auction']];
+const NIGHTS = {
+  cardnight: { name: 'Card Night', blurb: 'Rip packs live on Floss\'s stream: hype for tomorrow, 2 Card Night promos, the crowd buys packs.' },
+  tourney: { name: 'Tournament Night', blurb: 'Host a tournament: entry fees, players buy singles, you put up a prize and get 2 prize promos.' },
+  auction: { name: 'Dock Auction', blurb: 'Bid on an unclaimed cargo crate against two rival dealers. Three clues, one crate.' },
+  dig: { name: 'Bulk Dig', blurb: 'A 10₵ mystery bulk lot: 16 face-down cards, 6 flips. Read the backs for foil glints.' },
+  swap: { name: 'Swap Meet', blurb: 'Three regulars each offer a 1-for-1 trade. No cash, just your eye.' },
+};
 
 // ---------- cards ----------
 const tid = (game, i) => game + '-' + i;
@@ -411,41 +518,88 @@ function rollRarity(G, rareSlot) {
   if (rareSlot) return x < 0.02 ? 'g' : x < 0.17 ? 'h' : 'r';
   return x < 0.62 ? 'c' : x < 0.88 ? 'u' : x < 0.97 ? 'r' : 'h';
 }
+// Roll a print for a new copy. src: 'pack' | 'rareslot' | 'old' | 'dealer' | 'ring' | 'plain'
+function rollPrint(G, rarity, src) {
+  const v = { fin: 'std', first: false, set: 'core', promo: null, serial: null, err: null, signed: false };
+  if (src === 'plain') return v;
+  const low = rarity === 'c' || rarity === 'u';
+  if (low && R(G) < (src === 'pack' ? 1 / 6 : 1 / 8)) v.fin = 'mirror';
+  if (src === 'rareslot' || (!low && src !== 'pack')) { const x = R(G); if (x < 0.04) v.fin = 'full'; else if (x < 0.08) v.fin = 'alt'; }
+  if ((v.fin === 'full' || v.fin === 'alt') && R(G) < 0.25) v.serial = 1 + Math.floor(R(G) * 50);
+  if (src === 'old' || src === 'dealer') {
+    if (R(G) < 0.2) v.set = 'vintage'; else if (R(G) < 0.15) v.first = true;
+    if (R(G) < 0.03) v.err = pick(G, v.fin === 'std' ? ['offcut', 'offcut', 'ink'] : ['offcut', 'ink', 'nofoil']);
+  }
+  if (src === 'dealer' && R(G) < 0.06) v.signed = true;
+  if (src === 'pack' && G.dayIdx === 4 && R(G) < 0.4) v.set = 'reprint';
+  return v;
+}
 function makeCard(G, game, rarity, q, opts) {
   opts = opts || {};
   const at = () => clamp(Math.round(q + gauss(G) * (opts.fresh ? 1.0 : 1.5)), 1, 10);
   const c = { uid: 'c' + (++G._uid), t: tid(game, rollIdx(G, rarity)), cen: at(), edg: at(), sur: at(), fake: null, graded: null,
-    know: { loupe: false, uv: false, read: !!opts.read }, cost: 0, flawUsed: false };
-  if (opts.fake) { c.fake = R(G) < 0.5 ? 'uv' : 'stock'; }
+    know: { loupe: false, uv: false, read: !!opts.read, fake: false, print: false, spec: false, free: false }, cost: 0, flawUsed: false,
+    v: rollPrint(G, rarity, opts.src || 'plain') };
+  if (opts.idx != null) c.t = tid(game, opts.idx);
+  if (opts.fake) {
+    c.fake = opts.fake === 'ring' ? 'ring' : (R(G) < 0.5 ? 'uv' : 'stock');
+    // fakes copy whatever sells: ring fakes dress up as serialized full-arts and promos
+    if (c.fake === 'ring') { if (R(G) < 0.5) { c.v.fin = 'full'; c.v.serial = 1 + Math.floor(R(G) * 12); } else c.v.promo = pick(G, ['cardnight', 'tourney', 'topper']); c.cen = Math.max(c.cen, 8); c.edg = Math.max(c.edg, 8); c.sur = Math.max(c.sur, 8); }
+  }
+  if (c.v.err === 'offcut') c.cen = Math.min(c.cen, 2 + Math.floor(R(G) * 3)); // a miscut reads exactly like bad centering
+  if (opts.promo) c.v.promo = opts.promo;
   if (opts.mint) { c.cen = Math.max(c.cen, 9); c.edg = Math.max(c.edg, 9); c.sur = Math.max(c.sur, 9); }
   return c;
 }
 
 // ---------- value ----------
-function demandOf(G, game) { return (G.demand[game] || 1) + (G.dayIdx === 2 ? (G.hype[game] || 0) : 0); }
+// Pumped card: day 4 the rumor makes it ×1.8; from day 5 on it was reprinted and crashes to ×0.5.
+function pumpMult(G, c) { return G.pump && G.pump.t === c.t && !c.fake ? (G.dayIdx === 3 ? 1.8 : G.dayIdx >= 4 ? 0.5 : 1) : 1; }
+// The variant multiplier. known = the player's knowledge (estimate) or null for the truth.
+function variantMult(G, c, known) {
+  const v = c.v || {}, low = RANK[tmpl(c.t).rarity] <= 1, sees = (k) => !known || known[k];
+  let m = 1;
+  if (v.fin === 'mirror' && sees('loupe')) m *= low ? 2 : 1.4;
+  if (v.fin === 'full') m *= 2.5; if (v.fin === 'alt') m *= 2;
+  if (v.first && sees('loupe')) m *= 1.6;
+  if (v.set === 'vintage' && sees('print')) m *= 1.8;
+  if (v.set === 'reprint' && sees('print')) m *= 0.7;
+  if (v.serial && sees('loupe')) m *= v.serial === 1 ? 10 : v.serial <= 5 ? 6 : 3;
+  if (v.err && sees('print')) m *= 2.5;
+  if (v.signed && sees('loupe')) m *= 2;
+  if (v.promo && sees('loupe')) m *= PROMOS[v.promo].mult;
+  return Math.min(m, VARIANT_CAP);
+}
+function demandOf(G, game) { return G.demand[game] || 1; }
 function hot(G, c) { return G.hotList.indexOf(c.t) >= 0 ? 1.5 : 1; }
-// What the card is really worth to a buyer today (they can see the real condition).
+// What the card is really worth to a buyer today (they can see the real condition and print).
 function trueValue(G, c, demand) {
   if (c.fake) return 0;
   const tm = tmpl(c.t), d = demand == null ? demandOf(G, tm.game) : demand;
   const m = c.graded ? GRADERS[c.graded.co].mult(c.graded.grade) : RAW(trueGrade(c));
-  return BASE[tm.rarity] * m * d * (demand == null ? hot(G, c) : 1);
+  return BASE[tm.rarity] * m * d * (demand == null ? hot(G, c) : 1) * variantMult(G, c, null) * pumpMult(G, c);
 }
 const readable = (G, c) => c.know.read || (G.fluency[tmpl(c.t).game] >= FLUENT_AT);
 // The player's best guess from what they've learned. Bots use only this.
 function estimate(G, c) {
-  if (c.know.uv && c.fake) return { value: 0, grade: null, rarity: tmpl(c.t).rarity, fake: true };
+  if (c.know.fake) return { value: 0, grade: null, rarity: tmpl(c.t).rarity, fake: true };
   const tm = tmpl(c.t), rar = readable(G, c) ? tm.rarity : null;
   const grade = c.graded ? c.graded.grade : c.know.loupe ? trueGrade(c) : null;
   const m = c.graded ? GRADERS[c.graded.co].mult(c.graded.grade) : RAW(grade == null ? 7 : grade);
-  const v = BASE[rar || 'u'] * m * demandOf(G, tm.game) * hot(G, c);
-  return { value: v, grade, rarity: rar, fake: c.know.uv ? false : null };
+  const vm = variantMult(G, c, c.know);
+  const pm = G.pump && G.pump.t === c.t ? (G.dayIdx === 3 ? 1.8 : G.dayIdx >= 4 ? 0.5 : 1) : 1; // the market price is public
+  const v = BASE[rar || 'u'] * m * demandOf(G, tm.game) * hot(G, c) * vm * pm;
+  return { value: v, grade, rarity: rar, fake: c.know.uv ? false : null, vmult: vm };
 }
-// What a seller believes their card is worth (home rate). They can't read other species' scripts.
+// What a seller believes their card is worth (home rate). They can't read other species' scripts, can't see
+// set symbols or misprints (a miscut just looks damaged to them), and dealers spot vintage.
 function sellerBelief(G, person, c) {
-  const tm = tmpl(c.t), own = SPECIES[PEOPLE[person].species].game === tm.game || person === 'sheelo' && tm.game === 'shell';
+  const tm = tmpl(c.t), P = PEOPLE[person], own = SPECIES[P.species].game === tm.game || person === 'sheelo' && tm.game === 'shell';
   const rar = own ? tm.rarity : (RANK[tm.rarity] >= 2 ? 'u' : tm.rarity); // misreads rares and up as "some uncommon"
-  return BASE[rar] * RAW(trueGrade(c));
+  const sees = own ? { loupe: true, print: person === 'sheelo' } : { loupe: false, print: false };
+  let b = BASE[rar] * RAW(trueGrade(c)) * (c.fake ? variantMult(G, c, { loupe: true }) : variantMult(G, c, sees));
+  if (G.pump && G.pump.t === c.t && G.dayIdx === 3) b *= 1.8;
+  return b;
 }
 
 // ---------- state ----------
@@ -454,8 +608,9 @@ function newGame(seed) {
     stock: [], packs: { shell: 2, hive: 2, star: 2 }, bulk: 12, fluency: { shell: 0, hive: 0, star: 0 },
     grading: [], demand: {}, hotList: [], hype: { shell: 0, hive: 0, star: 0 },
     visitIdx: -1, visit: null, ledger: [], days: [], say: null, events: [], complaints: [],
-    stats: { bestFlip: null, bestGrade: null, fakesCaught: 0, fakesSold: 0, deals: 0, walkouts: 0, cracked: 0 },
-    startValue: 0, log: [] };
+    up: { lens: false, spec: false, hands: false }, policy: { limit2: false }, scalped: 0, pump: null, night: null, packsSoldToday: 0,
+    stats: { bestFlip: null, bestGrade: null, fakesCaught: 0, fakesSold: 0, deals: 0, walkouts: 0, cracked: 0, promos: 0, variants: 0, misprints: 0, bestPull: null, scalpedPacks: 0 },
+    startValue: 0, log: [], version: 2 };
   G._s = (seed || 1) >>> 0;
   // starting case: a few singles you already know
   for (const [g, r] of [['shell', 'u'], ['shell', 'c'], ['hive', 'u'], ['star', 'r'], ['star', 'c'], ['hive', 'c']]) {
@@ -469,7 +624,7 @@ function shopValue(G) {
   let v = G.cash - G.tab + G.bulk * 1;
   for (const c of G.stock) v += trueValue(G, c, 1);
   for (const g in G.packs) v += G.packs[g] * PACK_RETAIL;
-  for (const p of G.grading) { const c = p.card; v += trueValue(G, c, 1); }
+  for (const p of G.grading) v += trueValue(G, p.card, 1);
   return v;
 }
 function money(G, amt, kind, label) { G.cash += amt; G.ledger.push({ day: G.dayIdx, kind, amt: Math.round(amt), label }); }
@@ -477,32 +632,47 @@ function say(G, who, text) { G.say = { who, text }; G.log.push({ day: G.dayIdx, 
 function event(G, e) { G.events.push(e); }
 const findStock = (G, uid) => G.stock.find(c => c.uid === uid);
 const visitCard = (G, uid) => G.visit && (G.visit.cards || []).find(c => c.uid === uid);
+function nightCard(G, uid) {
+  const n = G.night; if (!n) return null;
+  if (n.swaps) for (const s of n.swaps) if (s.theirs.uid === uid) return s.theirs;
+  if (n.dig) { const c = n.dig.cards.find(x => x.uid === uid); if (c && c.flipped) return c; }
+  return null;
+}
+function addStock(G, c) {
+  G.stock.push(c);
+  if (c.v && c.v.promo && !c.fake) G.stats.promos++;
+  const pull = trueValue(G, c, 1); if (!G.stats.bestPull || pull > G.stats.bestPull.value) G.stats.bestPull = { value: Math.round(pull), t: c.t, v: c.v };
+}
 
 // ---------- days ----------
 function startDay(G) {
   G.dayIdx++; const D = DAYS[G.dayIdx];
   G.demand = Object.assign({}, D.demand);
-  if (G.dayIdx === 2) for (const g in G.hype) if (G.hype[g]) G.demand[g] = +(G.demand[g] + G.hype[g]).toFixed(2);
-  // hot list: two rares-or-better from the hottest game and one other
+  // last night's hype lands on today
+  for (const g in G.hype) if (G.hype[g]) { G.demand[g] = +(G.demand[g] + G.hype[g]).toFixed(2); G.hype[g] = 0; }
+  // scalped packs: tomorrow's pack buyers already bought from Skrimp
+  G.scalpedToday = G.scalped; G.scalped = 0; G.packsSoldToday = 0;
+  // the pump: a rare-or-better from a game whose species isn't docking tomorrow... and it's on the reprint list
+  if (D.pump && !G.pump) { const g = pick(G, ['star', 'hive', 'shell']); G.pump = { t: tid(g, 12 + Math.floor(R(G) * 4)) }; }
   const games = Object.keys(G.demand).sort((a, b) => G.demand[b] - G.demand[a]);
   G.hotList = [tid(games[0], 12 + Math.floor(R(G) * 5)), tid(games[1], 12 + Math.floor(R(G) * 3))];
-  G.visitIdx = -1; G.visit = null; G.phase = 'morning'; G.events = [];
-  // grades due this morning come home
+  if (G.pump) G.hotList = G.hotList.filter(t => t !== G.pump.t);
+  G.visitIdx = -1; G.visit = null; G.phase = 'morning'; G.events = []; G.night = null;
   resolveGrades(G, false);
-  // complaints from fakes sold yesterday
   for (const k of G.complaints) { money(G, -k.price, 'refund', 'Refund: ' + k.who + ' found a fake'); G.rep = clamp(G.rep - 8, 0, 100); event(G, { t: 'complaint', who: k.who, price: k.price }); }
   G.complaints = [];
-  say(G, 'vee', D.dj);
+  say(G, 'vee', D.dj.replace('{pump}', G.pump ? tmpl(G.pump.t).name : 'a card'));
 }
 function resolveGrades(G, all) {
   const keep = [];
   for (const p of G.grading) {
     if (!all && p.due > G.dayIdx) { keep.push(p); continue; }
     const c = p.card;
-    if (c.fake) { c.know.uv = true; G.stats.fakesCaught++; event(G, { t: 'grade', uid: c.uid, co: p.co, fake: true }); G.stock.push(c); continue; }
+    if (c.fake) { c.know.uv = true; c.know.fake = true; G.stats.fakesCaught++; event(G, { t: 'grade', uid: c.uid, co: p.co, fake: true }); G.stock.push(c); continue; }
     let g = trueGrade(c);
     if (p.co === 'quik') { const x = p.roll; g = clamp(g + (x < 0.25 ? -1 : x > 0.75 ? 1 : 0), 1, 10); }
-    c.graded = { co: p.co, grade: g }; c.know.loupe = true; c.know.uv = true; c.know.read = true;
+    c.graded = { co: p.co, grade: g }; Object.assign(c.know, { loupe: true, uv: true, read: true, print: true });
+    if (c.v && c.v.err) G.stats.misprints++;
     if (!G.stats.bestGrade || g > G.stats.bestGrade.grade || (g === G.stats.bestGrade.grade && p.co === 'halo')) G.stats.bestGrade = { grade: g, co: p.co, t: c.t };
     event(G, { t: 'grade', uid: c.uid, co: p.co, grade: g });
     G.stock.push(c);
@@ -512,17 +682,28 @@ function resolveGrades(G, all) {
 
 // ---------- customers ----------
 function spawnVisit(G, spec) {
-  const P = PEOPLE[spec.who], S = SPECIES[P.species];
+  const P = PEOPLE[spec.who], S = SPECIES[P.species], D = DAYS[G.dayIdx];
   const v = { who: spec.who, species: P.species, role: spec.role, wants: spec.wants || null, patience: S.patience + (spec.role === 'lot' ? 6 : 0),
     maxPatience: 0, cards: [], ask: 0, floor: 0, bid: 0, ceil: 0, showing: null, rounds: 0, done: false, packs: 0, result: null };
   if (spec.role === 'sell' || spec.role === 'lot' || spec.role === 'bulk') {
     const gem = spec.gem ? Math.floor(R(G) * spec.n) : -1, fakeAt = [];
     for (let k = 0; k < (spec.fakes || 0); k++) fakeAt.push((gem + 1 + k * 3) % spec.n);
+    const docking = D.ships.indexOf(P.species) >= 0 && !P.bad;
+    let promoGiven = false;
     for (let i = 0; i < spec.n; i++) {
-      const isGem = i === gem, g = isGem && spec.gemGame ? spec.gemGame : pick(G, spec.games);
-      const rar = isGem ? spec.gem : spec.role === 'bulk' ? (R(G) < 0.2 ? 'u' : 'c') : rollRarity(G, false);
-      const isFake = fakeAt.indexOf(i) >= 0;
-      const c = makeCard(G, g, isFake ? (R(G) < 0.5 ? 'h' : 'r') : rar, spec.q || 6.5, { fake: isFake, read: !!spec.read, mint: isGem && spec.role === 'sell' && G.dayIdx === 0 });
+      let c;
+      if (spec.pumpCards) { // the Hype Bros sell copies of the pumped card; one of three may be a ring fake
+        const tm = tmpl(G.pump.t);
+        c = makeCard(G, tm.game, tm.rarity, spec.q, { idx: tm.idx, src: 'plain', fake: i === 2 && R(G) < 0.5 ? 'ring' : null, read: true });
+      } else {
+        const isGem = i === gem, g = isGem && spec.gemGame ? spec.gemGame : pick(G, spec.games);
+        const rar = isGem ? spec.gem : spec.role === 'bulk' ? (R(G) < 0.2 ? 'u' : 'c') : rollRarity(G, false);
+        const isFake = fakeAt.indexOf(i) >= 0;
+        const fakeKind = isFake ? (spec.src === 'ring' ? 'ring' : 'plain') : null;
+        c = makeCard(G, g, isFake ? (R(G) < 0.5 ? 'h' : 'r') : rar, spec.q || 6.5, { fake: fakeKind, read: !!spec.read, src: spec.src || 'old', mint: isGem && spec.role === 'sell' && G.dayIdx === 0 });
+        // dock promos: sellers of a docking species sometimes carry their ship's promo
+        if (docking && !promoGiven && !isFake && RANK[tmpl(c.t).rarity] >= 1 && R(G) < 0.35) { c.v.promo = 'dock-' + P.species; promoGiven = true; }
+      }
       v.cards.push(c);
     }
     let belief = 0; for (const c of v.cards) belief += sellerBelief(G, spec.who, c);
@@ -530,24 +711,31 @@ function spawnVisit(G, spec) {
     v.ask = Math.max(3, Math.round(belief * P.askMul)); v.floor = Math.max(2, Math.round(belief * P.floorMul));
     if (v.floor >= v.ask) v.floor = v.ask - 1;
   } else if (spec.role === 'sealed') {
-    v.packs = spec.n;
+    v.packs = Math.max(1, spec.n - Math.ceil((G.scalpedToday || 0) / 2)); // Skrimp already sold them some
   }
+  if (spec.wants && spec.wants.pump && G.pump) v.wants = { t: G.pump.t };
   v.maxPatience = v.patience;
   return v;
 }
 function matches(G, wants, c) {
   if (!wants) return true;
   const tm = tmpl(c.t);
+  if (wants.t) return c.t === wants.t;
   if (wants.game && tm.game !== wants.game) return false;
   if (wants.min && RANK[tm.rarity] < RANK[wants.min]) return false;
   if (wants.cond) { const g = c.graded ? c.graded.grade : trueGrade(c); if (g < wants.cond) return false; }
   return true;
 }
-// Buyer's real valuation of a card (or a pack bundle). Puffi pay up for near-mint; flippers want margin.
+// Buyer's real valuation. Species tastes: Puffi pay up for near-mint and full/alt art; Mollu for first runs and vintage;
+// Zekk for serials and misprints. Flippers want margin.
 function buyerValue(G, v, c) {
-  const P = PEOPLE[v.who];
+  const P = PEOPLE[v.who], pv = c.v || {};
   let bv = trueValue(G, c);
   if (v.species === 'puffi' && (c.graded ? c.graded.grade : trueGrade(c)) >= 9) bv *= 1.4;
+  if (v.species === 'puffi' && (pv.fin === 'full' || pv.fin === 'alt')) bv *= 1.4;
+  if (v.species === 'mollu' && (pv.first || pv.set === 'vintage')) bv *= 1.35;
+  if (v.species === 'zekk' && pv.serial) bv *= 1.5;
+  if (v.species === 'zekk' && pv.err) bv *= 1.3;
   if (v.role === 'flip') bv *= 0.85;
   return bv * P.ceilMul * (1 + (G.rep - 50) / 500);
 }
@@ -568,9 +756,14 @@ const LINES = {
     round: [], deal: ['Yay! Thank you!', '*happy spin*'], walk: ['I... I have to go. Sorry!'],
     flaw: ['Oh no, a flaw?! You\'re right, it\'s not perfect...'], buyHello: ['Do you have {w}? It has to be pretty!'] },
 };
+const BAD_LINES = {
+  quill: 'Fresh from the Glyphsmiths\' workshop, I mean, from a collector. Perfect condition, see? {n} for {p}.',
+  hype: 'Psst. {card} is about to MOON. Everyone knows. We\'ll let you have {n} copies at {p}. You\'re welcome.',
+};
 function line(G, v, key, p) { const L = LINES[v.species][key]; if (!L || !L.length) return null; return pick(G, L).replace('{p}', p != null ? p + '₵' : '').replace('{w}', wantsText(v.wants)); }
 function wantsText(w) {
   if (!w) return 'anything good';
+  if (w.t) return tmpl(w.t).name + ' (the one everyone\'s talking about)';
   const r = w.min ? (w.min === 'c' ? 'any' : RARITY_NAME[w.min].toLowerCase() + ' or better') : 'anything';
   return (w.game ? r + ' ' + GAMES[w.game].name : r + ' card') + (w.cond ? ' in grade ' + w.cond + '+ shape' : '');
 }
@@ -585,6 +778,14 @@ function costPatience(G, n) {
   if (v.patience <= 0) { say(G, v.who, line(G, v, 'walk')); endVisit(G, 'walk'); return false; }
   return true;
 }
+function packTotal(G) { return G.packs.shell + G.packs.hive + G.packs.star; }
+function takePacks(G, n) { let k = n; for (const g of ['shell', 'hive', 'star']) while (k > 0 && G.packs[g] > 0) { G.packs[g]--; k--; } return n - k; }
+// Release Day: every 3rd pack sold earns a release promo (the distributor's launch deal).
+function releasePromos(G, sold) {
+  if (!DAYS[G.dayIdx].release) return;
+  const before = Math.floor(G.packsSoldToday / 3); G.packsSoldToday += sold; const n = Math.floor(G.packsSoldToday / 3) - before;
+  for (let i = 0; i < n; i++) { const g = pick(G, ['shell', 'hive', 'star']); const c = makeCard(G, g, R(G) < 0.3 ? 'r' : 'u', 9, { fresh: true, promo: 'release', src: 'plain' }); c.know.uv = true; addStock(G, c); event(G, { t: 'promo', uid: c.uid, from: 'release' }); }
+}
 
 // ---------- act: the only way state changes ----------
 function act(G, it) {
@@ -597,18 +798,24 @@ function act(G, it) {
       const D = DAYS[G.dayIdx];
       if (G.visitIdx + 1 >= D.visitors.length) { closeShop(G); return ok(); }
       G.visitIdx++; G.visit = spawnVisit(G, D.visitors[G.visitIdx]); G.phase = 'visit';
-      const nv = G.visit;
-      if (nv.role === 'bulk') { // Nubb digs the bin first
-        const n = Math.min(G.bulk, 8); if (n) { G.bulk -= n; money(G, n, 'bulk', PEOPLE[nv.who].name + ' dug ' + n + ' from the bulk bin'); }
+      const nv = G.visit, P = PEOPLE[nv.who];
+      if (nv.role === 'bulk') {
+        const n = Math.min(G.bulk, 8); if (n) { G.bulk -= n; money(G, n, 'bulk', P.name + ' dug ' + n + ' from the bulk bin'); }
         say(G, nv.who, (n ? 'I dug ' + n + ' cards outta your bin! ' : '') + 'Wanna buy my whole shoebox? ' + nv.ask + '₵!');
+      } else if (nv.role === 'scalp') {
+        const promos = G.stock.filter(c => c.v && c.v.promo && !c.know.fake).length;
+        say(G, nv.who, 'I\'ll take ALL your sealed packs. Every one. ' + (PACK_RETAIL + 3) + '₵ each, cash, right now.' + (promos ? ' And any promos you\'re sitting on.' : '') + (G.policy.limit2 ? ' ...Wait, "Limit 2"? Ugh. Fine, two.' : ''));
+      } else if (BAD_LINES[nv.who] && nv.cards.length) {
+        say(G, nv.who, BAD_LINES[nv.who].replace('{n}', nv.cards.length + ' cards').replace('{p}', nv.ask + '₵').replace('{card}', G.pump ? tmpl(G.pump.t).name : 'this card'));
       } else if (nv.role === 'sell' || nv.role === 'lot') say(G, nv.who, line(G, nv, 'hello') + ' ' + (nv.role === 'lot' ? 'The whole binder page' : nv.cards.length > 1 ? 'These ' + nv.cards.length : 'This one') + ' for ' + nv.ask + '₵.');
-      else if (nv.role === 'sealed') say(G, nv.who, 'Any sealed packs? I want ' + nv.packs + '!');
+      else if (nv.role === 'sealed') say(G, nv.who, 'Any sealed packs? I want ' + nv.packs + '!' + (G.policy.limit2 && nv.packs > 2 ? ' Oh, limit 2? Okay, 2 then.' : ''));
       else say(G, nv.who, line(G, nv, 'buyHello'));
+      if (nv.role === 'sealed' && G.policy.limit2) nv.packs = Math.min(nv.packs, 2);
       return ok();
     }
     case 'inspect': {
-      if (G.phase !== 'visit' && G.phase !== 'shop' && G.phase !== 'close' && G.phase !== 'cardnight') return err('not now');
-      const c = visitCard(G, it.uid) || findStock(G, it.uid); if (!c) return err('no card');
+      if (['visit', 'shop', 'close', 'night'].indexOf(G.phase) < 0) return err('not now');
+      const c = visitCard(G, it.uid) || findStock(G, it.uid) || nightCard(G, it.uid); if (!c) return err('no card');
       const atCounter = G.phase === 'visit' && v && v.cards.indexOf(c) >= 0;
       if (it.tool === 'translate') {
         if (readable(G, c)) return err('already readable');
@@ -617,21 +824,28 @@ function act(G, it) {
       }
       const key = { loupe: 'loupe', uv: 'uv', read: 'read' }[it.tool]; if (!key) return err('bad tool');
       if (key === 'read' && readable(G, c)) return err('already readable');
-      if (c.know[key]) return ok();
+      // the Spectrometer lets you re-scan a card you lamped before you owned it
+      const rescan = key === 'uv' && c.know.uv && G.up.spec && !c.know.spec;
+      if (c.know[key] && !rescan && !(key === 'loupe' && G.up.lens && !c.know.print)) return ok();
       c.know[key] = true;
+      if (key === 'loupe' && G.up.lens) { c.know.print = true; if (c.v && c.v.err) G.stats.misprints++; }
+      if (key === 'loupe' && c.v && (c.v.fin !== 'std' || c.v.first || c.v.serial || c.v.promo || c.v.signed)) G.stats.variants++;
       if (key === 'read') { const g = tmpl(c.t).game; G.fluency[g]++; if (G.fluency[g] === FLUENT_AT) event(G, { t: 'fluent', game: g }); }
-      if (key === 'uv' && c.fake) { G.stats.fakesCaught++; event(G, { t: 'fakeFound', uid: c.uid }); }
-      if (atCounter) costPatience(G, 1);
+      if (key === 'uv') {
+        c.know.spec = G.up.spec;
+        if (c.fake && (c.fake !== 'ring' || G.up.spec) && !c.know.fake) { c.know.fake = true; G.stats.fakesCaught++; event(G, { t: 'fakeFound', uid: c.uid }); }
+      }
+      if (atCounter) { if (G.up.hands && !c.know.free) c.know.free = true; else costPatience(G, 1); }
       return ok();
     }
     case 'flaw': {
       if (G.phase !== 'visit' || !v || !(v.role === 'sell' || v.role === 'lot' || v.role === 'bulk')) return err('not now');
       const c = visitCard(G, it.uid); if (!c || !c.know.loupe || c.flawUsed) return err('no flaw to point at');
-      if (Math.min(c.cen, c.edg, c.sur) > 6 && !(c.know.uv && c.fake)) return err('it looks clean');
+      if (Math.min(c.cen, c.edg, c.sur) > 6 && !c.know.fake) return err('it looks clean');
       c.flawUsed = true;
-      const cut = c.fake && c.know.uv ? 0.35 : SPECIES[v.species].flaw;
+      const cut = c.know.fake ? 0.35 : SPECIES[v.species].flaw;
       v.ask = Math.max(1, Math.round(v.ask * (1 - cut))); v.floor = Math.max(1, Math.round(v.floor * (1 - cut))); if (v.floor >= v.ask) v.floor = Math.max(1, v.ask - 1);
-      say(G, v.who, (c.fake && c.know.uv ? 'Wh-what? That one\'s... not mine! ' : line(G, v, 'flaw')) + ' ' + v.ask + '₵.');
+      say(G, v.who, (c.know.fake ? 'Wh-what? That one\'s... not mine! ' : line(G, v, 'flaw')) + ' ' + v.ask + '₵.');
       return ok();
     }
     case 'show': {
@@ -644,9 +858,9 @@ function act(G, it) {
     }
     case 'showPacks': {
       if (G.phase !== 'visit' || !v || v.role !== 'sealed') return err('not now');
-      const have = G.packs.shell + G.packs.hive + G.packs.star; if (!have) return err('no packs');
+      const have = packTotal(G); if (!have) return err('no packs');
       v.packs = Math.min(v.packs, have);
-      const per = PACK_RETAIL * (1 + (G.rep - 50) / 500) * (v.who === 'vrrz' ? 1.05 : 1);
+      const per = PACK_RETAIL * (1 + (G.rep - 50) / 500) * (v.who === 'vrrz' ? 1.05 : 1) * (DAYS[G.dayIdx].release ? 1.15 : 1);
       startHaggleBuyer(G, v, per * v.packs * PEOPLE[v.who].ceilMul); v.showing = 'packs';
       say(G, v.who, v.packs + ' packs? I\'ll give ' + v.bid + '₵ for the lot.');
       return ok();
@@ -654,16 +868,17 @@ function act(G, it) {
     case 'offer': return offer(G, Math.round(it.price));
     case 'accept': {
       if (G.phase !== 'visit' || !v) return err('not now');
+      if (v.role === 'scalp') return dealScalp(G);
       if (v.role === 'buy' || v.role === 'flip' || v.role === 'sealed') { if (!v.showing) return err('show something first'); return dealSell(G, v.bid); }
       return dealBuy(G, v.ask);
     }
     case 'pass': {
       if (G.phase !== 'visit' || !v) return err('not now');
-      say(G, v.who, v.role === 'buy' || v.role === 'flip' || v.role === 'sealed' ? 'Oh well, next time!' : 'Your loss!');
+      say(G, v.who, v.role === 'scalp' ? 'Your loss. The strip will pay me double anyway.' : v.role === 'buy' || v.role === 'flip' || v.role === 'sealed' ? 'Oh well, next time!' : 'Your loss!');
       endVisit(G, 'pass'); return ok();
     }
     case 'crack': {
-      if (G.phase !== 'shop' && G.phase !== 'cardnight') return err('only between customers');
+      if (G.phase !== 'shop') return err('only between customers');
       if (!G.packs[it.game]) return err('no packs of that game');
       G.packs[it.game]--; G.stats.cracked++;
       const pulled = crackPack(G, it.game);
@@ -688,34 +903,47 @@ function act(G, it) {
     case 'restock': {
       if (G.phase !== 'close') return err('restock at close');
       if (G.cash < BOX.cost) return err('not enough cash');
-      money(G, -BOX.cost, 'restock', 'Booster box: ' + GAMES[it.game].name); G.packs[it.game] += BOX.packs; return ok();
+      money(G, -BOX.cost, 'restock', 'Booster box: ' + GAMES[it.game].name); G.packs[it.game] += BOX.packs;
+      // box topper: restock tomorrow's hottest game and the distributor sometimes adds a promo
+      const next = DAYS[G.dayIdx + 1]; let topper = null;
+      if (next) { const hottest = Object.keys(next.demand).sort((a, b) => next.demand[b] - next.demand[a])[0];
+        if (hottest === it.game && R(G) < 0.5) { topper = makeCard(G, it.game, R(G) < 0.25 ? 'h' : 'r', 9, { fresh: true, promo: 'topper', src: 'plain' }); topper.know.uv = true; addStock(G, topper); event(G, { t: 'promo', uid: topper.uid, from: 'topper' }); } }
+      return ok({ topper });
+    }
+    case 'upgrade': {
+      if (G.phase !== 'close') return err('buy upgrades at close');
+      const U = UPGRADES[it.k]; if (!U) return err('no such upgrade');
+      if (G.up[it.k]) return err('already have it');
+      if (G.cash < U.cost) return err('not enough cash');
+      money(G, -U.cost, 'upgrade', 'Loupe upgrade: ' + U.name); G.up[it.k] = true; return ok();
+    }
+    case 'policy': {
+      if (G.phase !== 'close') return err('set policy at close');
+      G.policy.limit2 = !!it.limit2; return ok();
     }
     case 'endDay': {
       if (G.phase !== 'close') return err('not now');
       const rent = DAYS[G.dayIdx].rent, paid = Math.min(rent, Math.max(0, G.cash));
       money(G, -paid, 'rent', 'Dock rent'); if (paid < rent) { G.tab += rent - paid; event(G, { t: 'tab', amt: rent - paid }); }
-      // a tab gets paid down when there's spare cash
       if (G.tab && G.cash > 60) { const pay = Math.min(G.tab, G.cash - 60); G.tab -= pay; money(G, -pay, 'rent', 'Paid down the tab'); }
       G.days.push(summaryOfDay(G));
-      if (DAYS[G.dayIdx].cardNight) { G.phase = 'cardnight'; say(G, 'vee', 'CARD NIGHT! Pick a game to feature and rip packs live on Floss\'s stream.'); return ok(); }
       if (G.dayIdx >= DAYS.length - 1) { finale(G); return ok(); }
-      startDay(G); return ok();
-    }
-    case 'cardNight': {
-      if (G.phase !== 'cardnight') return err('not now');
-      const g = it.game, n = Math.min(it.n | 0, G.packs[g] || 0, 6); let holo = 0, grail = 0; const pulls = [];
-      for (let i = 0; i < n; i++) { G.packs[g]--; G.stats.cracked++; const p = crackPack(G, g); pulls.push(...p); for (const c of p) { const r = tmpl(c.t).rarity; if (r === 'h') holo++; if (r === 'g') grail++; } }
-      const hype = n ? +(0.05 + 0.03 * n + 0.15 * holo + 0.4 * grail).toFixed(2) : 0; G.hype[g] += hype;
-      // the crowd buys some of what's left on the shelf
-      let sold = 0; for (const k of Object.keys(G.packs).sort((a, b) => G.packs[b] - G.packs[a])) while (sold < 3 && G.packs[k] > 0) { G.packs[k]--; sold++; }
-      if (sold) money(G, sold * PACK_RETAIL, 'sell', 'Card Night crowd bought ' + sold + ' packs');
-      G.rep = clamp(G.rep + 6, 0, 100);
-      event(G, { t: 'cardNight', game: g, n, holo, grail, hype, sold, uids: pulls.map(c => c.uid) });
-      say(G, 'vee', n ? 'What a stream! ' + GAMES[g].name + ' hype +' + Math.round(hype * 100) + '% for tomorrow.' : 'Chill night. The crowd still bought some packs.');
+      G.phase = 'night'; G.events = [];
+      G.night = { flyers: NIGHT_FLYERS[G.dayIdx].slice(), pick: null, done: false };
+      say(G, 'vee', 'After hours! Two flyers on the board tonight: ' + G.night.flyers.map(k => NIGHTS[k].name).join(' or ') + '.');
       return ok();
     }
+    case 'pickNight': return pickNight(G, it.ev);
+    case 'cardNight': return nightCardNight(G, it.game, it.n);
+    case 'tourney': return nightTourney(G, it.game, it.prize);
+    case 'bid': return nightBid(G);
+    case 'drop': return nightDrop(G);
+    case 'dig': return nightDig(G, it.i);
+    case 'swap': return nightSwap(G, it.i, !!it.accept);
     case 'nextMorning': {
-      if (G.phase !== 'cardnight') return err('not now');
+      if (G.phase !== 'night') return err('not now');
+      if (G.night && G.night.pick === 'dig' && G.night.dig) { const left = G.night.dig.cards.filter(c => !c.flipped).length; G.bulk += left; }
+      if (G.night && G.night.pick === 'auction' && G.night.auc && !G.night.done) G.night.done = true;
       startDay(G); return ok();
     }
   }
@@ -726,19 +954,19 @@ function err(m) { return { ok: false, error: m }; }
 
 function crackPack(G, game) {
   const out = [];
-  for (const r of ['c', 'c', 'c', 'u']) out.push(makeCard(G, game, r, 9.0, { fresh: true }));
-  out.push(makeCard(G, game, rollRarity(G, true), 9.0, { fresh: true }));
-  for (const c of out) { c.know.uv = true; G.stock.push(c); }
+  for (const r of ['c', 'c', 'c', 'u']) out.push(makeCard(G, game, r, 9.0, { fresh: true, src: 'pack' }));
+  out.push(makeCard(G, game, rollRarity(G, true), 9.0, { fresh: true, src: 'rareslot' }));
+  for (const c of out) { c.know.uv = true; addStock(G, c); }
   return out;
 }
 
 function offer(G, p) {
   const v = G.visit; if (G.phase !== 'visit' || !v) return err('not now');
   if (!(p > 0)) return err('bad price');
+  if (v.role === 'scalp') return err('Skrimp doesn\'t haggle: take it or leave it');
   const S = SPECIES[v.species];
   v.rounds++;
   if (v.role === 'sell' || v.role === 'lot' || v.role === 'bulk') {
-    // you're buying: they come down toward your offer
     if (p >= v.ask) return dealBuy(G, v.ask);
     if (G.cash < p) return err('not enough cash');
     if (p < v.floor * S.insultAt) { v.insulted = true; say(G, v.who, line(G, v, 'insult')); costPatience(G, S.insultCost); return ok(); }
@@ -748,7 +976,6 @@ function offer(G, p) {
     say(G, v.who, (S.roundBonus && p % 10 === 0 && LINES[v.species].round.length ? line(G, v, 'round') + ' ' : '') + line(G, v, 'counter', v.ask));
     costPatience(G, 1); return ok();
   }
-  // you're selling: they come up toward your price, never past their ceiling
   if (!v.showing) return err('show something first');
   if (p <= v.bid) return dealSell(G, p);
   if (p > v.ceil * 1.5) { v.insulted = true; say(G, v.who, line(G, v, 'insult')); costPatience(G, S.insultCost); return ok(); }
@@ -761,19 +988,20 @@ function dealBuy(G, price) {
   const v = G.visit; if (G.cash < price) return err('not enough cash');
   money(G, -price, 'buy', 'Bought from ' + PEOPLE[v.who].name + ' (' + v.cards.length + ' card' + (v.cards.length > 1 ? 's' : '') + ')');
   let belief = 0; for (const c of v.cards) belief += Math.max(1, BASE[tmpl(c.t).rarity] * RAW(trueGrade(c)));
-  for (const c of v.cards) { c.cost = price * Math.max(1, BASE[tmpl(c.t).rarity] * RAW(trueGrade(c))) / belief; G.stock.push(c); }
+  for (const c of v.cards) { c.cost = price * Math.max(1, BASE[tmpl(c.t).rarity] * RAW(trueGrade(c))) / belief; addStock(G, c); }
   G.stats.deals++; G.rep = clamp(G.rep + 1, 0, 100);
   say(G, v.who, line(G, v, 'deal')); endVisit(G, 'deal'); return ok();
 }
 function dealSell(G, price) {
   const v = G.visit;
   if (v.showing === 'packs') {
-    let n = v.packs; for (const k of ['shell', 'hive', 'star']) while (n > 0 && G.packs[k] > 0) { G.packs[k]--; n--; }
-    money(G, price, 'sell', 'Sold ' + v.packs + ' sealed packs to ' + PEOPLE[v.who].name);
+    const n = takePacks(G, v.packs);
+    money(G, price, 'sell', 'Sold ' + n + ' sealed packs to ' + PEOPLE[v.who].name);
+    releasePromos(G, n);
   } else {
     const c = findStock(G, v.showing);
-    // careful buyers may spot a fake at the counter
-    if (c.fake && v.species !== 'zekk' && R(G) < 0.5) { say(G, v.who, 'Wait... this is a FAKE!'); G.rep = clamp(G.rep - 5, 0, 100); v.insulted = true; endVisit(G, 'walk'); return ok({ caught: true }); }
+    const catchChance = c.fake === 'ring' ? 0.2 : 0.5;
+    if (c.fake && v.species !== 'zekk' && R(G) < catchChance) { say(G, v.who, 'Wait... this is a FAKE!'); G.rep = clamp(G.rep - 5, 0, 100); v.insulted = true; c.know.fake = true; endVisit(G, 'walk'); return ok({ caught: true }); }
     G.stock.splice(G.stock.indexOf(c), 1);
     money(G, price, 'sell', 'Sold ' + (readable(G, c) ? tmpl(c.t).name : 'a card') + ' to ' + PEOPLE[v.who].name);
     if (c.fake) { G.complaints.push({ who: PEOPLE[v.who].name, price }); G.stats.fakesSold++; }
@@ -783,31 +1011,177 @@ function dealSell(G, price) {
   G.stats.deals++; G.rep = clamp(G.rep + 1, 0, 100);
   say(G, v.who, line(G, v, 'deal')); endVisit(G, 'deal'); return ok();
 }
+// Skrimp takes your packs (or 2, with the Limit 2 sign) and any promos at a flat price. Easy cash now, costs later:
+// rep, and tomorrow's pack buyers already bought from him.
+function dealScalp(G) {
+  const v = G.visit, cap = G.policy.limit2 ? 2 : 99;
+  const n = takePacks(G, Math.min(packTotal(G), cap));
+  const promos = G.policy.limit2 ? [] : G.stock.filter(c => c.v && c.v.promo && !c.know.fake && !c.graded);
+  let cash = n * (PACK_RETAIL + 3);
+  for (const c of promos) { cash += Math.round(trueValue(G, c) * 0.9); G.stock.splice(G.stock.indexOf(c), 1); }
+  if (!n && !promos.length) { say(G, v.who, 'Nothing to scalp? Lame.'); endVisit(G, 'pass'); return ok(); }
+  money(G, cash, 'sell', 'Skrimp bought ' + n + ' packs' + (promos.length ? ' + ' + promos.length + ' promos' : ''));
+  G.scalped += n; G.stats.scalpedPacks += n;
+  G.rep = clamp(G.rep - Math.max(0, n - 2) - promos.length, 0, 100);
+  releasePromos(G, n);
+  say(G, v.who, 'Pleasure. See you on the strip, where these cost double.'); endVisit(G, 'deal'); return ok();
+}
 
 function closeShop(G) {
   G.phase = 'close';
   const n = Math.min(G.bulk, 3 + Math.floor(G.rep / 25)); if (n) { G.bulk -= n; money(G, n, 'bulk', 'Bulk bin: ' + n + ' commons sold'); }
   const next = DAYS[G.dayIdx + 1];
-  say(G, 'vee', next ? 'Closing time! Tomorrow: ' + next.name + '. ' + Object.keys(next.demand).map(g => GAMES[g].name + ' ×' + next.demand[g]).join(', ') + '.' : 'Last close! Send anything to the graders: tonight is Grade Day and every slab comes home.');
+  let msg = next ? 'Closing time! Tomorrow: ' + next.name + '. ' + Object.keys(next.demand).map(g => GAMES[g].name + ' ×' + next.demand[g]).join(', ') + '.' : 'Last close! Send anything to the graders: tonight is Grade Day and every slab comes home.';
+  if (next && next.release && G.pump) msg += ' Wave 3 reprint list is out: ' + tmpl(G.pump.t).name + ' is on it.';
+  say(G, 'vee', msg);
 }
 function summaryOfDay(G) {
   const rows = G.ledger.filter(l => l.day === G.dayIdx); let inc = 0, out = 0; for (const r of rows) r.amt > 0 ? inc += r.amt : out += r.amt;
   return { day: G.dayIdx, income: inc, spent: out, cash: Math.round(G.cash), value: Math.round(shopValue(G)) };
 }
+
+// ---------- After Hours ----------
+function pickNight(G, ev) {
+  if (G.phase !== 'night' || !G.night || G.night.pick) return err('not now');
+  if (G.night.flyers.indexOf(ev) < 0) return err('not on tonight\'s board');
+  const n = G.night; n.pick = ev;
+  if (ev === 'auction') {
+    const g = pick(G, ['shell', 'hive', 'star']), count = 6 + Math.floor(R(G) * 5), roll = R(G);
+    const kind = roll < 0.2 ? 'jackpot' : roll < 0.5 ? 'junk' : 'fair';
+    const cards = [];
+    for (let i = 0; i < count; i++) {
+      const rar = kind === 'jackpot' && i === 0 ? (R(G) < 0.4 ? 'g' : 'h') : kind === 'junk' ? (R(G) < 0.85 ? 'c' : 'u') : rollRarity(G, false);
+      cards.push(makeCard(G, i % 3 === 0 ? g : pick(G, ['shell', 'hive', 'star']), rar, 7.2, { src: 'old' }));
+    }
+    let worth = 0; for (const c of cards) worth += trueValue(G, c, 1);
+    const clues = [GAMES[g].name + ' cargo off a ' + SPECIES[GAMES[g].species].name + ' hauler', count + ' cards by weight', kind === 'jackpot' ? 'gold seal on the label' : kind === 'junk' ? 'label says "assorted"' : 'label says "collection"'];
+    n.auc = { cards, worth: Math.round(worth), clues, price: 15, high: null, rivals: [{ name: 'Sheelo', cap: Math.round(worth * (0.55 + R(G) * 0.45)) }, { name: 'Klik', cap: Math.round(worth * (0.45 + R(G) * 0.5)) }], log: [] };
+    say(G, 'vee', 'Dock Auction! Bidding opens at 15₵. Read the clues, and don\'t get into a bidding war you can\'t win.');
+  } else if (ev === 'dig') {
+    if (G.cash < 10) { n.pick = null; return err('the bulk lot costs 10₵'); }
+    money(G, -10, 'buy', 'Bulk Dig lot');
+    const cards = [];
+    for (let i = 0; i < 16; i++) {
+      const gem = i < 3; const g = pick(G, ['shell', 'hive', 'star']);
+      const c = makeCard(G, g, gem ? pick(G, ['u', 'r', 'r', 'h']) : (R(G) < 0.85 ? 'c' : 'u'), 6.8, { src: 'old' });
+      if (gem && R(G) < 0.6) c.v.fin = 'mirror';
+      const foil = c.v.fin !== 'std';
+      c.hint = { glint: foil ? R(G) < 0.75 : R(G) < 0.15, game: g };
+      c.flipped = false; cards.push(c);
+    }
+    for (let i = cards.length - 1; i > 0; i--) { const j = Math.floor(R(G) * (i + 1)); [cards[i], cards[j]] = [cards[j], cards[i]]; }
+    n.dig = { cards, flips: 6 };
+    say(G, 'vee', 'Bulk Dig! Six flips. A glint on the back usually means foil. Usually.');
+  } else if (ev === 'swap') {
+    const who = ['pearla', 'klik', 'mimbo'], swaps = [];
+    for (const w of who) {
+      const P = PEOPLE[w], game = SPECIES[P.species].game;
+      const theirs = makeCard(G, game, pick(G, ['u', 'r', 'r', 'h']), 7.4, { src: 'old', read: true });
+      // they want one of your cards they like: the one they value most, if you have any
+      const mine = G.stock.filter(c => !c.know.fake && !c.graded).sort((a, b) => trueValue(G, b) - trueValue(G, a));
+      const want = mine.length ? mine[Math.min(mine.length - 1, Math.floor(R(G) * 3))] : null;
+      swaps.push({ who: w, theirs, want: want ? want.uid : null, done: null });
+    }
+    n.swaps = swaps;
+    say(G, 'vee', 'Swap Meet! Three trades on the table. Loupe is free tonight: nobody\'s in a hurry.');
+  } else if (ev === 'cardnight') say(G, 'vee', 'CARD NIGHT! Pick a game to feature and rip packs live on Floss\'s stream.');
+  else if (ev === 'tourney') say(G, 'vee', 'Tournament Night! Pick a game and a prize card. Better prize, bigger crowd.');
+  return ok();
+}
+function nightCardNight(G, g, nIn) {
+  const N = G.night; if (G.phase !== 'night' || !N || N.pick !== 'cardnight' || N.done) return err('not now');
+  if (!GAMES[g]) return err('pick a game');
+  const n = Math.min(nIn | 0, G.packs[g] || 0, 6); let holo = 0, grail = 0; const pulls = [];
+  for (let i = 0; i < n; i++) { G.packs[g]--; G.stats.cracked++; const p = crackPack(G, g); pulls.push(...p); for (const c of p) { const r = tmpl(c.t).rarity; if (r === 'h') holo++; if (r === 'g') grail++; } }
+  const hype = n ? +(0.05 + 0.03 * n + 0.15 * holo + 0.4 * grail).toFixed(2) : 0; G.hype[g] += hype;
+  let sold = 0; for (const k of Object.keys(G.packs).sort((a, b) => G.packs[b] - G.packs[a])) while (sold < 3 && G.packs[k] > 0) { G.packs[k]--; sold++; }
+  if (sold) money(G, sold * PACK_RETAIL, 'sell', 'Card Night crowd bought ' + sold + ' packs');
+  const promos = [];
+  for (let i = 0; i < 2; i++) { const c = makeCard(G, g, i ? 'r' : 'u', 9, { fresh: true, promo: 'cardnight', src: 'plain' }); c.know.uv = true; addStock(G, c); promos.push(c.uid); }
+  G.rep = clamp(G.rep + 6, 0, 100); N.done = true;
+  event(G, { t: 'cardNight', game: g, n, holo, grail, hype, sold, uids: pulls.map(c => c.uid), promos });
+  say(G, 'vee', n ? 'What a stream! ' + GAMES[g].name + ' hype +' + Math.round(hype * 100) + '% for tomorrow, and 2 Card Night promos for you.' : 'Chill night. The crowd still bought some packs, and you keep 2 promos.');
+  return ok();
+}
+function nightTourney(G, g, prizeUid) {
+  const N = G.night; if (G.phase !== 'night' || !N || N.pick !== 'tourney' || N.done) return err('not now');
+  if (!GAMES[g]) return err('pick a game');
+  const prize = prizeUid ? findStock(G, prizeUid) : null;
+  if (prizeUid && !prize) return err('no such prize card');
+  const nextD = DAYS[G.dayIdx + 1], dem = nextD ? nextD.demand[g] : 1;
+  const prizeVal = prize ? (prize.fake ? 0 : trueValue(G, prize, 1)) : 0;
+  const entrants = Math.round(4 + G.rep / 20 + dem * 3 + Math.min(6, prizeVal / 12));
+  money(G, entrants * 5, 'sell', 'Tournament: ' + entrants + ' entries at 5₵');
+  if (prize) { G.stock.splice(G.stock.indexOf(prize), 1); if (prize.fake) { G.rep = clamp(G.rep - 10, 0, 100); } }
+  // entrants buy deck fillers of that game from you
+  const fillers = G.stock.filter(c => tmpl(c.t).game === g && !c.know.fake && !c.graded && RANK[tmpl(c.t).rarity] <= 2).sort((a, b) => trueValue(G, a) - trueValue(G, b)).slice(0, Math.floor(entrants / 2));
+  let sales = 0; for (const c of fillers) { const p = Math.max(1, Math.round(trueValue(G, c) * 1.2)); sales += p; G.stock.splice(G.stock.indexOf(c), 1); }
+  if (sales) money(G, sales, 'sell', 'Tournament: players bought ' + fillers.length + ' singles');
+  const promos = [];
+  for (let i = 0; i < 2; i++) { const c = makeCard(G, g, i ? 'r' : 'u', 9, { fresh: true, promo: 'tourney', src: 'plain' }); c.know.uv = true; addStock(G, c); promos.push(c.uid); }
+  G.hype[g] += 0.1; G.rep = clamp(G.rep + 3 + (prizeVal >= 40 ? 3 : 0), 0, 100); N.done = true;
+  event(G, { t: 'tourney', game: g, entrants, sales, sold: fillers.length, prize: prize ? prize.t : null, promos, fakePrize: !!(prize && prize.fake) });
+  say(G, 'vee', prize && prize.fake ? 'Uh oh. The winner checked the prize under UV. It was a fake. The crowd is NOT happy.' : entrants + ' players showed up! Entry fees, deck sales, and 2 prize promos for the house.');
+  return ok();
+}
+function nightBid(G) {
+  const N = G.night, A = N && N.auc; if (G.phase !== 'night' || !A || N.done) return err('not now');
+  const step = Math.max(5, Math.round(A.price * 0.1)), p = A.high === 'you' ? A.price : A.price + (A.high ? step : 0);
+  if (A.high === 'you') return err('you\'re already the high bidder');
+  if (G.cash < p) return err('not enough cash');
+  A.price = p; A.high = 'you'; A.log.push('You bid ' + p + '₵');
+  const rival = A.rivals.filter(r => r.cap >= p + step).sort((a, b) => b.cap - a.cap)[0];
+  if (rival) { A.price = p + step; A.high = rival.name; A.log.push(rival.name + ' bids ' + A.price + '₵'); say(G, 'vee', rival.name + ' raises to ' + A.price + '₵!'); return ok(); }
+  // nobody can top you: you win
+  money(G, -p, 'buy', 'Dock Auction crate'); for (const c of A.cards) addStock(G, c);
+  N.done = true; A.won = true;
+  event(G, { t: 'auction', won: true, price: p, worth: A.worth, uids: A.cards.map(c => c.uid) });
+  say(G, 'vee', 'SOLD to Stall 7 for ' + p + '₵! Crack it open.');
+  return ok();
+}
+function nightDrop(G) {
+  const N = G.night, A = N && N.auc; if (G.phase !== 'night' || !A || N.done) return err('not now');
+  N.done = true; A.won = false; event(G, { t: 'auction', won: false, price: A.price, worth: A.worth, winner: A.high || 'nobody' });
+  say(G, 'vee', (A.high && A.high !== 'you' ? A.high + ' takes the crate for ' + A.price + '₵.' : 'No sale tonight.') + ' It was worth about ' + A.worth + '₵, for the record.');
+  return ok();
+}
+function nightDig(G, i) {
+  const N = G.night, D = N && N.dig; if (G.phase !== 'night' || !D || N.done) return err('not now');
+  const c = D.cards[i]; if (!c || c.flipped) return err('pick a face-down card');
+  if (D.flips <= 0) return err('no flips left');
+  c.flipped = true; D.flips--; addStock(G, c);
+  if (D.flips === 0) { N.done = true; say(G, 'vee', 'Out of flips! The rest goes in your bulk bin.'); }
+  return ok({ card: c });
+}
+function nightSwap(G, i, accept) {
+  const N = G.night, s = N && N.swaps && N.swaps[i]; if (G.phase !== 'night' || !s || s.done) return err('not now');
+  if (!accept) { s.done = 'no'; return ok(); }
+  const mine = s.want && findStock(G, s.want); if (!mine) { s.done = 'no'; return err('you don\'t have the card they want anymore'); }
+  G.stock.splice(G.stock.indexOf(mine), 1); s.theirs.cost = mine.cost || 0; addStock(G, s.theirs); s.done = 'yes';
+  if (N.swaps.every(x => x.done)) N.done = true;
+  return ok();
+}
+
 function finale(G) {
   G.events = [];
   resolveGrades(G, true);
   G.phase = 'end';
   const v = Math.round(shopValue(G)), gain = v - G.startValue;
-  const ranks = [[-1e9, 'Corner Stall'], [60, 'Strip Regular'], [180, 'Lane Favorite'], [400, 'Dock Legend'], [800, 'Legend of the Lanes']];
+  const ranks = [[-1e9, 'Corner Stall'], [150, 'Strip Regular'], [500, 'Lane Favorite'], [1000, 'Dock Legend'], [1800, 'Legend of the Lanes']];
   let rank = ranks[0][1]; for (const [at, name] of ranks) if (gain >= at) rank = name;
   G.final = { value: v, start: G.startValue, gain, rank, tab: G.tab };
   say(G, 'vee', 'GRADE DAY! Every slab is home. Final shop value ' + v + '₵. Rank: ' + rank + '!');
 }
 
-function load(json) { const G = typeof json === 'string' ? JSON.parse(json) : json; if (typeof G._s !== 'number') throw new Error('not a Card Trader save'); return G; }
+function load(json) {
+  const G = typeof json === 'string' ? JSON.parse(json) : json;
+  if (typeof G._s !== 'number') throw new Error('not a Card Trader save');
+  if (G.version !== 2) throw new Error('this save is from v1; start a new week');
+  return G;
+}
 const CT = { newGame, load, act, DAYS, GAMES, SPECIES, PEOPLE, GRADERS, RARITY_NAME, RANK, BASE, BOX, PACK_RETAIL, TRANSLATE_FEE, FLUENT_AT,
-  tmpl, trueGrade, centerRatio, estimate, readable, trueValue, shopValue, matches, wantsText, demandOf };
+  FINISH, SETS, ERRORS, PROMOS, UPGRADES, NIGHTS, NIGHT_FLYERS,
+  tmpl, trueGrade, centerRatio, estimate, readable, trueValue, shopValue, matches, wantsText, demandOf, variantMult, packTotal };
 if (typeof module !== 'undefined' && module.exports) module.exports = CT; else root.CT = CT;
 })(this);
 
@@ -858,22 +1232,42 @@ function wearSVG(c, strong) {
   return `<svg class="wear" viewBox="0 0 100 140" preserveAspectRatio="none">${s}</svg>`;
 }
 
-// One card. opts: size ('xs'|'sm'|''|'lg'), readable, uv, loupe, badge
+// v2 prints, all drawn in code: promo crests (our own starburst shapes, never a real game's marks), the First Run
+// sticker, serial foil, signature, set symbol. Full-art and alt-art paintings layer over the base sheet, so the
+// base sheet shows until their own paintings exist.
+const PROMO_MARK = { 'dock-mollu': ['◎', '#19C8D8'], 'dock-zekk': ['⬢', '#A6F01E'], 'dock-puffi': ['✦', '#B28CFF'], topper: ['▲', '#FF7A1A'], cardnight: ['♪', '#FF2E93'], tourney: ['♛', '#FFD21F'], release: ['3', '#19D3F0'] };
+const SET_MARK = { core: '●', vintage: '◐', reprint: '◒' };
+function printBits(c) {
+  const v = c.v || {}; let s = '';
+  if (v.promo && PROMO_MARK[v.promo]) { const [ic, col] = PROMO_MARK[v.promo]; s += `<div class="promo" style="--pc:${col}" title="promo">${ic}</div>`; }
+  if (v.first) s += '<div class="first">RUN&nbsp;1</div>';
+  if (v.serial) s += `<div class="serial">${String(v.serial).padStart(2, '0')}/50</div>`;
+  if (v.signed) s += '<svg class="sig" viewBox="0 0 100 30"><path d="M4 22 C 14 2, 22 30, 32 14 S 48 4, 54 20 S 70 26, 78 10 S 92 18, 96 8" fill="none" stroke="#120A1F" stroke-width="3" stroke-linecap="round"/></svg>';
+  s += `<div class="setsym">${SET_MARK[v.set || 'core']}</div>`;
+  return s;
+}
+// One card. opts: size ('xs'|'sm'|''|'md'|'lg'), readable, uv, loupe, badge
 function cardHTML(c, o) {
   o = o || {};
-  const tm = CT.tmpl(c.t), F = FRAME[tm.game], h = hash(c.t), q = tm.idx % 4;
+  const tm = CT.tmpl(c.t), F = FRAME[tm.game], h = hash(c.t), q = tm.idx % 4, v = c.v || {};
   const off = (10 - c.cen) * 1.3 * ((h & 1) ? 1 : -1);
   const vars = `--fr:${F.fr};--fr2:${F.fr2};--l:${7 + off}%;--r:${7 - off}%;`;
-  const art = `background-image:url(img/cards-${tm.game}.jpg);background-position:${q % 2 ? 100 : 0}% ${q > 1 ? 100 : 0}%;filter:hue-rotate(${Math.floor(tm.idx / 4) * 38}deg)${tm.rarity === 'g' ? ' saturate(1.5) contrast(1.15)' : ''};`;
+  const pos = `${q % 2 ? 100 : 0}% ${q > 1 ? 100 : 0}%`, base = `url(img/cards-${tm.game}.jpg)`;
+  const hue = Math.floor(tm.idx / 4) * 38 + (v.err === 'ink' ? 160 : 0);
+  let layers = base, sizes = '200% 200%', poss = pos;
+  if (v.fin === 'alt') { layers = `url(img/cards-${tm.game}-alt.jpg), ${base}`; sizes = '200% 200%, 200% 200%'; poss = `${pos}, ${q % 2 ? 0 : 100}% ${q > 1 ? 0 : 100}%`; }
+  if (v.fin === 'full') { layers = `url(img/full-${tm.game}.jpg), ${base}`; sizes = '200% 100%, 220% 220%'; poss = `${tm.idx % 2 ? 100 : 0}% 50%, ${pos}`; }
+  const art = `background-image:${layers};background-size:${sizes};background-position:${poss};filter:hue-rotate(${hue}deg)${tm.rarity === 'g' ? ' saturate(1.5) contrast(1.15)' : ''};`;
   const name = o.readable ? `<span>${tm.name}</span>` : scriptSVG(CT.GAMES[tm.game].script, tm.name);
   const gem = o.readable ? GEM[tm.rarity] : ['#ddd', '?'];
-  const shiny = tm.rarity === 'h' || tm.rarity === 'g' || (c.fake && tm.rarity !== 'c');
+  const foilish = tm.rarity === 'h' || tm.rarity === 'g' || (c.fake && tm.rarity !== 'c');
+  const shiny = foilish && v.err !== 'nofoil';
   const wm = c.fake === 'uv' ? '' : watermark(c.fake === 'stock' ? (tm.game === 'shell' ? 'hive' : 'shell') : tm.game);
   const badge = o.badge ? `<div class="badge ${o.badge === 'FAKE' ? 'fake' : ''}">${o.badge}</div>` : '';
   const inner = `<div class="inner"><div class="art" data-g="${tm.game}" style="${art}"><div class="glyph-art" aria-hidden="true">${F.ic}</div></div>
     <div class="name">${name}</div><div class="gem" style="background:${gem[0]};color:${gem[0] === '#000' ? '#FFD21F' : '#120A1F'}">${gem[1]}</div>
-    <div class="gameic">${F.ic}</div></div>${shiny ? '<div class="holo"></div>' : ''}${wearSVG(c, o.loupe)}${wm}${badge}`;
-  const cls = `card ${o.size || ''} ${o.uv ? 'uv' : ''} ${o.cls || ''}`;
+    <div class="gameic">${F.ic}</div>${printBits(c)}</div>${v.fin === 'mirror' ? '<div class="mirrorfoil"></div>' : ''}${shiny ? '<div class="holo"></div>' : ''}${wearSVG(c, o.loupe)}${wm}${badge}`;
+  const cls = `card ${o.size || ''} ${o.uv ? 'uv' : ''} ${v.fin === 'full' ? 'fullart' : ''} ${v.fin === 'alt' ? 'altart' : ''} ${o.cls || ''}`;
   const card = `<div class="${cls}" style="${vars}" data-uid="${c.uid}" ${o.act ? `data-act="${o.act}"` : ''} role="button" tabindex="0" aria-label="${o.readable ? tm.name : 'unread card'}">${inner}</div>`;
   if (c.graded) { const co = c.graded.co; return `<div class="slab ${co}" data-uid="${c.uid}" ${o.act ? `data-act="${o.act}"` : ''}><div class="lbl"><span>${CT.GRADERS[co].name.split(' ')[0].toUpperCase()}</span><span>${c.graded.grade}</span></div>${card}</div>`; }
   return card;
@@ -1184,23 +1578,27 @@ root.FE = FE;
 
 </script>
 <script>
-// Intergalactic Card Trader · UI. Draws G and turns clicks into CT.act intents. No game rules live here.
+// Intergalactic Card Trader · UI (v2). Draws G and turns clicks into CT.act intents. No game rules live here.
 // © 2026 justaskjoe. All rights reserved.
 (function (root) {
 'use strict';
 const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
-const IMG = { keyart: 'img/keyart.jpg', shop: 'img/shop.jpg', dock: 'img/dock.jpg', cardnight: 'img/cardnight.jpg', grader: 'img/grader.jpg', dj: 'img/dj.webp' };
+// Scenes list a fallback after each new v2 painting, so a missing file shows an older scene instead of nothing.
+const IMG = { keyart: 'img/keyart.jpg', shop: 'img/shop.jpg', dock: 'img/dock.jpg', cardnight: 'img/cardnight.jpg', grader: 'img/grader.jpg', dj: 'img/dj.webp',
+  tourney: 'img/tournament.jpg|img/cardnight.jpg', auction: 'img/auction.jpg|img/dock.jpg', release: 'img/release.jpg|img/dock.jpg', dig: 'img/shop.jpg', swap: 'img/cardnight.jpg' };
 const SP_COLOR = { mollu: '#19C8D8', zekk: '#A6F01E', puffi: '#B28CFF' };
 const GAME_COLOR = { shell: '#FF8FC7', hive: '#A6F01E', star: '#8B5CF6' };
-const UI = { screen: 'opening', slot: null, G: null, sel: null, uvView: false, offer: 0, stock: false, nightGame: null, nightN: 3, lastPull: null, seenEvents: 0 };
+const PORTRAIT_FILE = { quill: 'glyphsmith', hype: 'hypebros' };
+const UI = { screen: 'opening', slot: null, G: null, sel: null, uvView: false, offer: 0, stock: false, nightGame: null, nightN: 3, lastPull: null, seenEvents: 0,
+  react: null, lastResult: null, tourGame: null, tourPrize: null };
 
 // ---------- stage scaling: a 1280x720 world letterboxed into any window ----------
 function fit() { const s = Math.min(innerWidth / 1288, innerHeight / 728); const st = $('#stage'); st.style.setProperty('--st', `translate(-50%, -50%) scale(${s})`); st.style.transform = `translate(-50%, -50%) scale(${s})`; }
 
 // Start a slot: fresh = a new run (straight to the first morning), else load the saved run.
 function startSlot(n, fresh) {
-  UI.slot = n; UI.sel = null; UI.stock = false; UI.lastPull = null; UI.seenEvents = 0;
+  UI.slot = n; UI.sel = null; UI.stock = false; UI.lastPull = null; UI.seenEvents = 0; UI.lastResult = null;
   const s = fresh ? null : FE.readSlot(n);
   if (s && s.G) UI.G = s.G; else { UI.G = CT.newGame((Date.now() % 1e9) | 0); CT.act(UI.G, { t: 'start' }); }
   UI.seenEvents = UI.G.events.length; UI.screen = 'game'; save();
@@ -1219,14 +1617,16 @@ const money = n => Math.round(n) + '₵';
 function hud() {
   const G = UI.G, D = CT.DAYS[G.dayIdx] || { name: '', visitors: [] };
   const custN = D.visitors.length, at = Math.max(0, G.visitIdx + 1);
+  const ups = Object.keys(CT.UPGRADES).filter(k => G.up[k]).map(k => CT.UPGRADES[k].name.split(' ')[0]).join(' · ');
   return `<div id="hud">
-    <div class="day">DAY ${G.dayIdx + 1}/3 · ${esc(D.name.toUpperCase())}</div>
+    <div class="day">DAY ${G.dayIdx + 1}/${CT.DAYS.length} · ${esc(D.name.toUpperCase())}</div>
     ${G.phase === 'shop' || G.phase === 'visit' ? `<div class="stat"><small>Customer</small>${at}/${custN}</div>` : ''}
     <div class="spacer"></div>
+    ${ups ? `<div class="stat" title="Loupe upgrades"><small>Loupe</small>${esc(ups)}</div>` : ''}
     <div class="stat"><small>Cash</small><span class="cash">${money(G.cash)}</span></div>
     ${G.tab ? `<div class="stat"><small>Tab</small><span class="tabv">${money(G.tab)}</span></div>` : ''}
     <div class="stat"><small>Rep</small>${G.rep}</div>
-    <div class="stat"><small>Packs</small>${G.packs.shell + G.packs.hive + G.packs.star}</div>
+    <div class="stat"><small>Packs</small>${CT.packTotal(G)}</div>
     <button class="btn white" data-act="stock">Stock (${G.stock.length})</button>
     <button class="btn ${FE.settings.music ? 'lime' : 'white'}" data-act="music" aria-pressed="${FE.settings.music}" title="Lane FM beat">♪</button>
     <button class="btn white" data-act="fe-menu" title="Menu" aria-label="Menu">☰</button>
@@ -1236,21 +1636,26 @@ function dj(text) {
   return `<div id="dj"><div class="face" style="background-image:url(${IMG.dj})"></div>
     <div><div class="who">DJ VEE · LANE FM</div><div class="txt">${esc(text)}</div></div><div class="onair">ON AIR</div></div>`;
 }
-function bg(key, dim) { return `<div class="bg" style="background-image:url(${IMG[key]});background-color:#2a1450"></div>${dim ? '<div class="scrim" style="background:rgba(18,10,31,' + dim + ')"></div>' : '<div class="scrim"></div>'}`; }
-function portrait(who) {
+function bgUrl(key) { return (IMG[key] || IMG.shop).split('|').map(u => `url(${u})`).join(', '); }
+function bg(key, dim) { return `<div class="bg" style="background-image:${bgUrl(key)};background-color:#2a1450"></div>${dim ? '<div class="scrim" style="background:rgba(18,10,31,' + dim + ')"></div>' : '<div class="scrim"></div>'}`; }
+function portrait(who, cls) {
   const P = CT.PEOPLE[who];
-  return `<div class="portrait" style="background:${SP_COLOR[P.species]}">
+  return `<div class="portrait ${cls || ''}" style="background:${SP_COLOR[P.species]}">
     <div class="fallback-face">${P.name[0]}</div>
-    <div class="pic" style="background-image:url(img/p-${who}.webp)"></div>
-    <span class="chip sp">${CT.SPECIES[P.species].name}</span>
-    <div class="nameplate">${P.name}</div></div>`;
+    <div class="pic" style="background-image:url(img/p-${PORTRAIT_FILE[who] || who}.webp)"></div>
+    <span class="chip sp">${P.bad ? '⚠ ' : ''}${CT.SPECIES[P.species].name}</span>
+    <div class="nameplate">${esc(P.name)}</div></div>`;
 }
 function badgeFor(c) {
-  const G = UI.G;
-  if (c.know.uv && c.fake) return 'FAKE';
+  if (c.know.fake) return 'FAKE';
   if (c.graded) return null;
   if (c.know.loupe) return 'G' + CT.trueGrade(c);
   return null;
+}
+function findAny(uid) {
+  const G = UI.G, N = G.night;
+  return G.stock.find(x => x.uid === uid) || (G.visit && G.visit.cards.find(x => x.uid === uid)) ||
+    (N && N.swaps && (N.swaps.find(s => s.theirs.uid === uid) || {}).theirs) || (N && N.dig && N.dig.cards.find(x => x.uid === uid && x.flipped)) || null;
 }
 function card(c, o) { o = o || {}; return ART.cardHTML(c, Object.assign({ readable: CT.readable(UI.G, c), badge: badgeFor(c) }, o)); }
 function estText(c) {
@@ -1259,24 +1664,28 @@ function estText(c) {
   const unsure = e.rarity == null || e.grade == null;
   return (unsure ? '~' : '') + money(e.value) + (unsure ? '?' : '');
 }
+const isPump = c => UI.G.pump && UI.G.pump.t === c.t;
 
 // ---------- coach: one hint at a time, tied to what's on the counter ----------
 function hint() {
   const G = UI.G, v = G.visit;
-  if (G.say && G.say.who === 'vee' && (G.phase === 'morning' || G.phase === 'close' || G.phase === 'cardnight' || G.phase === 'end')) return G.say.text;
+  if (G.say && G.say.who === 'vee' && ['morning', 'close', 'night', 'end'].indexOf(G.phase) >= 0) return G.say.text;
   if (G.phase === 'shop') {
     if (G.visitIdx < 0) return G.say && G.say.who === 'vee' ? G.say.text : 'Doors are open. Tap NEXT CUSTOMER.';
     return 'Breather! Rip a pack from the back room, check your Stock, or bring in the next customer.';
   }
   if (G.phase !== 'visit' || !v) return '';
+  if (v.role === 'scalp') return G.policy.limit2 ? 'Your Limit 2 sign is up, so Skrimp can only take two packs.' : 'Easy cash now, but scalped packs mean tomorrow\'s pack buyers already have theirs, and the strip remembers. The Limit 2 sign (at close) stops him.';
   const looked = v.cards.some(c => c.know.loupe || c.know.uv || c.know.read);
+  if (v.who === 'quill' && !G.up.spec) return 'Perfect promos and serials from a stranger... the basic UV lamp can\'t catch Glyphsmith ring fakes. The Spectrometer can.';
+  if (v.who === 'hype') return 'Hype price today. Who\'s docking tomorrow? Check the close-up report before you believe a rumor.';
   if (v.role === 'sell' || v.role === 'lot' || v.role === 'bulk') {
-    if (!looked) return v.role === 'lot' ? 'A whole binder page for one price! Tap cards to inspect. Unreadable scripts hide the big finds, and there\'s often a fake: try the UV lamp.' : 'Tap a card to put it under the Loupe. Each tool costs the customer 1 patience, so pick what matters.';
-    if (v.cards.some(c => c.know.loupe && !c.flawUsed && Math.min(c.cen, c.edg, c.sur) <= 6)) return 'You found a flaw! POINT OUT FLAW knocks their price down.';
-    return v.species === 'mollu' ? 'Mollu love round numbers: offers ending in 0 make them come down faster.' : v.species === 'zekk' ? 'Zekk split the difference fast but walk fast too.' : 'Puffi care about condition above all. A flaw hits them hard.';
+    if (!looked) return v.role === 'lot' ? 'A whole binder page for one price! Old binders hide First Runs, vintage and misprints. Tap cards to inspect.' : 'Tap a card to put it under the Loupe. Look for mirror foil, stamps and serial numbers too.';
+    if (v.cards.some(c => c.know.loupe && !c.flawUsed && Math.min(c.cen, c.edg, c.sur) <= 6)) return G.up.lens ? 'You found a flaw! POINT OUT FLAW knocks their price down, unless the Print Lens says it\'s a factory misprint. Then keep quiet and buy it.' : 'You found a flaw! POINT OUT FLAW knocks their price down. (Is it damage, or a misprint? Only the Print Lens can tell.)';
+    return v.species === 'mollu' ? 'Mollu love round numbers. They pay extra for First Runs and vintage when they buy.' : v.species === 'zekk' ? 'Zekk split the difference fast. As buyers they love serial numbers and misprints.' : 'Puffi care about condition and pay up for full-art and alt-art.';
   }
-  if (v.role === 'sealed') return v.showing ? 'Name your price for the packs, or take their bid.' : 'They want sealed packs. SHOW PACKS to hear an offer.';
-  if (!v.showing) return 'They want ' + CT.wantsText(v.wants) + '. Pick a card from your stock on the right. Today\'s demand and the hot list raise what buyers pay.';
+  if (v.role === 'sealed') return v.showing ? 'Name your price for the packs, or take their bid.' : 'They want sealed packs. SHOW PACKS to hear an offer.' + (CT.DAYS[G.dayIdx].release ? ' Release Day: every 3rd pack sold earns you a release promo.' : '');
+  if (!v.showing) return 'They want ' + CT.wantsText(v.wants) + '. Pick a card from your stock on the right.';
   return 'Name your price. Push too far past what it\'s worth and they\'ll get insulted.';
 }
 
@@ -1288,12 +1697,12 @@ function render() {
   if (G.phase === 'morning') html = morningScreen();
   else if (G.phase === 'shop' || G.phase === 'visit') html = shopScreen();
   else if (G.phase === 'close') html = closeScreen();
-  else if (G.phase === 'cardnight') html = nightScreen();
+  else if (G.phase === 'night') html = nightScreen();
   else if (G.phase === 'end') html = endScreen();
   if (UI.stock) html += stockDrawer();
   if (UI.sel) html += loupeScreen();
   html += FE.overlay();
-  st.innerHTML = html; FE.afterRender();
+  st.innerHTML = html; FE.afterRender(); UI.react = null;
   const sl = $('#offer'); if (sl) sl.addEventListener('input', e => { UI.offer = +e.target.value; const o = $('#offerv'); if (o) o.textContent = money(UI.offer); const b = $('[data-act=offer]'); if (b) b.textContent = (G.visit && (G.visit.showing) ? 'ASK ' : 'OFFER ') + money(UI.offer); });
 }
 
@@ -1314,16 +1723,17 @@ function morningScreen() {
   const G = UI.G, D = CT.DAYS[G.dayIdx];
   const ships = D.ships.map(s => `<span class="chip" style="background:${SP_COLOR[s]}">${CT.SPECIES[s].name} ships</span>`).join(' ');
   const hot = G.hotList.map(t => { const tm = CT.tmpl(t); return `<div class="chip" style="background:${GAME_COLOR[tm.game]}">🔥 ${esc(tm.name)} <small>(${CT.GAMES[tm.game].name})</small></div>`; }).join('');
+  const rumor = G.pump ? (G.dayIdx === 3 ? `<div class="chip rumor">📣 RUMOR: ${esc(CT.tmpl(G.pump.t).name)} is "about to spike" (×1.8 today)</div>` : G.dayIdx >= 4 ? `<div class="chip rumor down">📉 ${esc(CT.tmpl(G.pump.t).name)} got reprinted: ×0.5</div>` : '') : '';
   const ev = eventsHTML(G.events);
-  return `${hud()}${bg('dock', .2)}
+  return `${hud()}${bg(D.release ? 'release' : 'dock', .2)}
   <div class="panel tilt-l" style="left:40px;top:86px;width:560px;padding:16px">
     <div class="h" style="font-size:28px">MORNING · ${esc(D.name.toUpperCase())}</div>
     <div style="margin:10px 0">${ships}</div>
     <div class="h" style="font-size:14px;margin:6px 0">TODAY'S DEMAND</div>${demandBars(G.demand)}
-    <div class="h" style="font-size:14px;margin:12px 0 6px">HOT LIST · +50%</div><div class="row">${hot}</div>
-    <div style="margin-top:8px;font-size:13px">Rent due at close: <b>${money(D.rent)}</b>${D.cardNight ? ' · <b>Card Night</b> after close' : ''}</div>
+    <div class="h" style="font-size:14px;margin:12px 0 6px">HOT LIST · +50%</div><div class="row">${hot}${rumor}</div>
+    <div style="margin-top:8px;font-size:13px">Rent due at close: <b>${money(D.rent)}</b>${G.dayIdx < CT.DAYS.length - 1 ? ' · <b>After Hours</b> event tonight' : ' · <b>Grade Day</b> tonight'}</div>
   </div>
-  ${ev ? `<div class="panel tilt-r" style="left:640px;top:96px;width:600px;padding:14px"><div class="h" style="font-size:22px">THE GRADERS SENT BACK…</div><div class="row" style="margin-top:10px;gap:18px">${ev}</div></div>` : ''}
+  ${ev ? `<div class="panel tilt-r" style="left:640px;top:96px;width:600px;padding:14px"><div class="h" style="font-size:22px">OVERNIGHT</div><div class="row" style="margin-top:10px;gap:18px">${ev}</div></div>` : ''}
   <div class="sheet" style="right:40px;bottom:96px"><button class="btn big pink" data-act="open">OPEN SHOP ▶</button></div>
   ${dj(hint())}`;
 }
@@ -1332,15 +1742,16 @@ function shopScreen() {
   const G = UI.G, v = G.visit;
   let html = `${hud()}${bg('shop')}`;
   if (!v) {
-    const D = CT.DAYS[G.dayIdx], left = D.visitors.length - (G.visitIdx + 1);
+    const D = CT.DAYS[G.dayIdx], left = D.visitors.length - (G.visitIdx + 1), L = UI.lastResult;
     html += `<div id="idle">
+      ${L ? `<div class="lastvisit ${L.result}">${portrait(L.who, 'mini')}<div class="stamp" style="font-size:30px">${L.result === 'deal' ? 'DEAL!' : L.result === 'walk' ? 'WALKED' : 'PASS'}</div></div>` : ''}
       <button class="btn big pink pop" data-act="next">${left ? 'NEXT CUSTOMER ▶' : 'CLOSE UP SHOP ▶'}</button>
       <div class="chip">${left} customer${left === 1 ? '' : 's'} left today</div></div>
       <div class="panel tilt-l" style="left:16px;top:96px;width:330px;padding:14px">
         <div class="h" style="font-size:18px">BACK ROOM</div>
-        <div style="font-size:14px;margin:6px 0 10px">Rip a pack: 5 cards, one rare slot that can hit a holo or a grail. Or keep them sealed for pack buyers.</div>
+        <div style="font-size:14px;margin:6px 0 10px">Rip a pack: 5 cards, a rare slot that can hit a holo, grail, full-art or alt-art. Or keep them sealed for pack buyers.</div>
         ${Object.keys(CT.GAMES).map(g => `<div class="row" style="align-items:center;margin-bottom:6px"><span class="chip" style="background:${GAME_COLOR[g]};flex:1">${CT.GAMES[g].name} × ${G.packs[g]}</span><button class="btn sm" data-act="crack" data-game="${g}" ${G.packs[g] ? '' : 'disabled'}>RIP</button></div>`).join('')}
-        <div style="font-size:13px;margin-top:8px">Bulk bin: <b>${G.bulk}</b> commons (sells 1₵ each)</div>
+        <div style="font-size:13px;margin-top:8px">Bulk bin: <b>${G.bulk}</b> commons (sells 1₵ each)${G.policy.limit2 ? ' · <b>Limit 2</b> sign is up' : ''}</div>
       </div>
       ${UI.lastPull ? `<div class="panel tilt-r" style="right:16px;top:96px;width:350px;padding:12px"><div class="h" style="font-size:18px">FRESH PULL!</div><div class="row" style="margin-top:8px;justify-content:center">${UI.lastPull.map((c, i) => `<div class="flipin" style="animation-delay:${i * 0.12}s">${card(c, { size: 'xs', act: 'loupe' })}</div>`).join('')}</div></div>` : ''}`;
     return html + dj(hint());
@@ -1348,41 +1759,52 @@ function shopScreen() {
   const P = CT.PEOPLE[v.who], youBuy = v.role === 'sell' || v.role === 'lot' || v.role === 'bulk';
   const pips = Array.from({ length: v.maxPatience }, (_, i) => `<span class="pip ${i < v.patience ? '' : 'off'}"></span>`).join('');
   const bubble = G.say && G.say.who === v.who ? G.say.text : '…';
-  html += `<div id="cust" class="panel tilt-l">${portrait(v.who)}
+  html += `<div id="cust" class="panel tilt-l">${portrait(v.who, UI.react || 'enter')}
     <div class="pips">Patience ${pips}</div>
     <div class="bubble">${esc(bubble)}</div>
     ${v.wants ? `<div class="wants">Wants: ${esc(CT.wantsText(v.wants))}</div>` : ''}
     <div class="muted" style="font-size:12px">${esc(P.line)}</div></div>`;
-  // mat
   if (youBuy) html += `<div id="mat" class="${v.cards.length > 3 ? 'lot' : ''}">${v.cards.map(c => card(c, { size: v.cards.length > 3 ? 'sm' : 'md', act: 'loupe' })).join('')}</div>`;
+  else if (v.role === 'scalp') html += `<div id="mat">${Array.from({ length: Math.min(CT.packTotal(G), G.policy.limit2 ? 2 : 12) }, (_, i) => `<div class="card xs pop" style="--fr:linear-gradient(160deg,#FF2E93,#6A2BD9);animation-delay:${i * .04}s"><div class="inner" style="display:grid;place-items:center;color:#fff;font-family:var(--display);font-size:12px;background:repeating-linear-gradient(45deg,#6A2BD9 0 8px,#FF2E93 8px 16px)">PACK</div></div>`).join('') || '<div class="chip">No packs to scalp</div>'}</div>`;
   else if (v.showing === 'packs') html += `<div id="mat">${Array.from({ length: v.packs }, (_, i) => `<div class="card sm pop" style="--fr:linear-gradient(160deg,#FF2E93,#6A2BD9);animation-delay:${i * .06}s"><div class="inner" style="display:grid;place-items:center;color:#fff;font-family:var(--display);font-size:16px;background:repeating-linear-gradient(45deg,#6A2BD9 0 8px,#FF2E93 8px 16px)">PACK</div></div>`).join('')}</div>`;
   else if (v.showing) { const c = G.stock.find(x => x.uid === v.showing); html += `<div id="mat">${c ? card(c, { act: 'loupe' }) : ''}</div>`; }
-  else html += `<div id="mat"><div class="chip" style="font-size:18px">← ${esc(P.name)} is browsing. Pick a card on the right →</div></div>`;
-  html += `<div id="deal" class="panel tilt-r">${youBuy ? dealBuyHTML(v) : dealSellHTML(v)}</div>`;
+  else html += `<div id="mat"><div class="chip" style="font-size:18px">${v.role === 'sealed' ? esc(P.name) + ' wants sealed packs →' : '← ' + esc(P.name) + ' is browsing. Pick a card on the right →'}</div></div>`;
+  html += `<div id="deal" class="panel tilt-r">${v.role === 'scalp' ? dealScalpHTML(v) : youBuy ? dealBuyHTML(v) : dealSellHTML(v)}</div>`;
   return html + dj(hint());
+}
+function dealScalpHTML(v) {
+  const G = UI.G, n = Math.min(CT.packTotal(G), G.policy.limit2 ? 2 : 99);
+  const promos = G.policy.limit2 ? [] : G.stock.filter(c => c.v && c.v.promo && !c.know.fake && !c.graded);
+  let cash = n * (CT.PACK_RETAIL + 3); for (const c of promos) cash += Math.round(CT.trueValue(G, c) * 0.9);
+  return `<div class="h" style="font-size:20px">⚠ THE SCALPER</div>
+    <div>Skrimp takes <b>${n} pack${n === 1 ? '' : 's'}</b>${promos.length ? ` and <b>${promos.length} promo${promos.length > 1 ? 's' : ''}</b>` : ''}, no haggling.</div>
+    <div class="price-row"><span>Cash now</span><span class="big">${money(cash)}</span></div>
+    <div class="est">The catch: tomorrow's pack buyers already bought from him (they'll want fewer), and every pack past 2 and every promo costs rep. ${G.policy.limit2 ? 'Your <b>Limit 2</b> sign caps him at 2 packs.' : 'A <b>Limit 2</b> sign (set at close) would cap him.'}</div>
+    <div class="row"><button class="btn lime" data-act="accept" ${n || promos.length ? '' : 'disabled'}>TAKE THE CASH</button><button class="btn white" data-act="pass">NO DEAL</button></div>`;
 }
 function dealBuyHTML(v) {
   const G = UI.G;
   let est = 0, unsure = false; for (const c of v.cards) { const e = CT.estimate(G, c); est += e.value; if (!e.fake && (e.rarity == null || e.grade == null)) unsure = true; }
   const max = Math.max(10, Math.round(Math.max(v.ask, est) * 1.1));
   if (!UI.offer || UI.offer > max || UI._for !== v) { UI.offer = Math.max(1, Math.round(v.ask * 0.6 / (v.species === 'mollu' ? 10 : 1)) * (v.species === 'mollu' ? 10 : 1)); UI._for = v; }
-  const flawable = v.cards.some(c => c.know.loupe && !c.flawUsed && (Math.min(c.cen, c.edg, c.sur) <= 6 || (c.know.uv && c.fake)));
+  const flawable = v.cards.some(c => c.know.loupe && !c.flawUsed && (Math.min(c.cen, c.edg, c.sur) <= 6 || c.know.fake));
+  const pumped = v.cards.some(isPump);
   return `<div class="h" style="font-size:20px">${v.role === 'lot' ? 'BINDER LOT' : v.role === 'bulk' ? 'SHOEBOX' : 'THEY\'RE SELLING'} · ${v.cards.length} CARD${v.cards.length > 1 ? 'S' : ''}</div>
     <div class="price-row"><span>Their price</span><span class="big">${money(v.ask)}</span></div>
-    <div class="est">Your read: <b>${unsure ? '~' : ''}${money(est)}${unsure ? '?' : ''}</b> at today's demand${unsure ? ' (inspect to be sure)' : ''}. You have ${money(G.cash)}.</div>
+    <div class="est">Your read: <b>${unsure ? '~' : ''}${money(est)}${unsure ? '?' : ''}</b> at today's prices${unsure ? ' (inspect to be sure)' : ''}.${pumped ? ' <b style="color:#c41d1d">Includes rumor hype.</b>' : ''} You have ${money(G.cash)}.</div>
     <div class="offer-val" id="offerv">${money(UI.offer)}</div>
     <input id="offer" class="slider" type="range" min="1" max="${max}" step="1" value="${UI.offer}" aria-label="Your offer">
     <div class="row"><button class="btn pink" data-act="offer">OFFER ${money(UI.offer)}</button></div>
     <div class="row"><button class="btn lime" data-act="accept" ${G.cash >= v.ask ? '' : 'disabled'}>PAY ${money(v.ask)}</button><button class="btn cyan" data-act="flaw" ${flawable ? '' : 'disabled'}>POINT OUT FLAW</button></div>
     <div class="row"><button class="btn white" data-act="pass">PASS</button></div>
-    <div class="muted" style="font-size:12px">Tap a card for the Loupe. Each tool costs 1 patience; each offer costs 1.</div>`;
+    <div class="muted" style="font-size:12px">Tap a card for the Loupe. Each tool costs 1 patience${G.up.hands ? ' (first tool per card free: Steady Hands)' : ''}; each offer costs 1.</div>`;
 }
 function dealSellHTML(v) {
   const G = UI.G;
   if (!v.showing) {
     if (v.role === 'sealed') {
-      const have = G.packs.shell + G.packs.hive + G.packs.star;
-      return `<div class="h" style="font-size:20px">SEALED PACKS</div><div>You have <b>${have}</b> packs. They want ${v.packs}.</div>
+      const have = CT.packTotal(G);
+      return `<div class="h" style="font-size:20px">SEALED PACKS</div><div>You have <b>${have}</b> packs. They want ${v.packs}.${G.scalpedToday ? ' (Fewer than usual: Skrimp got to them yesterday.)' : ''}</div>
         <div class="row"><button class="btn pink" data-act="showPacks" ${have ? '' : 'disabled'}>SHOW PACKS</button><button class="btn white" data-act="pass">PASS</button></div>`;
     }
     const fits = G.stock.filter(c => CT.matches(G, v.wants, c));
@@ -1396,43 +1818,68 @@ function dealSellHTML(v) {
   if (!UI.offer || UI._for !== v.showing) { UI.offer = Math.round(Math.max(est, v.bid) * 1.25); UI._for = v.showing; }
   return `<div class="h" style="font-size:20px">THEY'RE BUYING</div>
     <div class="price-row"><span>Their bid</span><span class="big">${money(v.bid)}</span></div>
-    <div class="est">Your read: <b>${c ? estText(c) : money(est)}</b>${c ? ' (today\'s demand' + (G.hotList.indexOf(c.t) >= 0 ? ', HOT' : '') + ')' : ' at retail'}${c && c.cost ? ` · you paid ${money(c.cost)}` : ''}</div>
+    <div class="est">Your read: <b>${c ? estText(c) : money(est)}</b>${c ? ' (today\'s demand' + (G.hotList.indexOf(c.t) >= 0 ? ', HOT' : '') + (isPump(c) ? ', RUMOR' : '') + ')' : ' at retail'}${c && c.cost ? ` · you paid ${money(c.cost)}` : ''}</div>
     <div class="offer-val" id="offerv">${money(UI.offer)}</div>
     <input id="offer" class="slider" type="range" min="1" max="${max}" step="1" value="${Math.min(UI.offer, max)}" aria-label="Your asking price">
     <div class="row"><button class="btn pink" data-act="offer">ASK ${money(UI.offer)}</button></div>
     <div class="row"><button class="btn lime" data-act="accept">TAKE ${money(v.bid)}</button><button class="btn white" data-act="pass">NO DEAL</button></div>`;
 }
 
+// Print readout lines for the Loupe: what the player has actually learned about this copy.
+function printLines(c) {
+  const G = UI.G, v = c.v || {}, k = c.know, out = [];
+  const fin = v.fin === 'full' || v.fin === 'alt' ? CT.FINISH[v.fin] : k.loupe ? CT.FINISH[v.fin || 'std'] : '?';
+  out.push(['Finish', fin]);
+  if (k.loupe) {
+    const st = [];
+    if (v.promo) st.push(CT.PROMOS[v.promo].name);
+    if (v.first) st.push('First Run');
+    if (v.serial) st.push('#' + v.serial + '/50' + (k.print ? ' ✓' : ' (unverified)'));
+    if (v.signed) st.push('Signed' + (k.print ? ' ✓' : ' (unverified)'));
+    out.push(['Stamps', st.length ? st.join(' · ') : 'none']);
+  } else out.push(['Stamps', '?']);
+  out.push(['Set', k.print ? CT.SETS[v.set || 'core'] : G.up.lens ? '? (use Condition)' : '<span class="muted">needs Print Lens</span>']);
+  out.push(['Misprint', k.print ? (v.err ? '<b style="color:#0a8a3e">' + CT.ERRORS[v.err] + ': worth more!</b>' : 'none') : G.up.lens ? '?' : '<span class="muted">needs Print Lens</span>']);
+  return out;
+}
+function uvLine(c) {
+  const G = UI.G, k = c.know;
+  if (!k.uv) return '?';
+  if (k.fake) return '<b style="color:#c41d1d">FAKE: ' + (c.fake === 'uv' ? 'no watermark' : c.fake === 'stock' ? 'wrong world\'s mark' : 'ring fake, copied mark, wrong spectrum') + '</b>';
+  if (G.up.spec && !k.spec) return 'Genuine watermark (basic lamp). <b>Re-scan with the Spectrometer</b>';
+  return 'Genuine watermark' + (k.spec ? ' (spectrum checked)' : ' (basic lamp)');
+}
 function loupeScreen() {
-  const G = UI.G, c = G.stock.find(x => x.uid === UI.sel) || (G.visit && G.visit.cards.find(x => x.uid === UI.sel));
+  const G = UI.G, c = findAny(UI.sel);
   if (!c) { UI.sel = null; return ''; }
   const atCounter = !!(G.visit && G.visit.cards.indexOf(c) >= 0), tm = CT.tmpl(c.t), rd = CT.readable(G, c), e = CT.estimate(G, c);
-  const cost = atCounter ? ' · 1 patience' : '';
+  const cost = atCounter ? (G.up.hands && !c.know.free ? ' · free' : ' · 1 patience') : '';
   const [cl, cr] = CT.centerRatio(c);
   const flawy = c.know.loupe && Math.min(c.cen, c.edg, c.sur) <= 6;
+  const rescan = c.know.uv && G.up.spec && !c.know.spec;
+  const relens = c.know.loupe && G.up.lens && !c.know.print;
+  const inStock = !!G.stock.find(x => x.uid === c.uid);
   return `<div id="loupe">
     <div class="side">
       <div class="h" style="font-size:30px;color:var(--sun)">THE LOUPE</div>
       <div class="tools">
-        <button class="btn ${c.know.loupe ? 'lime' : ''}" data-act="tool" data-tool="loupe">🔍 CONDITION${c.know.loupe ? ' ✓' : cost}</button>
-        <button class="btn ${c.know.uv ? 'lime' : ''}" data-act="tool" data-tool="uv">🟣 UV LAMP${c.know.uv ? ' ✓' : cost}</button>
+        <button class="btn ${c.know.loupe && !relens ? 'lime' : ''}" data-act="tool" data-tool="loupe">🔍 ${relens ? 'PRINT LENS' : 'CONDITION'}${c.know.loupe && !relens ? ' ✓' : cost}</button>
+        <button class="btn ${c.know.uv && !rescan ? 'lime' : ''}" data-act="tool" data-tool="uv">🟣 ${rescan ? 'RE-SCAN' : 'UV LAMP'}${c.know.uv && !rescan ? ' ✓' : cost}</button>
         <button class="btn ${rd ? 'lime' : ''}" data-act="tool" data-tool="read" ${rd ? 'disabled' : ''}>🔤 DECODE${rd ? ' ✓' : cost}</button>
         <button class="btn cyan" data-act="tool" data-tool="translate" ${rd ? 'disabled' : ''}>TRANSLATOR ${CT.TRANSLATE_FEE}₵</button>
       </div>
       <div class="read"><dl>
         <dt>Card</dt><dd>${rd ? esc(tm.name) + ' · ' + CT.RARITY_NAME[tm.rarity] : '??? <span class="muted">(' + CT.GAMES[tm.game].script + ' script)</span>'}</dd>
-        <dt>Game</dt><dd>${CT.GAMES[tm.game].name}</dd>
-        <dt>Centering</dt><dd>${c.know.loupe ? cl + '/' + cr + ' (' + c.cen + ')' : '?'}</dd>
-        <dt>Edges</dt><dd>${c.know.loupe ? c.edg + '/10' : '?'}</dd>
-        <dt>Surface</dt><dd>${c.know.loupe ? c.sur + '/10' + (c.fake === 'stock' ? ' · <b style="color:#c41d1d">wrong card stock!</b>' : '') : '?'}</dd>
+        <dt>Condition</dt><dd>${c.know.loupe ? `centering ${cl}/${cr} · edges ${c.edg} · surface ${c.sur}${c.fake === 'stock' ? ' · <b style="color:#c41d1d">wrong card stock!</b>' : ''}` : '?'}</dd>
         <dt>Grade</dt><dd>${c.graded ? CT.GRADERS[c.graded.co].name + ' ' + c.graded.grade : e.grade != null ? '~' + e.grade : '?'}</dd>
-        <dt>UV</dt><dd>${c.know.uv ? (c.fake ? '<b style="color:#c41d1d">FAKE: ' + (c.fake === 'uv' ? 'no watermark' : 'wrong world\'s mark') + '</b>' : 'Genuine watermark') : '?'}</dd>
-        <dt>Worth</dt><dd><b>${estText(c)}</b> today</dd>
+        ${printLines(c).map(([a, b]) => `<dt>${a}</dt><dd>${b}</dd>`).join('')}
+        <dt>UV</dt><dd>${uvLine(c)}</dd>
+        <dt>Worth</dt><dd><b>${estText(c)}</b> today${isPump(c) ? (G.dayIdx === 3 ? ' <b style="color:#c41d1d">(rumor hype ×1.8)</b>' : G.dayIdx >= 4 ? ' <b style="color:#c41d1d">(reprinted ×0.5)</b>' : '') : ''}</dd>
       </dl></div>
       ${!rd && G.fluency[tm.game] < CT.FLUENT_AT ? `<div style="font-size:13px">Decode ${CT.FLUENT_AT - G.fluency[tm.game]} more ${CT.GAMES[tm.game].name} cards and you'll read the script for free.</div>` : ''}
       <div class="row">
         ${atCounter && flawy && !c.flawUsed ? '<button class="btn cyan" data-act="flaw" data-uid="' + c.uid + '">POINT OUT FLAW</button>' : ''}
-        ${!atCounter && (G.phase === 'shop' || G.phase === 'close') && !c.graded ? '<button class="btn white" data-act="toBulk">TOSS TO BULK</button>' : ''}
+        ${inStock && (G.phase === 'shop' || G.phase === 'close') && !c.graded ? '<button class="btn white" data-act="toBulk">TOSS TO BULK</button>' : ''}
         <button class="btn pink" data-act="closeLoupe">BACK</button>
       </div>
     </div>
@@ -1456,69 +1903,134 @@ function stockDrawer() {
 function closeScreen() {
   const G = UI.G, D = CT.DAYS[G.dayIdx], next = CT.DAYS[G.dayIdx + 1];
   const rows = G.ledger.filter(l => l.day === G.dayIdx);
-  const gradeable = G.stock.filter(c => !c.graded && !(c.know.uv && c.fake)).sort((a, b) => CT.estimate(G, b).value - CT.estimate(G, a).value).slice(0, 12);
+  const gradeable = G.stock.filter(c => !c.graded && !c.know.fake).sort((a, b) => CT.estimate(G, b).value - CT.estimate(G, a).value).slice(0, 12);
   return `${hud()}${bg('shop', .6)}
-  <div class="panel tilt-l" style="left:20px;top:76px;width:380px;height:520px;padding:14px;overflow:auto">
+  <div class="panel tilt-l" style="left:20px;top:76px;width:340px;height:520px;padding:14px;overflow:auto">
     <div class="h" style="font-size:24px">TODAY'S LEDGER</div>
     <table class="ledger">${rows.map(r => `<tr><td>${esc(r.label)}</td><td class="${r.amt >= 0 ? 'pos' : 'neg'}">${r.amt >= 0 ? '+' : ''}${r.amt}</td></tr>`).join('') || '<tr><td>No deals today</td><td></td></tr>'}</table>
     <div class="price-row" style="margin-top:10px"><span>Rent due</span><span class="big neg">${money(D.rent)}</span></div>
     <div style="font-size:13px">${G.cash < D.rent ? 'Short on rent: the rest goes on a tab, and the tab comes off your final score.' : 'Rent is paid when you end the day.'}</div>
   </div>
-  <div class="panel" style="left:416px;top:76px;width:470px;height:520px;padding:14px;overflow:auto">
-    <div class="h" style="font-size:24px">SEND TO A GRADER</div>
-    <div style="font-size:13px;margin:4px 0 8px"><b>QuikSlab</b> ${CT.GRADERS.quik.fee}₵, back tomorrow, ±1 grade. <b>Halo Bureau</b> ${CT.GRADERS.halo.fee}₵, back in 2 days, exact, pays the most. A slab only pays off at grade 9 or 10.${!next ? ' <b>Tonight is Grade Day: everything comes home.</b>' : ''}</div>
-    <div class="stocklist">${gradeable.map(c => `<div style="text-align:center">${card(c, { size: 'xs', act: 'loupe' })}<div style="font-size:12px;font-weight:800">${estText(c)}</div>
+  <div class="panel" style="left:376px;top:76px;width:500px;height:520px;padding:14px;display:flex;flex-direction:column;gap:8px">
+    <div class="h" style="font-size:22px">SEND TO A GRADER</div>
+    <div style="font-size:12.5px"><b>QuikSlab</b> ${CT.GRADERS.quik.fee}₵, back tomorrow, ±1. <b>Halo</b> ${CT.GRADERS.halo.fee}₵, 2 days, exact. Slabs pay at grade 9–10. Graders also catch every fake.${!next ? ' <b>Tonight is Grade Day: everything comes home.</b>' : ''}</div>
+    <div style="flex:1;overflow:auto"><div class="stocklist">${gradeable.map(c => `<div style="text-align:center">${card(c, { size: 'xs', act: 'loupe' })}<div style="font-size:12px;font-weight:800">${estText(c)}</div>
       <div class="row" style="gap:4px;margin-top:4px"><button class="btn sm cyan" data-act="grade" data-co="quik" data-uid="${c.uid}" style="padding:2px 6px">QUIK</button><button class="btn sm" data-act="grade" data-co="halo" data-uid="${c.uid}" style="padding:2px 6px">HALO</button></div></div>`).join('')}</div>
-    ${G.grading.length ? `<div style="margin-top:10px;font-size:13px">At the graders: ${G.grading.map(p => (CT.readable(G, p.card) ? CT.tmpl(p.card.t).name : 'a card') + ' (' + CT.GRADERS[p.co].name + ')').join(', ')}</div>` : ''}
+    ${G.grading.length ? `<div style="margin-top:8px;font-size:12.5px">At the graders: ${G.grading.map(p => (CT.readable(G, p.card) ? CT.tmpl(p.card.t).name : 'a card') + ' (' + CT.GRADERS[p.co].name + ')').join(', ')}</div>` : ''}</div>
+    <div class="h" style="font-size:18px;margin-top:4px">LOUPE UPGRADES</div>
+    <div class="ups">${Object.keys(CT.UPGRADES).map(k => { const U = CT.UPGRADES[k]; return `<button class="up ${G.up[k] ? 'owned' : ''}" data-act="upgrade" data-k="${k}" ${G.up[k] || G.cash < U.cost ? 'disabled' : ''} title="${esc(U.does)}"><b>${esc(U.name)}</b><span>${G.up[k] ? 'OWNED' : U.cost + '₵'}</span><small>${esc(U.does)}</small></button>`; }).join('')}</div>
+    <button class="toggle" data-act="policy" aria-pressed="${G.policy.limit2}" style="margin-top:2px"><span class="tl">"Limit 2 per customer" sign<small>Stops scalpers taking everything. Big pack buyers only get 2 too.</small></span><span class="sw ${G.policy.limit2 ? 'on' : ''}"><span></span></span></button>
   </div>
   <div class="panel tilt-r" style="right:20px;top:76px;width:360px;height:520px;padding:14px">
-    <div class="h" style="font-size:24px">${next ? 'TOMORROW: ' + esc(next.name.toUpperCase()) : 'LAST NIGHT'}</div>
-    ${next ? demandBars(next.demand) + `<div class="h" style="font-size:16px;margin:12px 0 6px">RESTOCK · box of ${CT.BOX.packs} for ${CT.BOX.cost}₵</div>
+    <div class="h" style="font-size:22px">${next ? 'TOMORROW: ' + esc(next.name.toUpperCase()) : 'LAST NIGHT'}</div>
+    ${next ? `<div style="margin:6px 0">${next.ships.map(s => `<span class="chip" style="background:${SP_COLOR[s]}">${CT.SPECIES[s].name}</span>`).join(' ')}</div>` + demandBars(next.demand) + (next.release && G.pump ? `<div class="chip rumor down" style="margin-top:6px">Wave 3 reprints: ${esc(CT.tmpl(G.pump.t).name)}</div>` : '') + `<div class="h" style="font-size:15px;margin:10px 0 6px">RESTOCK · box of ${CT.BOX.packs} for ${CT.BOX.cost}₵</div>
+      <div style="font-size:12px;margin-bottom:6px">Restock tomorrow's hottest game: a promo topper comes in the box half the time.</div>
       ${Object.keys(CT.GAMES).map(g => `<div class="row" style="align-items:center;margin-bottom:6px"><span class="chip" style="background:${GAME_COLOR[g]};flex:1">${CT.GAMES[g].name} · have ${G.packs[g]}</span><button class="btn sm" data-act="restock" data-game="${g}" ${G.cash >= CT.BOX.cost ? '' : 'disabled'}>BUY BOX</button></div>`).join('')}` : '<div style="margin:10px 0">No tomorrow: sell-off is over. Grade anything worth slabbing, then end the night.'}
-    <div style="margin-top:auto;position:absolute;left:14px;right:14px;bottom:14px"><button class="btn big pink" style="width:100%" data-act="endDay">${next ? (D.cardNight ? 'PAY RENT → CARD NIGHT' : 'PAY RENT · END DAY') : 'PAY RENT → GRADE DAY'}</button></div>
+    <div style="position:absolute;left:14px;right:14px;bottom:14px"><button class="btn big pink" style="width:100%" data-act="endDay">${next ? 'PAY RENT → AFTER HOURS' : 'PAY RENT → GRADE DAY'}</button></div>
   </div>
   ${dj(hint())}`;
 }
 
+// ---------- After Hours ----------
 function nightScreen() {
+  const G = UI.G, N = G.night;
+  if (!N.pick) {
+    const posters = N.flyers.map((k, i) => `<div class="flyer" style="--tilt:${i ? 2 : -2}deg"><div class="h" style="font-size:30px">${esc(CT.NIGHTS[k].name.toUpperCase())}</div><p>${esc(CT.NIGHTS[k].blurb)}</p><button class="btn big pink" data-act="pickNight" data-ev="${k}">PICK ▶</button></div>`).join('');
+    return `${hud()}${bg('cardnight', .55)}<div class="fe-h" style="top:76px">AFTER HOURS</div><div class="flyers">${posters}</div>
+      <button class="btn white" style="position:absolute;right:30px;bottom:92px;z-index:6" data-act="nextMorning">SKIP TONIGHT</button>${dj(hint())}`;
+  }
+  const body = { cardnight: nightCardNightHTML, tourney: nightTourneyHTML, auction: nightAuctionHTML, dig: nightDigHTML, swap: nightSwapHTML }[N.pick]();
+  return `${hud()}${bg(N.pick, .3)}<div class="panel tilt-r night" style="left:120px;top:84px;width:1040px;max-height:560px;overflow:auto;padding:18px">${body}
+    <div class="row" style="margin-top:12px;justify-content:flex-end"><button class="btn ${N.done ? 'big pink' : 'white'}" data-act="nextMorning">${N.done ? 'NEXT MORNING ▶' : 'SKIP TO MORNING'}</button></div></div>${dj(hint())}`;
+}
+function nightCardNightHTML() {
   const G = UI.G, done = G.events.find(e => e.t === 'cardNight');
-  const g = UI.nightGame || Object.keys(G.packs).sort((a, b) => G.packs[b] - G.packs[a])[0];
-  UI.nightGame = g; const maxN = Math.min(6, G.packs[g]); UI.nightN = Math.min(UI.nightN, maxN);
-  let body;
-  if (!done) body = `<div class="h" style="font-size:20px">FEATURE A GAME</div>
+  if (!done) {
+    const g = UI.nightGame || Object.keys(G.packs).sort((a, b) => G.packs[b] - G.packs[a])[0];
+    UI.nightGame = g; const maxN = Math.min(6, G.packs[g]); UI.nightN = Math.min(UI.nightN, maxN);
+    return `<div class="h" style="font-size:24px">CARD NIGHT · FEATURE A GAME</div>
     <div class="row" style="margin:8px 0">${Object.keys(CT.GAMES).map(k => `<button class="btn ${k === g ? 'pink' : 'white'}" data-act="nightGame" data-game="${k}">${CT.GAMES[k].name} (${G.packs[k]})</button>`).join('')}</div>
-    <div>Rip <b id="nightv">${UI.nightN}</b> pack${UI.nightN === 1 ? '' : 's'} live on Floss's stream. Every holo or grail you pull adds hype: tomorrow's demand for ${CT.GAMES[g].name} goes up. The crowd buys a few packs and your rep rises.</div>
+    <div>Rip <b id="nightv">${UI.nightN}</b> pack${UI.nightN === 1 ? '' : 's'} live on Floss's stream. Holos and grails add hype to tomorrow's demand. You keep <b>2 Card Night promos</b>, the crowd buys a few packs, and rep goes up.</div>
     <input id="nightn" class="slider" type="range" min="0" max="${maxN}" value="${UI.nightN}" aria-label="Packs to rip">
     <div class="row"><button class="btn big pink" data-act="rip">RIP LIVE!</button></div>`;
-  else {
-    const pulls = done.uids.map(u => G.stock.find(c => c.uid === u)).filter(Boolean);
-    body = `<div class="h" style="font-size:26px">${done.grail ? 'A GRAIL ON STREAM!!' : done.holo ? 'HOLO HYPE!' : 'WHAT A NIGHT'}</div>
-      <div class="row" style="margin:10px 0;max-height:300px;overflow:auto">${pulls.map((c, i) => `<div class="flipin" style="animation-delay:${i * .06}s">${card(c, { size: 'xs', act: 'loupe' })}</div>`).join('')}</div>
-      <div>${CT.GAMES[done.game].name} hype <b>+${Math.round(done.hype * 100)}%</b> tomorrow · crowd bought ${done.sold} packs · rep +6</div>
-      <div class="row" style="margin-top:12px"><button class="btn big pink" data-act="nextMorning">NEXT MORNING ▶</button></div>`;
   }
-  return `${hud()}${bg('cardnight', .25)}<div class="panel tilt-r" style="left:200px;top:110px;width:880px;padding:18px">${body}</div>${dj(hint())}`;
+  const pulls = done.uids.concat(done.promos || []).map(u => G.stock.find(c => c.uid === u)).filter(Boolean);
+  return `<div class="h" style="font-size:26px">${done.grail ? 'A GRAIL ON STREAM!!' : done.holo ? 'HOLO HYPE!' : 'WHAT A NIGHT'}</div>
+    <div class="row" style="margin:10px 0">${pulls.map((c, i) => `<div class="flipin" style="animation-delay:${i * .05}s">${card(c, { size: 'xs', act: 'loupe' })}</div>`).join('')}</div>
+    <div>${CT.GAMES[done.game].name} hype <b>+${Math.round(done.hype * 100)}%</b> tomorrow · crowd bought ${done.sold} packs · 2 promos · rep +6</div>`;
+}
+function nightTourneyHTML() {
+  const G = UI.G, done = G.events.find(e => e.t === 'tourney');
+  if (done) {
+    const promos = done.promos.map(u => G.stock.find(c => c.uid === u)).filter(Boolean);
+    return `<div class="h" style="font-size:26px">${done.fakePrize ? 'THE PRIZE WAS FAKE…' : done.entrants + ' PLAYERS SHOWED UP!'}</div>
+      <div style="margin:8px 0">Entry fees ${money(done.entrants * 5)} · players bought ${done.sold} singles for ${money(done.sales)} · ${CT.GAMES[done.game].name} hype +10% tomorrow${done.fakePrize ? ' · <b style="color:#c41d1d">rep −10</b>' : ''}</div>
+      <div class="row">${promos.map(c => `<div class="flipin">${card(c, { size: 'sm', act: 'loupe' })}</div>`).join('')}</div>`;
+  }
+  const next = CT.DAYS[G.dayIdx + 1];
+  const g = UI.tourGame || Object.keys(next.demand).sort((a, b) => next.demand[b] - next.demand[a])[0]; UI.tourGame = g;
+  const prizes = G.stock.filter(c => !c.graded && !c.know.fake).sort((a, b) => CT.estimate(G, b).value - CT.estimate(G, a).value).slice(0, 12);
+  return `<div class="h" style="font-size:24px">TOURNAMENT NIGHT</div>
+    <div style="margin:6px 0">Pick the game (players come for tomorrow's demand) and a prize from your stock. A better prize draws more players and more rep. Entry is 5₵; players buy deck fillers of that game from you at +20%. You keep <b>2 prize promos</b>.</div>
+    <div class="row" style="margin:6px 0">${Object.keys(CT.GAMES).map(k => `<button class="btn ${k === g ? 'pink' : 'white'}" data-act="tourGame" data-game="${k}">${CT.GAMES[k].name} ×${next.demand[k]}</button>`).join('')}</div>
+    <div class="h" style="font-size:15px;margin:6px 0">PRIZE <small style="font-family:var(--body);font-size:12px">(optional: tap a card)</small></div>
+    <div class="row">${prizes.map(c => `<div style="text-align:center">${card(c, { size: 'xs', act: 'tourPrize', cls: UI.tourPrize === c.uid ? 'sel' : '' })}<div style="font-size:11px;font-weight:800">${estText(c)}</div></div>`).join('') || '<div class="chip">No cards to offer</div>'}</div>
+    <div class="row" style="margin-top:10px"><button class="btn big pink" data-act="hostTourney">HOST THE TOURNAMENT</button></div>`;
+}
+function nightAuctionHTML() {
+  const G = UI.G, N = G.night, A = N.auc;
+  const step = Math.max(5, Math.round(A.price * 0.1)), nextP = A.high && A.high !== 'you' ? A.price + step : A.price;
+  const res = G.events.find(e => e.t === 'auction');
+  return `<div class="h" style="font-size:24px">DOCK AUCTION · CARGO CRATE</div>
+    <div class="row" style="margin:8px 0">${A.clues.map(c => `<span class="chip">🔎 ${esc(c)}</span>`).join('')}</div>
+    <div class="row" style="align-items:center;gap:20px">
+      <div class="crate ${res && res.won ? 'open' : ''}">${res && res.won ? '' : '📦'}</div>
+      <div><div class="price-row" style="gap:20px"><span>Current price</span><span class="big">${money(A.price)}</span></div>
+      <div>High bidder: <b>${A.high === 'you' ? 'YOU' : esc(A.high || 'nobody yet')}</b> · rivals: Sheelo, Klik</div>
+      <div class="muted" style="font-size:12px;max-width:520px">${A.log.slice(-4).map(esc).join(' → ') || 'Bidding opens at ' + A.price + '₵.'}</div></div>
+    </div>
+    ${N.done ? (res && res.won ? `<div class="h" style="font-size:20px;margin-top:10px">YOU WON! PAID ${money(res.price)} · CRATE WORTH ~${money(res.worth)}</div><div class="row">${A.cards.map((c, i) => `<div class="flipin" style="animation-delay:${i * .05}s">${card(c, { size: 'xs', act: 'loupe' })}</div>`).join('')}</div>` : `<div class="h" style="font-size:18px;margin-top:10px">${res && res.winner !== 'nobody' ? esc(res.winner) + ' took it for ' + money(res.price) : 'No sale'}. It was worth about ${money(A.worth)}.</div>`)
+      : `<div class="row" style="margin-top:12px"><button class="btn big pink" data-act="bid" ${G.cash >= nextP ? '' : 'disabled'}>BID ${money(nextP)}</button><button class="btn white" data-act="drop">DROP OUT</button></div>`}`;
+}
+function nightDigHTML() {
+  const G = UI.G, D = G.night.dig;
+  return `<div class="h" style="font-size:24px">BULK DIG · ${D.flips} FLIP${D.flips === 1 ? '' : 'S'} LEFT</div>
+    <div style="margin:6px 0">16 face-down cards. ✨ means a glint on the back: usually foil. The color is the game. Flipped cards go to your stock; the rest go to the bulk bin.</div>
+    <div class="dig">${D.cards.map((c, i) => c.flipped ? `<div class="flipin">${card(c, { size: 'xs', act: 'loupe' })}</div>`
+      : `<button class="digback" data-act="dig" data-i="${i}" style="--gc:${GAME_COLOR[c.hint.game]}" ${D.flips ? '' : 'disabled'} aria-label="face-down card">${c.hint.glint ? '✨' : ''}</button>`).join('')}</div>`;
+}
+function nightSwapHTML() {
+  const G = UI.G, N = G.night;
+  return `<div class="h" style="font-size:24px">SWAP MEET</div><div style="margin:6px 0">The Loupe is free tonight. Tap any card to check it before you trade.</div>
+    ${N.swaps.map((s, i) => { const mine = s.want && G.stock.find(c => c.uid === s.want); return `<div class="swaprow">
+      ${portrait(s.who, 'mini')}
+      <div style="text-align:center">${card(s.theirs, { size: 'xs', act: 'loupe' })}<div style="font-size:11px;font-weight:800">theirs: ${estText(s.theirs)}</div></div>
+      <div class="h" style="font-size:26px">⇄</div>
+      <div style="text-align:center">${mine ? card(mine, { size: 'xs', act: 'loupe' }) + `<div style="font-size:11px;font-weight:800">yours: ${estText(mine)}</div>` : '<span class="chip">nothing they want</span>'}</div>
+      <div class="row" style="flex-direction:column">${s.done ? `<span class="chip">${s.done === 'yes' ? 'TRADED ✓' : 'DECLINED'}</span>` : `<button class="btn sm lime" data-act="swapYes" data-i="${i}" ${mine ? '' : 'disabled'}>TRADE</button><button class="btn sm white" data-act="swapNo" data-i="${i}">NO THANKS</button>`}</div></div>`; }).join('')}`;
 }
 
 function endScreen() {
   const G = UI.G, F = G.final, S = G.stats;
   const best = S.bestFlip ? `${CT.tmpl(S.bestFlip.t).name}: +${S.bestFlip.flip}₵` : '—';
   const bg_ = S.bestGrade ? `${CT.tmpl(S.bestGrade.t).name}: ${CT.GRADERS[S.bestGrade.co].name} ${S.bestGrade.grade}` : '—';
+  const pull = S.bestPull ? `${CT.tmpl(S.bestPull.t).name} (${S.bestPull.value}₵)` : '—';
   const ev = eventsHTML(G.events);
   return `${hud()}${bg('grader', .3)}
-  ${ev ? `<div class="panel tilt-l" style="left:30px;top:80px;width:600px;padding:14px"><div class="h" style="font-size:24px">GRADE DAY</div><div class="row" style="margin-top:10px;gap:18px">${ev}</div></div>` : ''}
-  <div class="panel tilt-r" style="right:40px;top:90px;width:560px;padding:18px">
-    <div class="h" style="font-size:30px">THREE DAYS ON THE STRIP</div>
-    <div class="stamp" style="font-size:44px;margin:14px 0">${esc(F.rank.toUpperCase())}</div>
+  ${ev ? `<div class="panel tilt-l" style="left:30px;top:80px;width:600px;padding:14px;max-height:520px;overflow:auto"><div class="h" style="font-size:24px">GRADE DAY</div><div class="row" style="margin-top:10px;gap:18px">${ev}</div></div>` : ''}
+  <div class="panel tilt-r" style="right:40px;top:80px;width:560px;padding:18px">
+    <div class="h" style="font-size:28px">FIVE DAYS ON THE STRIP</div>
+    <div class="stamp" style="font-size:40px;margin:10px 0">${esc(F.rank.toUpperCase())}</div>
     <div class="price-row"><span>Shop value</span><span class="big">${money(F.value)}</span></div>
     <div class="price-row"><span>You started with</span><span>${money(F.start)}</span></div>
     <div class="price-row"><span>Change</span><span class="${F.gain >= 0 ? 'pos' : 'neg'}" style="font-family:var(--display);font-size:22px">${F.gain >= 0 ? '+' : ''}${F.gain}₵</span></div>
-    <table class="ledger" style="margin-top:10px">
-      <tr><td>Best flip</td><td>${esc(best)}</td></tr><tr><td>Best grade</td><td>${esc(bg_)}</td></tr>
-      <tr><td>Fakes caught</td><td>${S.fakesCaught}</td></tr><tr><td>Fakes sold</td><td>${S.fakesSold}</td></tr>
-      <tr><td>Deals</td><td>${S.deals}</td></tr><tr><td>Packs ripped</td><td>${S.cracked}</td></tr>${F.tab ? `<tr><td>Unpaid tab</td><td class="neg">−${F.tab}</td></tr>` : ''}
+    <table class="ledger" style="margin-top:8px">
+      <tr><td>Best flip</td><td>${esc(best)}</td></tr><tr><td>Best grade</td><td>${esc(bg_)}</td></tr><tr><td>Best card you owned</td><td>${esc(pull)}</td></tr>
+      <tr><td>Promos earned</td><td>${S.promos}</td></tr><tr><td>Variants spotted</td><td>${S.variants}</td></tr><tr><td>Misprints found</td><td>${S.misprints}</td></tr>
+      <tr><td>Fakes caught / sold</td><td>${S.fakesCaught} / ${S.fakesSold}</td></tr><tr><td>Packs sold to the scalper</td><td>${S.scalpedPacks}</td></tr>
+      <tr><td>Deals · packs ripped</td><td>${S.deals} · ${S.cracked}</td></tr>${F.tab ? `<tr><td>Unpaid tab</td><td class="neg">−${F.tab}</td></tr>` : ''}
     </table>
-    <div class="row" style="margin-top:14px"><button class="btn big pink" data-act="again">PLAY AGAIN</button></div>
+    <div class="row" style="margin-top:12px"><button class="btn big pink" data-act="again">PLAY AGAIN</button></div>
   </div>${dj(hint())}`;
 }
 
@@ -1529,17 +2041,18 @@ function onClick(e) {
   if (el.dataset.act.indexOf('fe-') === 0) { FE.click(el); render(); return; }
   if (FE.pause || FE.inSettings || FE.confirm) return;
   const a = el.dataset.act, G = UI.G, v = G.visit, uid = el.dataset.uid || el.closest('[data-uid]') && el.closest('[data-uid]').dataset.uid;
+  const before = v ? { insulted: !!v.insulted, patience: v.patience, ask: v.ask } : null;
   let r = null;
   switch (a) {
     case 'open': r = act({ t: 'open' }); break;
-    case 'next': UI.lastPull = null; r = act({ t: 'next' }); UI.offer = 0; break;
+    case 'next': UI.lastPull = null; UI.lastResult = null; r = act({ t: 'next' }); UI.offer = 0; break;
     case 'loupe': UI.sel = uid; UI.uvView = false; UI.stock = false; break;
     case 'closeLoupe': UI.sel = null; break;
     case 'uvview': UI.uvView = !UI.uvView; break;
     case 'tool': { const t = el.dataset.tool; r = act({ t: 'inspect', uid: UI.sel, tool: t }); if (t === 'uv' && r.ok) UI.uvView = true;
-      const c = G.stock.find(x => x.uid === UI.sel) || (v && v.cards.find(x => x.uid === UI.sel)); if (t === 'uv' && c && c.fake) sting('fake');
+      const c = findAny(UI.sel); if (t === 'uv' && c && c.know.fake) sting('fake');
       if (!G.visit && v) UI.sel = null; break; }
-    case 'flaw': { const target = el.dataset.uid || (v && (v.cards.find(c => c.know.loupe && !c.flawUsed && (Math.min(c.cen, c.edg, c.sur) <= 6 || (c.know.uv && c.fake))) || {}).uid); r = act({ t: 'flaw', uid: target }); UI.sel = null; break; }
+    case 'flaw': { const target = el.dataset.uid || (v && (v.cards.find(c => c.know.loupe && !c.flawUsed && (Math.min(c.cen, c.edg, c.sur) <= 6 || c.know.fake)) || {}).uid); r = act({ t: 'flaw', uid: target }); UI.sel = null; if (r.ok) UI.react = 'wobble'; break; }
     case 'offer': r = act({ t: 'offer', price: UI.offer }); break;
     case 'accept': r = act({ t: 'accept' }); break;
     case 'pass': r = act({ t: 'pass' }); break;
@@ -1548,17 +2061,34 @@ function onClick(e) {
     case 'crack': r = act({ t: 'crack', game: el.dataset.game }); if (r.ok) { UI.lastPull = r.pulled; sting('rip'); } break;
     case 'toBulk': r = act({ t: 'toBulk', uid: UI.sel }); UI.sel = null; break;
     case 'grade': r = act({ t: 'grade', uid, co: el.dataset.co }); if (r.ok) toast('Sent to ' + CT.GRADERS[el.dataset.co].name); break;
-    case 'restock': r = act({ t: 'restock', game: el.dataset.game }); if (r.ok) toast('+' + CT.BOX.packs + ' ' + CT.GAMES[el.dataset.game].name + ' packs'); break;
+    case 'restock': r = act({ t: 'restock', game: el.dataset.game }); if (r.ok) toast('+' + CT.BOX.packs + ' ' + CT.GAMES[el.dataset.game].name + ' packs' + (r.topper ? ' + a PROMO TOPPER!' : '')); break;
+    case 'upgrade': r = act({ t: 'upgrade', k: el.dataset.k }); if (r.ok) { toast(CT.UPGRADES[el.dataset.k].name + ' installed!'); sting('grade'); } break;
+    case 'policy': r = act({ t: 'policy', limit2: !G.policy.limit2 }); break;
     case 'endDay': r = act({ t: 'endDay' }); if (G.phase === 'end') sting('grade'); break;
+    case 'pickNight': r = act({ t: 'pickNight', ev: el.dataset.ev }); UI.tourGame = null; UI.tourPrize = null; break;
     case 'nightGame': UI.nightGame = el.dataset.game; UI.nightN = Math.min(3, G.packs[el.dataset.game]); break;
     case 'rip': r = act({ t: 'cardNight', game: UI.nightGame, n: UI.nightN }); sting('rip'); break;
+    case 'tourGame': UI.tourGame = el.dataset.game; break;
+    case 'tourPrize': UI.tourPrize = UI.tourPrize === uid ? null : uid; break;
+    case 'hostTourney': r = act({ t: 'tourney', game: UI.tourGame, prize: UI.tourPrize }); if (r.ok) sting('deal'); break;
+    case 'bid': r = act({ t: 'bid' }); if (r.ok && G.night.done) sting('rip'); break;
+    case 'drop': r = act({ t: 'drop' }); break;
+    case 'dig': r = act({ t: 'dig', i: +el.dataset.i }); if (r.ok && r.card && r.card.v.fin !== 'std') sting('rip'); break;
+    case 'swapYes': r = act({ t: 'swap', i: +el.dataset.i, accept: true }); if (r.ok) sting('deal'); break;
+    case 'swapNo': r = act({ t: 'swap', i: +el.dataset.i, accept: false }); break;
     case 'nextMorning': r = act({ t: 'nextMorning' }); UI.nightGame = null; break;
     case 'stock': UI.stock = !UI.stock; UI.sel = null; break;
     case 'music': FE.settings.music = !FE.settings.music; FE.apply(); try { localStorage.setItem(FE.config.id + '.settings', JSON.stringify(FE.settings)); } catch (e) { /* storage blocked */ } if (FE.settings.music) MUSIC.start(); break;
     case 'again': startSlot(UI.slot, true); render(); return;
   }
-  if (v && !G.visit && G.lastVisit === v) { sting(v.result === 'deal' ? 'deal' : 'walk'); UI.sel = null; }
-  for (const ev of G.events.slice(UI.seenEvents)) { if (ev.t === 'fluent') toast('You can read ' + CT.GAMES[ev.game].name + ' now!'); if (ev.t === 'fakeFound') toast('FAKE spotted!'); }
+  // customers react: a shake when insulted, a bob when they counter, a stamp when they leave
+  if (v && G.visit === v && before) { if (!before.insulted && v.insulted) UI.react = 'shake'; else if (!UI.react && v.ask !== before.ask) UI.react = 'bob'; }
+  if (v && !G.visit && G.lastVisit === v) { sting(v.result === 'deal' ? 'deal' : 'walk'); UI.sel = null; UI.lastResult = { who: v.who, result: v.result }; }
+  for (const ev of G.events.slice(UI.seenEvents)) {
+    if (ev.t === 'fluent') toast('You can read ' + CT.GAMES[ev.game].name + ' now!');
+    if (ev.t === 'fakeFound') toast('FAKE spotted!');
+    if (ev.t === 'promo' && ev.from === 'release') toast('Release promo earned!');
+  }
   UI.seenEvents = G.events.length;
   save();
   render();
