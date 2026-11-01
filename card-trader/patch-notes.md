@@ -61,13 +61,22 @@ Agents now fill in the same playtest questionnaire as human testers. Eight scrip
 - [ ] Re-pushing the batch overwrites docs: read them first and pin `if_version`, as ArtifactData requires.
 - [ ] Tier B costs are estimates from cached prices (Oct 6, 2026) and a guessed turn count, not measured. Recruiting options in `playtester.md` marked "unverified" (Lab public access, itch.io options, community rules, Steam fee, PlaytestCloud price) were not checked.
 - [ ] Only checked with `build-and-test.py --quick`; the scripts don't touch the build or the browser walkthrough.
-- [ ] Possible bug, not verified in the browser: card names come out `undefined` after a save is loaded, because `CT.load()` doesn't rebuild the card universe until something calls `uni(G)`. Reproduced in Node via the driver ("I'm looking for undefined"). `frontend.js` loads saves on continue; check there. The driver works around it.
+- [x] Fixed in v3.0.1 (PR #72, Nov 1). Possible bug, not verified in the browser: card names come out `undefined` after a save is loaded, because `CT.load()` doesn't rebuild the card universe until something calls `uni(G)`. Reproduced in Node via the driver ("I'm looking for undefined"). `frontend.js` loads saves on continue; check there. The driver works around it.
 - [ ] Day 8's close repeats "Wave 3 reprint list is out" on the eve of Wave 4, and Card Night with no packs says "the crowd still bought some packs".
 - [ ] Claude's two runs are one seed each, played by the same model that wrote the code, and it played the min-maxer knowing the newbie run's lesson that sealed pays. Treat them as two careful testers, not a sample.
 - [ ] The API runner has only run on `--mock`. Untested against the real API: the JSON-schema output format, `effort: low` on Haiku 5.5, refusal handling and the cache hit. Check the first real run's logged `usage` and replace the estimate.
 - [ ] The workflow pins `@anthropic-ai/sdk@^0.136.0` without checking that version exists on npm, and the workflow has never run. Try a `go: false` run first (it calls nothing).
 - [ ] The new workflow touches `.github/`, so Guard needs another teammate's approval on this PR.
 - [ ] Standing orders made routine visits automatic, so some lines (for example Quill's "Glyphsmiths' workshop, I mean") went unread in the moment. A human would read every line.
+
+---
+
+## v3.0.1 · 2026-11-01 · Hunter (with Claude): continuing a save
+### What's new
+- **Fix:** continuing a saved run on a freshly opened page showed card names as "undefined" until something rebuilt the card universe. Loading a save now rebuilds it from the run's seed. The agent playtesters found it; the fix was checked by loading a save in a fresh node process and through the full walkthrough.
+
+### Watch out
+- [ ] Other findings from the free agent playtests (unreadable star rating, the scalper as best strategy, days 4–7 flatline, ring fakes passing the basic tools) are in `playtests/findings-2026-11-01.md` (PR #70) and the playtest results page, and still need tuning.
 
 ---
 

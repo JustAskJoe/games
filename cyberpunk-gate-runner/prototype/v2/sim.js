@@ -24,6 +24,16 @@ for (const bot of ['random', 'idle']) {
   const r = GR.simulate(RUNS, bot), [lo, hi] = BANDS[bot][0], pass = r.cleared >= lo && r.cleared <= hi; if (!pass) ok = false;
   console.log(`${pass ? 'ok  ' : 'FAIL'} ${bot.padEnd(6)} clear ${pc(r.cleared)}  survive ${pc(r.win)}  peak ${r.peak}  died in ${JSON.stringify(r.diedIn)}`);
 }
+// the other difficulties. Bands above are Medium. Easy has to be beatable by someone who barely follows the fight, and Hard has to be a step up without being a wall
+console.log('\ndifficulty: first try on each street');
+const DIFF_BANDS = { easy: { casual: [0.85, 1], kid: [0.8, 1] }, hard: { smart: [0.4, 1], casual: [0.1, 0.65] } };
+for (const d in DIFF_BANDS) for (const bot in DIFF_BANDS[d]) {
+  const [lo, hi] = DIFF_BANDS[d][bot], f = GR.campaign(RUNS >> 1, bot, 23, GR.MAX_LEVEL, 12, d).map(c => c.first / Math.max(1, c.reached)), pass = f.every(v => v >= lo && v <= hi); if (!pass) ok = false;
+  console.log(`${pass ? 'ok  ' : 'FAIL'} ${d.padEnd(6)} ${bot.padEnd(6)} ${f.map(pc).join(' ')}`);
+}
+// on Easy the Carrier's pods have to open from the middle of the road, so a kid who only shoots the big boss can't get stuck
+{ const def = GR.levelDef(2, 'easy'); let wins = 0; for (let i = 0; i < 50; i++) { const G = GR.newGame({ seed: 11 + i * 7919, def, loadout: { n: 48 } }); GR.act(G, { type: 'steer', x: 0 }); while (!G.over) GR.step(G); if (G.won && G.bossKilled) wins++; }
+  if (wins < 45) ok = false; console.log(`${wins >= 45 ? 'ok  ' : 'FAIL'} Easy L2 never steering clears ${wins * 2}%`); }
 // each mechanic has to matter: the same squad must do far worse when it ignores the fight
 console.log('\ncounterplay check: same squad, smart bot with and without the counter');
 for (let L = 2; L <= GR.MAX_LEVEL; L++) {

@@ -274,7 +274,7 @@
       const e = G.ents[i], z = e.ta - G.t; if (z > GR.BOSS_RANGE + 0.2) break; if (e.done || (z > 4.6 && e.kind !== 'boss' && e.kind !== 'pod')) continue;
       const k = 1 / (1 + Math.max(0, z) * 0.55), fr = e.hp / e.maxHp;
       if (e.kind === 'runner' && z < 3) { const p = R.project(e.x, z, 2.1); label('+1', p.x, p.y, 15 * k + 4, '#BFF8FF'); }
-      else if (e.kind === 'pod') { const zz = R.bossZ(z), q = 1 / (1 + zz * 0.3), p = R.project(e.x, zz, 5); label('SHOOT', p.x, p.y - 6, 18 * q + 6, '#FFB547'); hpBar(p.x, p.y, 70 * q, fr); }
+      else if (e.kind === 'pod') { const zz = R.bossZ(z), q = 1 / (1 + zz * 0.3), p = R.project(e.x, zz, 5); label(e.x < 0 ? '◀' : '▶', p.x + Math.sign(e.x) * (30 * q + 8), p.y + 22 * q, 34 * q + 8, '#FFB547'); hpBar(p.x, p.y, 44 * q, fr); }
       else if (e.kind === 'orb' && z < 3.2) { const p = R.project(e.x, z, 2.2); label(e.gold ? 'CATCH' : 'DODGE', p.x, p.y, 15 * k + 5, e.gold ? '#FFB547' : '#FF4D6D'); }
       else if (e.kind === 'crate') { const p = R.project(e.x, z, 2.1); label('SHOOT IT', p.x, p.y - 6, 14 * k + 3, '#FFB547'); hpBar(p.x, p.y, 60 * k, fr); }
       else if (e.kind === 'biker' && fr < 1) { const p = R.project(e.x, z, 2.3); hpBar(p.x, p.y, 54 * k, fr); }
@@ -300,10 +300,16 @@
     const bs = U.boss, on = bs && !G.over && !bs.done && bs.ta - G.t < GR.BOSS_RANGE;
     $('bossBar').hidden = !on;
     $('bossBar').classList.toggle('armored', !!(on && bs.armor));
-    if (on) { const fr = Math.max(0, bs.hp / bs.maxHp), pct = Math.ceil(fr * 100); $('bossFill').style.width = fr * 100 + '%'; $('bossTrail').style.width = fr * 100 + '%'; $('bossPct').textContent = bs.armor ? 'ARMOR' : pct + '%'; }
+    if (on) { const fr = Math.max(0, bs.hp / bs.maxHp), pct = Math.ceil(fr * 100); $('bossFill').style.width = fr * 100 + '%'; $('bossTrail').style.width = fr * 100 + '%'; $('bossPct').textContent = (bs.armor ? 'ARMOR ' : '') + pct + '%'; }
     const wp = GR.WEAPONS[G.weapon]; $('wpn').textContent = (G.mod >= 0 ? wp.mods[G.mod].name + ' ' + wp.short : wp.name) + (G.wlv > 1 ? ' Lv ' + G.wlv : '');
   }
   function hint(txt) { $('secHint').textContent = txt; }
+  // shots bouncing off armor look a lot like damage, so say so, and point at the way in. Quiet while the squad is already on a pod
+  function armorNag(G, t) {
+    if (t < U.armorAt) return; const BS = GR.BOSS[U.boss.boss], pod = G.st.pods && G.st.pods.filter(p => !p.done).sort((a, b) => Math.abs(a.x - G.sx) - Math.abs(b.x - G.sx))[0];
+    if (pod && Math.abs(pod.x - G.sx) < 0.4) return;
+    U.armorAt = t + 2.2; sfx('armorOn'); U.popups.push({ t0: t, txt: pod ? (pod.x < G.sx ? '◀ ' + BS.armored : BS.armored + ' ▶') : 'ARMOR! ' + BS.armored, x: W / 2, y: H * 0.3, c: '#FFB547', big: true, life: 1.4 }); say('Armored. ' + BS.tip);
+  }
   function say(txt) { $('live').textContent = txt; }
 
   // ================= events → sound, popups, particles =================
@@ -335,7 +341,10 @@
       else if (e.type === 'pod') { sfx('good'); R.shock(e.x, R.bossZ(U.boss.ta - G.t), '#FFB547', 5, 3.8); U.popups.push({ t0: t, txt: 'POD DOWN', x: W / 2, y: H * 0.34, c: '#FFB547', big: true }); }
       else if (e.type === 'orb') { sfx('good'); R.pickup(G.sx, '#FFB547'); U.popups.push({ t0: t, txt: 'ARMOR CRACKED', x: W / 2, y: H * 0.34, c: '#FFB547', big: true }); }
       else if (e.type === 'swap' || e.type === 'shuffle') { sfx('swap'); }
-      else if (e.type === 'blocked') { if (!firstSeen.blocked) { firstSeen.blocked = 1; hint(GR.BOSS[U.boss.boss].tip); } }
+      else if (e.type === 'blocked') {
+        if (!firstSeen.blocked) { firstSeen.blocked = 1; hint(GR.BOSS[U.boss.boss].tip); }
+        armorNag(G, t);
+      }
       else if (e.type === 'reflect') { sfx('hurt'); U.shake = Math.max(U.shake, 4); U.popups.push({ t0: t, txt: 'REFLECTED −' + e.lost, x: sx, y: sy - 70, c: '#FF4D6D' }); }
       else if (e.type === 'hurt' || e.type === 'bossHit') { sfx('hurt'); U.shake = e.type === 'bossHit' ? 16 : 6; U.popups.push({ t0: t, txt: '−' + e.lost, x: sx, y: sy - 70, c: '#FF4D6D', big: e.type === 'bossHit' }); }
       else if (e.type === 'weapon') { sfx('weapon'); const wp = GR.WEAPONS[e.w], md = wp.mods[e.mod], up = md ? md.name.toUpperCase() : e.pick ? wp.name.toUpperCase() : wp.short.toUpperCase() + ' LV ' + e.lv; U.popups.push({ t0: t, txt: up + '!', x: W / 2, y: H * 0.45, c: wp.col, big: true, life: 1.4 }); const tip = md ? md.tip : e.pick ? wp.tip : ''; if (tip) hint(tip); if (e.pick || md) { R.pickup(G.sx, wp.col); if (!RM) { U.flash = 0.34; U.flashRGB = wp.col.slice(1).match(/../g).map(h => parseInt(h, 16)).join(','); } } if (e.pick) R.gates(G, gateText, gateNote); if (e.keep) hint(wp.short + ' kept'); say('Weapon: ' + up); }
@@ -364,13 +373,17 @@
 
   // ================= run lifecycle =================
   // progress lives in this browser: unlocked streets, and what each street starts with. The Lab serves every game from one origin, so the key is namespaced
-  const SAVE_KEY = 'gr.save.v1', blank = () => ({ v: 1, unlocked: 1, beaten: {}, loads: {} });
+  const SAVE_KEY = 'gr.save.v1', blank = () => ({ v: 1, unlocked: 1, beaten: {}, loads: {} }), diff = () => GR.DIFFS[U.save.diff] ? U.save.diff : 'medium', LD = L => GR.levelDef(L, diff());
   function loadSave() {
     try { const s = JSON.parse(localStorage.getItem(SAVE_KEY)); if (s && s.v === 1 && s.unlocked >= 1 && s.loads && s.beaten) { s.unlocked = Math.min(GR.MAX_LEVEL, Math.floor(s.unlocked)); return s; } } catch (e) {}
     return blank();
   }
   function writeSave() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(U.save)); } catch (e) {} }   // private modes can refuse; the run still works
   U.save = loadSave(); U.lv = U.save.unlocked;
+  // for playtesting, every street is open from level select. Set this to false to bring the locks back. A street you haven't earned starts with a fair squad, not the minimum
+  const OPEN_ALL = true;
+  function loadFor(L) { const d = LD(L); return U.save.loads[L] || (L > 1 && OPEN_ALL ? { n: d.start[1], wlv: d.wlvCap - 1 } : undefined); }
+  U.openAll = OPEN_ALL;
   // a clear unlocks the next street. Replays keep your best squad, and the street's start limits stop that being farmed
   function bankClear(G) {
     const S = U.save, L = G.def.n, next = L + 1, c = GR.carryOut(G), old = S.loads[next];
@@ -381,12 +394,12 @@
   function startRun(level, fromBar) {
     const ctx = audioInit(); U.noAudio = !ctx;
     if (ctx && ctx.state !== 'running') ctx.resume();
-    U.lv = level || U.lv; const def = GR.levelDef(U.lv);
-    U.G = GR.newGame({ seed: U.seedFix || (Math.random() * 1e9) | 0, def, loadout: U.save.loads[U.lv] }); U.T = trackFor(def);
+    U.lv = level || U.lv; const def = LD(U.lv);
+    U.armorAt = 0; U.G = GR.newGame({ seed: U.seedFix || (Math.random() * 1e9) | 0, def, loadout: loadFor(U.lv) }); U.T = trackFor(def);
     const SONG = SONGS[U.lv] = SONGS[U.lv] || (ctx ? buildSong(U.T) : []);
     R.setLevel(def); R.setRun(U.G, gateText, gateNote); $('bossName').textContent = GR.BOSS[def.boss.id].name; U.boss = U.G.ents.find(e => e.kind === 'boss'); U.evi = 0; U.popups = []; U.queue = []; U.lastSent = null; U.endAt = 0; hud.sec = null;
     for (const k in firstSeen) delete firstSeen[k];
-    U.test = !!fromBar; U.popups.push({ t0: 0.2, txt: 'LEVEL ' + U.lv, x: W / 2, y: H * 0.36, c: '#FFFFFF', big: true, life: 2 });
+    U.test = !!fromBar; U.popups.push({ t0: 0.2, txt: 'LEVEL ' + U.lv + (diff() === 'medium' ? '' : ' · ' + GR.DIFFS[diff()].name.toUpperCase()), x: W / 2, y: H * 0.36, c: '#FFFFFF', big: true, life: 2 });
     if (fromBar) { // tester jump: the smart bot plays the street up to that bar, then you take over
       const r = GR.rng(5); let k = 0; while (U.G.t < fromBar * GR.BAR) { if (++k % 6 === 0) GR.act(U.G, { type: 'steer', x: GR.BOTS.smart(U.G, r) }); GR.step(U.G); }
       U.G.test = true; U.evi = U.G.ev.length; R.gates(U.G, gateText, gateNote);
@@ -411,8 +424,8 @@
     const BS = GR.BOSS[G.def.boss.id], L = G.def.n, more = r.cleared && L < GR.MAX_LEVEL;
     if (r.cleared && !U.test) bankClear(G);
     const verdict = r.cleared ? 'Street cleared' : r.won ? 'Boss got away' : 'Squad down';
-    const sub = r.cleared ? BS.win + (more ? ` You carry ${Math.min(r.survivors, GR.levelDef(L + 1).start[1])} runners and your gun to level ${L + 1}.` : ' That\'s every street for now. More are coming.') : (r.section === 'drop' || r.won) ? BS.lose : 'Line up with enemies to shoot them before they reach you.';
-    showSheet(`<span class="tag">${U.test ? 'TESTER RUN · ' : ''}Level ${L} · ${G.def.name}</span><h2>${verdict}</h2>
+    const sub = r.cleared ? BS.win + (more ? ` You carry ${Math.min(r.survivors, LD(L + 1).start[1])} runners and your gun to level ${L + 1}.` : ' That\'s every street for now. More are coming.') : (r.section === 'drop' || r.won) ? BS.lose : 'Line up with enemies to shoot them before they reach you.';
+    showSheet(`<span class="tag">${U.test ? 'TESTER RUN · ' : ''}Level ${L} · ${G.def.name} · ${GR.DIFFS[diff()].name}</span><h2>${verdict}</h2>
       <div class="big">${r.survivors}</div><p>${sub}</p>
       <div class="stats"><div class="stat"><b>${r.peak}</b><span>peak squad</span></div><div class="stat"><b>${r.kills}</b><span>kills</span></div><div class="stat"><b>×${r.ocMult.toFixed(1)}</b><span>overclock</span></div>
       <div class="stat"><b>${r.gatesGood}/${r.gatesGood + r.gatesBad}</b><span>good gates</span></div><div class="stat"><b>${GR.WEAPONS[r.weapon].short}${r.wlv > 1 ? ' ' + r.wlv : ''}</b><span>weapon</span></div><div class="stat"><b>${r.credits}</b><span>credits</span></div></div>
@@ -428,19 +441,23 @@
   function hideSheet() { sheet.hidden = true; }
   function titleScreen() {
     U.playing = false; U.G = null; $('bossBar').hidden = true; stopClock(true); game.classList.add('idle');
-    U.lv = U.save.unlocked; R.setLevel(GR.levelDef(U.lv));
+    U.lv = U.save.unlocked; R.setLevel(LD(U.lv));
     showSheet(`<span class="tag">Prototype 2 · ${GR.MAX_LEVEL} streets</span><h1><span class="c">OVER</span><span class="p">CLOCK</span></h1>
       <p>Neon City, 2089. Hush banned music. Your squad brings the beat back.</p>
-      <button class="btn pri" data-act="play" type="button">Run level ${U.lv}: ${GR.levelDef(U.lv).name}</button>
+      <button class="btn pri" data-act="play" type="button">Run level ${U.lv}: ${LD(U.lv).name}</button>
+      ${diffPicker()}
       <button class="btn" data-act="levels" type="button">Level select</button>
       <button class="btn" data-act="how" type="button">How to play</button>
       <button class="btn" data-act="arsenal" type="button">Weapons and gates</button>
       <p class="foot">Sound on, silent mode off. About one minute per run.</p>`);
   }
+  function diffPicker() {
+    return `<div class="fq"><div class="q">Difficulty</div><div class="opts diff">${Object.keys(GR.DIFFS).map(k => `<button class="opt" type="button" data-diff="${k}" aria-pressed="${diff() === k}">${GR.DIFFS[k].name}</button>`).join('')}</div><p class="foot">${GR.DIFFS[diff()].note} Change it any time.</p></div>`;
+  }
   function levelScreen() {
-    const S = U.save, rows = []; for (let L = 1; L <= GR.MAX_LEVEL; L++) { const d = GR.levelDef(L), open = L <= S.unlocked, ld = GR.enter(d, S.loads[L]), wp = GR.WEAPONS[ld.weapon];
+    const S = U.save, rows = []; for (let L = 1; L <= GR.MAX_LEVEL; L++) { const d = LD(L), open = OPEN_ALL || L <= S.unlocked, ld = GR.enter(d, loadFor(L)), wp = GR.WEAPONS[ld.weapon];
       rows.push(open ? `<button class="lv" type="button" data-lv="${L}"><span>${L}. ${d.name}${S.beaten[L] ? ' <span class="ok">✓</span>' : ''}</span><small>${GR.BOSS[d.boss.id].name} · start ${ld.n} runners, ${wp.short}${ld.wlv > 1 ? ' Lv ' + ld.wlv : ''}</small></button>` : `<button class="lv" type="button" disabled><span>${L}. Locked</span><small>Beat level ${L - 1}'s boss</small></button>`); }
-    showSheet(`<h2>Level select</h2><p>Beat a boss to open the next street. Your squad and guns carry over.</p>${rows.join('')}
+    showSheet(`<h2>Level select</h2><p>${OPEN_ALL ? 'Every street is open for testing. Beating a boss still carries your squad and guns forward.' : 'Beat a boss to open the next street. Your squad and guns carry over.'}</p>${diffPicker()}${rows.join('')}
       <button class="btn" data-act="reset" type="button">Reset progress</button><button class="btn" data-act="title" type="button">Back</button>`);
   }
   function resetScreen() {
@@ -488,7 +505,7 @@
     U.fb.note = ($('fbNote') || {}).value || ''; U.fb.name = ($('fbName') || {}).value || '';
     if (!FQ.some(f => U.fb[f.id])) { $('fbErr').textContent = 'Tap at least one answer first.'; return; }
     const r = U.lastRes || {};
-    const body = { answers: Object.fromEntries(FQ.map(f => [f.id, U.fb[f.id] || null])), notes: U.fb.note, name: U.fb.name, result: r, tester: U.test, level: U.lv, version: 'p3', at: new Date().toISOString() };
+    const body = { answers: Object.fromEntries(FQ.map(f => [f.id, U.fb[f.id] || null])), notes: U.fb.note, name: U.fb.name, result: r, tester: U.test, level: U.lv, diff: diff(), version: 'p3', at: new Date().toISOString() };
     let ok = false;
     try { const db = window.claude && window.claude.use ? await window.claude.use('db') : null; if (db) { await db.collection('feedback').add(body); ok = true; } } catch (e) {}
     if (!ok && location.protocol !== 'file:') { try { const res = await fetch('/forge/api/feedback', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(Object.assign({ game: 'cyberpunk-gate-runner' }, body)) }); ok = res.ok; } catch (e) {} }
@@ -499,13 +516,14 @@
   card.addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
     if (b.dataset.fq) { U.fb[b.dataset.fq] = b.dataset.fv; card.querySelectorAll(`[data-fq="${b.dataset.fq}"]`).forEach(x => x.setAttribute('aria-pressed', x === b)); return; }
+    if (b.dataset.diff) { U.save.diff = b.dataset.diff; writeSave(); (card.querySelector('.lv') ? levelScreen : titleScreen)(); return; }
     if (b.dataset.lv) { startRun(+b.dataset.lv); return; }
     const a = b.dataset.act;
     if (a === 'play' || a === 'restart') startRun(U.lv);
     else if (a === 'next') startRun(U.lv + 1);
     else if (a === 'levels') levelScreen();
     else if (a === 'reset') resetScreen();
-    else if (a === 'resetYes') { U.save = blank(); writeSave(); titleScreen(); }
+    else if (a === 'resetYes') { const d = diff(); U.save = blank(); U.save.diff = d; writeSave(); titleScreen(); }
     else if (a === 'how') howScreen();
     else if (a === 'arsenal') arsenalScreen();
     else if (a === 'title') titleScreen();

@@ -40,9 +40,24 @@
       gates: { add: 0.8, mul: 1.35, trade: 1.7 }, hp: 1.8, bite: 1.4, dens: 1.05, walls: W0.concat([[20, 14, 16], [22, 14, 16], [24, 14, 16], [26, 14, 16], [28, 14, 16], [30, 14, 16]]),
       boss: { id: 'vale', hp: 171000, contact: 60, armor: 3, rearmor: 2, open: 3, loss: 0.14 } }
   ];
+  // difficulty scales a street, so one table serves all three. Medium is the table as written. squad scales the start limits, hp and bite the street,
+  // boss and pod the bosses' health, open the armor-down window, loss every hit a boss lands, crack the gold orbs needed. podX pulls the Carrier's pods in
+  // on Easy, far enough that a squad in the middle of the road hits both
+  const DIFFS = {
+    easy: { name: 'Easy', note: 'Big squad, softer bosses. Good for kids.', squad: 1.5, hp: 0.5, bite: 0.4, boss: 0.7, pod: 0.4, open: 1.75, loss: 0.5, crack: -1, podX: 0.42 },
+    medium: { name: 'Medium', note: 'The game as designed.' },
+    hard: { name: 'Hard', note: 'Tougher streets, shorter openings.', squad: 0.95, hp: 1.1, bite: 1.1, boss: 1.05, pod: 1.1, open: 0.85, loss: 1.15, crack: 0 }
+  };
   const MAX_LEVEL = 5;   // the last street the game offers. levelDef() already makes streets past the table: raise this to open them
   // past the table the streets cycle: same boss, look and song order, a key shift, and every number scaled by how far past the table you are
-  function levelDef(n) {
+  function withDiff(def, id) {
+    const d = DIFFS[id], b = def.boss, x = (v, k) => v == null ? v : v * d[k]; if (id === 'medium') return Object.assign({}, def, { diff: id });
+    const boss = Object.assign({}, b, { hp: b.hp * d.boss, podHp: x(b.podHp, 'pod'), open: x(b.open, 'open'), loss: x(b.loss, 'loss'), reflect: x(b.reflect, 'loss'), podX: d.podX });
+    if (b.armor) { boss.armor = Math.max(1, b.armor + d.crack); boss.rearmor = Math.max(1, b.rearmor + d.crack); }
+    return Object.assign({}, def, { diff: id, start: def.start.map(v => Math.round(v * d.squad)), hp: def.hp * d.hp, bite: def.bite * d.bite, boss });
+  }
+  function levelDef(n, diff) { return withDiff(baseDef(n), DIFFS[diff] ? diff : 'medium'); }
+  function baseDef(n) {
     const i = n - 1; if (i < LEVELS.length) return Object.assign({ n }, LEVELS[i]);
     const N = LEVELS.length, top = LEVELS[N - 1], base = LEVELS[i % N], k = n - N, up = Math.pow(1.16, k), lap = Math.floor(i / N) + 1, ROMAN = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
     return Object.assign({}, base, { n, name: base.name + ' ' + (ROMAN[lap] || lap), transpose: (k * 2) % 7, start: top.start.map(v => Math.round(v * Math.pow(1.1, k))), wlvCap: top.wlvCap + k,
@@ -65,9 +80,9 @@
     enforcer: { name: 'HUSH ENFORCER', tip: 'Dodge the glowing side. Melt the boss', lose: 'Step off the glowing side before the fist lands, and build Overclock for the drop.', win: 'The Enforcer melted on the drop.',
       setup(S, b) { for (const k of b.slams) { const s = S.r() < 0.5 ? -1 : 1; S.add('haz', S.at(DROP_BAR + k, 0), 0, { x0: s < 0 ? -1 : 0, x1: s < 0 ? 0 : 1, warn: 1.1, loss: b.loss, style: 'slam' }); } } },
     // target priority: the core can't be hurt until both pods are down, and the pods grow back
-    carrier: { name: 'MUTE CARRIER', tip: 'Shoot both speaker pods to open the core', lose: 'The core is armored. Steer left and right to shoot both pods, then hit the middle while it\'s open.', win: 'The Carrier fell out of the sky.',
+    carrier: { name: 'MUTE CARRIER', tip: 'Armored! Steer to a speaker pod and shoot it', armored: 'SHOOT THE PODS', lose: 'The core is armored. Steer left and right to shoot both pods, then hit the middle while it\'s open.', win: 'The Carrier fell out of the sky.',
       setup(S, b, e) {
-        for (const s of [-1, 1]) S.add('pod', e.ta, s * 0.72, { hp: b.podHp, maxHp: b.podHp, w: 0.08 });
+        for (const s of [-1, 1]) S.add('pod', e.ta, s * (b.podX || 0.72), { hp: b.podHp, maxHp: b.podHp, w: 0.08 });
         for (let k = 1; k < S.def.fight; k += 1) for (let i = 0; i < b.dive; i++) S.add('drone', S.at(DROP_BAR + k, i), S.r() * 1.2 - 0.6, { hunt: 0.5 });
       },
       init(G, st, e) { st.pods = G.ents.filter(q => q.kind === 'pod'); st.open = false; e.armor = true; },
@@ -96,7 +111,7 @@
       init(G, st, e) { st.real = e.seq[0]; e.x = e.lanes[st.real]; e.w = G.def.boss.w; },
       tick(G, b, e, st) { const i = Math.min(e.seq.length - 1, Math.floor((G.t - DROP_T) / (b.every * BAR))), r = e.seq[Math.max(0, i)]; if (r !== st.real) { st.real = r; e.x = e.lanes[r]; G.ev.push({ type: 'shuffle', t: G.t }); } } },
     // run into the attack: only gold orbs crack the armor, red ones hurt, and a silence beam stops your squad firing
-    vale: { name: 'DIRECTOR VALE', tip: 'Catch gold orbs to crack the armor. Dodge red', lose: 'Vale can\'t be hurt until the armor cracks. Run into gold orbs, dodge red ones, and stay out of the silence beam.', win: 'Vale lost the room.',
+    vale: { name: 'DIRECTOR VALE', tip: 'Catch gold orbs to crack the armor. Dodge red', armored: 'CATCH GOLD ORBS', lose: 'Vale can\'t be hurt until the armor cracks. Run into gold orbs, dodge red ones, and stay out of the silence beam.', win: 'Vale lost the room.',
       setup(S, b) {
         for (let k = 1; k < S.def.fight; k++) {
           const s = S.r() < 0.5 ? -1 : 1, x = 0.3 + S.r() * 0.3;
@@ -171,7 +186,7 @@
 
   function newGame(o) {
     o = o || {};
-    const def = o.def || levelDef(o.level || 1), ld = enter(def, o.loadout); setLevel(def);
+    const def = o.def || levelDef(o.level || 1, o.diff), ld = enter(def, o.loadout); setLevel(def);
     const r = rng(o.seed || 1), ents = buildStreet(r, def, ld), boss = ents.find(e => e.kind === 'boss');
     const G = { seed: o.seed || 1, def, t: 0, tick: 0, n: ld.n, sx: 0, tx: 0, rate: 1, weapon: ld.weapon, mod: ld.mod, wlv: ld.wlv, owned: Object.assign({}, ld.owned),
       meter: 0, oc: { on: false, done: false, mult: 1 }, ents, ei: 0, nextVolley: B / 2, live: [], silenced: false,
@@ -288,7 +303,7 @@
 
   function results(G) {
     const credits = G.kills * 1 + G.crates * 10 + (G.bossKilled ? 60 : 0) + (G.won ? G.n : 0);
-    return { level: G.def.n, won: G.won, cleared: G.won && G.bossKilled, survivors: G.n, peak: G.peak, kills: G.kills, boss: G.bossKilled, weapon: G.weapon, mod: G.mod, wlv: G.wlv, crates: G.crates, meter: Math.round(G.meter), ocMult: Math.round(G.oc.mult * 100) / 100, gatesGood: G.gatesGood, gatesBad: G.gatesBad, credits, t: Math.round(G.t * 10) / 10, section: sectionAt(G.t).id };
+    return { level: G.def.n, diff: G.def.diff, won: G.won, cleared: G.won && G.bossKilled, survivors: G.n, peak: G.peak, kills: G.kills, boss: G.bossKilled, weapon: G.weapon, mod: G.mod, wlv: G.wlv, crates: G.crates, meter: Math.round(G.meter), ocMult: Math.round(G.oc.mult * 100) / 100, gatesGood: G.gatesGood, gatesBad: G.gatesBad, credits, t: Math.round(G.t * 10) / 10, section: sectionAt(G.t).id };
   }
   function hash(G) {
     let h = 2166136261 >>> 0; const mix = v => { h ^= (Math.round(v * 1000) | 0); h = Math.imul(h, 16777619) >>> 0; };
@@ -311,6 +326,14 @@
     if (id === 'vale') { for (const h of G.live) if (inZone(h)) return h.x0 < 0 ? 0.5 : -0.5; if (haz && inZone(haz)) return haz.x0 < 0 ? 0.5 : -0.5; if (orb && e.armor) return orb.x; return 0; }
     return null;
   }
+  function distracted(G, r, skill) {
+    const bar = Math.floor(G.t / BAR); if (G._bar !== bar) { G._bar = bar; G._on = r() < skill; }
+    if (G._on) { const c = counter(G); if (c != null) return c; }
+    const g = G.ents.find(e => !e.done && e.kind === 'gate' && z(G, e) < 1.2);
+    if (g) { if (g._pick == null) g._pick = r() < 0.7 ? (gateValue(G, g.L) >= gateValue(G, g.R) ? -0.5 : 0.5) : (r() < 0.5 ? -0.5 : 0.5); return g._pick; }
+    const tg = G.ents.find(e => !e.done && (e.kind === 'crate' || e.kind === 'biker' || e.kind === 'runner') && z(G, e) > 0.05 && z(G, e) < 1.4);
+    return tg ? tg.x : G.tx;
+  }
   const BOTS = {
     smart: G => {
       const c = counter(G); if (c != null) return c;
@@ -320,14 +343,9 @@
       return tg ? tg.x : 0;
     },
     // a casual player has learned the fight but misses some of it: it re-decides once a bar whether it's paying attention
-    casual: (G, r) => {
-      const bar = Math.floor(G.t / BAR); if (G._bar !== bar) { G._bar = bar; G._on = r() < SKILL; }
-      if (G._on) { const c = counter(G); if (c != null) return c; }
-      const g = G.ents.find(e => !e.done && e.kind === 'gate' && z(G, e) < 1.2);
-      if (g) { if (g._pick == null) g._pick = r() < 0.7 ? (gateValue(G, g.L) >= gateValue(G, g.R) ? -0.5 : 0.5) : (r() < 0.5 ? -0.5 : 0.5); return g._pick; }
-      const tg = G.ents.find(e => !e.done && (e.kind === 'crate' || e.kind === 'biker' || e.kind === 'runner') && z(G, e) > 0.05 && z(G, e) < 1.4);
-      return tg ? tg.x : G.tx;
-    },
+    casual: (G, r) => distracted(G, r, SKILL),
+    // a young kid: the same player, but paying attention to the fight far less often
+    kid: (G, r) => distracted(G, r, 0.35),
     random: (G, r) => {
       const g = G.ents.find(e => !e.done && e.kind === 'gate' && z(G, e) < 1.2);
       if (g) { if (g._pick == null) g._pick = r() < 0.5 ? -0.5 : 0.5; return g._pick; }
@@ -336,24 +354,24 @@
     idle: () => 0.3
   };
   function playBot(o, bot) { const G = newGame(o), r = rng(G.seed * 31 + 5); let lag = 0; while (!G.over) { if (++lag % 6 === 0) act(G, { type: 'steer', x: BOTS[bot](G, r) }); step(G); } return G; }
-  function simulate(n, bot, seed, level, loadout) {
+  function simulate(n, bot, seed, level, loadout, diff) {
     const out = [];
-    for (let i = 0; i < n; i++) out.push(results(playBot({ seed: (seed || 11) + i * 7919, level: level || 1, loadout }, bot)));
+    for (let i = 0; i < n; i++) out.push(results(playBot({ seed: (seed || 11) + i * 7919, level: level || 1, loadout, diff }, bot)));
     const avg = f => out.reduce((a, o) => a + f(o), 0) / out.length;
     return { bot, runs: n, win: avg(o => o.won ? 1 : 0), cleared: avg(o => o.cleared ? 1 : 0), boss: avg(o => o.boss ? 1 : 0), peak: Math.round(avg(o => o.peak)), survivors: Math.round(avg(o => o.survivors)), oc: Math.round(avg(o => o.ocMult) * 100) / 100, crate: avg(o => o.crates ? 1 : 0), credits: Math.round(avg(o => o.credits)), diedIn: out.filter(o => !o.won).reduce((m, o) => (m[o.section] = (m[o.section] || 0) + 1, m), {}) };
   }
 
   // plays the whole campaign the way a player would: retry a street until it's beaten (or give up), carry what's left into the next one.
   // Returns one row per level, so each level is judged against the squads bots really arrive with
-  function campaign(n, bot, seed, levels, tries) {
+  function campaign(n, bot, seed, levels, tries, diff) {
     const rows = []; for (let L = 1; L <= (levels || MAX_LEVEL); L++) rows.push({ level: L, reached: 0, first: 0, beat: 0, tries: 0, entry: [], peak: [] });
     for (let i = 0; i < n; i++) {
       let ld = null;
       for (let L = 1; L <= rows.length; L++) {
-        const row = rows[L - 1], def = levelDef(L); row.reached++; row.entry.push(enter(def, ld).n);
+        const row = rows[L - 1], def = levelDef(L, diff); row.reached++; row.entry.push(enter(def, ld).n);
         let done = null;
         for (let k = 0; k < (tries || 12) && !done; k++) {
-          const G = playBot({ seed: (seed || 23) + i * 7919 + L * 104729 + k * 1299709, level: L, loadout: ld }, bot); row.tries++; row.peak.push(G.peak);
+          const G = playBot({ seed: (seed || 23) + i * 7919 + L * 104729 + k * 1299709, def, loadout: ld }, bot); row.tries++; row.peak.push(G.peak);
           if (G.won && G.bossKilled) { done = G; if (k === 0) row.first++; }
         }
         if (!done) break;
@@ -363,7 +381,7 @@
     return rows;
   }
   const SKILL = 0.75;
-  const GR = { BPM, B, BAR, DT, SEC, END, DROP_T, DROP_END, DROP_BAR, RANGE, KIND, BOSS, LEVELS, MAX_LEVEL, levelDef, setLevel, carryOut, enter, counter, width, sectionAt, BOSS_RANGE, WEAPONS, gun, newGame, gateResult, act, step, advance, results, hash, simulate, campaign, BOTS, rng };
+  const GR = { BPM, B, BAR, DT, SEC, END, DROP_T, DROP_END, DROP_BAR, RANGE, KIND, BOSS, LEVELS, MAX_LEVEL, DIFFS, levelDef, setLevel, carryOut, enter, counter, width, sectionAt, BOSS_RANGE, WEAPONS, gun, newGame, gateResult, act, step, advance, results, hash, simulate, campaign, BOTS, rng };
   setLevel(levelDef(1));
   if (typeof module !== 'undefined' && module.exports) module.exports = GR; else root.GR = GR;
 })(typeof window !== 'undefined' ? window : globalThis);

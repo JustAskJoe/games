@@ -29,7 +29,8 @@ with sync_playwright() as p:
     pg.evaluate('() => localStorage.clear()'); pg.reload(); pg.wait_for_timeout(800)
     pg.evaluate('() => { GRUI.U.seedFix = 6920; }')
     pg.click('[data-act=levels]'); pg.wait_for_timeout(200); shot(pg, '01-levels-fresh')
-    if pg.locator('.lv:not([disabled])').count() != 1 or pg.locator('.lv[disabled]').count() != 4: fails.append('a fresh save should open only level 1')
+    locks = pg.evaluate('() => GRUI.U.openAll') and (5, 0) or (1, 4)   # OPEN_ALL in ui.js opens every street for playtesting
+    if pg.locator('.lv:not([disabled])').count() != locks[0] or pg.locator('.lv[disabled]').count() != locks[1]: fails.append('wrong streets open on a fresh save')
     pg.click('[data-act=title]'); pg.wait_for_timeout(200)
     pg.click('[data-act=arsenal]'); pg.wait_for_timeout(200); shot(pg, '02-arsenal')
     if 'Overpierce' not in pg.inner_text('#card'): fails.append('weapons screen is missing upgrades')
@@ -81,6 +82,28 @@ with sync_playwright() as p:
     # a broken save must not break the game
     pg.evaluate('() => localStorage.setItem("gr.save.v1", "{nonsense")'); pg.reload(); pg.wait_for_timeout(600)
     if 'level 1' not in pg.inner_text('[data-act=play]'): fails.append('a broken save broke the title screen')
+    # difficulty: Medium by default, saved, kept by a reset, and old saves still load. Easy really changes the street
+    pg.evaluate('''() => localStorage.setItem('gr.save.v1', JSON.stringify({ v: 1, unlocked: 2, beaten: { 1: true }, loads: { 2: { n: 36, weapon: 'arc', mod: 0, wlv: 2, owned: {} } } }))'''); pg.reload(); pg.wait_for_timeout(600)
+    if pg.get_attribute('[data-diff=medium]', 'aria-pressed') != 'true': fails.append('an old save should load on Medium')
+    shot(pg, '30-320-title-diff')
+    sw = pg.evaluate('document.documentElement.scrollWidth')
+    if sw > 320: fails.append('sideways scroll with the difficulty picker')
+    pg.click('[data-diff=easy]'); pg.wait_for_timeout(150); pg.reload(); pg.wait_for_timeout(600)
+    if pg.get_attribute('[data-diff=easy]', 'aria-pressed') != 'true': fails.append('difficulty did not survive a refresh')
+    pg.click('[data-act=play]'); pg.wait_for_timeout(400)
+    e = pg.evaluate('() => ({ n: GRUI.U.G.n, diff: GRUI.U.G.def.diff, pod: GRUI.U.G.ents.find(q => q.kind === "pod").x })'); print('easy level 2', e)
+    if e['diff'] != 'easy' or e['n'] != 48 or abs(e['pod']) > 0.5: fails.append('easy did not apply: %s' % e)
+    pg.click('#menuBtn'); pg.click('[data-act=title]'); pg.wait_for_timeout(200); pg.click('[data-act=levels]'); pg.wait_for_timeout(200); shot(pg, '31-320-levels-diff')
+    pg.click('[data-act=reset]'); pg.click('[data-act=resetYes]'); pg.wait_for_timeout(200)
+    if pg.get_attribute('[data-diff=easy]', 'aria-pressed') != 'true': fails.append('reset should keep the difficulty')
+    # Medium Carrier: standing in the middle has to say it's armored and point at a pod, and the bar still shows health
+    pg.set_viewport_size({'width': 390, 'height': 844})
+    pg.evaluate('''() => localStorage.setItem('gr.save.v1', JSON.stringify({ v: 1, unlocked: 2, beaten: {}, loads: { 2: { n: 36, weapon: 'arc', mod: 0, wlv: 2, owned: {} } } }))'''); pg.reload(); pg.wait_for_timeout(600)
+    pg.click('[data-act=play]'); pg.wait_for_timeout(300); pg.click('#menuBtn'); pg.click('[data-act=jumpDrop]'); pg.wait_for_timeout(100)
+    pg.evaluate('() => { GR.act(GRUI.U.G, { type: "steer", x: 0 }); }')
+    pg.wait_for_function('() => GRUI.U.popups.some(p => /SHOOT THE PODS/.test(p.txt))', timeout=20000); pg.wait_for_timeout(250); shot(pg, '32-L2-armor-nag')
+    if 'ARMOR' not in pg.inner_text('#bossPct') or '%' not in pg.inner_text('#bossPct'): fails.append('armored boss bar should show ARMOR and health')
+    pg.click('#menuBtn'); pg.click('[data-act=title]'); pg.wait_for_timeout(200)
     # every boss: open the street from a carried save, jump to the fight, let the bot play it. Stills go to 20-L*.png
     pg.set_viewport_size({'width': 390, 'height': 844})
     for L in range(1, 6):
