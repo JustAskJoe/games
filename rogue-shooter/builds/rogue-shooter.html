@@ -29,14 +29,14 @@ canvas { display: block; width: 100%; height: 100%; position: fixed; inset: 0; z
 .bar-hp .bar-fill { background: linear-gradient(90deg, #aa3333, #dd5544); }
 .bar-xp .bar-fill { background: linear-gradient(90deg, #448822, #66bb44); }
 .bar-label { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; font-family: 'Press Start 2P', monospace; letter-spacing: 0.5px; text-shadow: 0 1px 3px rgba(0,0,0,0.9); z-index: 1; color: var(--fg); }
-.level-badge { font-family: 'Press Start 2P', monospace; font-weight: 900; font-size: 12px; color: var(--gold); letter-spacing: 1px; text-shadow: 1px 1px 0 #5a3a00; }
+.level-badge { font-family: 'Press Start 2P', monospace; font-weight: 900; font-size: 14px; color: var(--gold); letter-spacing: 1px; text-shadow: 2px 2px 0 #5a3a00, -1px -1px 0 #5a3a00, 1px -1px 0 #5a3a00; -webkit-text-stroke: 0.5px #7a5a10; }
 
 .overlay { position: fixed; inset: 0; z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(18,14,10,0.92); padding-inline: max(16px, env(safe-area-inset-left, 0px)); font-family: 'Rajdhani', sans-serif; overflow-y: auto; }
-.overlay h1 { font-family: 'Press Start 2P', monospace; letter-spacing: 2px; margin-bottom: 4px; }
+.overlay h1 { font-family: 'Press Start 2P', monospace; letter-spacing: 3px; margin-bottom: 4px; -webkit-text-stroke: 1px rgba(0,0,0,0.3); }
 .overlay p { color: var(--dim); font-size: 18px; font-weight: 600; }
 
 #startscreen { padding-block: 32px; }
-#startscreen h1 { font-size: clamp(18px, 4vw, 32px); color: var(--gold); text-shadow: 2px 2px 0 #5a3a00, 0 0 20px rgba(255,204,68,0.2); }
+#startscreen h1 { font-size: clamp(22px, 5vw, 38px); color: var(--gold); text-shadow: 3px 3px 0 #5a3a00, -1px -1px 0 #5a3a00, 1px -1px 0 #5a3a00, -1px 1px 0 #5a3a00, 0 0 24px rgba(255,204,68,0.25); -webkit-text-stroke: 1px #7a5a10; }
 .char-select { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; margin-top: 20px; max-width: 820px; }
 .char-card {
   width: 155px; padding: 20px 12px 16px; border-radius: 8px; cursor: pointer;
@@ -49,19 +49,19 @@ canvas { display: block; width: 100%; height: 100%; position: fixed; inset: 0; z
 .char-card:hover { transform: translateY(-6px) scale(1.04); }
 .char-icon { width: 56px; height: 56px; border-radius: 8px; display: flex; align-items: center; justify-content: center; border: 2px solid rgba(255,255,255,0.08); box-shadow: inset 0 2px 6px rgba(0,0,0,0.3), 0 2px 4px rgba(0,0,0,0.2); }
 .char-icon svg { width: 30px; height: 30px; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5)); }
-.char-name { font-family: 'Press Start 2P', monospace; font-size: 10px; }
+.char-name { font-family: 'Press Start 2P', monospace; font-size: 11px; text-shadow: 1px 1px 0 rgba(0,0,0,0.6), -1px -1px 0 rgba(0,0,0,0.2); }
 .char-style { font-size: 8px; text-transform: uppercase; letter-spacing: 2px; font-family: 'Press Start 2P', monospace; font-weight: 500; padding: 2px 8px; border-radius: 2px; background: rgba(255,255,255,0.06); color: var(--dim); }
 .char-desc { font-size: 12px; color: var(--dim); font-weight: 600; line-height: 1.3; }
 .char-stats { font-size: 9px; color: var(--dim); font-family: 'Press Start 2P', monospace; display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
 .char-stats span { white-space: nowrap; }
 
-#deathscreen h1 { font-size: clamp(18px, 4vw, 32px); color: var(--red); text-shadow: 2px 2px 0 #3a1111; }
+#deathscreen h1 { font-size: clamp(22px, 5vw, 38px); color: var(--red); text-shadow: 3px 3px 0 #3a1111, -1px -1px 0 #3a1111, 1px -1px 0 #3a1111, -1px 1px 0 #3a1111; -webkit-text-stroke: 1px #5a2222; }
 .end-stats { margin-top: 24px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px 32px; text-align: center; }
 .end-stats .stat-val { font-family: 'Press Start 2P', monospace; font-size: 20px; color: var(--gold); text-shadow: 1px 1px 0 #5a3a00; }
 .end-stats .stat-lbl { font-size: 10px; color: var(--dim); text-transform: uppercase; letter-spacing: 1px; font-family: 'Press Start 2P', monospace; }
 .end-sub { color: var(--dim); margin-top: 28px; font-size: 10px; font-family: 'Press Start 2P', monospace; letter-spacing: 1px; }
 
-#winscreen h1 { font-size: clamp(18px, 4vw, 32px); color: var(--gold); text-shadow: 2px 2px 0 #5a3a00, 0 0 20px rgba(255,204,68,0.3); }
+#winscreen h1 { font-size: clamp(22px, 5vw, 38px); color: var(--gold); text-shadow: 3px 3px 0 #5a3a00, -1px -1px 0 #5a3a00, 1px -1px 0 #5a3a00, -1px 1px 0 #5a3a00, 0 0 24px rgba(255,204,68,0.3); -webkit-text-stroke: 1px #7a5a10; }
 
 #statspanel { position: fixed; inset: 0; z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(18,14,10,0.9); padding-inline: max(16px, env(safe-area-inset-left, 0px)); font-family: 'Rajdhani', sans-serif; overflow-y: auto; }
 #statspanel h2 { font-family: 'Press Start 2P', monospace; font-size: 14px; color: var(--gold); letter-spacing: 2px; margin-bottom: 24px; text-shadow: 1px 1px 0 #5a3a00; }
@@ -82,22 +82,23 @@ canvas { display: block; width: 100%; height: 100%; position: fixed; inset: 0; z
 #bosshp .boss-bar-fill { height: 100%; border-radius: 1px; transition: width 0.2s ease; background: linear-gradient(90deg, #882200, #dd3311, #ee4422); }
 
 #levelup { position: fixed; inset: 0; z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(18,14,10,0.88); padding-inline: max(16px, env(safe-area-inset-left, 0px)); }
-#levelup h2 { font-family: 'Press Start 2P', monospace; font-size: 16px; color: var(--gold); letter-spacing: 2px; margin-bottom: 28px; text-shadow: 2px 2px 0 #5a3a00; }
+#levelup h2 { font-family: 'Press Start 2P', monospace; font-size: 20px; color: var(--gold); letter-spacing: 3px; margin-bottom: 28px; text-shadow: 3px 3px 0 #5a3a00, -1px -1px 0 #5a3a00, 1px -1px 0 #5a3a00, -1px 1px 0 #5a3a00; -webkit-text-stroke: 1px #7a5a10; }
 .cards { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; }
-.card { width: 200px; padding: 28px 16px 22px; border-radius: 8px; cursor: pointer; background: linear-gradient(180deg, rgba(55,44,30,0.98), rgba(32,26,18,0.98)); border: 3px solid var(--wood); display: flex; flex-direction: column; align-items: center; gap: 12px; transition: transform 0.18s, border-color 0.18s, box-shadow 0.18s; text-align: center; user-select: none; box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), inset 0 -2px 6px rgba(0,0,0,0.3), 0 4px 16px rgba(0,0,0,0.6), 0 1px 3px rgba(0,0,0,0.4); position: relative; overflow: hidden; }
-.card::before { content: ''; position: absolute; inset: 0; border-radius: 5px; border: 1px solid rgba(255,255,255,0.06); pointer-events: none; }
-.card:hover { transform: translateY(-8px) scale(1.04); box-shadow: 0 12px 40px rgba(0,0,0,0.7), 0 2px 8px rgba(0,0,0,0.5); }
-.card[data-rarity="common"] { border-color: #6b5b4b; } .card[data-rarity="common"]:hover { border-color: #9a8a7a; box-shadow: 0 12px 40px rgba(100,85,70,0.2), 0 2px 8px rgba(0,0,0,0.5); }
-.card[data-rarity="uncommon"] { border-color: var(--green); } .card[data-rarity="uncommon"]:hover { box-shadow: 0 12px 40px rgba(102,187,68,0.2), 0 2px 8px rgba(0,0,0,0.5); }
-.card[data-rarity="rare"] { border-color: var(--blue); } .card[data-rarity="rare"]:hover { box-shadow: 0 12px 40px rgba(85,136,204,0.25), 0 2px 8px rgba(0,0,0,0.5); }
-.card[data-rarity="epic"] { border-color: var(--purple); } .card[data-rarity="epic"]:hover { box-shadow: 0 12px 40px rgba(136,102,170,0.25), 0 2px 8px rgba(0,0,0,0.5); }
-.card[data-rarity="legendary"] { border-color: var(--gold); border-width: 3px; background: linear-gradient(135deg, rgba(70,55,20,0.98), rgba(35,28,12,0.98)); box-shadow: inset 0 1px 0 rgba(255,220,100,0.15), 0 0 24px rgba(255,204,68,0.2), 0 4px 16px rgba(0,0,0,0.6); animation: legendaryPulse 2s ease-in-out infinite; }
-.card[data-rarity="legendary"]:hover { box-shadow: 0 12px 44px rgba(255,204,68,0.35), 0 0 30px rgba(255,204,68,0.15), 0 2px 8px rgba(0,0,0,0.5); }
-@keyframes legendaryPulse { 0%,100%{border-color:var(--gold);box-shadow:inset 0 1px 0 rgba(255,220,100,0.15), 0 0 24px rgba(255,204,68,0.2), 0 4px 16px rgba(0,0,0,0.6);} 50%{border-color:#cc8800;box-shadow:inset 0 1px 0 rgba(255,220,100,0.15), 0 0 32px rgba(255,204,68,0.3), 0 4px 16px rgba(0,0,0,0.6);} }
-.card-icon { width: 64px; height: 64px; border-radius: 8px; display: flex; align-items: center; justify-content: center; border: 2px solid rgba(255,255,255,0.08); box-shadow: inset 0 2px 6px rgba(0,0,0,0.3), 0 2px 4px rgba(0,0,0,0.2); }
-.card-icon svg { width: 34px; height: 34px; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5)); }
-.card-name { font-family: 'Press Start 2P', monospace; font-size: 10px; letter-spacing: 0.5px; text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
-.card-desc { font-size: 15px; color: var(--dim); font-weight: 600; line-height: 1.45; }
+.card { width: 210px; padding: 28px 18px 24px; border-radius: 10px; cursor: pointer; background: linear-gradient(180deg, rgba(60,48,32,0.98) 0%, rgba(42,34,24,0.98) 40%, rgba(28,22,14,0.98) 100%); border: 4px solid var(--wood); display: flex; flex-direction: column; align-items: center; gap: 12px; transition: transform 0.18s, border-color 0.18s, box-shadow 0.18s; text-align: center; user-select: none; box-shadow: inset 0 1px 0 rgba(255,255,255,0.1), inset 0 -3px 8px rgba(0,0,0,0.4), 0 6px 20px rgba(0,0,0,0.7), 0 2px 4px rgba(0,0,0,0.5), 0 0 0 1px rgba(0,0,0,0.3); position: relative; overflow: hidden; }
+.card::before { content: ''; position: absolute; inset: 3px; border-radius: 6px; border: 1px solid rgba(255,220,160,0.08); pointer-events: none; }
+.card::after { content: ''; position: absolute; top: 0; left: 10%; right: 10%; height: 1px; background: linear-gradient(90deg, transparent, rgba(255,220,160,0.15), transparent); pointer-events: none; }
+.card:hover { transform: translateY(-10px) scale(1.05); box-shadow: 0 16px 48px rgba(0,0,0,0.8), 0 4px 12px rgba(0,0,0,0.6), 0 0 0 1px rgba(0,0,0,0.3); }
+.card[data-rarity="common"] { border-color: #7b6b5b; } .card[data-rarity="common"]:hover { border-color: #a89878; box-shadow: 0 16px 48px rgba(100,85,70,0.25), 0 4px 12px rgba(0,0,0,0.6); }
+.card[data-rarity="uncommon"] { border-color: var(--green); box-shadow: inset 0 1px 0 rgba(255,255,255,0.1), inset 0 -3px 8px rgba(0,0,0,0.4), 0 6px 20px rgba(0,0,0,0.7), 0 0 8px rgba(102,187,68,0.1); } .card[data-rarity="uncommon"]:hover { box-shadow: 0 16px 48px rgba(102,187,68,0.25), 0 0 16px rgba(102,187,68,0.15), 0 4px 12px rgba(0,0,0,0.6); }
+.card[data-rarity="rare"] { border-color: var(--blue); box-shadow: inset 0 1px 0 rgba(255,255,255,0.1), inset 0 -3px 8px rgba(0,0,0,0.4), 0 6px 20px rgba(0,0,0,0.7), 0 0 8px rgba(85,136,204,0.12); } .card[data-rarity="rare"]:hover { box-shadow: 0 16px 48px rgba(85,136,204,0.3), 0 0 16px rgba(85,136,204,0.18), 0 4px 12px rgba(0,0,0,0.6); }
+.card[data-rarity="epic"] { border-color: var(--purple); box-shadow: inset 0 1px 0 rgba(255,255,255,0.1), inset 0 -3px 8px rgba(0,0,0,0.4), 0 6px 20px rgba(0,0,0,0.7), 0 0 10px rgba(136,102,170,0.12); } .card[data-rarity="epic"]:hover { box-shadow: 0 16px 48px rgba(136,102,170,0.3), 0 0 20px rgba(136,102,170,0.18), 0 4px 12px rgba(0,0,0,0.6); }
+.card[data-rarity="legendary"] { border-color: var(--gold); border-width: 4px; background: linear-gradient(135deg, rgba(75,60,22,0.98), rgba(40,32,14,0.98)); box-shadow: inset 0 1px 0 rgba(255,220,100,0.2), 0 0 28px rgba(255,204,68,0.25), 0 6px 20px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,204,68,0.15); animation: legendaryPulse 2s ease-in-out infinite; }
+.card[data-rarity="legendary"]:hover { box-shadow: 0 16px 52px rgba(255,204,68,0.4), 0 0 36px rgba(255,204,68,0.2), 0 4px 12px rgba(0,0,0,0.6); }
+@keyframes legendaryPulse { 0%,100%{border-color:var(--gold);box-shadow:inset 0 1px 0 rgba(255,220,100,0.2), 0 0 28px rgba(255,204,68,0.25), 0 6px 20px rgba(0,0,0,0.7);} 50%{border-color:#cc8800;box-shadow:inset 0 1px 0 rgba(255,220,100,0.2), 0 0 40px rgba(255,204,68,0.35), 0 6px 20px rgba(0,0,0,0.7);} }
+.card-icon { width: 72px; height: 72px; border-radius: 10px; display: flex; align-items: center; justify-content: center; border: 3px solid rgba(255,255,255,0.1); box-shadow: inset 0 3px 8px rgba(0,0,0,0.4), inset 0 -1px 0 rgba(255,255,255,0.05), 0 3px 6px rgba(0,0,0,0.3); }
+.card-icon svg { width: 38px; height: 38px; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.6)); }
+.card-name { font-family: 'Press Start 2P', monospace; font-size: 11px; letter-spacing: 0.5px; text-shadow: 1px 1px 0 rgba(0,0,0,0.7), -1px -1px 0 rgba(0,0,0,0.2); -webkit-text-stroke: 0.5px rgba(0,0,0,0.2); }
+.card-desc { font-size: 15px; color: var(--fg); font-weight: 700; line-height: 1.45; text-shadow: 0 1px 2px rgba(0,0,0,0.4); }
 .card-rarity { font-size: 8px; text-transform: uppercase; letter-spacing: 2px; font-family: 'Press Start 2P', monospace; padding: 3px 10px; border-radius: 3px; background: rgba(255,255,255,0.04); }
 .card[data-rarity="common"] .card-rarity { color: #7b6b5b; } .card[data-rarity="uncommon"] .card-rarity { color: var(--green); }
 .card[data-rarity="rare"] .card-rarity { color: var(--blue); } .card[data-rarity="epic"] .card-rarity { color: var(--purple); }
@@ -944,33 +945,33 @@ function tileHash(x, y) {
   return (h ^ (h >> 16)) & 0x7fffffff;
 }
 
-// ─── Sprite data ───
+// ─── Sprite data (high density 16x24) ───
 const SPR = {
   playerIdle:
-    '....HHHHHH....,...HHHHHHHHHH..,.HHHHhHHhHHH.,.HHHHhHHhHHH.,..SSSSeeSSS...,..SSSSSSSSSS..,..SSSSSsSSSS..,...SSnSSSSn...,..nnSSSSSnn..,....nSSSSn....,..DDDDDDDDD..,.DDDDDDDDDDDD,.DDDDDDDDDDD.,.DDDDDDDDDDDD,..DDDDDDDDDDD.,..DDDBBBBBDD..,...DDBBBDD...,....LLLLLL....,....LL..LL....,....LL..LL....,..FFFF..FFFF..',
+    '.....HHHHHH.....,...HHHHHHHHHHH..,.HHHHHHhHhHHHH.,.HHHHHHhHhHHHH.,..HHHhHHHhHHH..,...SSSSSeeSSSSS..,..SSSSSSSSSSSSs.,..SSSSSSsSSSSSS.,...SSSnSSSSSnSS.,..nnSSSSSSSSSnn.,....nnSSSSnn....,...DDDDDDDDDDDD.,.DDDDDDdDDDDDDD,.DDDDDDdDDDDDDD,.DDDDDDdDDDDDDD,..DDDDDDDDDDDDD.,..DDDDBBBBBDDD..,..DDDDBBBBBDDD..,...DDDBBBBBDD....,....LLLLLLLL....,....LL....LL....,....LL....LL....,..FFFF....FFFF..',
   playerWalk1:
-    '....HHHHHH....,...HHHHHHHHHH..,.HHHHhHHhHHH.,.HHHHhHHhHHH.,..SSSSeeSSS...,..SSSSSSSSSS..,..SSSSSsSSSS..,...SSnSSSSn...,..nnSSSSSnn..,....nSSSSn....,..DDDDDDDDD..,.DDDDDDDDDDDD,.DDDDDDDDDDD.,.DDDDDDDDDDDD,..DDDDDDDDDDD.,..DDDBBBBBDD..,...DDBBBDD...,...LL......LL..,..LL........LL,..LL........LL,..FFFF....FFFF',
+    '.....HHHHHH.....,...HHHHHHHHHHH..,.HHHHHHhHhHHHH.,.HHHHHHhHhHHHH.,..HHHhHHHhHHH..,...SSSSSeeSSSSS..,..SSSSSSSSSSSSs.,..SSSSSSsSSSSSS.,...SSSnSSSSSnSS.,..nnSSSSSSSSSnn.,....nnSSSSnn....,...DDDDDDDDDDDD.,.DDDDDDdDDDDDDD,.DDDDDDdDDDDDDD,.DDDDDDdDDDDDDD,..DDDDDDDDDDDDD.,..DDDDBBBBBDDD..,..DDDDBBBBBDDD..,...DDDBBBBBDD....,...LLL......LLL..,..LL..........LL,..LL..........LL,..FFFF......FFFF',
   playerWalk2:
-    '....HHHHHH....,...HHHHHHHHHH..,.HHHHhHHhHHH.,.HHHHhHHhHHH.,..SSSSeeSSS...,..SSSSSSSSSS..,..SSSSSsSSSS..,...SSnSSSSn...,..nnSSSSSnn..,....nSSSSn....,..DDDDDDDDD..,.DDDDDDDDDDDD,.DDDDDDDDDDD.,.DDDDDDDDDDDD,..DDDDDDDDDDD.,..DDDBBBBBDD..,...DDBBBDD...,..LL........LL,...LL......LL..,..LL........LL,..FFFF....FFFF',
+    '.....HHHHHH.....,...HHHHHHHHHHH..,.HHHHHHhHhHHHH.,.HHHHHHhHhHHHH.,..HHHhHHHhHHH..,...SSSSSeeSSSSS..,..SSSSSSSSSSSSs.,..SSSSSSsSSSSSS.,...SSSnSSSSSnSS.,..nnSSSSSSSSSnn.,....nnSSSSnn....,...DDDDDDDDDDDD.,.DDDDDDdDDDDDDD,.DDDDDDdDDDDDDD,.DDDDDDdDDDDDDD,..DDDDDDDDDDDDD.,..DDDDBBBBBDDD..,..DDDDBBBBBDDD..,...DDDBBBBBDD....,..LL..........LL,...LLL......LLL..,..LL..........LL,..FFFF......FFFF',
   slimeA:
-    '...1111....,..111111...,..1122111..,..1e..e1...,..111111...,..11mm11...,...111111...,....1111...',
+    '....111111....,..1111111111..,.111112211111.,..11e....e11..,..1111111111..,..1111mm1111..,...1111111111.,...11111111111.,....11111111..,.....111111...',
   slimeB:
-    '..111111..,.1111111.,.11122111.,..1e..e1..,.11111111.,.111mm111.,..111111..,...1111...',
+    '...11111111...,..111111111111,.1111112211111,..11e....e11..,..111111111111,.1111mm111111.,..111111111111,...11111111111.,...111111111...,....11111111..',
   bat0:
-    'W.......W,WW.....WW,WWW...WWW,.WWBBBWW.,..BBeeBB.,..BBFFBB.,..BBBBB..,...BBB....',
+    'WW.........WW,WWW.......WWW,WWWW.....WWWW,.WWWWBBBBBWW.,..WWBBBBBWW..,...BBBBeeBBB.,..BBBBBBBBBB.,..BBBBBFFBBB.,..BBBBBBBBBB.,...BBBBBBBB...,....BBBBBB....',
   bat1:
-    '..W...W..,.WW...WW.,.WWBBBWW.,..BBeeBB.,..BBFFBB.,..BBBBB..,...BBB....,..........',
+    '...WW...WW...,..WWW...WWW..,.WWWWBBBBBWW.,..WWBBBBBWW..,...BBBBeeBBB.,..BBBBBBBBBB.,..BBBBBFFBBB.,..BBBBBBBBBB.,...BBBBBBBB...,....BBBBBB....,...............',
   skeleton:
-    '...CCCC...,..CCCCCC..,...CdxxdC..,...CCCCCC...,....CtC....,....CC.....,..CCCCCC..,..CC..CC..,...CCCCCC..,...CC..CC..,...CC..CC..,...CC..CC..,..CCC.CCC..',
+    '.....CCCC......,....CCCCCC.....,...CCCdxxdCC...,...CCCCCCCCCC..,....CCtCCtCC...,....CCC..CCC...,..CCCCCCCCCCCC.,..CCC.CCCC.CCC.,...CCCCCCCCCCCC.,..CCC..CC..CCC.,..CC...CC...CC.,..CC...CC...CC.,..CC...CC...CC.,..CCC..CC..CCC.,...CCCC..CCCC...',
   demon:
-    '..hh...hh..,...hhh.hhh...,..RRRRRR....,..RRRRRRRR..,.RRREEEERR.,.RRRRRRRRRR.,.RRRMMMRRR.,..RRRRRRRR..,..RRRRRRRR..,...RRRRRR....,....RRRR....,...RR..RR....,..CC....CC..',
+    '..hhh.....hhh..,...hhhh...hhhh...,..RRRRRRRRRR....,..RRRRRRRRRRRR..,..RRRRRRRRRRRRR.,.RRRREEEEEERRR.,.RRRRRRRRRRRRRR.,.RRRRRRRRRRRRRR.,.RRRRRMMMMMRRR.,..RRRRRRRRRRRR..,..RRRRRRRRRRRR..,...RRRRRRRRRR....,....RRRRRRRR....,...RRR....RRR....,..CCC......CCC..',
   boss:
-    '..GGG.GGG.GGG..,...hh.......hh...,..hhh.....hhh..,...RRRRRRRRR...,...RRRRRRRRRR..,..RRRRRRRRRRR.,..RREEEE.EEERR.,..RRRRRRRRRRRR.,..RRRRMMMMRRRR.,..RRRRRRRRRRRR.,...RRRRRRRRRR..,...RRRRRRRRRR..,....RRRRRRRR...,...RRR....RRR..,...CCC....CCC..'
+    '..GGG.GGG.GGG.GGG..,...hhh.........hhh...,..hhhh.......hhhh..,...RRRRRRRRRRRRR...,...RRRRRRRRRRRRRR..,..RRRRRRRRRRRRRRR.,..RRRREEEE.EEEERR.,..RRRRRRRRRRRRRRR.,..RRRRRRRRRRRRRRRR.,..RRRRRMMMMMMRRR.,..RRRRRRRRRRRRRRR.,...RRRRRRRRRRRRR..,...RRRRRRRRRRRRR..,....RRRRRRRRRR....,...RRRR....RRRR...,...CCCC....CCCC...'
 };
 
 function getPlayerPal(charId) {
   const o = CHARS[charId].outfit;
-  return { H: o.hair, h: '#fff3', D: o.dress, B: o.ribbon, S: o.skin, s: '#cc8877', e: o.eyes, n: o.skinDark, F: o.shoes, L: o.skin };
+  return { H: o.hair, h: '#fff3', D: o.dress, d: o.ribbon+'88', B: o.ribbon, S: o.skin, s: '#cc8877', e: o.eyes, n: o.skinDark, F: o.shoes, L: o.skin };
 }
 function getSlimePal() { return { '1': '#6baa42', '2': '#aedd77', e: '#223311', m: '#3d6622' }; }
 function getBatPal() { return { W: '#6644aa', B: '#4a3377', e: '#dd3333', F: '#ccccbb' }; }
@@ -1226,7 +1227,9 @@ function drawParticlesLayer() {
   for (const f of floatingTexts) {
     const sp = worldToCanvas(f.wx, f.wy);
     ctx.globalAlpha = f.life / f.maxLife;
-    ctx.font = (f.crit ? '12px' : '10px') + ' "Press Start 2P", monospace';
+    ctx.font = (f.crit ? '14px' : '11px') + ' "Press Start 2P", monospace';
+    ctx.strokeStyle = 'rgba(0,0,0,0.7)'; ctx.lineWidth = 3;
+    ctx.strokeText(f.text, Math.round(sp.x), Math.round(sp.y));
     ctx.fillStyle = f.crit ? COL.gold : '#f0e4c8';
     ctx.fillText(f.text, Math.round(sp.x), Math.round(sp.y));
   }
