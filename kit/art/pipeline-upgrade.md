@@ -8,6 +8,8 @@
 
 **What it builds on:** `kit/art/README.md` (the Canva mood-art recipe), `kit/agents/artist.md`, `tower-defense/art/art-direction.md`, and Hunter's proposal `kit/art/pipeline-v2.md` (on the `hunter/card-trader-v1` branch, not pushed when this was written). Its main points (anchors, a manifest, batch and fetch tooling, WebP conversion, Canva `remove-background`) are folded in here. When that branch lands, keep `pipeline-v2.md` as the Card Trader worked example and link it from here, or merge the two.
 
+**Who does the work:** the agent roster (team for now, team for later) is in `art-team.md`.
+
 ---
 
 ## Contents
