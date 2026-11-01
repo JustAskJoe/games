@@ -47,7 +47,8 @@ Agents now fill in the same playtest questionnaire as human testers. Eight scrip
 - [ ] @Hunter: answer Q1–Q10 in `design/v3.1-beta-plan.md`.
 - [ ] Paid API playtest: OK'd by Hunter (Nov 1) for after the v3.1 fixes land and the key exists. Run `go: false` first.
 - [ ] Balance agent: add an "always sell to the scalper" bot, and check whether rep loss should cost something.
-- [ ] Fix the review lines so they only mention what the shop actually has, and say why the rating moved each morning.
+- [ ] Fix the review lines so they only mention what the shop actually has: done in PR #73 (not merged yet). Tick this when #73 merges.
+- [ ] Say why the rating moved each morning (planned in `design/v3.1-beta-plan.md`, section 6).
 - [ ] Results page: show `source: 'agent'` docs apart from human ones (or behind a filter) so bot answers don't drown out people.
 - [ ] Pick a public route for outside testers (itch.io restricted page or a public build, plus a Google Form into a Sheet); options in `kit/agents/playtester.md`.
 
