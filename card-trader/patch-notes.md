@@ -27,7 +27,7 @@ The first playable build: 3 station days at Stall 7 on Crosslane Market, desktop
 
 ### Next up
 - [ ] @Hunter @Zach @Joe: play all 3 days on desktop and say whether inspecting, haggling and Grade Day are fun. Pass bar: you start a second run without being asked.
-- [ ] Redo the grader office appraiser, who drifted toward a famous franchise look. The list is in `design/ai-assets.md`.
+- [x] Redo the grader office appraiser, who drifted toward a famous franchise look. Now a boxy robot. (Hunter with Claude, 2026-10-31) The list is in `design/ai-assets.md`.
 - [ ] Crew deck (about 12 slides) from the brief, using the v1 art and screenshots.
 - [ ] Add a playtest feedback form (the kit has one in Tower Defense).
 - [ ] v2 ideas are parked in `design/v2-ideas.md`: a 5-day week, scalpers, pump-and-dump, fake rings and more. Decide after the v1 playtest.

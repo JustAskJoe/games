@@ -15,7 +15,8 @@ This list is for Steam's AI disclosure. Every image below was made with Canva's 
 | 2026-10-31 | `builds/img/cards-hive.jpg` | Hive Gambit card art sheet, 2×2 (drone bee, mantis knight, hornet mech, queen mech) | MAHZoUR6gGc | key art | prototype art |
 | 2026-10-31 | `builds/img/cards-star.jpg` | Starweave card art sheet, 2×2 (star puff, aurora koi, eclipse lion, celestial weaver) | MAHZoa9wZjw | key art | prototype art |
 | 2026-10-31 | `builds/img/cardnight.jpg` | Card Night: pack-rip stream party at the shop | MAHZou2pcSA | key art | prototype art |
-| 2026-10-31 | `builds/img/grader.jpg` | Grader office: old appraiser slabbing a card | MAHZouPQSvA | key art | prototype art. **Redo:** the appraiser drifted toward a famous green big-eared franchise character |
+| 2026-10-31 | `builds/img/grader.jpg` | Grader office: a grumpy boxy robot appraiser with one lens eye and a mustache, slabbing a card | MAHZotWBJVY | key art | prototype art |
+| 2026-10-31 | (not used) | First grader office try: the appraiser drifted toward a famous green big-eared franchise character | MAHZouPQSvA | key art | rejected |
 | 2026-10-31 | `builds/img/p-klik.webp`, `p-vrrz.webp`, `p-zazza.webp` | Zekk lineup (Klik, Vrrz, Zazza), cropped into 3 portraits in code | MAHZohkB4CA | key art | prototype art |
 | 2026-10-31 | `builds/img/p-mimbo.webp`, `p-floss.webp`, `p-nubb.webp` | Puffi lineup (Mimbo, Floss, Nubb), cropped into 3 portraits in code | MAHZolQj-xw | key art | prototype art |
 | 2026-10-31 | `builds/img/p-tumbo.webp`, `p-sheelo.webp` | Mollu pair (Tumbo, Sheelo), cropped into 2 portraits in code | MAHZoqCSSc4 | key art + Pearla | prototype art |
@@ -23,8 +24,5 @@ This list is for Steam's AI disclosure. Every image below was made with Canva's 
 | 2026-10-31 | (not used) | Klik cut-out test for `remove-background` | MAHZoXDCym8 | | test only |
 
 **Drawn in code, not AI:** card frames, alien scripts, UV watermarks, wear marks, slabs, every UI element. The music is an original synth loop written in code (`prototype/music.js`).
-
-**Still to make:**
-- A redo of the grader office appraiser (see the row above).
 
 The build falls back to drawn stand-ins until they exist.
