@@ -2,13 +2,13 @@
 
 © 2026 justaskjoe. All rights reserved.
 
-**Status:** hired Nov 1, 2026 (Hunter). Tier A (scripted personas) is built for `card-trader` and runs free. Tier B (an LLM persona playing the real page) is designed below and **off**: it costs real money and needs Hunter's explicit OK before anyone runs it.
+**Status:** hired Nov 1, 2026 (Hunter). Tier A (scripted personas) is built for `card-trader` and runs free. Tier B (Claude plays as a persona) has two routes. The **no-API route** runs on Hunter's Claude plan in a Claude Code session and is live (first two runs Nov 1, 2026). The **API route** (Haiku 5.5 on its own $5/month key) is designed, not built, and its first real run needs Hunter's OK.
 
 You give a game the same feedback human playtesters give, in the same shape, so humans and agents land on one results page. You do not decide what the game should be; you report what a kind of player ran into, quoting what happened. Humans tell us how it feels. Agents tell us, cheaply and repeatably, where a player hits a wall, misses a system or runs out of money.
 
 Whoever starts you names:
 - **GAME:** the game folder (today only `card-trader`).
-- **JOB:** `run` (default: run the Tier A personas, write the results files and the summary, open a pull request), `add-persona` (add or change a persona) or `tier-b-plan` (update the Tier B design; never run it).
+- **JOB:** `run` (default: run the Tier A personas, write the results files and the summary, open a pull request), `add-persona` (add or change a persona) `claude-run` (play one no-API Tier B run; see the session prompt below) or `tier-b-plan` (update the API route's design; never run it).
 
 You never spend money, never call a paid tool, never merge, and never write to the questionnaire artifact yourself. A person pushes agent results to the artifact after Hunter OKs it.
 
@@ -88,34 +88,72 @@ It can: which refusals players hit, which systems a play style never touches, wh
 - Don't edit `engine.js`, `ui.js` or `sim.js` to make a persona work. If the engine needs a hook, propose it in its own pull request.
 - Agent results in the public repo are bot output only. Never copy human answers into the repo.
 
-## Tier B: LLM persona playtester (designed, off)
-**Running it costs real money (Anthropic API). Nobody runs it without Hunter's explicit OK in chat, for a stated number of runs.**
+## Tier B: Claude plays as a persona (two routes)
+Tier A bots find walls and money trouble; they can't read. Tier B has Claude play the game as a persona, reading only what a player sees, and write the questionnaire in that persona's own words. It catches unclear wording, contradictions between screens, and stale or wrong lines. There are two routes. Both write the same schema; only who pays differs.
 
-**What it is.** Claude plays the real built page, `card-trader/builds/card-trader.html`, through Playwright, the way `card-trader/prototype/test.py` does. It reads the page as text, not the engine state, under a persona prompt (the same eight temperaments, written as a paragraph each). At the end it fills the questionnaire in its own words, in the schema above, with `source: 'agent-llm'`. This catches what Tier A can't: unclear wording, buttons a player wouldn't find, a hint nobody reads, a rule that only makes sense if you've read the code.
+| | **No-API route** (free to run, live) | **API route** (Hunter's API credits; designed, not built) |
+| --- | --- | --- |
+| Who plays | An on-demand Claude Code session | A script calling the Anthropic API |
+| Pays with | Hunter's Claude plan usage (no per-token bill; counts against the plan's usage limits) | Prepaid API credits in a separate Console workspace with a $5/month hard limit. This is real money. |
+| `source` | `agent-claude` | `agent-llm` |
+| Plays through | `card-trader/prototype/play-driver.js` (the engine, player-visible text only), or the built page in the desktop app's browser pane or Playwright | The same driver, called by a runner script |
+| Speed | One run is a long session (each run here took roughly 40-60 tool calls with standing orders) | Unattended; 8 personas in one batch |
+| Trigger | Someone pastes the session prompt below | GitHub Action, `workflow_dispatch` only |
+| Needs | Nothing new | Hunter's OK for the first real run, after the key exists |
 
-**Loop.**
-1. Start Chromium on the built file at phone width (390×844), as `test.py` does.
-2. Each turn, send the model: the persona prompt and rules (cached), the visible page text (`document.body.innerText`, trimmed) and the list of visible buttons with short ids, plus a running notes file the model keeps (what it learned, what confused it).
-3. The model answers with one or more button ids to press (structured output) and a one-line note. The harness clicks and repeats. No `CT.act()` calls and no reading `CTUI.G`: the agent sees what a player sees.
-4. Cap a run at 10 days or N turns. Save the transcript and notes to a scratch folder, not the repo.
-5. Final call: the notes and a day-by-day log go in, the questionnaire JSON comes out, validated against the schema before it's kept.
+### No-API route (live)
+`play-driver.js` keeps a run in a JSON save and prints, at each stop, what a player can see: day, phase, cash, rent, rating, the checklist, the case, the counter binder, the rack, the back, the customer's lines and tells, their cards with estimates, and the night's flyers. You answer with moves (any `act()` move, or macros such as `showBest`, `sell`, `inspectAll`, `buyBelow:0.65`, `setup`). **Standing orders** let routine visitors play themselves once you have met that kind (`order <save> sell '["inspectAll","buyBelow:0.65"]'`). The driver stops every morning, close and night, and for any kind you haven't met. Use `note` in the moment for confusion, contradictions and drag.
 
-**Cost per run (estimate).** Prices from Anthropic's model table cached Oct 6, 2026: Sonnet 5.5 $2 in / $10 out per million tokens, Opus 5.5 $4 / $20, cache reads $0.20 on both. Check the live price before asking Hunter.
+First runs (Nov 1, 2026): `card-trader/playtests/claude-2026-11-01.json` (cautious newbie, seed 2001; impatient min-maxer, seed 2002), plus `claude-2026-11-01-batch.json` for the artifact. Findings are in the patch notes.
 
-Assumptions: about 3K tokens of cached persona and rules, 2.5K of page text and 2K of notes per turn, about 400 output tokens per turn (with low effort), and 10 days.
+Driver caveats:
+- It calls `CT.uni(G)` after loading a save, because `CT.load()` leaves the card universe unbuilt and card names come out `undefined` until something builds it (see the patch notes' Watch out).
+- Visitor "kinds" for standing orders are the engine's roles. A player learns them from the opening line, so only order a kind after meeting it once.
 
-| Turns per day | Tokens per day (in / cached / out) | Sonnet 5.5, 10 days | Opus 5.5, 10 days |
-| --- | --- | --- | --- |
-| ~25 (one call per customer, batching clicks) | 112K / 75K / 10K | about $3.40 | about $6.70 |
-| ~70 (one call per click) | 315K / 210K / 28K | about $9.50 | about $19 |
+**Session prompt (paste into a new Claude Code session on this repo):**
 
-Plus about $0.10 for the final questionnaire call. Eight personas at the cheaper setting on Sonnet: about $27. Recommend Sonnet 5.5, one call per customer, starting with 2 personas × 1 run (about $7) to see whether the answers are worth it before scaling. These are estimates; the first real run should log `usage` per call and replace this table with measured numbers.
+> You are a playtester for Intergalactic Card Trader v3 in `JustAskJoe/games`. Read `CLAUDE.md` and `kit/agents/playtester.md` (Tier B, no-API route). Play one full 10-day run as this persona: **<persona: one paragraph on temperament, e.g. "a cautious newbie who reads every hint, inspects every card and is too nervous to call security">**, seed **<number>**, opening **<focus> <split> <home>**.
+>
+> Use `node card-trader/prototype/play-driver.js` from `card-trader/prototype`, with the save in a scratch folder (not committed). Decide every stop as the persona, using only what the driver prints. Don't read `engine.js` or game state to decide. Decide fast on routine steps and set standing orders for visitors you've met; think hard only on new situations. Use `note` the moment something confuses you, contradicts something else, or drags.
+>
+> At the end, write one run in the questionnaire schema in `kit/agents/playtester.md`, with `source: 'agent-claude'`, `persona`, `seed` and your notes. The free-text answers (`contra`, `confused`, `best`, `worst`, `change`, `bugs`) are in the persona's voice and cite days and numbers from the run. Add it to `card-trader/playtests/claude-<date>.json` and an ArtifactData batch file (doc `agent-claude-<persona>`), but **do not write to the artifact** and make **no API calls**. Add findings to the patch notes' Watch out, commit on a branch and open a pull request. Never merge.
 
-**Trigger (two options, both need Hunter's OK).**
-- **GitHub Action** (shared, visible to the crew): a `playtest-llm.yml` workflow with `workflow_dispatch` only (never a schedule), inputs `personas` and `runs`, using the org `ANTHROPIC_API_KEY` secret and an optional model variable, the way `kit/agents/artist.md` describes for the Artist. Keep the console's monthly spend limit on. It uploads results as a workflow artifact and opens a pull request with the agent docs' JSON. Adding the workflow edits `.github/`, so it needs its own pull request and a teammate's review under Guard.
-- **On-demand Claude Code session:** someone with Playwright installed runs the harness locally with their own key. Cheaper to set up, but tied to one person's machine and account.
+### API route (designed, not built)
+Hunter's decisions (Nov 1, 2026):
+- **Model:** `claude-haiku-5-5` for all 8 personas, one run each per round. A `--model` flag lets 2-3 "lead" personas use `claude-sonnet-5-5` later.
+- **Key:** an org Actions secret, `PLAYTEST_ANTHROPIC_API_KEY`, from its own Console workspace with a **$5/month hard spend limit** (Hunter is creating it). Not the Artist's `ANTHROPIC_API_KEY`. The runner reads it only from the environment and never prints or logs it.
+- **Caps:** `--max-runs` (default 8) and `--max-tokens` per batch (stop as soon as it's exceeded). `--dry-run` is the default and prints the estimated tokens and dollars without calling the API. A real run needs an explicit `--go`. Each run's `usage` (input, cached, output tokens) is logged to the results JSON.
+- **Trigger:** `.github/workflows/playtest-llm.yml`, `workflow_dispatch` only (no schedule). Inputs: `runs`, `model`, `go` (default false). It uses the secret and uploads the results JSON as a workflow artifact. It does not write to the questionnaire page; the main session pushes reviewed results. Adding the workflow touches `.github/`, so Guard asks for a teammate's approval.
+- **Output:** the same answer format, with `source: 'agent-llm'` and `persona`.
+- **First real run:** only after the key exists and Hunter OKs it. A dry-run in CI or locally is fine anytime.
 
-**Before building it:** Hunter OKs the spend and the run count; the harness logs tokens and stops at a dollar cap; transcripts stay out of the public repo.
+**How it plays.** The runner wraps `play-driver.js`: each stop's printed state is one user turn. The system prompt holds the persona, the rules and the schema (fixed text, cached). The model answers with moves as structured output, which the runner validates and applies. Standing orders keep the call count down. At the end, one call turns the notes and the day log into the questionnaire JSON, validated before it's kept.
+
+**Prompt caching.** The persona, rules and schema go first and stay byte-identical across turns, with a `cache_control` breakpoint after them. *Check that the prefix is long enough to cache on the chosen model:* the minimum cacheable prefix depends on the model (512-4,096 tokens), and a ~3K prefix may not cache on every model. Confirm with `usage.cache_read_input_tokens` on a one-call test.
+
+**Cost per run (estimate).** Prices from Anthropic's model table cached Oct 6, 2026:
+- Haiku 5.5: $0.10 input / $0.50 output per million tokens, for prompts up to 100K.
+- Sonnet 5.5: $2 / $10, with cache reads at $0.20.
+
+*Haiku 5.5's cache-read price isn't in that table: unverified.* Check live prices before the first run.
+
+Assumptions: about 140 decisions a run (the no-API runs had roughly 100-150 real decision stops with standing orders), about 4K input and 300 output tokens per decision, plus one questionnaire call of about 20K in and 2K out.
+
+| Model | Tokens per run (in / out) | Per run | 8 personas | Runs under the $5 cap |
+| --- | --- | --- | --- | --- |
+| Haiku 5.5, nothing cached (worst case) | 580K / 44K | about $0.08 | about $0.64 | about 60 |
+| Sonnet 5.5, 3K of each 4K cached | 580K (420K cached) / 44K | about $0.80 | about $6.40 | about 6 |
+| Sonnet 5.5, nothing cached | 580K / 44K | about $1.60 | about $12.80 | about 3 |
+
+So a Haiku round of all 8 personas fits the $5 cap about 7 times a month, and one Sonnet lead persona costs about ten Haiku runs. Replace this table with logged `usage` after the first real run.
+
+**Running it (once built):**
+
+```bash
+node card-trader/prototype/playtest-llm.js --personas all --max-runs 8 --max-tokens 6000000
+```
+
+That prints the estimate and stops (dry-run). Add `--go` only with Hunter's OK. In CI: Actions → Playtest (LLM) → Run workflow, with `go: false` for an estimate.
 
 ## Recruiting human playtesters at scale
 The questionnaire artifact is private to the org, so outside testers need a public route to the game and to the questions. Verify each before relying on it; uncertain points are marked.
@@ -135,7 +173,7 @@ Each `run` ends in the game's `patch-notes.md`, top entry (a new one if the top 
 - Commit the three result files and open a pull request "Playtest: <game> agents <date>". Never merge it.
 
 ## Never
-- Spend money, call a paid tool, or run Tier B without Hunter's explicit OK.
+- Spend money, call a paid tool, or run the Tier B API route without Hunter's explicit OK.
 - Write to the questionnaire artifact or any shared database yourself.
 - Put human testers' answers or personal data in the repo.
 - Merge, force-push, or push to `main`.

@@ -7,7 +7,7 @@ Newest on top. See the repo's CLAUDE.md for how patch notes work.
 ---
 
 ## v3 rev 2.2 playtest agents · 2026-11-01 · Playtester agent for Hunter (with Claude)
-Agents now fill in the same playtest questionnaire as human testers. Eight scripted personas played 3 runs each through the engine. Agent file: `kit/agents/playtester.md`. Results: `playtests/agents-2026-11-01.md` (summary), `.json` (answers + telemetry), `-batch.json` (ready to push to the questionnaire artifact). No game code changed.
+Agents now fill in the same playtest questionnaire as human testers. Eight scripted personas played 3 runs each through the engine (Tier A), and Claude played two full runs itself as a cautious newbie and an impatient min-maxer (Tier B, no-API route). Agent file: `kit/agents/playtester.md`. Side-by-side findings: `playtests/findings-2026-11-01.md`. Results: `playtests/agents-2026-11-01.*` and `playtests/claude-2026-11-01*.json`, each with a batch ready to push to the questionnaire artifact. No game code changed.
 
 ### What's new
 - Nothing player-facing. New tool: `node card-trader/prototype/playtest-agents.js 3` plays the kid, min-maxer, cozy collector, vintage hunter, sealed speculator, chaos goblin, cautious newbie and trusting soul. Each derives questionnaire answers from what happened in its runs and quotes logged events in the text answers.
@@ -17,10 +17,21 @@ Agents now fill in the same playtest questionnaire as human testers. Eight scrip
   - **Back-room asks look alike:** in 12 runs, a buyer's "check the back, I'll wait" paid off and a distractor's "the good stuff, in the back" got the floor robbed.
   - **Money:** 6 of 8 personas close mid- and late-run days broke (cash under the next rent). Only the min-maxer and the sealed speculator are "ok" late. Value growth flattens around day 4–7 (median drag day per persona).
   - **Never touched:** repacks by 7 of 8 personas (matches the Balance report: repacks are dead), and the board by 4 of 8.
+- New tool: `node card-trader/prototype/play-driver.js` lets a person or a Claude Code session play the real engine one step at a time, seeing only player-visible text, with standing orders for routine visitors and in-the-moment notes. No API.
+- What Claude found playing (newbie 542₵ → 1,614₵, min-maxer 690₵ → 2,383₵, both Lane Favorite):
+  - **Star rating can't be read** (both rated it clear 1/5). It falls on good days with no reason given; rep hits 100 while stars fall to 3.7. Reviews describe things that never happened: "Pulled a hit from their repack!" with no repacks, "Saw a vintage box on display", "Case is always stocked" with one card in the case.
+  - **The scalper is the best strategy:** the min-maxer sold Skrimp every pack three times for about 1,300₵. Rep fell 73 → 43, but nothing it could feel got worse. Tier A missed this.
+  - **Tells are noise** (most honest customers show one), and **ring fakes pass UV and loupe** until you buy the Spectrometer. DJ Vee's hint led there.
+  - **Mid-run flatline:** both runs drag from day 4–5. Singles are 1–10₵ cards; on days without pack buyers the rack sits full.
+  - **Vintage out of reach:** first estate lots were 944₵ and 1,064₵ against 94₵ and 700₵ in the till; the next was 2,675₵.
+  - **Sealed value you can't reach:** a booster box shows ~250₵ but can't go on the rack, so walk-ins only get its ~170₵ of packs.
 
 ### Next up
 - [ ] @Hunter: OK pushing `playtests/agents-2026-11-01-batch.json` to the questionnaire artifact (8 docs `agent-<persona>` in `playtests`). The main session pushes it with ArtifactData after your yes.
-- [ ] @Hunter: decide whether Tier B (Claude plays the real page via Playwright) is worth trying. Estimate: about $3.40 a run on Sonnet 5.5, so 2 personas × 1 run is about $7. Needs your explicit OK; design in `kit/agents/playtester.md`.
+- [ ] @Hunter: OK pushing `playtests/claude-2026-11-01-batch.json` (2 docs `agent-claude-<persona>`).
+- [ ] Build the Tier B API runner (`playtest-llm.js`, dry-run by default, `--go`, `--max-runs`, `--max-tokens`) and the manual `playtest-llm.yml` workflow on `PLAYTEST_ANTHROPIC_API_KEY` (Haiku 5.5, $5/month workspace cap). Designed in `kit/agents/playtester.md`; not built. First real run needs @Hunter's OK after the key exists.
+- [ ] Balance agent: add an "always sell to the scalper" bot, and check whether rep loss should cost something.
+- [ ] Fix the review lines so they only mention what the shop actually has, and say why the rating moved each morning.
 - [ ] Results page: show `source: 'agent'` docs apart from human ones (or behind a filter) so bot answers don't drown out people.
 - [ ] Pick a public route for outside testers (itch.io restricted page or a public build, plus a Google Form into a Sheet); options in `kit/agents/playtester.md`.
 
@@ -32,7 +43,11 @@ Agents now fill in the same playtest questionnaire as human testers. Eight scrip
 - [ ] `drag` is written as a string ("5") to match `day`. Check that the results page reads it the same as human answers.
 - [ ] Re-pushing the batch overwrites docs: read them first and pin `if_version`, as ArtifactData requires.
 - [ ] Tier B costs are estimates from cached prices (Oct 6, 2026) and a guessed turn count, not measured. Recruiting options in `playtester.md` marked "unverified" (Lab public access, itch.io options, community rules, Steam fee, PlaytestCloud price) were not checked.
-- [ ] Only checked with `build-and-test.py --quick`; the script doesn't touch the build or the browser walkthrough.
+- [ ] Only checked with `build-and-test.py --quick`; the scripts don't touch the build or the browser walkthrough.
+- [ ] Possible bug, not verified in the browser: card names come out `undefined` after a save is loaded, because `CT.load()` doesn't rebuild the card universe until something calls `uni(G)`. Reproduced in Node via the driver ("I'm looking for undefined"). `frontend.js` loads saves on continue; check there. The driver works around it.
+- [ ] Day 8's close repeats "Wave 3 reprint list is out" on the eve of Wave 4, and Card Night with no packs says "the crowd still bought some packs".
+- [ ] Claude's two runs are one seed each, played by the same model that wrote the code, and it played the min-maxer knowing the newbie run's lesson that sealed pays. Treat them as two careful testers, not a sample.
+- [ ] Standing orders made routine visits automatic, so some lines (for example Quill's "Glyphsmiths' workshop, I mean") went unread in the moment. A human would read every line.
 
 ---
 

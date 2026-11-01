@@ -1,0 +1,447 @@
+{
+ "about": "Claude Code playtests of Card Trader v3, no API (Claude played through card-trader/prototype/play-driver.js, deciding each step as the persona). Free text is the persona's own words, grounded in the notes it took during the run. © 2026 justaskjoe. All rights reserved.",
+ "at": "2026-11-01T12:00:00.000Z",
+ "runs": {
+  "newbie": {
+   "day": "end",
+   "mins": 73,
+   "rank": "Lane Favorite",
+   "focus": "singles",
+   "split": "balanced",
+   "home": "shell",
+   "setupClear": 5,
+   "setupFeel": "fine",
+   "floorBack": 4,
+   "counterFloor": 4,
+   "grids": 4,
+   "rearranged": "yes",
+   "sys": {
+    "opening": {
+     "clear": 5,
+     "fun": 3,
+     "missed": false
+    },
+    "stockroom": {
+     "clear": 4,
+     "fun": 3,
+     "missed": false
+    },
+    "fetch": {
+     "clear": 4,
+     "fun": 3,
+     "missed": false
+    },
+    "browsers": {
+     "clear": 5,
+     "fun": 4,
+     "missed": false
+    },
+    "tags": {
+     "clear": null,
+     "fun": null,
+     "missed": true
+    },
+    "sleeves": {
+     "clear": 4,
+     "fun": 2,
+     "missed": false
+    },
+    "sealed": {
+     "clear": 3,
+     "fun": 5,
+     "missed": false
+    },
+    "vintage": {
+     "clear": 3,
+     "fun": 1,
+     "missed": true
+    },
+    "reprints": {
+     "clear": 3,
+     "fun": 2,
+     "missed": false
+    },
+    "repacks": {
+     "clear": null,
+     "fun": null,
+     "missed": true
+    },
+    "rating": {
+     "clear": 1,
+     "fun": 2,
+     "missed": false
+    },
+    "fakes": {
+     "clear": 3,
+     "fun": 4,
+     "missed": false
+    },
+    "thieves": {
+     "clear": 4,
+     "fun": 4,
+     "missed": false
+    },
+    "board": {
+     "clear": null,
+     "fun": null,
+     "missed": true
+    },
+    "upgrades": {
+     "clear": 4,
+     "fun": 4,
+     "missed": false
+    },
+    "loupe": {
+     "clear": 4,
+     "fun": 4,
+     "missed": false
+    },
+    "nights": {
+     "clear": 3,
+     "fun": 3,
+     "missed": false
+    }
+   },
+   "pace": {
+    "early": {
+     "money": "tight",
+     "energy": "exciting"
+    },
+    "mid": {
+     "money": "tight",
+     "energy": "drag"
+    },
+    "late": {
+     "money": "flush",
+     "energy": "fine"
+    }
+   },
+   "drag": "5",
+   "contra": "Rep climbed from 60 to the max of 100 while my star rating slid from 4.25 to 3.69, with reviews like 'Overpriced and pushy' (I never touched a tag), 'Case is always stocked' (my case held one 10c card) and 'Pulled a hit from their repack!' (I never made a repack). A booster box shows as worth ~250c, but it can't go on the rack, so opening it into packs (~170c) is the only way to sell it. On Card Night with zero packs, DJ Vee said 'the crowd still bought some packs'.",
+   "confused": "The star rating. It dropped on days that felt great and nothing told me why. And tells: most customers showed one and almost none were crooks, so by day 3 I ignored them. Prices also swing overnight: the 180c card I bought on day 1 was 'worth' 203c, not 251c, the next morning because Shellstorm demand dipped.",
+   "best": "Day 3: a 'perfect' card I paid 7c for looked like 208c and passed my UV lamp and loupe. DJ Vee's hint about perfect-looking promos made me buy the Spectrometer, re-scan it, and it was a fake. That's the game teaching me something. Also day 2: a browser paid 135c off the rack for the 60c blister I'd ordered the night before.",
+   "worst": "Days 5 and 6: my singles side was dead (everything I owned was 1-10c) and the day was just pack buyers and 'Your loss!' sellers. And day 6: the first estate lot was a vintage pack at 944c when I had 94c. Vintage was never reachable in my whole run.",
+   "change": "Explain the star rating every morning (which three things moved it and by how much) and make reviews match what actually happened in my shop. Make tells mean more: fewer of them on honest customers.",
+   "bugs": "Reviews mention things I never had (repacks, a vintage box on display). DJ Vee's day-8 close repeats the day-4 line 'Wave 3 reprint list is out' on the eve of Wave 4. Card Night with no packs still says the crowd bought packs.",
+   "again": 3,
+   "at": "2026-11-01T12:00:00.000Z",
+   "build": "v3",
+   "source": "agent-claude",
+   "persona": "newbie",
+   "seed": 2001,
+   "notes": [
+    {
+     "day": 1,
+     "phase": "morning",
+     "text": "Opening crate: 30 cards but only 2 worth over 10c; 19 are 1c cards I can't even read (other games' script). Setup itself was clear thanks to the checklist."
+    },
+    {
+     "day": 1,
+     "phase": "visit",
+     "text": "Day 1 first customer: spent 180c of my 223c on one grade-9 card (est 251c). Leaves me 43c with 30c rent. Felt like a big risk on the very first visit, with no idea how fast I can resell."
+    },
+    {
+     "day": 1,
+     "phase": "visit",
+     "text": "A kid selling a 4c shoebox showed a tell ('asks for something that doesn't fit their story'). What am I supposed to do with a tell on someone who's just selling me bulk? I bought it anyway."
+    },
+    {
+     "day": 1,
+     "phase": "visit",
+     "text": "Day 1: three of six customers showed a 'tell' and none of them were crooks (a shoebox kid, a buyer, a browser asking what time we close). The tells feel like noise so far."
+    },
+    {
+     "day": 2,
+     "phase": "morning",
+     "text": "Day 2 morning: my 180c card went from ~251c to ~203c overnight because Shellstorm demand dipped. Nobody warned me prices swing day to day. Also cash 22c with 40c rent tonight."
+    },
+    {
+     "day": 2,
+     "phase": "visit",
+     "text": "Day 2: a browser bought the 60c Hive blister I ordered last night off the rack for 135c. Another browser paid 187c for the card I bought for 180c (tag said 234). Ordering sealed and racking it looks like free money; selling singles barely beats what I paid."
+    },
+    {
+     "day": 2,
+     "phase": "close",
+     "text": "Day 2 close: the review says 'Case is always stocked' while my case holds one 7c card. Also sold out of everything by mid-afternoon: three customers wanted packs I didn't have."
+    },
+    {
+     "day": 3,
+     "phase": "morning",
+     "text": "Card Night with zero packs on the rack: DJ Vee said 'the crowd still bought some packs'. I had none to sell, so that line is wrong."
+    },
+    {
+     "day": 3,
+     "phase": "visit",
+     "text": "Day 3: watched a customer with two tells and caught them with a pack in their fluff. Let them go: I'm not calling security on anyone."
+    },
+    {
+     "day": 3,
+     "phase": "visit",
+     "text": "Day 3: Skrimp the scalper offers 31c a pack, more than my own customers pay (~28c). DJ Vee warned about him, so I passed, but the game never says what taking his deal actually costs me."
+    },
+    {
+     "day": 3,
+     "phase": "visit",
+     "text": "Tells are everywhere: by day 3 most customers show one, and most of them are honest. I've stopped treating a tell on its own as meaning anything."
+    },
+    {
+     "day": 3,
+     "phase": "close",
+     "text": "Day 3 close: the 'perfect' 208c card I paid 7c for passed my UV lamp and loupe at the counter. Only after DJ Vee's hint about perfect-looking promos did I buy the Spectrometer (70c) and re-scan it: FAKE. The seller's line ('from the Glyphsmiths' workshop, I mean, from a collector') was the real clue. Without the hint I'd have put it in the case."
+    },
+    {
+     "day": 4,
+     "phase": "morning",
+     "text": "Day 4: rating slid from 4.17 to 3.89 overnight and nothing said why. Best guess: my nearly empty case."
+    },
+    {
+     "day": 4,
+     "phase": "morning",
+     "text": "Day 4: the booster box says ~250c, but it 'can't go' on the rack, so the only way to sell it to walk-ins is to open it into 6 packs (~28c each, about 170c). The 250c is money I can't reach unless a sealed collector happens to want exactly that box. Confusing value."
+    },
+    {
+     "day": 4,
+     "phase": "visit",
+     "text": "DRIVER ARTIFACT (not a player-facing bug as played): Tumbo said \"I'm looking for undefined\". Cause: CT.load() does not rebuild the card universe, so tmpl() names are undefined until uni(G) runs. Possible real bug when continuing a saved game; not verified in the browser.",
+     "driver": true
+    },
+    {
+     "day": 5,
+     "phase": "morning",
+     "text": "Day 5: the review says 'Pulled a hit from their repack!' and I've never made a repack. The rating keeps sliding (4.25 to 3.82) even though rep went 60 to 90; rep and stars seem to measure different things and the game doesn't explain the difference. The release-day morning line from DJ Vee is a wall of text: release promos, two reprints, an allocation rumor, all in one bubble."
+    },
+    {
+     "day": 5,
+     "phase": "close",
+     "text": "Day 5: the shop has turned into a routine. Pack buyers buy packs; everyone else trades 3-10c singles. My singles side is dead because I never had anything good to put out. Most of the day I watch my standing orders play out. This is where it starts to drag."
+    },
+    {
+     "day": 6,
+     "phase": "morning",
+     "text": "Day 6: rep fell 97 to 89 overnight with no event I could see, and the review again says 'Case is always stocked' while my case holds one 10c card."
+    },
+    {
+     "day": 6,
+     "phase": "visit",
+     "text": "Day 6: first estate lot is a vintage pack for 944c (market ~1175c). I have 94c. Vintage is out of reach for the whole run at the cash I've ever held (peak 476c), so it's a system I can only look at."
+    },
+    {
+     "day": 7,
+     "phase": "morning",
+     "text": "Day 7: DJ Vee says familiar faces are back in hats. My board is empty because I never called security, so the board system gives me nothing to work with. A player who only watches and lets people go never gets to use the board."
+    },
+    {
+     "day": 8,
+     "phase": "morning",
+     "text": "Day 8: rep is at the maximum (100) and the star rating is at its lowest (3.71), with a review calling me 'Overpriced and pushy'. I never changed a single tag. The two scores pull in opposite directions and I can't tell which one matters."
+    },
+    {
+     "day": 8,
+     "phase": "close",
+     "text": "Day 8 close: DJ Vee says 'Tomorrow: Wave 4 Release Day ... Wave 3 reprint list is out: Phoenix of Faelo is on it', the same line as day 4. Wave 3 already happened, so it reads like a stale message."
+    }
+   ]
+  },
+  "minmax": {
+   "day": "end",
+   "mins": 76,
+   "rank": "Lane Favorite",
+   "focus": "singles",
+   "split": "cash",
+   "home": "star",
+   "setupClear": 4,
+   "setupFeel": "fine",
+   "floorBack": 3,
+   "counterFloor": 4,
+   "grids": 2,
+   "rearranged": "yes",
+   "sys": {
+    "opening": {
+     "clear": 4,
+     "fun": 3,
+     "missed": false
+    },
+    "stockroom": {
+     "clear": 3,
+     "fun": 2,
+     "missed": false
+    },
+    "fetch": {
+     "clear": 4,
+     "fun": 4,
+     "missed": false
+    },
+    "browsers": {
+     "clear": 5,
+     "fun": 3,
+     "missed": false
+    },
+    "tags": {
+     "clear": 4,
+     "fun": 2,
+     "missed": false
+    },
+    "sleeves": {
+     "clear": 4,
+     "fun": 2,
+     "missed": false
+    },
+    "sealed": {
+     "clear": 2,
+     "fun": 4,
+     "missed": false
+    },
+    "vintage": {
+     "clear": 2,
+     "fun": 1,
+     "missed": false
+    },
+    "reprints": {
+     "clear": 2,
+     "fun": 2,
+     "missed": false
+    },
+    "repacks": {
+     "clear": null,
+     "fun": null,
+     "missed": true
+    },
+    "rating": {
+     "clear": 1,
+     "fun": 2,
+     "missed": false
+    },
+    "fakes": {
+     "clear": 4,
+     "fun": 4,
+     "missed": false
+    },
+    "thieves": {
+     "clear": 4,
+     "fun": 5,
+     "missed": false
+    },
+    "board": {
+     "clear": 3,
+     "fun": 2,
+     "missed": false
+    },
+    "upgrades": {
+     "clear": 4,
+     "fun": 4,
+     "missed": false
+    },
+    "loupe": {
+     "clear": 3,
+     "fun": 3,
+     "missed": false
+    },
+    "nights": {
+     "clear": 3,
+     "fun": 3,
+     "missed": false
+    }
+   },
+   "pace": {
+    "early": {
+     "money": "flush",
+     "energy": "exciting"
+    },
+    "mid": {
+     "money": "flush",
+     "energy": "drag"
+    },
+    "late": {
+     "money": "flush",
+     "energy": "fine"
+    }
+   },
+   "drag": "4",
+   "contra": "Skrimp the scalper pays 31c a pack, more than my own customers (~28c). I sold him every pack three times (days 3, 5 and 9) for ~1,300c, by far my best income. Rep fell 73 to 43, but the star rating barely moved and nothing else got worse, so the 'bad' choice is the best one. The board flags Sticky in a hat, but watching catches them the same way, so refusing only loses the bounty.",
+   "confused": "Sealed supply. A Hive premium box I paid 230c for was 'worth' 216c the next morning because of a reprint nobody warned me about. A Shellstorm order was refused for 'allocation' when the gossip had named a Hive set. The rack only holds 16 packs, so 'no room' kept stopping me. Also the first loupe on a card cut its estimate from ~498c to ~280c.",
+   "best": "Day 1: a 'whole binder page for 14c' had a ~498c card in it (280c after the loupe), and Mimbo paid 258c for another card the same day. Day 8: Vault paid 762c for a Lopu Fox that had sat unnoticed in my back binder.",
+   "worst": "Days 4 and 6: 26 packs in stock and I sold about one pack each day. After the scalper days the shop just idled. And vintage: I bought the scale and the riser, the first lot was 1064c when I had 700c ('the estate can't go that low'), and the next one was 2675c.",
+   "change": "Make the scalper's cost visible and real (fewer buyers tomorrow, a rating hit, a 'Limit 2' reminder at the counter) or cap him. Bring estate vintage earlier and cheaper, or let me put a deposit down, so the vintage fixtures I buy can pay off.",
+   "bugs": "Reviews say 'Pulled a hit from their repack!' and 'Saw a vintage box on display' and I had neither. The day-8 close says 'Wave 3 reprint list is out' on the eve of Wave 4.",
+   "again": 4,
+   "at": "2026-11-01T12:00:00.000Z",
+   "build": "v3",
+   "source": "agent-claude",
+   "persona": "minmax",
+   "seed": 2002,
+   "notes": [
+    {
+     "day": 1,
+     "phase": "close",
+     "text": "Day 1: bought a whole binder page for 14c and it had a card estimated at ~498c in it. Cash went 300 to 670 in one day, plus that card. Felt amazing, but it's way out of line with every other price I've seen."
+    },
+    {
+     "day": 1,
+     "phase": "close",
+     "text": "Day 1 close: the loupe dropped that card from ~498c to ~280c (grade 5). Fair enough, but the first number made me overexcited. An unlooked estimate seems to assume a perfect card."
+    },
+    {
+     "day": 2,
+     "phase": "morning",
+     "text": "Day 2: a review says 'Saw a vintage box on display. Unreal.' I've never owned vintage."
+    },
+    {
+     "day": 3,
+     "phase": "morning",
+     "text": "Day 3: rating fell 4.60 to 4.11 overnight. No review explains it. I had 2 cards in the case; is that it? I'm optimizing blind."
+    },
+    {
+     "day": 3,
+     "phase": "close",
+     "text": "Day 3: sold all 16 packs to Skrimp the scalper at 31c each (about 496c in one click). Rep then dropped 73 to 56 and two later pack buyers walked out to an empty rack. The scalper is the best money in the game so far; the costs (rep, empty rack, maybe fewer buyers tomorrow) only show up after the fact, and nothing at the counter warns me. Also called security on Sticky after catching them: bounty, and they're on my board."
+    },
+    {
+     "day": 4,
+     "phase": "morning",
+     "text": "Day 4: paid 230c for a Hive premium box last night. This morning a Hive reprint was announced and the box is 'worth' 216c. Nothing at order time hinted at it. The repack review showed up again, and I have no repacks."
+    },
+    {
+     "day": 4,
+     "phase": "close",
+     "text": "Day 4: 16 packs on the rack plus 12 in the back, and I sold ONE pack all day. No pack buyers came on Rumor day. After two days of easy money it went flat, with 460c of premium boxes sitting there. The rack holds only 16 packs, so most of my stock can't even go out."
+    },
+    {
+     "day": 5,
+     "phase": "close",
+     "text": "Day 5: Skrimp again, all 15 packs at 31c. Cash 1058c, rep 67 to 50, star rating unchanged. The scalper is the strongest move I've found: two days of him paid more than all my singles combined. The rep hit doesn't seem to cost me anything I can see, so why wouldn't I always sell to him?"
+    },
+    {
+     "day": 6,
+     "phase": "visit",
+     "text": "Day 6: first estate lot is a vintage Hive box at 1064c (market ~1410c). I bought the scale and riser for vintage last night, and even after two scalper days I'm at 700c: 'the estate can't go that low'. If I hadn't spent on prep I'd have barely made it. Vintage shows up late and costs more than any normal run earns by then."
+    },
+    {
+     "day": 6,
+     "phase": "close",
+     "text": "Day 6 (and day 4): sold about one pack all day. On days without a scalper or a pack rush the shop just idles; my standing orders cycle through 'Your loss!' sellers. Days 4 and 6 dragged."
+    },
+    {
+     "day": 7,
+     "phase": "close",
+     "text": "Day 7: Sticky came back in a hat. The board flagged them, but watching caught them the same as before, so refusing at the door would only have cost me the bounty. The board doesn't change what I do."
+    },
+    {
+     "day": 8,
+     "phase": "morning",
+     "text": "Day 7 close: tried to order a Shellstorm premium box. Refused: 'Olmei Wrecks is on allocation: none to spare'. The morning gossip warned about a Hive set, not this one, and the refusal only showed in a line I nearly missed."
+    },
+    {
+     "day": 8,
+     "phase": "close",
+     "text": "Day 8 (Collector's Fair): Vault paid 762c for a Lopu Fox that sat unnoticed in my back binder. I never put it on the floor because it never showed in the top of my list. One buyer was worth more than three normal days. Same day, the estate's vintage box jumped to 2675c (it was 1064c two days ago). Day 8's closing line still says 'Wave 3 reprint list is out', on the eve of Wave 4."
+    },
+    {
+     "day": 9,
+     "phase": "close",
+     "text": "Day 9: a third Skrimp sale. Rep is down to 43 (from 73) while the star rating sits at 4.00. Rep seems to do nothing I can feel."
+    }
+   ]
+  }
+ }
+}
