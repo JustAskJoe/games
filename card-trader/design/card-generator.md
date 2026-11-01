@@ -93,4 +93,8 @@ Helpers the engine calls:
    - The rest drift.
    - **The player isn't told which is which.** Hints come from DJ Vee, the Hype Bros, distributor allocation (a set you can't get more of) and price trends. Spotting the no-reprint set early and holding its sealed product is the play to find.
    - The generator gives each modern set a `reprint` flag (`yes`, `no` or `drift`) and a reveal day, all seeded.
+   - **Per game** (Hunter, Nov 1): each game's modern line has its own reprinted set and never-reprinted set.
+   - **Any modern set can be flagged** (Hunter, Nov 1: "make the decision"). Sets out at the start are 3× likelier than the two mid-run releases, so the early-hold play usually exists but no release is known-safe. Reveals land at least 2 days after release.
 7. **Zach's data:** later. The generator runs on the hand-written template until then.
+8. **Open to other games** (Hunter, Nov 1): the engine is the studio's shared `kit/cardgen/`, driven by a JSON profile, so friends' card games can use it too. Card Trader is one profile (`data/cardgen-profile.json`). There's an offline Workshop tool (`kit/cardgen/tool.html`) for Studio HQ later.
+9. **Plug-in timing** (Hunter, Nov 1): it goes into the engine once Card Trader v3 is done.

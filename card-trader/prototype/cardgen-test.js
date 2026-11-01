@@ -1,11 +1,11 @@
-// Intergalactic Card Trader · card generator tests (node). Run: node card-trader/prototype/cardgen-test.js [seed]
+// Intergalactic Card Trader · card generator tests (node), through the shared core in kit/cardgen/ with Card Trader's profile. Run: node card-trader/prototype/cardgen-test.js [seed]
 // Determinism, shape vs the template, era value shares, 10,000-pack pull sims per set, sealed, weights, reprints, budget.
 // Private name check: set CG_BLOCKLIST to a text file of real card names (one per line, never committed). Only pass/fail prints.
 // © 2026 justaskjoe. All rights reserved.
 'use strict';
 const fs = require('fs'), path = require('path');
 const CG = require('./cardgen.js');
-const T = require('../data/template-stats.json');
+const T = CG.config; // profile + stats, merged and validated
 const SEED = +(process.argv[2] || 20261101);
 let fails = 0, passes = 0;
 const ok = (cond, msg) => { if (cond) passes++; else { fails++; console.log('FAIL ' + msg); } };
@@ -50,9 +50,14 @@ for (const g of ['shell', 'hive', 'star']) {
   ok(rel.length === 2 && rel[0] >= 1 && rel[0] <= 5 && rel[1] >= 6 && rel[1] <= 10, g + ': 2 releases, one each half (' + rel + ')');
   const f = m.map(s => s.reprint);
   ok(f.filter(x => x === 'yes').length === 1 && f.filter(x => x === 'no').length === 1 && f.filter(x => x === 'drift').length === 3, g + ': 1 yes, 1 no, 3 drift');
-  for (const s of m) if (s.reprint !== 'drift') ok(s.release <= T.reprint.flagBy, s.id + ' flagged set is out by day ' + T.reprint.flagBy), ok(s.reveal >= 1 && s.reveal <= 10 && (s.reveal >= s.release + 2 || s.reveal === 10), s.id + ' reveal day ' + s.reveal);
+  for (const s of m) if (s.reprint !== 'drift') ok(s.reveal >= 1 && s.reveal <= 10 && (s.reveal >= s.release + 2 || s.reveal === 10), s.id + ' reveal day ' + s.reveal);
   ok(U.sets.filter(s => s.game === g && s.era !== 'modern').every(s => s.reprint === null), g + ': only modern gets reprinted');
 }
+// Any modern set can be flagged, but sets out at the start are likelier (flagWeight), so a fresh release is never known-safe.
+let lateFlags = 0, startFlags = 0;
+for (let sd = 1; sd <= 40; sd++) for (const s of CG.build(sd).sets) if (s.reprint && s.reprint !== 'drift') { if (s.release > 0) lateFlags++; else startFlags++; }
+console.log('reprint flags over 40 seeds: ' + startFlags + ' on sets out at the start, ' + lateFlags + ' on mid-run releases');
+ok(lateFlags > 0 && startFlags / Math.max(1, lateFlags) > 2, 'mid-run releases can be flagged, but start sets are likelier');
 const avgSealed = (flag, day) => { const l = U.sets.filter(s => s.reprint === flag); return l.reduce((a, s) => a + U.sealedPrice(s.id, 'booster', day) / U.sealedPrice(s.id, 'booster', Math.max(0, s.release)), 0) / l.length; };
 const y10 = avgSealed('yes', 10), n10 = avgSealed('no', 10), d10 = avgSealed('drift', 10);
 console.log('booster box day 10 vs release: reprinted ×' + y10.toFixed(2) + ', drift ×' + d10.toFixed(2) + ', never-reprinted ×' + n10.toFixed(2));
@@ -161,9 +166,9 @@ if (bl && fs.existsSync(bl)) {
 } else console.log('private name check: skipped (set CG_BLOCKLIST to the private list)');
 
 // ---------- budget ----------
-const bytes = fs.statSync(path.join(__dirname, 'cardgen.js')).size + Buffer.byteLength(JSON.stringify(T));
-console.log('budget: cardgen.js + template (minified JSON) = ' + (bytes / 1024).toFixed(1) + ' KB');
-ok(bytes < 60 * 1024, 'generator + template under 60 KB');
+const bytes = ['cardgen.js', '../../kit/cardgen/cardgen.js'].reduce((a, f) => a + fs.statSync(path.join(__dirname, f)).size, 0) + Buffer.byteLength(JSON.stringify(require('../data/cardgen-profile.json'))) + Buffer.byteLength(JSON.stringify(require('../data/template-stats.json')));
+console.log('budget: core + wrapper + profile + stats (minified JSON) = ' + (bytes / 1024).toFixed(1) + ' KB');
+ok(bytes < 60 * 1024, 'generator + profile + stats under 60 KB');
 ok(buildMs < 1500, 'builds in under 1.5 s (' + buildMs + ' ms)');
 
 console.log('\n' + passes + ' passed, ' + fails + ' failed');

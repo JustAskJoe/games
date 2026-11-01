@@ -1,0 +1,53 @@
+{
+  "_about": "Example CardGen profile: a small fantasy duel game with 2 factions, 1 era, a 4-step rarity ladder and 2 products. Structure and stats in one file. It exists to prove the core has no Card Trader assumptions; copy it to start your own. © 2026 justaskjoe. All rights reserved.",
+  "schema": 1,
+  "id": "duel-example",
+  "name": "Ashfall Duel (example)",
+  "currency": { "symbol": "g", "name": "gold" },
+  "rarities": [ { "k": "c", "n": "Common" }, { "k": "r", "n": "Rare" }, { "k": "e", "n": "Epic" }, { "k": "l", "n": "Legend" } ],
+  "lowRarities": 1,
+  "hitRarity": "e",
+  "games": {
+    "ember": { "name": "Ember Court", "lang": {
+      "syl": ["ka", "ro", "vash", "ign", "tor", "ul", "dra", "mor", "eth", "zar", "bel", "ash"],
+      "kinds": ["Knight", "Drake", "Pyromancer", "Golem", "Hound", "Herald", "Imp", "Warlord"],
+      "adj": ["Cinder", "Molten", "Ashen", "Blazing", "Iron", "Scorch", "Ember", "Forge"],
+      "title": ["Tyrant", "Duke", "Oracle", "Champion"],
+      "setNoun": ["Uprising", "Embers", "Siege", "Crown", "Forges"] } },
+    "grove": { "name": "Grove Pact", "lang": {
+      "syl": ["syl", "va", "ren", "thi", "oak", "mi", "la", "fen", "ae", "wyn", "lor", "ise"],
+      "kinds": ["Druid", "Stag", "Treant", "Sprite", "Wolf", "Archer", "Shaman", "Wyrm"],
+      "adj": ["Moss", "Thorn", "Bloom", "Elder", "Wild", "Briar", "Dew", "Root"],
+      "title": ["Warden", "Matron", "Seer", "Ancient"],
+      "setNoun": ["Groves", "Thickets", "Seasons", "Roots", "Glades"] } }
+  },
+  "names": { "roster": 160, "heroes": 10,
+    "patterns": [[50, "{adj} {kind}"], [30, "{w2} {kind}"], [20, "{kind} of {w2}"]],
+    "hero": [[1, "{w23}, {adj} {title}"]],
+    "setPatterns": [[1, "{adj} {setNoun}"], [1, "{w2} {setNoun}"]] },
+  "eraOrder": ["core"],
+  "eras": {
+    "core": { "code": "s", "name": "Core seasons", "sets": 2, "size": [60, 80], "value": 1, "drift": [0, 0.002, 0.003], "walk": 0.01,
+      "mix": { "c": 0.55, "r": 0.28, "e": 0.13, "l": 0.04 },
+      "printings": ["std", "foil", "showcase"],
+      "assign": { "showcase": { "e": 0.25, "l": 0.5 } },
+      "pack": [
+        { "n": 4, "t": [["c", "std", 1]] },
+        { "n": 1, "t": [["r", "std", 75], ["e", "std", 20], ["l", "std", 5]] },
+        { "n": 1, "t": [["c", "foil", 60], ["r", "foil", 30], ["e", "foil", 7], ["e", "showcase", 2], ["l", "showcase", 1]] } ] }
+  },
+  "printings": {
+    "std": { "n": "Standard", "m": 1 },
+    "foil": { "n": "Foil", "m": [3, 2], "foil": 1 },
+    "showcase": { "n": "Showcase", "m": 4, "hit": 1 },
+    "champion": { "n": "Champion stamp", "m": 2, "promo": 1 }
+  },
+  "promos": { "champion": { "e": 0.2, "l": 0.5 } },
+  "rarity": { "base": { "c": 0.05, "r": 0.2, "e": 1.2, "l": 6 }, "sigma": { "c": 0.2, "r": 0.4, "e": 0.6, "l": 0.6 }, "min": 0.03 },
+  "fame": { "pow": 3, "k": 1, "pick": { "c": 0, "r": 2, "e": 8, "l": 20 } },
+  "sealed": {
+    "pack": { "packs": 1, "msrp": 4, "shape": [1, 1] },
+    "box": { "packs": 12, "promo": 1, "msrp": 42, "shape": [2, 2] }
+  },
+  "bulk": { "each": 0.03, "under": 0.1 }
+}

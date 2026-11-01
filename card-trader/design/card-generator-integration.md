@@ -2,18 +2,20 @@
 
 © 2026 justaskjoe. All rights reserved.
 
-**Status:** generator built (`prototype/cardgen.js`, `data/template-stats.json`, tests in `prototype/cardgen-test.js`). **Not plugged in yet:** `engine.js`, `ui.js`, `sim.js` and `build.py` are being rewritten for v3 rev 2 in parallel, so this doc is the exact swap for whoever lands it. Line references are to `engine.js` as of commit `5b8bae9` (rev 1 build); names will hold even if lines move. Scope and decisions: `design/card-generator.md`.
+**Status:** generator built. The engine is the studio's shared core, `kit/cardgen/cardgen.js` (see `kit/cardgen/README.md`). Card Trader is one profile: `data/cardgen-profile.json` (factions, name banks, eras, printings, products, run calendar) plus `data/template-stats.json` (the numbers). `prototype/cardgen.js` is a thin wrapper that loads the core with that profile, and its tests are in `prototype/cardgen-test.js`. **Not plugged in yet** (Hunter: once Card Trader v3 is done): `engine.js`, `ui.js`, `sim.js` and `build.py` are being rewritten for v3 rev 2 in parallel, so this doc is the exact swap for whoever lands it. Line references are to `engine.js` as of commit `5b8bae9` (rev 1 build); names will hold even if lines move. Scope and decisions: `design/card-generator.md`.
 
-Run the tests: `node card-trader/prototype/cardgen-test.js [seed]` (about 2 s; 900+ checks). After plugging in, also run `python3 card-trader/build-and-test.py`.
+Run the tests: `node card-trader/prototype/cardgen-test.js [seed]` (about 2 s; 900+ checks) and `node kit/cardgen/cardgen-test.js` (the core against every profile). After plugging in, also run `python3 card-trader/build-and-test.py`.
 
 ## 1. Loading it
 
-- **Node (`sim.js`, tests):** `const CG = require('./cardgen.js')`. `CG.build(seed)` finds `../data/template-stats.json` by itself, or pass the template.
-- **Browser (the build):** `build.py` must inline two things before `engine.js`:
-  1. `window.CG_TEMPLATE = <contents of data/template-stats.json>;`
-  2. `cardgen.js`
+- **Node (`sim.js`, tests):** `const CG = require('./cardgen.js')`. The wrapper loads `../../kit/cardgen/cardgen.js`, `../data/cardgen-profile.json` and `../data/template-stats.json`, merges and checks them, and `CG.build(seed)` builds. `CG.build(seed, otherStats)` tries a refit.
+- **Browser (the build):** `build.py` must inline four things, in this order, before `engine.js`:
+  1. `kit/cardgen/cardgen.js` (sets the global `CardGen`)
+  2. `window.CG_PROFILE = <contents of data/cardgen-profile.json>;`
+  3. `window.CG_TEMPLATE = <contents of data/template-stats.json>;`
+  4. `prototype/cardgen.js` (sets `CG`)
 
-  `CG.build(seed)` then picks up `root.CG_TEMPLATE`. Together they're about 31 KB unminified (budget 60 KB).
+  Together they're about 45 KB unminified (budget 60 KB). A broken profile or stats file throws on load with a list of what to fix.
 - **Build once per game, outside G** (G must stay plain JSON): `let U = null; function uni(G) { return U && U.seed === (G.seed >>> 0) ? U : (U = CG.build(G.seed)); }`. It's deterministic, so a loaded save rebuilds the same universe from `G.seed` in about 80 ms. Never store `U` or card objects in G; store ids.
 - **RNG:** every `U` function that takes `rng` accepts `G` itself and draws from (and advances) `G._s`, the same generator the engine uses. So runs stay reproducible and saves stay JSON. A number gives a fresh stream from that seed. A function also works.
 
@@ -52,7 +54,7 @@ After: `c.t = cardId` (for example `'star-n4-37'` = Starweave, modern set 4, car
 ## 4. Eras, sets and the run calendar
 
 - **Sets per game:** vintage `v1–v3`, mid `m1–m3`, modern `n1–n5`. Modern `n1–n3` are out before day 1, `n4` releases on day 2–4 and `n5` on day 6–8 (`set.release`). `U.released(day)` lists what's out, and `draw` and `search` take `day` and skip unreleased sets.
-- **Reprint flags** (decision 6): per game, one modern set is `reprint: 'yes'`, one is `'no'` and three `'drift'`, each with a `reveal` day. Only sets out by day 4 (`template.reprint.flagBy`) are flagged, so the reveal plays out in the run. **Never show the flag.** The engine surfaces only hints:
+- **Reprint flags** (decision 6): per game, one modern set is `reprint: 'yes'`, one is `'no'` and three `'drift'`, each with a `reveal` day. Any of the 5 can be flagged, but sets out at the start are 3× likelier than mid-run releases (`profile.reprint.flagWeight`). So the "spot it early and hold" play usually exists, but a fresh release is never known-safe (Hunter, Nov 1). Reveals land at least 2 days after a set's release, inside the run. **Never show the flag.** The engine surfaces only hints:
   - `U.trend(set, day, kind)` / `U.sealedPrice` move: the yes set creeps up, then drops about 40% on reveal. The no set climbs about 2.5%/day, then about 6%/day after reveal.
   - `U.allocation(setId, day)` is the share of a distributor order you actually get. The no set dries up (1 → 0.2), and the yes set floods after reveal (1.5). Old eras return 0 (out of print).
   - DJ Vee and Hype Bros lines: write them from `set.reprint` and `set.reveal` in the engine (for example a true rumor 1–2 days before reveal, and the Hype Bros pushing the yes set).
@@ -85,7 +87,7 @@ After: `c.t = cardId` (for example `'star-n4-37'` = Starweave, modern set 4, car
 
 ## 7. Fitting the template to real data (private)
 
-`data/template-stats.json` holds **aggregates only**. A private script, kept in `onefiftylabs/games-private` (never this repo), will write it:
+`data/template-stats.json` holds **aggregates only**, and it's the only file the fit touches. `data/cardgen-profile.json` (the structure and decisions) stays hand-edited. A private script, kept in `onefiftylabs/games-private` (never this repo), will write the stats:
 
 1. **Read Zach's sources locally.** Check each source's terms first. A source that forbids reuse of prices feeds only non-price shape: set sizes, rarity mix and slot odds.
 2. **Bucket every set into an era** by release year (vintage = the hobby's first waves, mid = the middle years, modern = the last few years).
@@ -99,15 +101,16 @@ After: `c.t = cardId` (for example `'star-n4-37'` = Starweave, modern set 4, car
 4. **Write the global numbers:**
    - `printings[*].m` (median price ratio of each variant to its standard print)
    - `grade.*` (graded / raw price ratios by grade)
-   - `sealedMarket` and `vintageSealed` (sealed price over MSRP, by era)
+   - `sealedMarket` (sealed price over MSRP, by era) and `sealedRef.vintage.types` (vintage sealed as a multiple of a modern booster box)
+   - `sealed.*.msrp / cost`
    - `demand.*.p` and `fame` (how concentrated value is on the top creatures)
    - `reprint.*` (price paths of real sets around reprint announcements, as ratios)
 5. **Write nothing that identifies a card, set or product:** no names, numbers, dates or ids. Round every number to 2–3 significant figures.
-6. **Re-run `node cardgen-test.js`.** The tolerance tests read the template, so they follow the fit. Then tune `value` so that vintage is still about 10% of incoming cards and 35% of value (design target), and re-run `build-and-test.py`.
+6. **Re-run `node cardgen-test.js`.** `CardGen.load` rejects a stats file with missing or out-of-range numbers, and the tolerance tests read the merged config, so they follow the fit. Then tune `value` so that vintage is still about 10% of incoming cards and 35% of value (design target), and re-run `build-and-test.py`.
 
-The private real-name blocklist sits next to that script. Run `CG_BLOCKLIST=/path/to/names.txt node cardgen-test.js` and only the pass/fail line is printed. In the game, `CG.build(seed, T, { blocklist })` rerolls any name within edit distance 2. The shipped build passes no list: names are checked once privately per template version and seed range.
+The private real-name blocklist sits next to that script. Run `CG_BLOCKLIST=/path/to/names.txt node cardgen-test.js` and only the pass/fail line is printed. In the game, `CG.build(seed, null, { blocklist })` rerolls any name within edit distance 2. The shipped build passes no list: names are checked once privately per template version and seed range.
 
 ## 8. Known gaps (see the PR's Watch out list)
 
-- The reprint flags are per game: 3 yes, 3 no and 9 drift across the universe. Decision 6 could also mean one of each across all games. It's one number in the template (`reprint.count`) plus a scope change if Hunter wants that.
+- Reprint flags are per game (Hunter confirmed, Nov 1): 3 yes, 3 no and 9 drift across the universe.
 - The hand-written numbers are a judgement call until Zach's data lands. The value share varies by seed (about 28–40% vintage across seeds tested).
