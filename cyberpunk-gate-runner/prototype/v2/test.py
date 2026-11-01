@@ -29,7 +29,8 @@ with sync_playwright() as p:
     pg.evaluate('() => localStorage.clear()'); pg.reload(); pg.wait_for_timeout(800)
     pg.evaluate('() => { GRUI.U.seedFix = 6920; }')
     pg.click('[data-act=levels]'); pg.wait_for_timeout(200); shot(pg, '01-levels-fresh')
-    if pg.locator('.lv:not([disabled])').count() != 1 or pg.locator('.lv[disabled]').count() != 4: fails.append('a fresh save should open only level 1')
+    locks = pg.evaluate('() => GRUI.U.openAll') and (5, 0) or (1, 4)   # OPEN_ALL in ui.js opens every street for playtesting
+    if pg.locator('.lv:not([disabled])').count() != locks[0] or pg.locator('.lv[disabled]').count() != locks[1]: fails.append('wrong streets open on a fresh save')
     pg.click('[data-act=title]'); pg.wait_for_timeout(200)
     pg.click('[data-act=arsenal]'); pg.wait_for_timeout(200); shot(pg, '02-arsenal')
     if 'Overpierce' not in pg.inner_text('#card'): fails.append('weapons screen is missing upgrades')
