@@ -97,8 +97,39 @@ Two rows touch the same thing: the rent change and the bounty change both raise 
 - **Degenerate strategy:** none seen, but not tested with single-action bots this pass.
 - **Stuck runs:** none in about 30,000 scratch runs (the sim's guard and NaN checks held).
 
+## Repacks (follow-up dig, Nov 1)
+Target (v3-design "3. Numbers"): a seeded repack earns about 20% over selling its bulk loose. The design also says shoppers judge repacks against the posted hit sign. All runs below are scratch copies of `main` (careful bot, 200 runs). No engine or sim change is in this PR.
+
+**Why they're dead now. There are three separate causes:**
+1. **Built too late.** The careful bot waits for 150 bulk before buying the sorter, and bulk only gets there on day 9–10. Every repack the sim built was built at day 10's close, so no browser ever saw one. This is partly the bot's recipe (8 × 15 cards) and partly the slow bulk inflow.
+2. **Buyers see inside the wrapper (bug vs the design).** `goodValue` (`prototype/engine.js:1236`) values a repack from its hidden contents: `per × 0.4 + (o.hit ? o.hitVal : 0)`. Packs without a hit look like 4₵, so at any sane tag only hit packs clear the browse threshold.
+   - With a scratch bot that builds 4 × 10-card repacks from day 2 at 12₵: 1,628 made, 204 sold, **all 204 were hit packs**.
+   - Repacks earned 83% *less* than their contents sold loose, and careful fell from +231% to +181%.
+   - `repackAppeal` (line 1290) then reads a 100% hit rate on sold packs and climbs to its 1.6 cap. It rewards the leak.
+3. **Even with an honest sign-based value, they lose.** Hits the shop seeds average about 57₵, but a sign-based buyer only pays for the sign's floor (12₵), so seeding a real hit loses money.
+
+**Sign-based variants tried** (replace the hidden-contents value; `every` and `min` are the posted sign):
+
+| Buyer's value for a repack | Tag | Sold | Payoff vs loose | Careful gain |
+|---|---|---|---|---|
+| Now: hidden contents | 12₵ | 204 (all hits) | −83% | +181% |
+| A: `per×0.4 + min/every` | 12–16₵ | 0 | n/a | n/a |
+| B: `per×1 + min/every` | 12₵ | 589 | −44% | |
+| B | 16₵ | 28 | −11% | |
+| C: `per×1 + 2×min/every` | 16₵ | 548 | −25% | |
+| D: C × 1.3 gamble premium | 20₵ | 556 | −10% | |
+| D, sign floor raised to 30₵ | 28₵ | 555 | about 0% | |
+
+Careful's total gain stays below the no-repack +231% in every variant (196–212% across A–D). About 160 of the early-repack runs also hit "no room for 4 repacks", so shelf space caps them too.
+
+**Proposed fix (needs Hunter's OK, not applied):**
+1. Value repacks by the sign, not the contents, e.g. `(o.per||10) × 1 + premium × o.min / o.every`. Contents only matter afterwards, through the existing hit-rate check in `repackAppeal` (an honest sign earns rep, a stingy one costs it).
+2. Size `premium` so an honest sign at a fair tag lands near +20% over loose. From the table, that needs roughly 1.6–2× on the hit term, or a buyer who values the hit near its real price.
+3. Let the sim's careful bot buy the sorter and build small repacks early, and add a repack-payoff line to `sim.js` and the band.
+
 ## Questions for Hunter
 1. Upgrades are worth +21 after tuning. Do you want a ceiling band line (for example 5–40 points)? If they should be worth more, the Spectrometer price is the lever.
 2. "A fair day's profit" for a schemer report means ~70–90₵, which inflates growth by 40–60 points. Is that what you want, or about half a day?
 3. The era target (10% / 35%) fights the economy: vintage is half the value of every shop. Keep the target and retune prices, or move the target?
 4. OK to add the `floorOnly` / `backOnly` bots and the floor, fetch-loss and repack lines to `sim.js`, so those targets get measured?
+5. Repacks: OK to make buyers value a repack by its sign instead of its hidden contents, plus a gamble premium sized for about +20% over loose? Or should repacks pay some other way (a draw that brings in more visitors, rep)?
