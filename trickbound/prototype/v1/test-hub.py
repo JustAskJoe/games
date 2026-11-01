@@ -4,10 +4,9 @@ from playwright.sync_api import sync_playwright
 
 errors = []
 def tap(pg, x, y):
-    r = pg.evaluate('(() => { const c = document.getElementById("wCv"); const b = c.getBoundingClientRect(); return {l: b.left, t: b.top, w: b.width, h: b.height}; })()')
-    tile = r['w'] / 12; rows = r['h'] / tile
-    my = pg.evaluate('TBWorld.state.me.y'); cam = max(0, min(15 - rows, my - rows / 2 + 0.5))
-    pg.mouse.click(r['l'] + (x + 0.5) * tile, r['t'] + (y - cam + 0.5) * tile)
+    # the town is an isometric diorama now: ask the world where tile x,y is on screen
+    pt = pg.evaluate(f'TBWorld.tapPoint({x}, {y})'); assert pt, f'tile {x},{y} is off screen'
+    pg.mouse.click(pt['x'], pt['y'])
 def wait_box(pg, ms=6000):
     for _ in range(ms // 100):
         if pg.locator('#wBox:not([hidden])').count(): return True
@@ -46,7 +45,8 @@ with sync_playwright() as p:
     assert 'Around town' not in pg.inner_text('#story')
     pg.click('[data-s="hub"]'); pg.wait_for_timeout(900)
     # walk ONTO the door from far away (the bug F hit): from the platform, tap the door
-    pg.evaluate("TBWorld.state.me.x = 3; TBWorld.state.me.y = 11; TBWorld.state.me.fx = 3; TBWorld.state.me.fy = 11;")
+    # (the iso camera follows you, so start mid-town where the door is still on screen, five steps away)
+    pg.evaluate("TBWorld.state.me.x = 4; TBWorld.state.me.y = 7; TBWorld.state.me.fx = 4; TBWorld.state.me.fy = 7;"); pg.wait_for_timeout(100)
     tap(pg, 5, 2); pg.wait_for_timeout(5000)
     assert 'Walk outside' in pg.inner_text('#story'), 'walking onto the door hard-locked: ' + pg.inner_text('#story')[:120]
     print('walk onto door → depot ok')
@@ -58,7 +58,8 @@ with sync_playwright() as p:
     print('after back-room win:', pg.inner_text('#story')[:100].replace('\n', ' | '))
     pg.click('[data-s="hub"]'); pg.wait_for_timeout(900)
     # train → map
-    tap(pg, 3, 12); assert wait_box(pg); pg.click('[data-wc="0"]'); pg.wait_for_timeout(1500)
+    # any train car will do; the iso camera only shows part of the train from the depot door
+    car = next(x for x in range(12) if pg.evaluate(f'TBWorld.tapPoint({x}, 12)')); tap(pg, car, 12); assert wait_box(pg); pg.click('[data-wc="0"]'); pg.wait_for_timeout(1500)
     assert 'Where to?' in pg.inner_text('#story'), pg.inner_text('#story')[:200]
     print('train → map ok; scroll', pg.evaluate('document.documentElement.scrollWidth'))
     b.close()
