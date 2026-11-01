@@ -6,6 +6,22 @@ Newest on top. Each entry covers **what's new** for players, **next up** for the
 
 ---
 
+## P2.2 · Nov 1, 2026 · Zach (with Claude)
+
+### What's new
+- **New track:** melodic house with a synthwave color at 122 BPM in A minor, replacing the harder track. A warm rolling bassline, wide pumping chords, glassy arpeggios and a hook for the drop that plays once more on the way out.
+- **The song follows the street:** a soft filtered intro with rain and crackle, chords opening through the build, a sweep and snare roll up the riser with the kick out for the last bar, everything at the drop, and a warm cooldown.
+
+### Next up
+- [ ] @Zach: listen through. Is the hook catchy enough to hum, and does the drop lift? Tune it in the `neon` entry of `TRACKS` in `ui.js`.
+- [ ] Each district gets its own track: add an entry to `TRACKS` with new chords, roots, arp and hook. Only one street exists so far, so only one track does.
+
+### Watch out
+- [ ] Nobody at Claude can hear this. Levels and audio errors were checked; the actual sound wasn't.
+- [ ] The hook and chords were written for this game and no samples are used, but nobody has compared the hook against real songs. Am, F, C, G is a very common chord loop, so have someone listen before any commercial release.
+- [ ] Rain and crackle are noise-based and may vanish on phone speakers.
+- [ ] This adds an echo and a room reverb to the audio chain. Not measured on a phone.
+
 ## P2.1 · Oct 31, 2026 · Zach (with Claude)
 
 ### What's new
