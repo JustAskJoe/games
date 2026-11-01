@@ -6,6 +6,29 @@ Newest on top. See the repo's CLAUDE.md for how patch notes work.
 
 ---
 
+## v3 rev 2 balance report · 2026-11-01 · Balance agent for Hunter (with Claude)
+The Balance agent's first pass (JOB: report): `design/balance-report-2026-11-01.md`. Built on `e55bce7`, the CardGen rebalance. Nothing in the game changed.
+
+### What's new
+- Nothing player-facing. The sim at `e55bce7`, 200 runs: careful +222%, noupgrades +162%, lazy +99%, greedy +127%, paranoid +50%, naive +111%, sloppy −120%. Careful beats sloppy 97%. `build-and-test.py --quick`: ALL GOOD.
+
+### Next up
+- [ ] @Hunter: answer the report's 4 questions (upgrade ceiling, schemer bounty size, era target vs economy, OK to add sim bots and lines). Then run the Balance agent with JOB: tune.
+- [ ] Add `floorOnly` and `backOnly` bots plus "floor full on day N", "sales lost to fetch walkouts" and repack-payoff lines to `sim.js`, so those targets get measured (needs Hunter's OK).
+
+### Watch out
+- [ ] @Hunter: Loupe upgrades are worth +60 points at day 10 but −6 at day 5 (191 at `bf6d612`). Band floor 5, no ceiling. The value comes late and depends on when the Spectrometer is bought: at 140₵ they're worth +37, at 210₵ +3.
+- [ ] @Hunter: cash-flow trap is late. Ever on a tab: noupgrades 28%, lazy 41%, naive 44%, paranoid 69%. Tabs open on days 8–9 (rent 100–120). Rent 90/95/100 on days 8–10 lowers end-of-run tabs to 11 / 19 / 26 / 44%. More start cash doesn't help.
+- [ ] Repacks are dead in the sim. The sorter is bought in 2% of careful runs, and a forced repack bot sold 0 of 48 repacks. A repack's value counts its bulk at 0.4₵ a card, below loose bulk's 1₵. Cause not confirmed; the "+20% over loose" target can't be measured.
+- [ ] Vintage is 23% of incoming cards and 52% of value (target 10% / 35%). Lowering estate vintage weights to 25/45/30 gives 15% / 42% but costs careful 49 points. The target fights the 150% careful floor.
+- [ ] The schemer bounty is 18₵ vs a ~70–90₵ day (target: about a day's profit). A 60₵ bounty adds 40–60 points to every honest bot.
+- [ ] Unlocked-case theft is 0.56 a night (target ~1 a day). A 1.0 roll gives 0.94 a night and greedy 12% (band 5–15% holds).
+- [ ] Distraction thieves succeed 100% of the time on an unwatched fetch (target ~70%). There's no roll in the code.
+- [ ] Not measured: floor-only full by day 4, fetch-everything loses ~15%. Proxies are in the report.
+- [ ] Noise: unrelated one-line changes move medians about ±10 points and tabs about ±6 at 200 runs. Don't trust a tuning effect under 10 points.
+
+---
+
 ## v3 rev 2.1 · 2026-11-01 · Hunter (with Claude): a new shop, setup before you open, the floor at the counter, the card generator
 Fixes from Hunter's playtest: the grid has to feed the day. It's set up before you open and used while you sell.
 
