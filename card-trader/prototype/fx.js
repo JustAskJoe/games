@@ -29,14 +29,15 @@ function loop() {
 }
 function kick() { if (!raf) raf = requestAnimationFrame(loop); }
 // A spray-paint pass left to right across a band: soft dots, overspray and a few drips.
-function spray(cx, cy, width, colors) {
-  const steps = 46;
+// ms sets the pace per step (46 steps); 14 is a quick pass, 26 matches a slower tag reveal.
+function spray(cx, cy, width, colors, ms) {
+  const steps = 46; ms = ms || 14;
   for (let i = 0; i < steps; i++) setTimeout(() => {
     const x = cx + (i / steps) * width, c = colors[i % colors.length];
     for (let k = 0; k < 14; k++) parts.push({ kind: 'dot', x: x + (Math.random() - 0.5) * 30, y: cy + (Math.random() - 0.5) * 60, vx: (Math.random() - 0.5) * 0.6, vy: (Math.random() - 0.5) * 0.6, g: 0, drag: 0.96, s: Math.random() * 2.4 + 0.6, c, life: 50 + Math.random() * 30, fade: 25 });
     if (i % 9 === 4) { const y = cy + 20; parts.push({ kind: 'drip', x, y, y0: y, vx: 0, vy: 0.9, g: 0.02, drag: 1, s: 2, c, life: 70, fade: 20 }); }
     kick();
-  }, i * 14);
+  }, i * ms);
 }
 // A burst of sparks and confetti from a point.
 function burst(x, y, n, colors, speed) {
