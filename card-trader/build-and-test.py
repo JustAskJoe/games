@@ -9,7 +9,9 @@ doesn't reach the end screen, or scrolls sideways.
 Pass band (v2, 5-day week): the careful bot grows the shop at least 150%, beats the sloppy bot in 90%+ of seeds,
 and the Loupe upgrades are worth at least 5 points of growth over the same bot without them.
 v3 (the Back Room): an organized back room beats a lazy one by 30+ points, the greedy bot (grails in an unlocked case)
-loses 5-15% of its final value to theft, and the display case makes 25-45% of the careful bot's single sales.
+loses 5-15% of its final value to theft, and walk-up browsers make 25-45% of the careful bot's single sales.
+v3 rev 2 (10-day run): a paranoid bot (security on anyone with a tell) ends a star or more below the organized one,
+and a naive bot (never watches anyone) loses 10%+ of its final value to theft.
 © 2026 justaskjoe. All rights reserved.
 """
 import pathlib, re, shutil, subprocess, sys
@@ -39,7 +41,11 @@ if shutil.which('node'):
     theft = re.search(r'^greedy\s+back room:.*?stolen [\d.]+ \([^,]*, (\d+)% of final\)', r.stdout, re.M)
     if not theft or not 5 <= int(theft.group(1)) <= 15: fails.append('balance: greedy theft outside 5-15%')
     disp = re.search(r'^careful\s+back room:.*?display (\d+)% of singles', r.stdout, re.M)
-    if not disp or not 25 <= int(disp.group(1)) <= 45: fails.append('balance: display case share outside 25-45%')
+    if not disp or not 25 <= int(disp.group(1)) <= 45: fails.append('balance: browser share outside 25-45%')
+    stars = {m.group(1): float(m.group(2)) for m in re.finditer(r'^(\w+)\s+back room:.*?rating ([\d.]+)', r.stdout, re.M)}
+    if stars.get('paranoid', 5) >= stars.get('noupgrades', 0) - 1: fails.append('balance: calling security on everyone should cost a star or more of rating')
+    naive = re.search(r'^naive\s+back room:.*?stolen [\d.]+ \([^,]*, (\d+)% of final\)', r.stdout, re.M)
+    if not naive or int(naive.group(1)) < 10: fails.append('balance: ignoring thieves should cost 10%+ of final value')
 else:
     print('!! node not found: install Node 18+ to run the sim'); fails.append('node')
 
