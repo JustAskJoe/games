@@ -788,7 +788,8 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     A.ctx = new C({ latencyHint: 'interactive' });
     const comp = A.ctx.createDynamicsCompressor(); comp.threshold.value = -14; comp.ratio.value = 8; comp.attack.value = 0.004; comp.release.value = 0.12;
     A.out = A.ctx.createGain(); A.out.gain.value = U.muted ? 0 : 0.7; A.out.connect(comp); comp.connect(A.ctx.destination);
-    A.sfx = A.ctx.createGain(); A.sfx.gain.value = 0.7; A.sfx.connect(A.out);
+    A.sfx = A.ctx.createGain(); A.sfx.gain.value = 1; A.sfx.connect(A.out);
+    A.shots = A.ctx.createGain(); A.shots.gain.value = 1.8; A.shots.connect(A.sfx);   // one dial for how loud gunfire sits against the song
     const len = A.ctx.sampleRate, b = A.ctx.createBuffer(1, len, A.ctx.sampleRate), d = b.getChannelData(0);
     for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
     A.noise = b; return A.ctx;
@@ -902,12 +903,26 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   }
   // sound effects play right away on the sfx bus (gates already land on the beat)
   function sfx(kind) { try { sfx0(kind); } catch (e) {} }
+  // every gun has its own shot, on the same eighth notes as the song. Quieter than a gate, and under the kick
+  function shot(t, d) {
+    const w = U.G.weapon, M = U.G.mod, sweep = (type, a, b, dur, v, cut) => { const o = X().createOscillator(), f = X().createBiquadFilter(); o.type = type; o.frequency.setValueAtTime(a, t); o.frequency.exponentialRampToValueAtTime(b, t + dur); f.type = 'lowpass'; f.frequency.value = cut || 6000; o.connect(f); f.connect(envG(t, 0.002, v, dur, d)); o.start(t); o.stop(t + dur + 0.04); };
+    const hiss = (type, fr, q, dur, v) => { const n = noiseSrc(t, dur + 0.04), f = X().createBiquadFilter(); f.type = type; f.frequency.value = fr; f.Q.value = q; n.connect(f); f.connect(envG(t, 0.002, v, dur, d)); };
+    if (w === 'pulse') sweep('square', 1500, 420, 0.06, 0.1);
+    else if (w === 'arc') { hiss('bandpass', M === 1 ? 5200 : 3400, 6, 0.08, 0.3); sweep('sawtooth', 2400, 900, 0.07, M === 0 ? 0.11 : 0.07); }
+    else if (w === 'scatter') { hiss('lowpass', M === 1 ? 4200 : 2600, 0.7, M === 0 ? 0.09 : 0.06, M === 0 ? 0.3 : 0.22); sweep('square', 240, 90, 0.05, 0.1); }
+    else if (w === 'rail') { sweep('sawtooth', M === 0 ? 1500 : 2600, 130, 0.17, 0.13, 4200); hiss('highpass', 5000, 0.7, 0.05, 0.1); }
+    else if (w === 'rocket') { sweep('sine', 210, 50, 0.16, 0.34); hiss('bandpass', M === 1 ? 2200 : 1100, 1.2, 0.14, 0.14); }
+  }
+  // the song dips for a moment so a gate is always heard
+  function duck(t) { if (!A.bus) return; const g = A.bus.gain; g.cancelScheduledValues(t); g.setValueAtTime(1, t); g.linearRampToValueAtTime(0.55, t + 0.02); g.linearRampToValueAtTime(1, t + 0.32); }
   function sfx0(kind) {
     if (!A.ctx || A.ctx.state !== 'running') return;
     const t = A.ctx.currentTime + 0.01, d = A.sfx;
-    if (kind === 'good') { osc('triangle', 659.3, t, 0.12, envG(t, 0.004, 0.12, 0.12, d)); osc('triangle', 880, t + 0.07, 0.18, envG(t + 0.07, 0.004, 0.12, 0.18, d)); }
-    else if (kind === 'bad') { const o = X().createOscillator(); o.type = 'sawtooth'; o.frequency.setValueAtTime(220, t); o.frequency.exponentialRampToValueAtTime(90, t + 0.3); const f = X().createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 900; o.connect(f); f.connect(envG(t, 0.005, 0.12, 0.3, d)); o.start(t); o.stop(t + 0.4); }
-    else if (kind === 'kill') { if (t - (A.lastKill || 0) < 0.05) return; A.lastKill = t; osc('square', [880, 1046.5, 1318.5, 1568][(Math.random() * 4) | 0], t, 0.05, envG(t, 0.002, 0.025, 0.05, d)); }
+    if (kind === 'good' || kind === 'bad') duck(t);
+    if (kind === 'good') { const n = noiseSrc(t, 0.22), f = X().createBiquadFilter(); f.type = 'bandpass'; f.Q.value = 1.2; f.frequency.setValueAtTime(700, t); f.frequency.exponentialRampToValueAtTime(5200, t + 0.18); n.connect(f); f.connect(envG(t, 0.01, 0.22, 0.2, d)); [659.3, 880, 1318.5].forEach((fr, i) => osc('square', fr, t + i * 0.055, 0.14, envG(t + i * 0.055, 0.003, 0.13, 0.15, d))); }
+    else if (kind === 'bad') { const o = X().createOscillator(); o.type = 'sawtooth'; o.frequency.setValueAtTime(220, t); o.frequency.exponentialRampToValueAtTime(90, t + 0.3); const f = X().createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 1400; o.connect(f); f.connect(envG(t, 0.005, 0.3, 0.3, d)); o.start(t); o.stop(t + 0.4); }
+    else if (kind === 'kill') { if (t - (A.lastKill || 0) < 0.05) return; A.lastKill = t; osc('square', [880, 1046.5, 1318.5, 1568][(Math.random() * 4) | 0], t, 0.05, envG(t, 0.002, 0.04, 0.05, d)); }
+    else if (kind === 'shot') shot(t, A.shots);
     else if (kind === 'runner') osc('triangle', 1318.5, t, 0.08, envG(t, 0.002, 0.06, 0.08, d));
     else if (kind === 'hurt') { const n = noiseSrc(t, 0.15), f = X().createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 500; n.connect(f); f.connect(envG(t, 0.002, 0.25, 0.14, d)); }
     else if (kind === 'weapon') [659.3, 880, 1046.5, 1318.5].forEach((fr, i) => osc('square', fr, t + i * 0.06, 0.1, envG(t + i * 0.06, 0.003, 0.05, 0.1, d)));
@@ -988,6 +1003,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       const sq = R.project(G.sx, 0), sx = sq.x, sy = sq.y;
       if (e.type === 'volley') {
         if (e.hits.length) {
+          sfx('shot');
           const tg = []; for (const id of e.hits.slice(0, 8)) { const en = G.ents.find(q => q.id === id); if (en) tg.push({ x: en.x, z: Math.max(0.05, en.ta - G.t), y: en.kind === 'boss' ? 3.8 : 1.1 }); }
           R.volley({ weapon: G.weapon, mod: G.mod, lv: G.wlv, col: GR.WEAPONS[G.weapon].col, oc: G.oc.on, x: G.sx, w: GR.width(G.n), t: tg });
         }
