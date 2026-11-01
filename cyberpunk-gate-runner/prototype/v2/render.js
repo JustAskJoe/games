@@ -15,6 +15,7 @@
   // road accents), arch the street arches, far scales the skyline, rain thins the rain, haze pulls the fog closer. Nothing here rebuilds the city
   const PALS = {
     market: { fog: '#1C0B3E', tone: ['#241038', '#160E44', '#2E1236'], a: [0.26, 0.11, 1], b: [1, 0.46, 0.06], arch: [COL.violet, COL.gold], far: 1, rain: 1, haze: 1 },
+    yards: { fog: '#06242A', tone: ['#0B2C30', '#0A2038', '#2A2410'], a: [0.05, 0.55, 0.6], b: [1, 0.62, 0.1], arch: ['#2FD6C4', '#FFB547'], far: 0.6, rain: 0.5, haze: 1 },
   };
 
   // ---------- geometry helpers: non-indexed parts merged into one mesh, with colour and glow per vertex ----------

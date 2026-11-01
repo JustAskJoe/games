@@ -27,8 +27,11 @@
     { name: 'Night Market', bpm: 122, track: 'neon', pal: 'market', start: [3, 3], wlvCap: 2, fight: 4, drop: 8,
       gates: { add: 0.4, mul: 1.25, trade: 1.5 }, hp: 0.5, bite: 0.6, dens: 0.8, walls: W0.concat([[20, 22, 18], [22, 22, 18]]),
       boss: { id: 'enforcer', hp: 8750, contact: 60, loss: 0.15, slams: [1, 2, 3] } },
+    { name: 'Signal Yards', bpm: 124, track: 'yards', pal: 'yards', start: [32, 40], wlvCap: 3, fight: 6, drop: 10,
+      gates: { add: 0.5, mul: 1.25, trade: 1.5 }, hp: 0.8, bite: 0.8, dens: 0.9, walls: W0.concat([[20, 18, 16], [22, 18, 16], [24, 18, 16]]),
+      boss: { id: 'carrier', hp: 37500, contact: 60, podHp: 900, open: 2, dive: 3 } },
   ];
-  const MAX_LEVEL = 1;   // the last street the game offers. levelDef() already makes streets past the table: raise this to open them
+  const MAX_LEVEL = 2;   // the last street the game offers. levelDef() already makes streets past the table: raise this to open them
   // past the table the streets cycle: same boss, look and song order, a key shift, and every number scaled by how far past the table you are
   function levelDef(n) {
     const i = n - 1; if (i < LEVELS.length) return Object.assign({ n }, LEVELS[i]);
@@ -52,6 +55,17 @@
     // dodge: a fist comes down on one half of the road, and that half glows first
     enforcer: { name: 'HUSH ENFORCER', tip: 'Dodge the glowing side. Melt the boss', lose: 'Step off the glowing side before the fist lands, and build Overclock for the drop.', win: 'The Enforcer melted on the drop.',
       setup(S, b) { for (const k of b.slams) { const s = S.r() < 0.5 ? -1 : 1; S.add('haz', S.at(DROP_BAR + k, 0), 0, { x0: s < 0 ? -1 : 0, x1: s < 0 ? 0 : 1, warn: 1.1, loss: b.loss, style: 'slam' }); } } },
+    // target priority: the core can't be hurt until both pods are down, and the pods grow back
+    carrier: { name: 'MUTE CARRIER', tip: 'Shoot both speaker pods to open the core', lose: 'The core is armored. Steer left and right to shoot both pods, then hit the middle while it\'s open.', win: 'The Carrier fell out of the sky.',
+      setup(S, b, e) {
+        for (const s of [-1, 1]) S.add('pod', e.ta, s * 0.72, { hp: b.podHp, maxHp: b.podHp, w: 0.08 });
+        for (let k = 1; k < S.def.fight; k += 1) for (let i = 0; i < b.dive; i++) S.add('drone', S.at(DROP_BAR + k, i), S.r() * 1.2 - 0.6, { hunt: 0.5 });
+      },
+      init(G, st, e) { st.pods = G.ents.filter(q => q.kind === 'pod'); st.open = false; e.armor = true; },
+      tick(G, b, e, st) {
+        if (st.open) { if (G.t >= st.until) { st.open = false; e.armor = true; for (const p of st.pods) { p.done = false; p.hp = p.maxHp; } G.ev.push({ type: 'armor', t: G.t, on: true }); } }
+        else if (st.pods.every(p => p.done)) { st.open = true; st.until = G.t + b.open * BAR; e.armor = false; G.ev.push({ type: 'armor', t: G.t, on: false }); }
+      } },
   };
   // one gate every 2 bars from bar 4 to 18. Each run deals the slots from these pools (seeded), so two different kinds
   // always face each other: +N beats x1.5 while the squad is small, fire rate beats both once it's big, Overclock trades
