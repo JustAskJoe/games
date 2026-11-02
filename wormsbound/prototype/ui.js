@@ -1,7 +1,8 @@
 /* Wormsbound Prototype 1 · local hotseat UI. © 2026 justaskjoe. All rights reserved.
    Draws the engine (window.WB) on one 1280×720 canvas and turns mouse, touch and keyboard into act() intents.
    The UI never changes the game itself: it only calls WB.act() and steps WB.step() on the clock.
-   Best-of-3 rounds, alternating who shoots first. Placeholder art, all drawn in code. */
+   Each team picks one of five characters first (WB.CHARS), then best-of-3 rounds, alternating who shoots first.
+   Placeholder art, all drawn in code. */
 (function () {
   'use strict';
   const WB = window.WB;
@@ -25,12 +26,13 @@
   const bgCv = document.createElement('canvas'); bgCv.width = W; bgCv.height = H; const bctx = bgCv.getContext('2d');
 
   const ui = {
-    screen: 'title', G: null, matchSeed: 0, round: 1, wins: [0, 0], aim: {}, weapon: 'shell', lob: false,
+    screen: 'title', G: null, matchSeed: 0, round: 1, wins: [0, 0], aim: {}, weapon: 'shot1', lob: false, picks: [null, null], pickTeam: 0, cursor: 2,
     drag: null, acc: 0, last: 0, slow: 0, shake: 0, parts: [], trails: {}, scorch: [], clouds: [], dust: [], pops: [],
     tLeft: TURN_SECONDS, timerOn: lsGet('wb-timer') !== 'off', sound: lsGet('wb-sound') !== 'off', coach: lsGet('wb-coach') !== 'off',
     fast: false, tester: false, overAt: 0, turnsSeen: 0, paused: false, fb: { q: {}, text: '', nm: '', saved: null },
   };
   const unitName = (u) => { const i = ui.G.units.filter((x) => x.team === u.team).indexOf(u); return TEAMS[u.team].names[i] || 'Unit'; };
+  const charName = (t) => WB.CHARS[ui.G.chars[t]].name;
 
   // ---------- stage fit ----------
   function fit() {
@@ -154,6 +156,25 @@
         if (!reduced) ui.shake = Math.min(26, ui.shake + e.r * 3.5);
         SFX.boom(e.r);
       } else if (e.k === 'splash') { burst(e.x * CELL, e.y * CELL, 18, 'drop'); SFX.splash(); }
+      else if (e.k === 'bolt') {
+        const x = e.x * CELL, gy = WB.surfaceY(ui.G, e.x) * CELL;
+        ui.parts.push({ x, y: gy, t: 0, life: 0.45, kind: 'bolt', seed: Math.random() * 1000 });
+        ui.parts.push({ x, y: gy, t: 0, life: 0.2, kind: 'flash', size: 70 });
+        burst(x, gy, 14, 'spark'); if (!reduced) ui.shake = Math.min(26, ui.shake + 8);
+        noise(0.35, 6000, 800, 0.3); tone(1800, 200, 0.25, 0.12, 'sawtooth');
+        for (const id of e.hits) { const u = ui.G.units.find((v) => v.id === id); if (u) ui.pops.push({ x: u.x * CELL, y: u.y * CELL - 50, t: 0, text: 'ZAP!', c: '#8FD8FF' }); }
+      }
+      else if (e.k === 'quake') {
+        if (!reduced) ui.shake = Math.min(34, ui.shake + 22);
+        noise(1.1, 300, 40, 0.5); tone(55, 30, 0.9, 0.4);
+        for (let x = 40; x < W; x += 80) burst(x, WB.surfaceY(ui.G, x / CELL) * CELL, 3, 'chunk');
+        for (const id of e.hits) { const u = ui.G.units.find((v) => v.id === id); if (u) { burst(u.x * CELL, u.y * CELL, 10, 'smoke'); ui.pops.push({ x: u.x * CELL, y: u.y * CELL - 50, t: 0, text: 'QUAKE!', c: '#FFB86B' }); } }
+      }
+      else if (e.k === 'tornado') {
+        ui.parts.push({ x: e.x * CELL, y: e.y * CELL, t: 0, life: 1.1, kind: 'swirl' });
+        noise(1.0, 2500, 300, 0.3); if (!reduced) ui.shake = Math.min(26, ui.shake + 10);
+        ui.pops.push({ x: e.x * CELL, y: e.y * CELL - 60, t: 0, text: 'TORNADO!', c: '#7BE07A' });
+      }
       else if (e.k === 'dud') { SFX.thunk(); ui.pops.push({ x: e.x * CELL, y: e.y * CELL - 22, t: 0, text: 'LIVE DUD!', c: '#FFD34D' }); }
       else if (e.k === 'ko') {
         const u = ui.G.units.find((x) => x.id === e.id);
@@ -165,8 +186,10 @@
   }
   function onTurn() {
     const G = ui.G, u = WB.current(G); if (!u) return;
-    ui.tLeft = TURN_SECONDS; ui.lob = false; ui.weapon = 'shell'; ui.turnsSeen++;
-    banner(`${TEAMS[G.team].name}`, `${unitName(u)}'s turn`);
+    const ss = WB.ssReady(G);
+    ui.tLeft = TURN_SECONDS; ui.lob = false; ui.weapon = ss ? 'ss' : 'shot1'; ui.turnsSeen++;
+    banner(`${TEAMS[G.team].name}`, `${unitName(u)} · ${charName(G.team)}${ss ? ' · SS READY!' : ''}`);
+    if (ss) tone(660, 990, 0.25, 0.12, 'triangle');
     renderHUD(); renderCtl(); coachLine();
   }
   function banner(big, small) {
@@ -227,6 +250,14 @@
     if (e.target && /INPUT|TEXTAREA/.test(e.target.tagName)) return;
     const k = e.key;
     if (ui.screen === 'end' && (k === 'r' || k === 'R')) { startMatch(); return; }
+    if (ui.screen === 'select') {
+      const n = WB.CHAR_IDS.length;
+      if (k === 'ArrowLeft' || k === 'a' || k === 'A') { ui.cursor = (ui.cursor + n - 1) % n; selectScreen(ui.pickTeam); }
+      else if (k === 'ArrowRight' || k === 'd' || k === 'D') { ui.cursor = (ui.cursor + 1) % n; selectScreen(ui.pickTeam); }
+      else if (k === 'Enter' || k === ' ') { e.preventDefault(); choose(WB.CHAR_IDS[ui.cursor]); }
+      else if (/^[1-5]$/.test(k)) choose(WB.CHAR_IDS[+k - 1]);
+      return;
+    }
     if (k === 'Escape' || k === 'p' || k === 'P') { if (ui.screen === 'game') { e.preventDefault(); toggleMenu(); } return; }
     if (!canAct()) return;
     const a = aimOf(WB.current(ui.G)), fine = e.shiftKey ? 0.5 : 2;
@@ -237,20 +268,22 @@
     else if (k === 'q' || k === 'Q') a.power = clamp(Math.round((a.power - 0.02) * 100) / 100, 0.05, 1);
     else if (k === 'e' || k === 'E') a.power = clamp(Math.round((a.power + 0.02) * 100) / 100, 0.05, 1);
     else if (k === 'f' || k === 'F') { a.angle = 180 - a.angle; }
-    else if (k === '1' || k === '2' || k === '3') pickWeapon(['shell', 'cluster', 'dud'][+k - 1]);
+    else if (k === '1') pickWeapon(WB.ssReady(ui.G) ? 'ss' : 'shot1');
+    else if (k === '2' || k === '3') pickWeapon(WB.WEAPON_IDS[+k - 1]);
     else if (k === 'l' || k === 'L') toggleLob();
     else if (k === ' ' || k === 'Enter') { e.preventDefault(); doFire(); }
     else if (k === 'x' || k === 'X') pass();
   });
-  function pickWeapon(w) { if (!canAct() || ui.G.ammo[ui.G.team][w] === 0) return; ui.weapon = w; ui.lob = false; SFX.click(); renderCtl(); coachLine(); }
+  function pickWeapon(w) { if (!canAct() || (w === 'ss' ? !WB.ssReady(ui.G) : ui.G.ammo[ui.G.team][w] === 0)) return; ui.weapon = w; ui.lob = false; SFX.click(); renderCtl(); coachLine(); }
   function toggleLob() { if (!canAct() || !WB.lobbable(ui.G).length) return; ui.lob = !ui.lob; SFX.click(); renderCtl(); coachLine(); }
 
   // ---------- HUD and controls (DOM) ----------
   function renderHUD() {
     const G = ui.G; if (!G) { $('#hud').innerHTML = ''; return; }
     const side = (t) => {
-      const us = G.units.filter((u) => u.team === t), hp = us.reduce((a, u) => a + Math.max(0, u.hp), 0), max = us.length * WB.HP;
-      return `<div class="team ${TEAMS[t].key}${t ? ' r' : ''}"><div><div class="nm">${TEAMS[t].name}</div><div class="bar"><i style="width:${(100 * hp / max).toFixed(1)}%"></i></div></div>
+      const us = G.units.filter((u) => u.team === t), hp = us.reduce((a, u) => a + Math.max(0, u.hp), 0), max = us.reduce((a, u) => a + u.maxHp, 0);
+      return `<div class="team ${TEAMS[t].key}${t ? ' r' : ''}"><div><div class="nm">${TEAMS[t].name} <span style="font-size:17px;opacity:.85">· ${esc(charName(t))}</span></div><div class="bar"><i style="width:${(100 * hp / max).toFixed(1)}%"></i></div></div>
+        <div class="ssm${WB.ssReady(G, t) ? ' on' : ''}" title="SS charge: ready every ${WB.SS_CHARGE} turns"><span>SS</span>${Array.from({ length: WB.SS_CHARGE }, (_, i) => `<b class="${G.ss[t] > i ? 'f' : ''}"></b>`).join('')}</div>
         <div class="pips" title="rounds won">${Array.from({ length: Math.ceil(BEST_OF / 2) }, (_, i) => `<b class="${ui.wins[t] > i ? 'on' : ''}"></b>`).join('')}</div></div>`;
     };
     const w = G.wind, arrows = Math.round(Math.abs(w) / WB.WIND_MAX * 4);
@@ -261,11 +294,12 @@
     const G = ui.G; $('#bMenu').hidden = !G || ui.screen !== 'game';
     if (!G || ui.screen !== 'game') { $('#ctl').innerHTML = ''; return; }
     const aim = G.phase === 'aim', am = G.ammo[G.team], lob = WB.lobbable(G).length > 0;
-    const wb = (w, key) => `<button class="btn wpn${ui.weapon === w && !ui.lob ? '' : ' ghost'}" type="button" data-w="${w}" aria-pressed="${ui.weapon === w && !ui.lob}" ${!aim || am[w] === 0 ? 'disabled' : ''}>${WB.WEAPONS[w].name}<small>${key} · ${am[w] < 0 ? '∞' : am[w] + ' left'}</small></button>`;
+    const wb = (w, key) => { const S = WB.shotSpec(G, G.team, w);
+      return `<button class="btn wpn${ui.weapon === w && !ui.lob ? '' : ' ghost'}" type="button" data-w="${w}" aria-pressed="${ui.weapon === w && !ui.lob}" title="${esc(S.desc)}" ${!aim || am[w] === 0 ? 'disabled' : ''}>${esc(S.name)}<small>${key} · ${am[w] < 0 ? '∞' : am[w] + ' left'}</small></button>`; };
     $('#ctl').innerHTML = `<button class="btn ghost" type="button" data-walk="-1" aria-label="Walk left" ${aim && G.moves ? '' : 'disabled'}>◀</button>
       <span class="steps">${G.moves} steps</span>
       <button class="btn ghost" type="button" data-walk="1" aria-label="Walk right" ${aim && G.moves ? '' : 'disabled'}>▶</button>
-      ${wb('shell', '1')}${wb('cluster', '2')}${wb('dud', '3')}
+      ${WB.ssReady(G) ? `<button class="btn wpn ss${ui.weapon === 'ss' && !ui.lob ? '' : ' dim'}" type="button" data-w="ss" aria-pressed="${ui.weapon === 'ss' && !ui.lob}" title="${esc(WB.shotSpec(G, G.team, 'ss').desc)}" ${aim ? '' : 'disabled'}>SS · ${esc(WB.shotSpec(G, G.team, 'ss').name)}<small>1 · ready</small></button>` : wb('shot1', '1')}${wb('shot2', '2')}${wb('dud', '3')}
       <button class="btn teal" type="button" data-act="lob" aria-pressed="${ui.lob}" ${aim && lob ? '' : 'disabled'} title="Pick up a live dud in reach (L)">LOB</button>
       <button class="btn fire" type="button" data-act="fire" ${aim ? '' : 'disabled'}>FIRE</button>
       <button class="btn ghost sm" type="button" data-act="pass" ${aim ? '' : 'disabled'} title="End your turn (X)">Skip</button>`;
@@ -273,14 +307,16 @@
   function coachLine() {
     const el = $('#coach'); if (!ui.coach || ui.screen !== 'game' || !ui.G) { el.innerHTML = ''; return; }
     const G = ui.G, u = WB.current(G); if (!u || G.phase !== 'aim') { el.innerHTML = ''; return; }
-    const danger = G.duds.find((d) => d.fuse <= 1 && Math.hypot(d.x - u.x, d.y - u.y) < WB.WEAPONS.dud.r * 1.6);
+    const danger = G.duds.find((d) => d.fuse <= 1 && Math.hypot(d.x - u.x, d.y - u.y) < WB.DUD.r * WB.DMG_SPREAD);
     let t;
     if (danger && WB.lobbable(G).includes(danger)) t = '<b>That dud blows at the end of this turn!</b> Tap LOB (L), then drag to throw it away.';
     else if (danger) t = '<b>That dud blows at the end of this turn!</b> Walk away with ◀ ▶, or lob it if you can reach it.';
     else if (ui.lob) t = 'Lob armed: drag back from your unit and let go to throw the dud. It keeps its countdown.';
     else if (WB.lobbable(G).length) t = 'A <b>live dud</b> is in reach. Tap <b>LOB</b> (L) to throw it at them instead of firing.';
     else if (ui.turnsSeen <= 2) t = '<b>Drag back</b> from your glowing unit and <b>let go</b> to fire. Further back = more power. Watch the wind.';
-    else if (ui.turnsSeen <= 4) t = 'Keys: <b>◀ ▶</b> walk · <b>▲ ▼</b> angle · <b>Q/E</b> power · <b>1 2 3</b> weapons · <b>Space</b> fire.';
+    else if (ui.turnsSeen <= 4) t = 'Keys: <b>◀ ▶</b> walk · <b>▲ ▼</b> angle · <b>Q/E</b> power · <b>1 2 3</b> shots · <b>Space</b> fire.';
+    else if (ui.weapon === 'ss') t = `<b>SS ready: ${esc(WB.shotSpec(G, G.team, 'ss').name)}!</b> ${esc(WB.shotSpec(G, G.team, 'ss').desc)} It replaces Shot 1 until you use it.`;
+    else if (ui.weapon === 'shot2') t = `<b>${esc(WB.shotSpec(G, G.team, 'shot2').name)}:</b> ${esc(WB.shotSpec(G, G.team, 'shot2').desc)} (${G.ammo[G.team].shot2} left this match)`;
     else if (ui.weapon === 'dud') t = 'A live dud lands and ticks for <b>3 turns</b>. Anyone close can lob it back, so drop it where they can\'t reach.';
     else t = '';
     el.innerHTML = t;
@@ -293,14 +329,45 @@
     <div><b>1 · Aim</b>Drag back from your glowing unit and let go. Further back is more power.</div>
     <div><b>2 · Wind</b>The arrow up top pushes every shot. It changes each turn.</div>
     <div><b>3 · Ground</b>Blasts carve the map. Knock them into the water or off a cliff.</div>
-    <div><b>4 · Live duds</b>A dud ticks for 3 turns. Walk up to one and LOB it back.</div></div>
-    <p class="keys">Keys: ◀ ▶ / A D walk · ▲ ▼ / W S angle (Shift = fine) · Q E power · F flip · 1 2 3 weapons · L lob · Space fire · X skip · Esc menu</p>`;
+    <div><b>4 · Live duds</b>A dud ticks for 3 turns. Walk up to one and LOB it back.</div>
+    <div style="grid-column:1/-1"><b>5 · SS (Special Shot)</b>Your character's ultimate. It charges one notch a turn (the SS meter up top) and takes over Shot 1 when it's full. Using it starts the charge again.</div></div>
+    <p class="keys">Keys: ◀ ▶ / A D walk · ▲ ▼ / W S angle (Shift = fine) · Q E power · F flip · 1 2 3 shots · L lob · Space fire · X skip · Esc menu</p>`;
   function titleScreen() {
     ui.screen = 'title'; renderCtl(); coachLine();
     show(`<div class="tag">JustAskJoe · Prototype 1 · local hotseat</div><h1>WORMSBOUND</h1>
-      <p>Two crews, one keyboard. Read the wind, blast the ground, and throw their own duds back at them. Best of three.</p>${HOW}
-      <div class="row"><button class="btn fire" type="button" data-act="start">START MATCH</button></div>`);
+      <p>Two crews, one keyboard. Pick a character each, read the wind, blast the ground, and throw their own duds back at them. Best of three.</p>${HOW}
+      <div class="row"><button class="btn fire" type="button" data-act="start">PICK CHARACTERS</button></div>`);
   }
+  // ---------- character select: each crew picks one of five ----------
+  function statBar(label, v, txt) { return `<div class="sb"><span>${label}</span><i><b style="width:${Math.round(clamp(v, 0.06, 1) * 100)}%"></b></i><em>${txt}</em></div>`; }
+  function selectScreen(team) {
+    ui.screen = 'select'; ui.pickTeam = team; ui.G = null; ui.paused = false;
+    renderHUD(); renderCtl(); coachLine();
+    const T = TEAMS[team], other = team === 1 && ui.picks[0] ? `${TEAMS[0].name} picked <b style="color:${TEAMS[0].c}">${esc(WB.CHARS[ui.picks[0]].name)}</b>. ` : '';
+    const cards = WB.CHAR_IDS.map((id, i) => {
+      const C = WB.CHARS[id];
+      return `<button class="char${i === ui.cursor ? ' cur' : ''}" type="button" data-act="pick" data-char="${id}" style="--tc:${T.c}" aria-label="${esc(C.name)}, ${esc(C.role)}">
+        <img src="${portrait(id, team)}" alt="" width="150" height="110"><span class="num">${i + 1}</span>
+        <b class="cn">${esc(C.name)}</b><span class="role">${esc(C.role)}</span>
+        ${statBar('Health', C.hp / 115, C.hp)}${statBar('Armour', (1 - C.armor) / 0.15 + 0.06, C.armor < 1 ? `−${Math.round((1 - C.armor) * 100)}%` : '–')}${statBar('Move', C.steps / 22, C.steps + ' steps')}${statBar('Wind grip', (2 - (C.shot1.wind || 1)) / 1.55, (C.shot1.wind || 1) < 1 ? 'steady' : (C.shot1.wind || 1) > 1 ? 'curvy' : 'normal')}
+        <span class="bl">${esc(C.blurb)}</span>
+        <span class="sh"><b>1 · ${esc(C.shot1.name)}</b> ${esc(C.shot1.desc)}</span>
+        <span class="sh two"><b>2 · ${esc(C.shot2.name)}</b> ${esc(C.shot2.desc)} <em>2 a match</em></span>
+        <span class="sh ss"><b>SS · ${esc(C.ss.name)}</b> ${esc(C.ss.desc)} <em>every ${WB.SS_CHARGE} turns</em></span></button>`;
+    }).join('');
+    $('#screen').innerHTML = `<div class="screen"><div class="pick" role="dialog" aria-modal="true">
+      <div class="tag">Step ${team + 1} of 2 · everyone also carries 2 Live duds</div>
+      <h2 style="color:${T.c}">${esc(T.name)}, pick your character</h2>
+      <p class="sub">${other}Both of your crew will be this character.</p>
+      <div class="chars">${cards}</div>
+      <div class="row"><button class="btn ghost sm" type="button" data-act="pickback">Back</button><span class="keys">← → choose · Enter to pick · or press 1–5</span></div></div></div>`;
+  }
+  function choose(id) {
+    if (!WB.CHARS[id] || ui.screen !== 'select') return;
+    ui.picks[ui.pickTeam] = id; SFX.click();
+    if (ui.pickTeam === 0) { ui.cursor = 2; selectScreen(1); } else startMatch();
+  }
+
   function toggleMenu() {
     if (ui.paused) { ui.paused = false; hide(); return; }
     ui.paused = true;
@@ -320,11 +387,11 @@
     const head = w < 0 ? 'Draw!' : `${TEAMS[w].name} ${done ? 'wins the match!' : `takes round ${ui.round}`}`;
     const col = w < 0 ? '#FFF3E0' : TEAMS[w].c;
     const st = G.stats;
-    ui.endHTML = `<div class="tag">${done ? 'Match over' : `Round ${ui.round} of ${BEST_OF}`}${ui.tester ? ' · TESTER' : ''}</div><h2 style="color:${col}">${esc(head)}</h2>
+    ui.endHTML = `<div class="tag">${done ? 'Match over' : `Round ${ui.round} of ${BEST_OF}`}${ui.tester ? ' · TESTER' : ''}</div><h2 style="color:${col}">${esc(head)}</h2><p style="margin:0">${esc(TEAMS[0].name)} played <b>${esc(charName(0))}</b> · ${esc(TEAMS[1].name)} played <b>${esc(charName(1))}</b></p>
       <div class="score"><span class="e">${ui.wins[0]}</span> – <span class="t">${ui.wins[1]}</span></div>
       <p>${done ? 'Last round: ' : ''}${G.turn} turns · ${st.shots} shots · ${st.lobs} lobs · ${st.dudBlasts} dud blasts${st.chains ? ` · ${st.chains} chain reaction${st.chains > 1 ? 's' : ''}` : ''}${st.drowned ? ` · ${st.drowned} splashed out` : ''}</p>
       <div class="row">${done
-        ? `<button class="btn fire" type="button" data-act="rematch">REMATCH (R)</button><button class="btn teal" type="button" data-act="feedback">Give feedback</button><button class="btn ghost" type="button" data-act="quit">Title</button>`
+        ? `<button class="btn fire" type="button" data-act="rematch">REMATCH (R)</button><button class="btn gold" type="button" data-act="pickagain">New characters</button><button class="btn teal" type="button" data-act="feedback">Give feedback</button><button class="btn ghost" type="button" data-act="quit">Title</button>`
         : `<button class="btn fire" type="button" data-act="next">${w < 0 ? 'REPLAY ROUND' : 'NEXT ROUND'}</button>`}</div>`;
     show(ui.endHTML);
   }
@@ -332,6 +399,8 @@
   // ---------- feedback (artifact db, then the site's feedback route, then copy) ----------
   const FQ = [
     { id: 'rematch', q: 'Did you want a rematch right away?', opts: ['Yes, right now', 'Maybe later', 'No'] },
+    { id: 'char', q: 'Which character was the most fun?', opts: WB.CHAR_IDS.map((c) => WB.CHARS[c].name) },
+    { id: 'fair', q: 'Did any character feel too strong or too weak?', opts: ['All felt fair', 'One was too strong', 'One was too weak'] },
     { id: 'duds', q: 'Live duds: how did they feel?', opts: ['Loved them', 'Fine', "Didn't notice", 'Annoying'] },
     { id: 'aim', q: 'Aiming with drag-and-release?', opts: ['Precise', 'OK', 'Fiddly'] },
     { id: 'read', q: 'Could you always tell whose turn it was and what was happening?', opts: ['Always', 'Mostly', 'Got lost'] },
@@ -347,11 +416,11 @@
   function feedbackText() {
     const F = ui.fb, G = ui.G;
     return ['Wormsbound P1 feedback', ...FQ.map((f) => `${f.q} ${F.q[f.id] || '–'}`), `Notes: ${F.text || '–'}`,
-      `From: ${F.nm || 'anonymous'} · score ${ui.wins[0]}-${ui.wins[1]} · seed ${ui.matchSeed}${ui.tester ? ' · TESTER' : ''}${G ? ` · last round ${G.turn} turns, ${G.stats.lobs} lobs` : ''}`].join('\n');
+      `From: ${F.nm || 'anonymous'} · ${ui.picks.join(' vs ')} · score ${ui.wins[0]}-${ui.wins[1]} · seed ${ui.matchSeed}${ui.tester ? ' · TESTER' : ''}${G ? ` · last round ${G.turn} turns, ${G.stats.lobs} lobs` : ''}`].join('\n');
   }
   async function sendFeedback() {
     const F = ui.fb; const t = $('#fbText'), n = $('#fbName'); if (t) F.text = t.value; if (n) F.nm = n.value;
-    const body = { answers: F.q, notes: F.text, name: F.nm, score: ui.wins.slice(), seed: ui.matchSeed, tester: ui.tester, build: 'P1', at: new Date().toISOString() };
+    const body = { answers: F.q, notes: F.text, name: F.nm, chars: ui.picks.slice(), score: ui.wins.slice(), seed: ui.matchSeed, tester: ui.tester, build: 'P1', at: new Date().toISOString() };
     try {
       const db = window.claude && window.claude.use ? await window.claude.use('db') : null;
       if (!db) throw new Error('no db');
@@ -366,12 +435,13 @@
   // ---------- match flow ----------
   function startRound() {
     const first = (ui.round - 1) % 2;
-    ui.G = WB.newGame((ui.matchSeed + ui.round * 7919) >>> 0, { first });
+    ui.G = WB.newGame((ui.matchSeed + ui.round * 7919) >>> 0, { first, chars: ui.picks });
     ui.aim = {}; ui.parts = []; ui.trails = {}; ui.scorch = []; ui.pops = []; ui.acc = 0; ui.slow = 0; ui.shake = 0; ui.overAt = 0; ui.paused = false;
     bakeBackground(ui.G.seed); renderTerrain();
     ui.screen = 'game'; hide(); onTurn();
   }
   function startMatch() {
+    if (!ui.picks[0] || !ui.picks[1]) { ui.cursor = 2; selectScreen(0); return; }
     ui.matchSeed = (Date.now() ^ Math.floor(Math.random() * 1e9)) >>> 0;
     if (window.__WB_SEED != null) ui.matchSeed = window.__WB_SEED >>> 0; // tests pin the seed
     ui.round = 1; ui.wins = [0, 0]; ui.tester = false; ui.fb = { q: {}, text: '', nm: '', saved: null };
@@ -390,7 +460,10 @@
       lsSet('wb-' + k, ui[k === 'timer' ? 'timerOn' : k] ? 'on' : 'off'); ui.paused = false; toggleMenu(); renderHUD(); coachLine(); return;
     }
     switch (act) {
-      case 'start': case 'rematch': startMatch(); break;
+      case 'start': case 'pickagain': ui.picks = [null, null]; ui.cursor = 2; selectScreen(0); break;
+      case 'rematch': startMatch(); break;
+      case 'pick': choose(b.dataset.char); break;
+      case 'pickback': if (ui.pickTeam === 1) { ui.picks[0] = null; selectScreen(0); } else titleScreen(); break;
       case 'next': ui.round += ui.G.winner >= 0 ? 1 : 0; startRound(); break;
       case 'fire': doFire(); break;
       case 'lob': toggleLob(); break;
@@ -416,6 +489,62 @@
   addEventListener('pointerup', stopWalk); addEventListener('pointercancel', stopWalk); addEventListener('blur', stopWalk);
 
   // ---------- drawing ----------
+  // One crewmate: team-coloured body (who's who at a glance) plus the character's own headgear (what they can do).
+  function drawBody(c, x, y, R, team, ch, face, t, bob) {
+    const T = TEAMS[team], k = R / 12, cy = y - R + bob, f = face || 1;
+    c.lineJoin = 'round'; c.lineCap = 'round';
+    c.fillStyle = 'rgba(0,0,0,.28)'; c.beginPath(); c.ellipse(x, y + 1, R * (ch === 'brick' ? 1.1 : 0.9), 3.5 * k, 0, 0, 7); c.fill();
+    if (ch === 'zip') { // scarf streaming behind
+      const w = reduced ? 0 : Math.sin(t * 9) * 2 * k; c.fillStyle = '#FFD34D'; c.strokeStyle = '#1E1A2B'; c.lineWidth = 2 * k;
+      c.beginPath(); c.moveTo(x - f * R * 0.3, cy + R * 0.35); c.quadraticCurveTo(x - f * R * 1.6, cy + R * 0.1 + w, x - f * R * 2.3, cy + R * 0.5 + w); c.lineTo(x - f * R * 2.1, cy + R * 0.85 + w); c.quadraticCurveTo(x - f * R * 1.4, cy + R * 0.7 - w, x - f * R * 0.2, cy + R * 0.75); c.closePath(); c.fill(); c.stroke();
+    }
+    if (ch === 'gale') { // a little kite on a string
+      const kx = x - f * R * 1.9, ky = cy - R * 2.1 + (reduced ? 0 : Math.sin(t * 2.5) * 3 * k);
+      c.strokeStyle = 'rgba(255,243,224,.8)'; c.lineWidth = 1.2 * k; c.beginPath(); c.moveTo(x - f * R * 0.5, cy); c.quadraticCurveTo(x - f * R * 1.5, cy - R, kx, ky + R * 0.5); c.stroke();
+      c.fillStyle = '#7BE07A'; c.strokeStyle = '#1E1A2B'; c.lineWidth = 2 * k; c.beginPath(); c.moveTo(kx, ky - R * 0.55); c.lineTo(kx + R * 0.4, ky); c.lineTo(kx, ky + R * 0.55); c.lineTo(kx - R * 0.4, ky); c.closePath(); c.fill(); c.stroke();
+    }
+    c.fillStyle = '#1E1A2B'; c.beginPath(); c.ellipse(x - 5 * k, y - 1 * k, 4.5 * k, 3 * k, 0, 0, 7); c.ellipse(x + 5 * k, y - 1 * k, 4.5 * k, 3 * k, 0, 0, 7); c.fill();
+    c.lineWidth = 3 * k; c.strokeStyle = '#1E1A2B'; c.fillStyle = T.c;
+    c.beginPath(); if (ch === 'brick') c.ellipse(x, cy, R * 1.18, R, 0, 0, 7); else c.arc(x, cy, R, 0, 7); c.fill(); c.stroke();
+    c.fillStyle = 'rgba(255,255,255,.25)'; c.beginPath(); c.arc(x - 4 * k, cy - 4 * k, R * 0.45, 0, 7); c.fill();
+    c.lineWidth = 2.5 * k;
+    if (ch === 'brick') { // steel helmet with rivets, chest plate
+      c.fillStyle = '#8C8FA0'; c.beginPath(); c.roundRect(x - R * 1.25, cy - R * 1.2, R * 2.5, R * 0.85, 4 * k); c.fill(); c.stroke();
+      c.fillStyle = '#1E1A2B'; for (const dx of [-0.8, 0, 0.8]) { c.beginPath(); c.arc(x + dx * R, cy - R * 0.85, 1.4 * k, 0, 7); c.fill(); }
+      c.fillStyle = '#6F7280'; c.beginPath(); c.roundRect(x - R * 0.55, cy + R * 0.3, R * 1.1, R * 0.5, 2 * k); c.fill(); c.stroke();
+    } else if (ch === 'zip') { // sporty cap with a visor
+      c.fillStyle = T.c2; c.beginPath(); c.arc(x, cy - 3 * k, R * 0.95, Math.PI, 0); c.closePath(); c.fill(); c.stroke();
+      c.beginPath(); c.moveTo(x + f * R * 0.2, cy - 3 * k); c.lineTo(x + f * R * 1.35, cy - 1 * k); c.lineTo(x + f * R * 0.2, cy); c.closePath(); c.fill(); c.stroke();
+    } else if (ch === 'volt') { // helmet with a lightning rod
+      c.strokeStyle = '#1E1A2B'; c.lineWidth = 3 * k; c.beginPath(); c.moveTo(x, cy - R * 1.05); c.lineTo(x, cy - R * 2); c.stroke();
+      c.strokeStyle = '#FFD34D'; c.lineWidth = 1.6 * k; c.beginPath(); c.moveTo(x, cy - R * 1.05); c.lineTo(x, cy - R * 2); c.stroke();
+      const sp = reduced ? 1 : 0.6 + 0.4 * Math.abs(Math.sin(t * 7)); c.fillStyle = '#8FD8FF'; c.beginPath(); c.arc(x, cy - R * 2.05, 3.2 * k * sp + 1, 0, 7); c.fill();
+      c.lineWidth = 2.5 * k; c.strokeStyle = '#1E1A2B'; c.fillStyle = T.c2; c.beginPath(); c.arc(x, cy - 2 * k, R + 2 * k, Math.PI * 1.02, Math.PI * 1.98); c.closePath(); c.fill(); c.stroke();
+      c.fillStyle = '#FFD34D'; c.beginPath(); c.moveTo(x - 2 * k, cy + 3 * k); c.lineTo(x + 2 * k, cy + 3 * k); c.lineTo(x - 1 * k, cy + 7 * k); c.lineTo(x + 3 * k, cy + 7 * k); c.lineTo(x - 2 * k, cy + 12 * k); c.lineTo(x, cy + 8 * k); c.lineTo(x - 3 * k, cy + 8 * k); c.closePath(); c.fill();
+    } else if (ch === 'digger') { // miner's hard hat with a lamp
+      c.fillStyle = '#FFD34D'; c.beginPath(); c.arc(x, cy - 2 * k, R + 1.5 * k, Math.PI * 1.05, Math.PI * 1.95); c.closePath(); c.fill(); c.stroke();
+      c.fillRect(x - R - 4 * k, cy - 3 * k, (R + 4 * k) * 2, 3 * k); c.strokeRect(x - R - 4 * k, cy - 3 * k, (R + 4 * k) * 2, 3 * k);
+      const lx = x + f * R * 0.55, ly = cy - R * 0.6;
+      const lg = c.createRadialGradient(lx, ly, 1, lx + f * 14 * k, ly + 4 * k, 22 * k); lg.addColorStop(0, 'rgba(255,250,210,.55)'); lg.addColorStop(1, 'rgba(255,250,210,0)'); c.fillStyle = lg; c.beginPath(); c.arc(lx + f * 12 * k, ly + 3 * k, 22 * k, 0, 7); c.fill();
+      c.fillStyle = '#FFF3E0'; c.beginPath(); c.arc(lx, ly, 3.2 * k, 0, 7); c.fill(); c.stroke();
+    } else if (ch === 'gale') { // aviator cap with ear flaps
+      c.fillStyle = '#8A5A3C'; c.beginPath(); c.arc(x, cy - 2 * k, R + 1 * k, Math.PI * 1.05, Math.PI * 1.95); c.closePath(); c.fill(); c.stroke();
+      for (const sx of [-1, 1]) { c.beginPath(); c.ellipse(x + sx * R * 0.95, cy + 2 * k, 3.2 * k, 6 * k, 0, 0, 7); c.fill(); c.stroke(); }
+    }
+    // goggles look where you aim
+    const gx = x + f * 4 * k;
+    for (const dx of [-4, 4]) { c.fillStyle = '#FFF3E0'; c.strokeStyle = '#1E1A2B'; c.lineWidth = 2.5 * k; c.beginPath(); c.arc(gx + dx * k, cy + 1 * k, 4 * k, 0, 7); c.fill(); c.stroke(); c.fillStyle = '#1E1A2B'; c.beginPath(); c.arc(gx + (dx + f * 1.5) * k, cy + 1.5 * k, 1.8 * k, 0, 7); c.fill(); }
+    return cy;
+  }
+  const portraits = {};
+  function portrait(ch, team) {
+    const key = ch + team; if (portraits[key]) return portraits[key];
+    const c = document.createElement('canvas'); c.width = 300; c.height = 220; const g = c.getContext('2d');
+    const bg = g.createLinearGradient(0, 0, 0, 220); bg.addColorStop(0, '#7A3B5E'); bg.addColorStop(1, '#FF8A3D'); g.fillStyle = bg; g.fillRect(0, 0, 300, 220);
+    g.fillStyle = '#6FAE45'; g.fillRect(0, 186, 300, 34); g.fillStyle = '#A6DE62'; g.fillRect(0, 182, 300, 8);
+    drawBody(g, 150, 186, 42, team, ch, team === 0 ? 1 : -1, 0.6, 0);
+    return (portraits[key] = c.toDataURL());
+  }
   function drawUnit(u, isCur, t) {
     const x = u.x * CELL, y = u.y * CELL, R = WB.UNIT_R * CELL, T = TEAMS[u.team];
     if (!u.alive) { // a little tombstone
@@ -427,24 +556,12 @@
     }
     const bob = isCur && !reduced ? Math.sin(t * 6) * 1.5 : 0, cy = y - R + bob;
     if (isCur) { const g = ctx.createRadialGradient(x, cy, 4, x, cy, 44); g.addColorStop(0, 'rgba(255,211,77,.45)'); g.addColorStop(1, 'rgba(255,211,77,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, cy, 44, 0, 7); ctx.fill(); }
-    ctx.fillStyle = 'rgba(0,0,0,.28)'; ctx.beginPath(); ctx.ellipse(x, y + 1, R * 0.9, 3.5, 0, 0, 7); ctx.fill();
-    // feet
-    ctx.fillStyle = '#1E1A2B'; ctx.beginPath(); ctx.ellipse(x - 5, y - 1, 4.5, 3, 0, 0, 7); ctx.ellipse(x + 5, y - 1, 4.5, 3, 0, 0, 7); ctx.fill();
-    // body
-    ctx.lineWidth = 3; ctx.strokeStyle = '#1E1A2B';
-    ctx.fillStyle = T.c; ctx.beginPath(); ctx.arc(x, cy, R, 0, 7); ctx.fill(); ctx.stroke();
-    ctx.fillStyle = 'rgba(255,255,255,.25)'; ctx.beginPath(); ctx.arc(x - 4, cy - 4, R * 0.45, 0, 7); ctx.fill();
-    // oversized helmet
-    ctx.fillStyle = T.c2; ctx.beginPath(); ctx.arc(x, cy - 2, R + 2, Math.PI * 1.02, Math.PI * 1.98); ctx.closePath(); ctx.fill(); ctx.stroke();
-    ctx.fillRect(x - R - 3, cy - 3, (R + 3) * 2, 3);
-    // goggles look where you aim
-    const f = u.face || 1, gx = x + f * 4;
-    for (const dx of [-4, 4]) { ctx.fillStyle = '#FFF3E0'; ctx.beginPath(); ctx.arc(gx + dx, cy + 1, 4, 0, 7); ctx.fill(); ctx.stroke(); ctx.fillStyle = '#1E1A2B'; ctx.beginPath(); ctx.arc(gx + dx + f * 1.5, cy + 1.5, 1.8, 0, 7); ctx.fill(); }
+    drawBody(ctx, x, y, R, u.team, u.char, u.face, t, bob);
     if (u.hp < 35) { ctx.fillStyle = 'rgba(70,60,80,.55)'; ctx.beginPath(); ctx.arc(x + 6 * Math.sin(t * 2), cy - R - 6 - (t * 20 % 10), 4, 0, 7); ctx.fill(); }
     // name and hp
-    const bw = 34, bx = x - bw / 2, by = cy - R - 18;
+    const bw = 34, bx = x - bw / 2, by = cy - R - (u.char === 'volt' ? 30 : 18);
     ctx.fillStyle = 'rgba(30,26,43,.8)'; ctx.fillRect(bx - 2, by - 2, bw + 4, 8);
-    ctx.fillStyle = u.hp > 50 ? '#7BE07A' : u.hp > 25 ? '#FFD34D' : '#FF4D5E'; ctx.fillRect(bx, by, bw * clamp(u.hp / WB.HP, 0, 1), 4);
+    ctx.fillStyle = u.hp > u.maxHp / 2 ? '#7BE07A' : u.hp > u.maxHp / 4 ? '#FFD34D' : '#FF4D5E'; ctx.fillRect(bx, by, bw * clamp(u.hp / u.maxHp, 0, 1), 4);
     ctx.font = FONT(13); ctx.textAlign = 'center'; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(30,26,43,.9)';
     const label = `${unitName(u)} ${u.hp}`; ctx.strokeText(label, x, by - 4); ctx.fillStyle = T.c; ctx.fillText(label, x, by - 4);
     if (isCur && ui.G.phase === 'aim') { const ay = by - 20 + (reduced ? 0 : Math.sin(t * 5) * 3); ctx.fillStyle = '#FFD34D'; ctx.strokeStyle = '#1E1A2B'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(x - 8, ay - 8); ctx.lineTo(x + 8, ay - 8); ctx.lineTo(x, ay + 2); ctx.closePath(); ctx.fill(); ctx.stroke(); }
@@ -462,20 +579,32 @@
     }
   }
   function drawProj(p, t) {
+    if (p.wait > 0) return; // Double Tap's second dart hasn't left yet
     const x = p.x * CELL, y = p.y * CELL;
     const tr = ui.trails[p.id] || (ui.trails[p.id] = []); tr.push([x, y]); if (tr.length > 26) tr.shift();
     ctx.lineCap = 'round';
     for (let i = 1; i < tr.length; i++) { ctx.strokeStyle = `rgba(255,243,224,${i / tr.length * 0.5})`; ctx.lineWidth = (i / tr.length) * (p.w === 'bomblet' ? 3 : 5); ctx.beginPath(); ctx.moveTo(tr[i - 1][0], tr[i - 1][1]); ctx.lineTo(tr[i][0], tr[i][1]); ctx.stroke(); }
     if (p.w === 'dud') { drawDud({ x: p.x, y: p.y + 5 / CELL, fuse: p.fuse }, t, true); return; }
-    const r = p.w === 'bomblet' ? 3.5 : p.w === 'cluster' ? 6.5 : 5.5;
-    ctx.fillStyle = p.w === 'cluster' ? '#FF8A3D' : p.w === 'bomblet' ? '#FFD34D' : '#3A3150'; ctx.strokeStyle = '#1E1A2B'; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill(); ctx.stroke();
+    const ch = ui.G.chars[p.team], big = p.w === 'shot2' || p.w === 'ss', ang = Math.atan2(p.vy, p.vx);
+    if (p.w === 'ss') { const g = ctx.createRadialGradient(x, y, 2, x, y, 24); g.addColorStop(0, 'rgba(255,211,77,.8)'); g.addColorStop(1, 'rgba(255,138,61,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, 24, 0, 7); ctx.fill(); }
+    ctx.strokeStyle = '#1E1A2B'; ctx.lineWidth = 2;
+    if (ch === 'zip' || (ch === 'digger' && big)) { // darts and drills point where they fly
+      ctx.save(); ctx.translate(x, y); ctx.rotate(ang);
+      if (ch === 'zip') { ctx.fillStyle = '#FFD34D'; ctx.beginPath(); ctx.moveTo(9, 0); ctx.lineTo(-6, -4); ctx.lineTo(-3, 0); ctx.lineTo(-6, 4); ctx.closePath(); ctx.fill(); ctx.stroke(); }
+      else { ctx.fillStyle = '#9A9CA3'; ctx.beginPath(); ctx.moveTo(12, 0); ctx.lineTo(-5, -6); ctx.lineTo(-5, 6); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.strokeStyle = '#4A4D58'; for (let i = 0; i < 3; i++) { const sx = 6 - i * 4 - (t * 40 % 4); ctx.beginPath(); ctx.moveTo(sx, -4 + i); ctx.lineTo(sx - 2, 4 - i); ctx.stroke(); } }
+      ctx.restore(); return;
+    }
+    const look = { brick: ['#5A5F6E', p.w === 'ss' ? 10 : big ? 8 : 6], volt: ['#4FB3FF', big ? 6.5 : 5.5], digger: ['#B2643A', 6], gale: ['#7BE07A', big ? 6.5 : 5.5] }[ch] || ['#3A3150', 5.5];
+    if (ch === 'volt') { const g = ctx.createRadialGradient(x, y, 1, x, y, 16); g.addColorStop(0, 'rgba(143,216,255,.7)'); g.addColorStop(1, 'rgba(143,216,255,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, 16, 0, 7); ctx.fill(); }
+    if (ch === 'gale') { ctx.strokeStyle = '#FFF3E0'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x, y); ctx.quadraticCurveTo(x - p.vx * 0.4 + 4 * Math.sin(t * 20), y - p.vy * 0.4, x - p.vx * 0.7, y - p.vy * 0.7); ctx.stroke(); ctx.strokeStyle = '#1E1A2B'; }
+    ctx.fillStyle = look[0]; ctx.beginPath(); ctx.arc(x, y, look[1], 0, 7); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,.35)'; ctx.beginPath(); ctx.arc(x - look[1] * 0.35, y - look[1] * 0.35, look[1] * 0.35, 0, 7); ctx.fill();
   }
   function drawAim(u, t) {
     const a = aimOf(u), [cx, cy] = WB.center(u), rad = a.angle * Math.PI / 180;
     const ox = cx * CELL, oy = cy * CELL, len = 26 + a.power * 46;
     // short preview of the first part of the arc (no wind: reading the wind is your job)
-    const s = (ui.lob ? a.power * WB.LOB_POWER : a.power) * WB.VMAX;
+    const s = (ui.lob ? a.power * WB.LOB_POWER : a.power * WB.shotSpec(ui.G, u.team, ui.weapon).speed) * WB.VMAX;
     let px = cx + Math.cos(rad) * (WB.UNIT_R + 0.6), py = cy - Math.sin(rad) * (WB.UNIT_R + 0.6), vx = Math.cos(rad) * s, vy = -Math.sin(rad) * s;
     ctx.fillStyle = 'rgba(255,243,224,.85)';
     for (let i = 0; i < 16; i++) { for (let k = 0; k < 3; k++) { vy += WB.GRAV / 60; px += vx / 60; py += vy / 60; } const r = 3 - i * 0.13; if (r <= 0.6) break; ctx.beginPath(); ctx.arc(px * CELL, py * CELL, r, 0, 7); ctx.fill(); }
@@ -525,6 +654,17 @@
     for (const id of Object.keys(ui.trails)) if (!G.proj.some((p) => String(p.id) === id)) delete ui.trails[id];
     for (const p of ui.parts) {
       const k = 1 - p.t / p.life;
+      if (p.kind === 'bolt') {
+        let s = p.seed; const rnd = () => { s = (s * 9301 + 49297) % 233280; return s / 233280; };
+        const pts = [[p.x, 0]]; for (let yy = 40; yy < p.y; yy += 40) pts.push([p.x + (rnd() - 0.5) * 34, yy]); pts.push([p.x, p.y]);
+        for (const [w, col] of [[10, `rgba(143,216,255,${k * 0.5})`], [4, `rgba(255,255,255,${k})`]]) { ctx.strokeStyle = col; ctx.lineWidth = w; ctx.beginPath(); pts.forEach(([a, b], i) => (i ? ctx.lineTo(a, b) : ctx.moveTo(a, b))); ctx.stroke(); }
+        continue;
+      }
+      if (p.kind === 'swirl') { // tornado: rising rings that spin out
+        for (let i = 0; i < 9; i++) { const yy = p.y - i * 18 - p.t * 60, rr = 10 + i * 9 * (0.6 + p.t), a = t * 12 + i;
+          ctx.strokeStyle = `rgba(200,255,220,${k * (0.75 - i * 0.06)})`; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(p.x + Math.sin(a) * 6, yy, rr, rr * 0.28, 0, 0, 7); ctx.stroke(); }
+        continue;
+      }
       if (p.kind === 'flash') { const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size); g.addColorStop(0, `rgba(255,250,220,${k})`); g.addColorStop(0.4, `rgba(255,180,80,${k * 0.8})`); g.addColorStop(1, 'rgba(255,120,60,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, 7); ctx.fill(); continue; }
       ctx.globalAlpha = Math.max(0, p.kind === 'smoke' ? k * 0.8 : k);
       ctx.fillStyle = p.c;
@@ -571,7 +711,7 @@
 
   // ---------- boot ----------
   window.WBUI = {
-    get G() { return ui.G; }, ui, startMatch, startRound, roundOver, doFire, walk, pass, botTurn, renderAll: () => { renderHUD(); renderCtl(); coachLine(); },
+    get G() { return ui.G; }, ui, startMatch, selectScreen, choose, startRound, roundOver, doFire, walk, pass, botTurn, renderAll: () => { renderHUD(); renderCtl(); coachLine(); },
     aim: (angle, power) => { const u = WB.current(ui.G); const a = aimOf(u); a.angle = angle; a.power = power; },
   };
   fit(); addEventListener('resize', fit);
