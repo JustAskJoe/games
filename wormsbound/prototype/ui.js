@@ -91,30 +91,41 @@
   };
 
   // ---------- background: sunset sky, sun, two parallax ridges (baked once per round) ----------
-  function bakeBackground(seed) {
+  // Each map's look: sky, sun or moon, far ridges, ground colours (grass/snow/sand on top, then deeper rock), water.
+  const THEMES = {
+    valley: { sky: ['#2B1E45', '#7A3B5E', '#FF8A3D', '#FFC37A'], glow: ['rgba(255,240,200,1)', 'rgba(255,214,140,.9)', 'rgba(255,170,90,0)'], sunY: 330, stars: 70, ridges: ['rgba(107,58,91,.55)', 'rgba(70,40,78,.7)'],
+      shades: [['#A6DE62', '#93CF55'], ['#6FAE45', '#62A03C'], ['#D2834A', '#C47640'], ['#B2643A', '#A55B36'], ['#8C4C3A', '#7F4436'], ['#6A3E4A', '#5E3743']], tuft: '#B8EC74', water: ['rgba(34,195,181,.85)', 'rgba(14,60,90,.95)'] },
+    peak: { sky: ['#0E1430', '#26315E', '#5C6FA8', '#A9C1E6'], glow: ['rgba(240,248,255,1)', 'rgba(200,220,255,.75)', 'rgba(160,190,255,0)'], sunY: 150, stars: 140, ridges: ['rgba(120,140,190,.5)', 'rgba(60,72,120,.7)'],
+      shades: [['#F4FAFF', '#E2EEFA'], ['#C9DCEF', '#B7CDE5'], ['#7E8CA8', '#74829E'], ['#5F6A86', '#57627D'], ['#464E68', '#40475F'], ['#30354A', '#2B3043']], tuft: '#FFFFFF', water: ['rgba(120,190,230,.85)', 'rgba(20,40,80,.95)'] },
+    isles: { sky: ['#1C6FB0', '#4FA9DE', '#9ED9F2', '#E8F7FA'], glow: ['rgba(255,252,220,1)', 'rgba(255,240,170,.8)', 'rgba(255,230,150,0)'], sunY: 140, stars: 0, ridges: ['rgba(60,150,170,.35)', 'rgba(40,120,140,.5)'],
+      shades: [['#8EE07A', '#7CD26A'], ['#F2DE9C', '#E8D18A'], ['#E0B870', '#D4AC64'], ['#BE8C52', '#B2824C'], ['#946A44', '#88603E'], ['#6E4E3A', '#644634']], tuft: '#B6F28A', water: ['rgba(40,210,200,.8)', 'rgba(10,90,120,.95)'] },
+  };
+  let THEME = THEMES.valley, SHADES = THEME.shades;
+  function bakeBackground(seed, map) {
+    THEME = THEMES[map] || THEMES.valley; SHADES = THEME.shades;
     let s = seed >>> 0; const r = () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
     const g = bctx.createLinearGradient(0, 0, 0, H);
-    g.addColorStop(0, '#2B1E45'); g.addColorStop(0.42, '#7A3B5E'); g.addColorStop(0.7, '#FF8A3D'); g.addColorStop(1, '#FFC37A');
+    g.addColorStop(0, THEME.sky[0]); g.addColorStop(0.42, THEME.sky[1]); g.addColorStop(0.7, THEME.sky[2]); g.addColorStop(1, THEME.sky[3]);
     bctx.fillStyle = g; bctx.fillRect(0, 0, W, H);
-    const sx = 260 + r() * 760, sy = 330 + r() * 60;
-    const sg = bctx.createRadialGradient(sx, sy, 10, sx, sy, 170); sg.addColorStop(0, 'rgba(255,240,200,1)'); sg.addColorStop(0.25, 'rgba(255,214,140,.9)'); sg.addColorStop(1, 'rgba(255,170,90,0)');
-    bctx.fillStyle = sg; bctx.beginPath(); bctx.arc(sx, sy, 170, 0, 7); bctx.fill();
-    for (let i = 0; i < 70; i++) { bctx.fillStyle = `rgba(255,243,224,${0.15 + r() * 0.5})`; bctx.fillRect(r() * W, r() * 200, 2, 2); }
+    const sx = 260 + r() * 760, sy = THEME.sunY + r() * 60, sr = map === 'peak' ? 90 : 170;
+    const sg = bctx.createRadialGradient(sx, sy, 10, sx, sy, sr); sg.addColorStop(0, THEME.glow[0]); sg.addColorStop(0.25, THEME.glow[1]); sg.addColorStop(1, THEME.glow[2]);
+    bctx.fillStyle = sg; bctx.beginPath(); bctx.arc(sx, sy, sr, 0, 7); bctx.fill();
+    for (let i = 0; i < THEME.stars; i++) { bctx.fillStyle = `rgba(255,243,224,${0.15 + r() * 0.5})`; bctx.fillRect(r() * W, r() * (map === 'peak' ? 320 : 200), 2, 2); }
     const ridge = (base, amp, col, k) => {
       bctx.fillStyle = col; bctx.beginPath(); bctx.moveTo(0, H);
       const p1 = r() * 6, p2 = r() * 6;
       for (let x = 0; x <= W; x += 8) bctx.lineTo(x, base - amp * (0.6 * Math.sin(x / (180 * k) + p1) + 0.4 * Math.sin(x / (63 * k) + p2)));
       bctx.lineTo(W, H); bctx.closePath(); bctx.fill();
     };
-    ridge(470, 60, 'rgba(107,58,91,.55)', 1.4);
-    ridge(540, 45, 'rgba(70,40,78,.7)', 1);
+    ridge(map === 'peak' ? 430 : 470, map === 'peak' ? 110 : 60, THEME.ridges[0], 1.4);
+    ridge(540, map === 'isles' ? 25 : 45, THEME.ridges[1], 1);
     ui.clouds = Array.from({ length: 6 }, () => ({ x: r() * W, y: 60 + r() * 220, s: 0.6 + r() * 0.9 }));
     ui.dust = Array.from({ length: reduced ? 0 : 46 }, () => ({ x: r() * W, y: 90 + r() * 560, z: 0.4 + r() * 0.8 }));
   }
 
+  function mapBanner() { const m = WB.MAPS.find((x) => x.id === ui.G.map); if (m) ui.mapName = m.name; }
   // ---------- terrain: chunky cells, coloured by depth below the surface, with scorch marks ----------
   const hash2 = (x, y) => { let h = (x * 374761393 + y * 668265263) >>> 0; h = (h ^ (h >>> 13)) * 1274126177 >>> 0; return (h >>> 16) & 255; };
-  const SHADES = [['#A6DE62', '#93CF55'], ['#6FAE45', '#62A03C'], ['#D2834A', '#C47640'], ['#B2643A', '#A55B36'], ['#8C4C3A', '#7F4436'], ['#6A3E4A', '#5E3743']];
   function shadeFor(depth) { return depth === 0 ? 0 : depth === 1 ? 1 : depth < 5 ? 2 : depth < 10 ? 3 : depth < 18 ? 4 : 5; }
   function renderTerrain() {
     const G = ui.G, T = G.T, C = WB.COLS, R = WB.ROWS;
@@ -144,7 +155,7 @@
       if (y < R - 1 && !T[(y + 1) * C + x]) tctx.fillRect(px, py + CELL - 2, CELL, 2);
       if (y > 0 && !T[(y - 1) * C + x]) {
         tctx.fillRect(px, py - 1, CELL, 2);
-        if ((hash2(x, y) & 3) === 0) { tctx.fillStyle = '#B8EC74'; tctx.fillRect(px + 2, py - 4, 2, 4); tctx.fillRect(px + 5, py - 3, 2, 3); tctx.fillStyle = '#2A1A2A'; }
+        if ((hash2(x, y) & 3) === 0) { tctx.fillStyle = THEME.tuft; tctx.fillRect(px + 2, py - 4, 2, 4); tctx.fillRect(px + 5, py - 3, 2, 3); tctx.fillStyle = '#2A1A2A'; }
       }
     }
     ui.terrainDirty = false;
@@ -349,7 +360,7 @@
     const w = G.wind, arrows = Math.round(Math.abs(w) / WB.WIND_MAX * 4);
     const windTxt = Math.abs(w) < 0.2 ? 'calm' : `${w < 0 ? '◀'.repeat(Math.max(1, arrows)) : ''} ${Math.abs(w).toFixed(1)} ${w > 0 ? '▶'.repeat(Math.max(1, arrows)) : ''}`;
     const left = Array.from({ length: half }, (_, t) => side(t)).join(''), right = Array.from({ length: n - half }, (_, i) => side(n - 1 - i)).join('');
-    $('#hud').innerHTML = `<div class="sidegrp">${left}</div>` + `<div class="mid"><div class="timer${ui.timerOn ? '' : ' off'}" id="timer">${ui.timerOn ? Math.ceil(ui.tLeft) : '∞'}</div><div class="wind" aria-label="wind">WIND ${windTxt}</div><div class="wind" style="font-size:12px;opacity:.8">Round ${ui.round}${ui.mode === 'solo' ? ' · ' + LEVELS[ui.level].name : ''}${G.turn >= WB.suddenTurn(G) ? ' · <span style="color:#FF4D5E">SUDDEN DEATH: the water rises</span>' : ''}</div>${orderHTML()}</div><div class="sidegrp r">${right}</div>`;
+    $('#hud').innerHTML = `<div class="sidegrp">${left}</div>` + `<div class="mid"><div class="timer${ui.timerOn ? '' : ' off'}" id="timer">${ui.timerOn ? Math.ceil(ui.tLeft) : '∞'}</div><div class="wind" aria-label="wind">WIND ${windTxt}</div><div class="wind" style="font-size:12px;opacity:.8">Round ${ui.round}${ui.mapName ? ' · ' + esc(ui.mapName) : ''}${ui.mode === 'solo' ? ' · ' + LEVELS[ui.level].name : ''}${G.turn >= WB.suddenTurn(G) ? ' · <span style="color:#FF4D5E">SUDDEN DEATH: the water rises</span>' : ''}</div>${orderHTML()}</div><div class="sidegrp r">${right}</div>`;
   }
   // The next turns if everyone keeps firing their Shot 1, counting the current side's chosen shot: what the
   // turn delay means right now. Light shot: you may go again before them; heavy shot: they may go twice.
@@ -627,7 +638,7 @@
     const net = ui.net; net.queue = []; net.expect = null; net.waiting = false;
     ui.G = G; ui.wins = wins.slice(); ui.round = round; ui.picks = G.chars.slice();
     ui.aim = {}; ui.cpu = null; ui.parts = []; ui.trails = {}; ui.scorch = []; ui.pops = []; ui.acc = 0; ui.slow = 0; ui.shake = 0; ui.overAt = 0; ui.paused = false; ui.remoteAim = null;
-    bakeBackground(G.seed); renderTerrain();
+    bakeBackground(G.seed, G.map); renderTerrain(); mapBanner();
     ui.screen = 'game'; hide(); onTurn();
   }
   function lobbyScreen(status) {
@@ -654,7 +665,7 @@
     const first = (ui.round - 1) % nSides();
     ui.G = WB.newGame((ui.matchSeed + ui.round * 7919) >>> 0, { teams: nSides(), first, chars: ui.picks });
     ui.aim = {}; ui.cpu = null; ui.parts = []; ui.trails = {}; ui.scorch = []; ui.pops = []; ui.acc = 0; ui.slow = 0; ui.shake = 0; ui.overAt = 0; ui.paused = false;
-    bakeBackground(ui.G.seed); renderTerrain();
+    bakeBackground(ui.G.seed, ui.G.map); renderTerrain(); mapBanner();
     ui.screen = 'game'; hide(); onTurn();
   }
   function startMatch() {
@@ -848,7 +859,7 @@
   }
   function drawWater(t) {
     const wy = ui.G.water * CELL;
-    const g = ctx.createLinearGradient(0, wy, 0, H); g.addColorStop(0, 'rgba(34,195,181,.85)'); g.addColorStop(1, 'rgba(14,60,90,.95)');
+    const g = ctx.createLinearGradient(0, wy, 0, H); g.addColorStop(0, THEME.water[0]); g.addColorStop(1, THEME.water[1]);
     ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(0, H);
     for (let x = 0; x <= W; x += 16) ctx.lineTo(x, wy + (reduced ? 0 : Math.sin(x / 40 + t * 2) * 3 + Math.sin(x / 17 - t * 3) * 1.5));
     ctx.lineTo(W, H); ctx.closePath(); ctx.fill();

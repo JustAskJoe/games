@@ -230,5 +230,26 @@ const ssGame = (chars, seed = 11) => { const G = WB.newGame(seed, { chars }); G.
   ok(G.phase === 'over' && !G.timeout, `a match of passes ends by rising water (turn ${G.turn})`);
 }
 
+// Maps: three shapes, picked from the seed (so every copy builds the same one), or chosen with opts.map.
+{
+  const seen = {};
+  for (let s = 1; s <= 300; s++) seen[WB.newGame(s * 7919).map] = 1;
+  ok(WB.MAP_IDS.every((m) => seen[m]), `all ${WB.MAP_IDS.length} maps come up from random seeds (${Object.keys(seen).join(', ')})`);
+  ok(WB.newGame(4242).map === WB.newGame(4242).map && WB.hash(WB.newGame(4242)) === WB.hash(WB.newGame(4242)), 'the same seed always gives the same map and terrain');
+  for (const m of WB.MAP_IDS) {
+    let wet = 0, close = 0;
+    for (let s = 1; s <= 120; s++) for (const n of [2, 4, 6]) {
+      const G = WB.newGame(s * 104729, { teams: n, map: m });
+      if (G.map !== m) wet += 1000;
+      for (const u of G.units) if (u.y >= G.water - 1 || !WB.solidAt(G, u.x, u.y + 0.5)) wet++;
+      const xs = G.units.map((u) => u.x).sort((a, b) => a - b); for (let i = 1; i < xs.length; i++) if (xs[i] - xs[i - 1] < 7) close++;
+    }
+    ok(wet === 0, `${m}: opts.map picks it, and every unit starts on dry ground (2, 4 and 6 sides, 120 seeds)`);
+    ok(close === 0, `${m}: nobody starts on top of someone else`);
+    const G = WB.playOut(WB.newGame(77, { map: m, chars: ['volt', 'gale'] }), ['smart', 'smart']).G;
+    ok(G.phase === 'over', `${m}: a bot match plays to the end (${G.turn} turns)`);
+  }
+}
+
 console.log(`${passes} passed, ${fails} failed`);
 process.exit(fails ? 1 : 0);
