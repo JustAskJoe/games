@@ -101,7 +101,28 @@
   const solidAt = (G, x, y) => { const cx = Math.floor(x), cy = Math.floor(y); if (cx < 0 || cx >= COLS || cy >= ROWS) return false; if (cy < 0) return false; return G.T[cy * COLS + cx] === 1; };
   function surfaceY(G, x) { const cx = clamp(Math.floor(x), 0, COLS - 1); for (let y = 0; y < ROWS; y++) if (G.T[y * COLS + cx]) return y; return ROWS; }
 
+  // ---------- maps ----------
+  // Three map shapes. Each round's map comes from its seed (pickMap), so every copy of the game (server, both
+  // browsers) builds the same one without sending anything extra; opts.map picks one by id (tests, sims).
+  const MAPS = [
+    { id: 'valley', name: 'Sunset Valley', blurb: 'Rolling hills around a valley in the middle.' },
+    { id: 'peak', name: 'Frost Peak', blurb: 'A snowy mountain in the middle with a tunnel through it. Lob over or dig through.' },
+    { id: 'isles', name: 'Lagoon Isles', blurb: 'Low islands with water between them. Knock people in.' },
+  ];
+  const MAP_IDS = MAPS.map((m) => m.id);
+  const PEAK_H = 13;    // Frost Peak: the mountain's height above the ground beside it (+0–4), in cells
+  const ISLE_H = 25;    // Lagoon Isles: island height (+0–4); the water starts 8 rows above the bottom
+  const HILLS = 10;     // Frost Peak and Lagoon Isles: how bumpy the ground is (cover; flat open ground favoured Gale)
+  const CHANNEL_W = 0.016; // Lagoon Isles: channel half-width, as a share of the map (+0–0.008)
+  function pickMap(seed) { let h = (seed >>> 0) ^ 0x9E3779B9; h = Math.imul(h ^ (h >>> 16), 0x45D9F3B) >>> 0; h = Math.imul(h ^ (h >>> 16), 0x45D9F3B) >>> 0; return MAP_IDS[((h ^ (h >>> 16)) >>> 0) % MAP_IDS.length]; }
+  function fillColumns(G, heightAt) {
+    const T = new Array(COLS * ROWS).fill(0);
+    for (let x = 0; x < COLS; x++) { const top = Math.round(ROWS - heightAt(x / COLS, x)); for (let y = Math.max(0, top); y < ROWS; y++) T[y * COLS + x] = 1; }
+    G.T = T;
+  }
   function genTerrain(G) {
+    if (G.map === 'peak') return genPeak(G);
+    if (G.map === 'isles') return genIsles(G);
     const T = new Array(COLS * ROWS).fill(0);
     const p = [R(G), R(G), R(G), R(G)].map((v) => v * Math.PI * 2);
     const base = 30 + R(G) * 6;
@@ -118,6 +139,29 @@
       const cx = 12 + R(G) * (COLS - 24), sy = surfaceY(G, cx);
       carve(G, cx, sy + 6 + R(G) * 8, 3 + R(G) * 3);
     }
+  }
+  // Frost Peak: low ground on both sides of one tall mountain, with a tunnel through its base
+  function genPeak(G) {
+    const p = [R(G), R(G), R(G)].map((v) => v * Math.PI * 2), base = 24 + R(G) * 4, peak = PEAK_H + R(G) * 4, mid = 0.5 + (R(G) - 0.5) * 0.06;
+    fillColumns(G, (u) => base + HILLS * (Math.sin(u * 7.1 + p[0]) + 0.55 * Math.sin(u * 15 + p[1]) + 0.3 * Math.sin(u * 29 + p[2]))
+      + peak * Math.exp(-Math.pow((u - mid) / 0.12, 2)) + 2 * Math.exp(-Math.pow((u - mid) / 0.025, 2)));
+    const ty = ROWS - base - 7; // the tunnel: a row of overlapping holes through the mountain's foot
+    for (let x = COLS * (mid - 0.12); x <= COLS * (mid + 0.12); x += 2) carve(G, x, ty + Math.sin(x / 6) * 1.2, 3.2);
+    const caves = 2 + Math.floor(R(G) * 2);
+    for (let i = 0; i < caves; i++) { const cx = 12 + R(G) * (COLS - 24); if (Math.abs(cx / COLS - mid) < 0.15) continue; carve(G, cx, surfaceY(G, cx) + 6 + R(G) * 6, 3 + R(G) * 2); }
+  }
+  // Lagoon Isles: low islands split by channels that go down below the water
+  function genIsles(G) {
+    const p = [R(G), R(G), R(G)].map((v) => v * Math.PI * 2), base = ISLE_H + R(G) * 4;
+    const n = 3 + Math.floor(R(G) * 2); // 3 or 4 channels
+    const ch = Array.from({ length: n }, (_, i) => ({ u: (i + 1) / (n + 1) + (R(G) - 0.5) * 0.06, w: CHANNEL_W + R(G) * 0.008 }));
+    fillColumns(G, (u) => {
+      let h = base + HILLS * (Math.sin(u * 9 + p[0]) + 0.5 * Math.sin(u * 21 + p[1]) + 0.25 * Math.sin(u * 37 + p[2]));
+      for (const c of ch) { const d = Math.abs(u - c.u) / c.w; if (d < 1) h = Math.min(h, 3); else if (d < 1.8) h = Math.min(h, 3 + (h - 3) * (d - 1) / 0.8); }
+      return h;
+    });
+    const caves = 2 + Math.floor(R(G) * 2);
+    for (let i = 0; i < caves; i++) { const cx = 12 + R(G) * (COLS - 24), sy = surfaceY(G, cx); if (sy < WATER0 - 12) carve(G, cx, sy + 5 + R(G) * 4, 2.5 + R(G) * 1.5); }
   }
   function carve(G, cx, cy, r) {
     const x0 = Math.max(0, Math.floor(cx - r)), x1 = Math.min(COLS - 1, Math.ceil(cx + r));
@@ -138,7 +182,7 @@
     const chars = Array.from({ length: teams }, (_, t) => (opts.chars && CHARS[opts.chars[t]]) ? opts.chars[t] : 'volt');
     const G = {
       v: 2, seed: seed >>> 0, _s: (seed >>> 0) || 1, _id: 0,
-      phase: 'aim', turn: 0, team: 0, teams, size, actor: 0, spent: 0, chars,
+      phase: 'aim', turn: 0, team: 0, teams, size, actor: 0, spent: 0, chars, map: MAP_IDS.includes(opts.map) ? opts.map : pickMap(seed),
       wind: 0, water: WATER0, moves: 0, weapon: 'shot1',
       T: null, units: [], proj: [], duds: [], fx: [],
       ammo: [], ss: new Array(teams).fill(0), fused: false, winner: null,
@@ -154,7 +198,8 @@
     const mul = opts.hpMul || (size > 1 ? HP_MUL.crew : teams > 2 ? HP_MUL.ffa : HP_MUL.duel);
     for (let k = 0; k < spots; k++) {
       const t = order[Math.floor(k / size)], C = CHARS[chars[t]], hp = Math.round(C.hp * mul);
-      const x = Math.round(COLS * (0.08 + 0.84 * (k + 0.3 + R(G) * 0.4) / spots));
+      let x = Math.round(COLS * (0.08 + 0.84 * (k + 0.3 + R(G) * 0.4) / spots));
+      x = dryLand(G, x, G.units.map((v) => Math.floor(v.x)));
       G.units.push({ id: ++G._id, team: t, char: chars[t], x: x + 0.5, y: surfaceY(G, x), vx: 0, vy: 0, hp, maxHp: hp, alive: true, air: false, face: x < COLS / 2 ? 1 : -1, delay: 0 });
     }
     G.units.sort((a, b) => a.team - b.team || a.x - b.x); // ids stay as made; keep the list grouped by side
@@ -168,6 +213,14 @@
     for (let t = 0; t < teams; t++) if (t !== G.team) G.ss[t] = 1; // sides that don't shoot first get a one-notch SS head start (first turn wins 58% → 51% in the 1v1 sim)
     G.wind = rollWind(G);
     return G;
+  }
+  // the nearest column to x with ground well above the water and 5 cells from a channel's edge (spawns must never land in one),
+  // and at least 8 cells from anyone already placed
+  function dryLand(G, x, taken = []) {
+    const dry = (c) => c >= 0 && c < COLS && surfaceY(G, c) < WATER0 - 4;
+    const ok = (c) => c >= 3 && c < COLS - 3 && dry(c - 5) && dry(c) && dry(c + 5) && taken.every((t) => Math.abs(t - c) >= 8);
+    for (let d = 0; d < COLS; d++) { if (ok(x - d)) return x - d; if (ok(x + d)) return x + d; }
+    return x;
   }
   // One notch of SS charge at the start of each of your turns.
   function chargeSS(G) { G.ss[G.team] = Math.min(SS_CHARGE, G.ss[G.team] + 1); }
@@ -621,7 +674,7 @@
   // ---------- checksum and replay ----------
   function hash(G) {
     const r = (v) => Math.round(v * 100);
-    const parts = [G.turn, G.team, G.actor, G.spent, G.units.map((u) => u.delay).join(','), G.phase, r(G.wind), G.water, G.moves, G.winner, G.chars.join(','),
+    const parts = [G.map, G.turn, G.team, G.actor, G.spent, G.units.map((u) => u.delay).join(','), G.phase, r(G.wind), G.water, G.moves, G.winner, G.chars.join(','),
       G.units.map((u) => `${u.id}:${r(u.x)},${r(u.y)},${u.hp},${u.alive ? 1 : 0}`).join(';'),
       G.duds.map((d) => `${d.id}:${r(d.x)},${r(d.y)},${d.fuse}`).join(';'),
       G.ammo.map((a) => `${a.shot2},${a.dud}`).join(';'), G.ss.join(','), G.T.join('')];
@@ -638,7 +691,7 @@
   }
 
   const WB = { TICK, COLS, ROWS, WATER0, GRAV, VMAX, WIND_MAX, UNIT_R, UNITS_PER_TEAM, HP, MOVE_STEPS, LOB_RANGE, LOB_POWER, SUDDEN_ROUNDS, MAX_ROUNDS, suddenTurn, maxTurns, DMG_SPREAD, SS_CHARGE, DELAY, HP_MUL,
-    DUD, CHARS, CHAR_IDS, WEAPON_IDS, STYLES, newGame, act, step, resolve, current, teamUnits, charOf, shotSpec, ssReady, turnOrder, delayIf, solidAt, surfaceY, center, lobbable, canLob,
+    DUD, CHARS, CHAR_IDS, WEAPON_IDS, STYLES, MAPS, MAP_IDS, pickMap, newGame, act, step, resolve, current, teamUnits, charOf, shotSpec, ssReady, turnOrder, delayIf, solidAt, surfaceY, center, lobbable, canLob,
     predict, blastScore, botTurn, playOut, hash, replay };
   if (typeof module !== 'undefined' && module.exports) module.exports = WB; else root.WB = WB;
 })(typeof window !== 'undefined' ? window : globalThis);
