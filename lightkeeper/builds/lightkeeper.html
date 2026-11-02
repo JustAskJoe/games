@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<!-- Lightkeeper · prototype v1 · © 2026 justaskjoe. All rights reserved. Built by build.py from prototype/v1; edit the source, not this file. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Lightkeeper</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#0d1a2b">
+<style>
+:root{
+  --ink:#0d1a2b; --ink2:#14263b; --panel:#132235; --cream:#efe6d2; --mute:#b8b09c; --dim:#857f70;
+  --amber:#ffbe5c; --amber2:#ffd690; --rust:#c8643c; --sea:#2a4a63; --line:rgba(239,230,210,.2);
+  --sat:env(safe-area-inset-top,0px); --sab:env(safe-area-inset-bottom,0px); --sal:env(safe-area-inset-left,0px); --sar:env(safe-area-inset-right,0px);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+html,body{margin:0;width:100%;height:100%;background:var(--ink);color:var(--cream);font-family:Georgia,'Iowan Old Style','Palatino Linotype',serif;overflow:hidden;overscroll-behavior:none}
+#game{position:fixed;inset:0;touch-action:none;user-select:none;-webkit-user-select:none}
+#cv{position:absolute;inset:0;width:100%;height:100%;display:block}
+.hud{position:absolute;pointer-events:none;font-family:system-ui,-apple-system,'Segoe UI',sans-serif}
+#hudL{top:calc(10px + var(--sat));left:calc(10px + var(--sal));background:rgba(8,16,27,.62);border:1px solid var(--line);border-radius:10px;padding:7px 11px;max-width:60vw}
+#hudL .a{font:600 14px Georgia,serif;color:var(--amber2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#hudL .b{font-size:12px;color:var(--mute);margin-top:2px}
+#hudR{top:calc(10px + var(--sat));right:calc(62px + var(--sar));background:rgba(8,16,27,.62);border:1px solid var(--line);border-radius:10px;padding:7px 10px;text-align:right}
+#hudR .w{display:flex;gap:5px;justify-content:flex-end} #hudR .w i{width:11px;height:11px;border-radius:50%;border:1.5px solid var(--cream);opacity:.85}
+#hudR .w i.on{background:var(--rust);border-color:var(--rust)}
+#hudR .t{font-size:11px;color:var(--mute);margin-top:4px;font-variant-numeric:tabular-nums}
+.rbtn{position:absolute;border:1px solid var(--line);background:rgba(8,16,27,.7);color:var(--cream);pointer-events:auto;font:600 18px system-ui,sans-serif;cursor:pointer}
+#menuBtn{top:calc(10px + var(--sat));right:calc(10px + var(--sar));width:44px;height:44px;border-radius:12px}
+#hornBtn{bottom:calc(14px + var(--sab));right:calc(14px + var(--sar));width:64px;height:64px;border-radius:50%;font-size:12px;line-height:1.1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+#hornBtn .ic{font-size:20px} #hornBtn[disabled]{color:var(--dim)}
+#hornBtn .ring{position:absolute;inset:-4px;border-radius:50%;pointer-events:none}
+#toast{position:absolute;left:50%;top:calc(66px + var(--sat));transform:translateX(-50%);background:rgba(8,16,27,.78);border:1px solid var(--line);border-radius:99px;padding:6px 14px;font:14px Georgia,serif;color:var(--amber2);white-space:nowrap;opacity:0;transition:opacity .3s;max-width:92vw;overflow:hidden;text-overflow:ellipsis}
+#toast.on{opacity:1}
+.sheet{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;padding:calc(14px + var(--sat)) calc(14px + var(--sar)) calc(14px + var(--sab)) calc(14px + var(--sal));background:rgba(6,12,21,.8);overflow-y:auto;overflow-x:hidden}
+.sheet[hidden]{display:none}
+.card{width:100%;max-width:420px;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px;margin:auto;box-shadow:0 0 0 4px rgba(239,230,210,.04)}
+.card h1{margin:0 0 2px;font-size:38px;letter-spacing:1px;line-height:1.05;font-weight:600}
+.card h1 em{color:var(--amber);font-style:normal}
+.card h2{margin:0 0 10px;font-size:22px;font-weight:600}
+.card p{margin:0 0 12px;color:var(--mute);line-height:1.5;font-size:15px}
+.card .tag{display:inline-block;font:12px system-ui,sans-serif;color:var(--amber2);border:1px solid rgba(255,190,92,.4);border-radius:99px;padding:3px 10px;margin-bottom:12px}
+.card .log{font-style:italic;color:var(--cream);border-left:3px solid var(--amber);padding:2px 0 2px 12px;margin:0 0 14px;line-height:1.5}
+.card ul{margin:0 0 14px;padding-left:18px;color:var(--mute);line-height:1.5;font-size:15px} .card li{margin-bottom:6px} .card b{color:var(--cream)}
+.btn{display:block;width:100%;min-height:48px;margin:8px 0 0;border-radius:12px;border:1px solid var(--line);background:var(--ink2);color:var(--cream);font:600 16px system-ui,sans-serif;cursor:pointer}
+.btn.pri{background:var(--amber);color:#2a1a05;border-color:var(--amber)}
+.btn.sm{min-height:40px;font-size:14px}
+.row{display:flex;gap:8px} .row .btn{flex:1}
+.nights{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:6px 0 4px}
+.night{min-height:74px;border-radius:12px;border:1px solid var(--line);background:var(--ink2);color:var(--cream);font:600 15px Georgia,serif;cursor:pointer;padding:8px;text-align:left}
+.night small{display:block;font:12px system-ui,sans-serif;color:var(--mute);margin-top:3px}
+.night .st{color:var(--amber);letter-spacing:2px;font-size:14px;margin-top:4px;display:block}
+.night[disabled]{opacity:.38;cursor:default}
+.stars{font-size:34px;letter-spacing:6px;color:var(--amber);text-align:center;margin:4px 0 8px}
+.stars .off{color:rgba(239,230,210,.18)}
+.stat{display:flex;justify-content:space-between;font:15px system-ui,sans-serif;color:var(--mute);padding:6px 0;border-bottom:1px solid var(--line)} .stat b{font-variant-numeric:tabular-nums}
+.fq{margin:0 0 12px} .fq .q{font:14px system-ui,sans-serif;color:var(--cream);margin-bottom:6px}
+.fq .opts{display:flex;flex-wrap:wrap;gap:6px}
+.fq button{min-height:40px;min-width:44px;padding:0 12px;border-radius:10px;border:1px solid var(--line);background:var(--ink2);color:var(--cream);font:14px system-ui,sans-serif;cursor:pointer}
+.fq button[aria-pressed="true"]{background:var(--amber);color:#2a1a05;border-color:var(--amber)}
+textarea,input[type=text]{width:100%;border-radius:10px;border:1px solid var(--line);background:var(--ink2);color:var(--cream);font:15px system-ui,sans-serif;padding:10px;margin-bottom:8px}
+textarea{min-height:76px;resize:vertical}
+.err{color:#ff9d7a;font:13px system-ui,sans-serif;min-height:18px}
+.small{font:12px system-ui,sans-serif;color:var(--dim);text-align:center;margin-top:12px}
+@media (prefers-reduced-motion:reduce){#toast{transition:none}}
+</style>
+</head>
+<body>
+<!-- © 2026 justaskjoe. All rights reserved. -->
+<div id="game">
+  <canvas id="cv"></canvas>
+  <div class="hud" id="hudL" hidden><div class="a" id="hudNight">First Light</div><div class="b" id="hudDock">Home 0 / 3</div></div>
+  <div class="hud" id="hudR" hidden><div class="w" id="hudWreck"><i></i><i></i><i></i></div><div class="t" id="hudTime">0:00</div></div>
+  <button class="rbtn" id="menuBtn" type="button" aria-label="Menu" hidden>≡</button>
+  <button class="rbtn" id="hornBtn" type="button" aria-label="Foghorn: slow every boat for a moment" hidden><span class="ic">◎</span><span id="hornLbl">Horn</span><span class="ring" id="hornRing"></span></button>
+  <div class="hud" id="toast"></div>
+</div>
+<div class="sheet" id="sheet"><div class="card" id="card"></div></div>
+<script>
+// Lightkeeper engine: pure, deterministic, fixed tick. The UI only draws.
+// © 2026 justaskjoe. All rights reserved.
+(function (root) {
+  'use strict';
+  const W = 360, H = 640, DT = 1 / 30;
+  const LAMP = { x: 180, y: 590 };
+  const DOCK_R = 34;          // ships inside this ring are home
+  const CALM_R = 72;          // no ship-ship bumps inside the harbor ring
+  const SHIP_R = 5;           // hull radius for reef hits
+  const BUMP_R = 11;          // ship-ship collision distance
+  const TURN = 1.05;          // rad/s a lit ship turns toward the lamp
+  const BEAM_SLEW = 5.5;      // rad/s the beam follows your thumb
+  const BEAM_HALF = 0.15;     // half-width of the beam in radians
+  const BEAM_RANGE = 720, FOG_RANGE = 250;
+  const HORN_T = 2.5, HORN_CD = 9, HORN_SLOW = 0.35;
+  const MAX_WRECKS = 3;
+  const HEADLANDS = [{ x: 104, y: 616, r: 34 }, { x: 256, y: 616, r: 34 }];
+  const NAMES = ['Maud', 'Little Wren', 'Saltgrace', 'Pell', 'Old Tansy', 'Brightwater', 'Hester', 'Kittiwake', 'Morrow', 'Fen Lass', 'Juniper', 'Goodhope', 'Dovey', 'Sorrel'];
+
+  // h is the starting heading in degrees: 0 = east, 90 = south (down the screen).
+  const NIGHTS = [
+    { id: 1, name: 'First Light', log: 'One boat tonight. Find her with the beam and she will turn toward you.',
+      v: 26, par: 54, reefs: [],
+      ships: [{ t: 1, x: 110, y: -10, h: 60 }, { t: 13, x: 262, y: -10, h: 118 }, { t: 25, x: -10, y: 120, h: 18 }] },
+    { id: 2, name: 'The Teeth', log: 'The Teeth are out tonight. A lit boat comes straight at you, rocks or no rocks. Let her run dark until the way is clear.',
+      v: 26, par: 54, reefs: [{ x: 180, y: 286, r: 26 }, { x: 124, y: 336, r: 16 }, { x: 240, y: 340, r: 16 }, { x: 180, y: 404, r: 14 }],
+      ships: [{ t: 1, x: 60, y: -10, h: 60 }, { t: 10, x: 300, y: -10, h: 110 }, { t: 19, x: 180, y: -10, h: 58 }, { t: 28, x: -10, y: 210, h: 4 }] },
+    { id: 3, name: 'Crossing', log: 'Two fleets home at once, port and starboard. Once a boat points at you, she keeps coming in the dark. Move on.',
+      v: 26, par: 54, reefs: [{ x: 108, y: 392, r: 22 }, { x: 252, y: 392, r: 22 }],
+      ships: [{ t: 1, x: -10, y: 160, h: 10 }, { t: 1.5, x: 370, y: 172, h: 170 }, { t: 11, x: -10, y: 262, h: 4 }, { t: 12, x: 370, y: 250, h: 176 }, { t: 20, x: 146, y: -10, h: 76 }, { t: 21, x: 214, y: -10, h: 104 }] },
+    { id: 4, name: 'Set Current', log: 'The tide is running east. Boats you pointed home will drift. Touch them up.',
+      v: 25, par: 66, current: { x: 7, y: 0 }, reefs: [{ x: 250, y: 240, r: 22 }, { x: 300, y: 446, r: 20 }, { x: 140, y: 384, r: 18 }],
+      ships: [{ t: 1, x: 40, y: -10, h: 82 }, { t: 8, x: 290, y: -10, h: 96 }, { t: 16, x: -10, y: 300, h: -8 }, { t: 23, x: 96, y: -10, h: 96 }, { t: 30, x: -10, y: 124, h: 50 }, { t: 37, x: 310, y: -10, h: 100 }] },
+    { id: 5, name: 'Fog', log: 'Fog. The beam reaches half as far, and you will only see a boat when your light finds her. Sweep.',
+      v: 24, par: 78, fog: true, reefs: [{ x: 112, y: 420, r: 18 }, { x: 248, y: 412, r: 18 }, { x: 180, y: 476, r: 12 }],
+      ships: [{ t: 1, x: 70, y: -10, h: 82 }, { t: 9, x: 290, y: -10, h: 98 }, { t: 17, x: -10, y: 300, h: 30 }, { t: 25, x: 370, y: 330, h: 136 }, { t: 33, x: 180, y: -10, h: 82 }, { t: 41, x: 60, y: -10, h: 72 }] },
+    { id: 6, name: 'Storm', log: 'A blow coming in. Gusts knock dark boats off course. Keep them lit, keep them pointed, use the horn.',
+      v: 26, par: 70, storm: true, current: { x: -4, y: 0 }, reefs: [{ x: 180, y: 320, r: 20 }, { x: 100, y: 436, r: 18 }, { x: 260, y: 436, r: 18 }],
+      ships: [{ t: 1, x: 80, y: -10, h: 70 }, { t: 7, x: 300, y: -10, h: 100 }, { t: 14, x: -10, y: 180, h: 16 }, { t: 20, x: 370, y: 140, h: 162 }, { t: 27, x: 150, y: -10, h: 62 }, { t: 33, x: 250, y: -10, h: 98 }, { t: 40, x: -10, y: 236, h: 0 }, { t: 46, x: 370, y: 350, h: 184 }] },
+  ];
+
+  function rng(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+  const wrap = a => { while (a > Math.PI) a -= 2 * Math.PI; while (a < -Math.PI) a += 2 * Math.PI; return a; };
+  const clampAim = a => Math.max(-Math.PI + 0.04, Math.min(-0.04, a));
+
+  function create(nightIdx, seed) {
+    const def = NIGHTS[nightIdx];
+    const G = {
+      def, night: nightIdx, tick: 0, t: 0, rnd: rng((seed || 1) * 7919 + nightIdx * 131),
+      beam: { a: -Math.PI / 2, target: -Math.PI / 2, range: def.fog ? FOG_RANGE : BEAM_RANGE },
+      horn: { t: 0, cd: 0 }, ships: [], next: 0, docked: 0, wrecks: 0, over: null, stars: 0,
+      gust: { at: Infinity, flash: 0, dir: 0 }, ev: [], log: [],
+    };
+    G.gust.at = def.storm ? 3 + G.rnd() * 3 : Infinity;
+    return G;
+  }
+
+  function reefsOf(G) { return G.def.reefs.concat(HEADLANDS); }
+
+  function inBeam(G, s) {
+    const dx = s.x - LAMP.x, dy = s.y - LAMP.y, d = Math.hypot(dx, dy);
+    if (d > G.beam.range || d < 1) return d < 1;
+    return Math.abs(wrap(Math.atan2(dy, dx) - G.beam.a)) < BEAM_HALF + 7 / d;
+  }
+
+  function act(G, intent) {
+    if (G.over) return false;
+    if (intent.k === 'aim') { intent = { k: 'aim', a: +(+intent.a).toFixed(4) }; if (!isFinite(intent.a)) return false; G.beam.target = clampAim(intent.a); }
+    else if (intent.k === 'horn') { if (G.horn.cd > 0) return false; G.horn.t = HORN_T; G.horn.cd = HORN_CD; G.ev.push({ k: 'horn' }); }
+    else return false;
+    G.log.push([G.tick, intent.k, intent.a === undefined ? null : +intent.a.toFixed(4)]);
+    return true;
+  }
+
+  // Move one ship one tick. Shared by the game and the forecast so they always agree.
+  function moveShip(G, s, lit, slow) {
+    if (lit) { const want = Math.atan2(LAMP.y - s.y, LAMP.x - s.x); const d = wrap(want - s.h); s.h = wrap(s.h + Math.max(-TURN * DT, Math.min(TURN * DT, d))); }
+    const k = slow ? HORN_SLOW : 1, c = G.def.current || { x: 0, y: 0 };
+    s.x += (Math.cos(s.h) * G.def.v + c.x) * k * DT;
+    s.y += (Math.sin(s.h) * G.def.v + c.y) * k * DT;
+  }
+  function fate(G, s) {
+    if (Math.hypot(s.x - LAMP.x, s.y - LAMP.y) < DOCK_R) return 'dock';
+    for (const r of reefsOf(G)) if (Math.hypot(s.x - r.x, s.y - r.y) < r.r + SHIP_R) return 'wreck';
+    if (s.x < -40 || s.x > W + 40 || s.y < -60 || s.y > H + 20) return 'lost';
+    return null;
+  }
+
+  // Where does this ship end up if it is lit (or dark) from now on, alone? Used by the bot and the dotted course line.
+  function forecast(G, s, lit, maxT, pts) {
+    const g = { x: s.x, y: s.y, h: s.h };
+    const n = Math.round((maxT || 30) / DT);
+    for (let i = 0; i < n; i++) {
+      moveShip(G, g, lit && Math.hypot(g.x - LAMP.x, g.y - LAMP.y) <= G.beam.range, false);
+      if (pts && i % 6 === 5) pts.push(g.x, g.y);
+      const f = fate(G, g); if (f) return { res: f, t: (i + 1) * DT, x: g.x, y: g.y };
+    }
+    return { res: 'sail', t: maxT, x: g.x, y: g.y };
+  }
+
+  function step(G) {
+    if (G.over) return;
+    G.tick++; G.t = G.tick * DT;
+    const def = G.def;
+    while (G.next < def.ships.length && def.ships[G.next].t <= G.t) {
+      const sp = def.ships[G.next];
+      G.ships.push({ id: G.next, name: NAMES[(G.next + G.night * 3) % NAMES.length], x: sp.x, y: sp.y, h: sp.h * Math.PI / 180, st: 'sail', lit: false, litT: 0 });
+      G.ev.push({ k: 'spawn', id: G.next }); G.next++;
+    }
+    const d = wrap(G.beam.target - G.beam.a);
+    G.beam.a = clampAim(G.beam.a + Math.max(-BEAM_SLEW * DT, Math.min(BEAM_SLEW * DT, d)));
+    if (G.horn.t > 0) G.horn.t = Math.max(0, G.horn.t - DT);
+    if (G.horn.cd > 0) G.horn.cd = Math.max(0, G.horn.cd - DT);
+    if (G.gust.flash > 0) G.gust.flash = Math.max(0, G.gust.flash - DT);
+    if (G.t >= G.gust.at) {
+      const kick = (G.rnd() < 0.5 ? -1 : 1) * (0.18 + G.rnd() * 0.16);
+      for (const s of G.ships) if (s.st === 'sail' && !inBeam(G, s)) s.h = wrap(s.h + kick);
+      G.gust.at = G.t + 6 + G.rnd() * 3; G.gust.flash = 0.8; G.gust.dir = kick; G.ev.push({ k: 'gust' });
+    }
+    const slow = G.horn.t > 0;
+    for (const s of G.ships) {
+      if (s.st !== 'sail') continue;
+      s.lit = inBeam(G, s); if (s.lit) s.litT += DT;
+      moveShip(G, s, s.lit, slow);
+      const f = fate(G, s);
+      if (f === 'dock') { s.st = 'dock'; G.docked++; G.ev.push({ k: 'dock', id: s.id, n: G.docked }); }
+      else if (f) { s.st = f === 'wreck' ? 'wreck' : 'lost'; G.wrecks++; G.ev.push({ k: f, id: s.id, x: s.x, y: s.y }); }
+    }
+    const live = G.ships.filter(s => s.st === 'sail');
+    for (let i = 0; i < live.length; i++) for (let j = i + 1; j < live.length; j++) {
+      const a = live[i], b = live[j];
+      if (a.st !== 'sail' || b.st !== 'sail') continue;
+      if (Math.hypot(a.x - LAMP.x, a.y - LAMP.y) < CALM_R && Math.hypot(b.x - LAMP.x, b.y - LAMP.y) < CALM_R) continue;
+      if (Math.hypot(a.x - b.x, a.y - b.y) < BUMP_R) { a.st = b.st = 'wreck'; G.wrecks += 2; G.ev.push({ k: 'wreck', id: a.id, x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, both: true }); }
+    }
+    if (G.wrecks >= MAX_WRECKS) { G.over = 'lost'; G.stars = 0; G.ev.push({ k: 'over', won: false }); return; }
+    if (G.next >= def.ships.length && !G.ships.some(s => s.st === 'sail')) {
+      G.over = 'won'; G.stars = 1 + (G.wrecks === 0 ? 1 : 0) + (G.t <= def.par ? 1 : 0); G.ev.push({ k: 'over', won: true });
+    }
+  }
+
+  function hash(G) { let h = G.tick | 0; for (const s of G.ships) h = (Math.imul(h, 31) + Math.round(s.x * 10) * 7 + Math.round(s.y * 10) * 13 + Math.round(s.h * 1000)) | 0; return (h >>> 0).toString(16); }
+
+  // Replay a seed + intent log (for tests and future daily nights).
+  function replay(nightIdx, seed, log, maxTicks) {
+    const G = create(nightIdx, seed); let i = 0;
+    while (!G.over && G.tick < (maxTicks || 9000)) { while (i < log.length && log[i][0] <= G.tick) { const [, k, a] = log[i++]; act(G, k === 'aim' ? { k, a } : { k }); } step(G); }
+    return G;
+  }
+
+  const API = { W, H, DT, LAMP, DOCK_R, CALM_R, BEAM_HALF, HEADLANDS, NIGHTS, MAX_WRECKS, create, act, step, inBeam, forecast, hash, replay, reefsOf, wrap };
+  if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.LK = API;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+// Lightkeeper renderer: draws the engine state on a canvas. Everything is drawn in code; no images.
+// Look: linocut print. Ink blue night, carved cream lines, one warm amber light.
+// © 2026 justaskjoe. All rights reserved.
+(function () {
+  'use strict';
+  const LK = window.LK, L = LK.LAMP;
+  const C = { ink: '#0d1a2b', ink2: '#132438', cream: '#efe6d2', amber: '#ffbe5c', rust: '#c8643c', land: '#191611', rock: '#25221b', hullDark: '#5b7086', hullLit: '#ecc888' };
+  let cv, cx, V = { s: 1, ox: 0, oy: 0, w: 1, h: 1, dpr: 1 };
+  const shapeCache = new Map();
+
+  function init(c) { cv = c; cx = c.getContext('2d'); resize(); }
+  function resize() {
+    const dpr = Math.min(2, window.devicePixelRatio || 1), w = cv.clientWidth || innerWidth, h = cv.clientHeight || innerHeight;
+    cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
+    const s = Math.min(w / LK.W, h / LK.H);
+    V = { s, ox: (w - LK.W * s) / 2, oy: (h - LK.H * s) / 2, w, h, dpr };
+  }
+  const toWorld = (px, py) => ({ x: (px - V.ox) / V.s, y: (py - V.oy) / V.s });
+  const toScreen = (x, y) => ({ x: V.ox + x * V.s, y: V.oy + y * V.s });
+  const worldRect = () => ({ x0: -V.ox / V.s, y0: -V.oy / V.s, x1: (V.w - V.ox) / V.s, y1: (V.h - V.oy) / V.s });
+
+  function prng(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+  // An irregular carved rock outline for a reef, the same every frame.
+  function rockShape(r) {
+    const key = r.x + ',' + r.y + ',' + r.r; if (shapeCache.has(key)) return shapeCache.get(key);
+    const rnd = prng(r.x * 73 + r.y * 31 + r.r), n = 11, pts = [];
+    for (let i = 0; i < n; i++) { const a = i / n * Math.PI * 2, k = 0.78 + rnd() * 0.3; pts.push([Math.cos(a) * r.r * k, Math.sin(a) * r.r * k]); }
+    const hatch = []; for (let i = 0; i < 4; i++) { const y = (rnd() - 0.5) * r.r * 1.1, w = r.r * (0.35 + rnd() * 0.4); hatch.push([-w / 2 + (rnd() - 0.5) * 6, y, w]); }
+    const out = { pts, hatch }; shapeCache.set(key, out); return out;
+  }
+
+  function sea(t) {
+    const R = worldRect();
+    cx.fillStyle = C.ink; cx.fillRect(R.x0 - 2, R.y0 - 2, R.x1 - R.x0 + 4, R.y1 - R.y0 + 4);
+    cx.strokeStyle = 'rgba(239,230,210,0.075)'; cx.lineWidth = 1.2;
+    const step = 22, start = Math.floor(R.y0 / step) * step;
+    for (let y = start, i = 0; y < R.y1; y += step, i++) {
+      cx.beginPath();
+      for (let x = R.x0 - 10, j = 0; x <= R.x1 + 10; x += 12, j++) {
+        const yy = y + Math.sin(x * 0.04 + t * 0.55 + i * 1.7) * 3 + Math.sin(x * 0.11 - t * 0.3 + i) * 1.2;
+        // carved look: break each line into dashes
+        if (j % 7 === 6) cx.moveTo(x, yy); else if (j === 0) cx.moveTo(x, yy); else cx.lineTo(x, yy);
+      }
+      cx.stroke();
+    }
+  }
+
+  function reef(r, t, foam) {
+    const sh = rockShape(r);
+    cx.save(); cx.translate(r.x, r.y);
+    if (foam) {
+      cx.strokeStyle = 'rgba(239,230,210,0.32)'; cx.lineWidth = 1.4; cx.setLineDash([3, 5]); cx.lineDashOffset = -t * 6;
+      cx.beginPath(); cx.arc(0, 0, r.r + 6 + Math.sin(t * 1.3 + r.x) * 1.2, 0, Math.PI * 2); cx.stroke(); cx.setLineDash([]);
+    }
+    cx.beginPath(); sh.pts.forEach(([x, y], i) => i ? cx.lineTo(x, y) : cx.moveTo(x, y)); cx.closePath();
+    cx.fillStyle = C.rock; cx.fill(); cx.strokeStyle = 'rgba(239,230,210,0.7)'; cx.lineWidth = 1.3; cx.stroke();
+    cx.strokeStyle = 'rgba(239,230,210,0.28)'; cx.lineWidth = 1;
+    for (const [x, y, w] of sh.hatch) { cx.beginPath(); cx.moveTo(x, y); cx.lineTo(x + w, y - 2); cx.stroke(); }
+    cx.restore();
+  }
+
+  function land(G, t) {
+    const R = worldRect();
+    // shore with a harbor notch under the lighthouse
+    cx.beginPath(); cx.moveTo(R.x0 - 10, 626);
+    for (let x = R.x0 - 10; x < 136; x += 10) cx.lineTo(x, 626 + Math.sin(x * 0.2) * 2.5);
+    cx.lineTo(146, 636); cx.lineTo(214, 636); cx.lineTo(224, 626);
+    for (let x = 230; x <= R.x1 + 10; x += 10) cx.lineTo(x, 626 + Math.sin(x * 0.2) * 2.5);
+    cx.lineTo(R.x1 + 10, R.y1 + 10); cx.lineTo(R.x0 - 10, R.y1 + 10); cx.closePath();
+    cx.fillStyle = C.land; cx.fill(); cx.strokeStyle = 'rgba(239,230,210,0.6)'; cx.lineWidth = 1.3; cx.stroke();
+    // carved hatching on land
+    cx.strokeStyle = 'rgba(239,230,210,0.12)'; cx.lineWidth = 1;
+    for (let y = 640; y < R.y1; y += 9) for (let x = R.x0 + ((y / 9) % 2) * 12; x < R.x1; x += 24) { if (x > 140 && x < 220 && y < 646) continue; cx.beginPath(); cx.moveTo(x, y); cx.lineTo(x + 10, y - 2); cx.stroke(); }
+    for (const h of LK.HEADLANDS) reef(h, t, true);
+    // piers
+    cx.strokeStyle = 'rgba(239,230,210,0.55)'; cx.lineWidth = 3;
+    cx.beginPath(); cx.moveTo(150, 636); cx.lineTo(160, 612); cx.moveTo(210, 636); cx.lineTo(200, 612); cx.stroke();
+    // harbor ring
+    cx.strokeStyle = 'rgba(255,190,92,0.28)'; cx.lineWidth = 1.2; cx.setLineDash([2, 6]);
+    cx.beginPath(); cx.arc(L.x, L.y, LK.DOCK_R, Math.PI * 1.0, Math.PI * 2.0); cx.stroke(); cx.setLineDash([]);
+  }
+
+  function lighthouse(G, t) {
+    cx.save(); cx.translate(L.x, L.y + 6);
+    cx.fillStyle = C.rock; cx.strokeStyle = 'rgba(239,230,210,0.7)'; cx.lineWidth = 1.2;
+    cx.beginPath(); cx.ellipse(0, 3, 15, 9, 0, 0, Math.PI * 2); cx.fill(); cx.stroke();
+    cx.fillStyle = C.cream; cx.beginPath(); cx.arc(0, -2, 8, 0, Math.PI * 2); cx.fill();
+    cx.strokeStyle = C.rust; cx.lineWidth = 2.4; cx.beginPath(); cx.arc(0, -2, 5.5, 0, Math.PI * 2); cx.stroke();
+    cx.fillStyle = C.amber; cx.beginPath(); cx.arc(0, -2, 3, 0, Math.PI * 2); cx.fill();
+    cx.restore();
+  }
+
+  function beam(G, t, demo) {
+    const a = G.beam.a, half = LK.BEAM_HALF, rng = G.beam.range;
+    cx.save(); cx.globalCompositeOperation = 'lighter';
+    const g = cx.createRadialGradient(L.x, L.y, 4, L.x, L.y, rng);
+    g.addColorStop(0, 'rgba(255,206,120,0.55)'); g.addColorStop(0.35, 'rgba(255,190,92,0.22)'); g.addColorStop(1, 'rgba(255,190,92,0)');
+    cx.fillStyle = g;
+    cx.beginPath(); cx.moveTo(L.x, L.y); cx.arc(L.x, L.y, rng, a - half, a + half); cx.closePath(); cx.fill();
+    const g2 = cx.createRadialGradient(L.x, L.y, 4, L.x, L.y, rng * 0.8);
+    g2.addColorStop(0, 'rgba(255,190,92,0.16)'); g2.addColorStop(1, 'rgba(255,190,92,0)');
+    cx.fillStyle = g2; cx.beginPath(); cx.moveTo(L.x, L.y); cx.arc(L.x, L.y, rng * 0.8, a - half * 2, a + half * 2); cx.closePath(); cx.fill();
+    // lamp halo
+    const h = cx.createRadialGradient(L.x, L.y, 0, L.x, L.y, 26);
+    h.addColorStop(0, 'rgba(255,214,144,0.75)'); h.addColorStop(1, 'rgba(255,190,92,0)');
+    cx.fillStyle = h; cx.beginPath(); cx.arc(L.x, L.y, 26, 0, Math.PI * 2); cx.fill();
+    cx.restore();
+  }
+
+  function ship(G, s, U, t, fogHidden) {
+    const lit = s.st === 'sail' && s.lit;
+    let alpha = 1;
+    if (s.st === 'dock') { const k = Math.min(1, (t - (s.endT || t)) / 1.2); alpha = 1 - k; if (alpha <= 0) return; }
+    if (s.st === 'lost') { const k = Math.min(1, (t - (s.endT || t)) / 1.5); alpha = 1 - k; if (alpha <= 0) return; }
+    if (s.st === 'wreck') alpha = 0.75;
+    if (fogHidden && !lit && s.st === 'sail') alpha = 0.14;
+    cx.save(); cx.globalAlpha = alpha;
+    // wake
+    const wk = U.wakes[s.id];
+    if (wk && wk.length > 1 && s.st === 'sail') {
+      cx.strokeStyle = 'rgba(239,230,210,0.14)'; cx.lineWidth = 2;
+      cx.beginPath(); wk.forEach((p, i) => i ? cx.lineTo(p[0], p[1]) : cx.moveTo(p[0], p[1])); cx.lineTo(s.x, s.y); cx.stroke();
+    }
+    // where she goes if left dark
+    if (s.st === 'sail' && !lit && !fogHidden) {
+      const pts = []; LK.forecast(G, s, false, 3.2, pts);
+      cx.fillStyle = 'rgba(239,230,210,0.45)';
+      for (let i = 0; i < pts.length; i += 2) { cx.beginPath(); cx.arc(pts[i], pts[i + 1], 1.1, 0, Math.PI * 2); cx.fill(); }
+    }
+    cx.translate(s.x, s.y); cx.rotate(s.h + (s.st === 'wreck' ? 0.6 + Math.sin(t + s.id) * 0.05 : 0)); cx.scale(1.45, 1.45);
+    cx.beginPath(); cx.moveTo(9, 0); cx.lineTo(3, -4.2); cx.lineTo(-7, -3.6); cx.lineTo(-8.5, 0); cx.lineTo(-7, 3.6); cx.lineTo(3, 4.2); cx.closePath();
+    cx.fillStyle = s.st === 'wreck' ? '#3a3f45' : lit ? C.hullLit : C.hullDark; cx.fill();
+    cx.strokeStyle = C.ink; cx.lineWidth = 1.2; cx.stroke();
+    if (s.st !== 'wreck') {
+      cx.strokeStyle = lit ? '#fff4dc' : C.cream; cx.lineWidth = 1.6;
+      cx.beginPath(); cx.moveTo(-1, -5.5); cx.quadraticCurveTo(4, 0, -1, 5.5); cx.stroke();
+      cx.fillStyle = lit ? '#fff1c8' : 'rgba(255,190,92,0.7)'; cx.beginPath(); cx.arc(6, 0, lit ? 1.8 : 1.2, 0, Math.PI * 2); cx.fill();
+    }
+    cx.restore();
+    if (lit || (fogHidden && s.st === 'sail')) {
+      // lantern glow; in fog a faint glimmer is all you see of a dark boat
+      cx.save(); cx.globalCompositeOperation = 'lighter';
+      const r = lit ? 20 : 8, g = cx.createRadialGradient(s.x, s.y, 0, s.x, s.y, r);
+      g.addColorStop(0, lit ? 'rgba(255,214,144,0.6)' : `rgba(255,190,92,${0.18 + 0.12 * Math.sin(t * 3 + s.id)})`); g.addColorStop(1, 'rgba(255,190,92,0)');
+      cx.fillStyle = g; cx.beginPath(); cx.arc(s.x, s.y, r, 0, Math.PI * 2); cx.fill(); cx.restore();
+    }
+  }
+
+  function fog(t) {
+    const R = worldRect();
+    cx.save();
+    cx.fillStyle = 'rgba(120,134,150,0.30)'; cx.fillRect(R.x0, R.y0, R.x1 - R.x0, R.y1 - R.y0);
+    for (let i = 0; i < 7; i++) {
+      const y = R.y0 + ((i * 113 + t * 6) % (R.y1 - R.y0 + 120)) - 60, x = 180 + Math.sin(t * 0.13 + i * 2) * 90;
+      const g = cx.createRadialGradient(x, y, 10, x, y, 190);
+      g.addColorStop(0, 'rgba(160,172,186,0.28)'); g.addColorStop(1, 'rgba(160,172,186,0)');
+      cx.fillStyle = g; cx.fillRect(x - 200, y - 200, 400, 400);
+    }
+    cx.restore();
+  }
+
+  function storm(G, t) {
+    const R = worldRect();
+    cx.save(); cx.strokeStyle = 'rgba(200,214,230,0.16)'; cx.lineWidth = 1;
+    const rnd = prng(Math.floor(t * 20));
+    cx.beginPath();
+    for (let i = 0; i < 70; i++) { const x = R.x0 + rnd() * (R.x1 - R.x0 + 60), y = R.y0 + rnd() * (R.y1 - R.y0); cx.moveTo(x, y); cx.lineTo(x - 7, y + 16); }
+    cx.stroke();
+    if (G.gust.flash > 0) {
+      const k = G.gust.flash / 0.8, dir = G.gust.dir > 0 ? 1 : -1;
+      cx.strokeStyle = `rgba(239,230,210,${0.35 * k})`; cx.lineWidth = 1.5;
+      for (let i = 0; i < 9; i++) { const y = 60 + i * 60, x0 = 180 - dir * (200 - (1 - k) * 400); cx.beginPath(); cx.moveTo(x0, y); cx.quadraticCurveTo(x0 + dir * 50, y - 8, x0 + dir * 110, y); cx.stroke(); }
+    }
+    cx.restore();
+  }
+
+  function warnings(G, t) {
+    const def = G.def; if (G.next >= def.ships.length) return;
+    const sp = def.ships[G.next], left = sp.t - G.t; if (left > 2.2) return;
+    const R = worldRect();
+    const x = Math.max(Math.max(R.x0, 0) + 12, Math.min(Math.min(R.x1, LK.W) - 12, sp.x)), y = Math.max(Math.max(R.y0, -10) + 14, Math.min(R.y1 - 14, sp.y));
+    const h = sp.h * Math.PI / 180, a = 0.45 + 0.45 * Math.sin(t * 9);
+    cx.save(); cx.translate(x, Math.max(y, 12)); cx.rotate(h); cx.globalAlpha = a;
+    cx.fillStyle = C.amber; cx.beginPath(); cx.moveTo(8, 0); cx.lineTo(-4, -6); cx.lineTo(-1, 0); cx.lineTo(-4, 6); cx.closePath(); cx.fill();
+    cx.restore();
+  }
+
+  function effects(G, U, t) {
+    if (G.horn.t > 0) {
+      const k = 1 - G.horn.t / 2.5;
+      cx.save(); cx.strokeStyle = `rgba(239,230,210,${0.4 * (1 - k)})`; cx.lineWidth = 2;
+      for (let i = 0; i < 3; i++) { const r = ((k * 3 + i / 3) % 1) * 420; cx.beginPath(); cx.arc(L.x, L.y, r, Math.PI, Math.PI * 2); cx.stroke(); }
+      cx.restore();
+    }
+    U.fx = U.fx.filter(f => t - f.t0 < 1.4);
+    for (const f of U.fx) {
+      const k = (t - f.t0) / 1.4;
+      cx.save(); cx.lineWidth = 1.6;
+      cx.strokeStyle = f.k === 'dock' ? `rgba(255,190,92,${1 - k})` : `rgba(239,230,210,${0.8 * (1 - k)})`;
+      cx.beginPath(); cx.arc(f.x, f.y, 6 + k * (f.k === 'dock' ? 30 : 18), 0, Math.PI * 2); cx.stroke(); cx.restore();
+    }
+  }
+
+  function draw(G, U, t, opts) {
+    opts = opts || {};
+    cx.setTransform(V.dpr, 0, 0, V.dpr, 0, 0);
+    cx.fillStyle = C.ink; cx.fillRect(0, 0, V.w, V.h);
+    cx.setTransform(V.dpr * V.s, 0, 0, V.dpr * V.s, V.dpr * V.ox, V.dpr * V.oy);
+    sea(t);
+    for (const r of G.def.reefs) reef(r, t, true);
+    land(G, t);
+    const fogNight = !!G.def.fog;
+    for (const s of G.ships) ship(G, s, U, t, fogNight);
+    if (fogNight) fog(t);
+    beam(G, t, opts.demo);
+    if (fogNight) for (const s of G.ships) if (s.st === 'sail' && s.lit) ship(G, s, U, t, false); // lit boats show through the fog
+    lighthouse(G, t);
+    if (G.def.storm) storm(G, t);
+    if (!opts.demo) warnings(G, t);
+    effects(G, U, t);
+  }
+
+  window.LKR = { init, resize, draw, toWorld, toScreen, colors: C };
+})();
+
+</script>
+<script>
+// Lightkeeper audio: everything is synthesized with WebAudio. No samples, no licensed music.
+// Sea wash (filtered noise), a slow minor drone, a bell per boat home that climbs the scale,
+// a wooden knock for a wreck, a foghorn, gust whooshes, and a major chord when every boat is home.
+// © 2026 justaskjoe. All rights reserved.
+(function () {
+  'use strict';
+  let ac = null, master = null, on = true, bed = null;
+  // A natural minor, climbing; the win chord lifts to A major.
+  const SCALE = [440, 523.25, 587.33, 659.25, 783.99, 880, 1046.5, 1174.66, 1318.5];
+
+  function ensure() {
+    if (ac) { if (ac.state === 'suspended') ac.resume(); return ac; }
+    const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return null;
+    ac = new AC(); master = ac.createGain(); master.gain.value = on ? 0.9 : 0; master.connect(ac.destination);
+    return ac;
+  }
+  function noiseBuf(sec) { const b = ac.createBuffer(1, Math.floor(ac.sampleRate * sec), ac.sampleRate), d = b.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; return b; }
+  function env(g, t, a, peak, d) { g.gain.cancelScheduledValues(t); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(peak, t + a); g.gain.exponentialRampToValueAtTime(0.0001, t + a + d); }
+
+  function startBed() {
+    if (!ensure() || bed) return;
+    const t = ac.currentTime;
+    const n = ac.createBufferSource(); n.buffer = noiseBuf(3); n.loop = true;
+    const lp = ac.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 520;
+    const g = ac.createGain(); g.gain.value = 0.07;
+    const lfo = ac.createOscillator(); lfo.frequency.value = 0.09; const lg = ac.createGain(); lg.gain.value = 0.045; lfo.connect(lg); lg.connect(g.gain);
+    n.connect(lp); lp.connect(g); g.connect(master); n.start(t); lfo.start(t);
+    const dg = ac.createGain(); dg.gain.value = 0.0001; dg.gain.exponentialRampToValueAtTime(0.028, t + 3);
+    const dl = ac.createBiquadFilter(); dl.type = 'lowpass'; dl.frequency.value = 700; dl.connect(dg); dg.connect(master);
+    const oscs = [110, 164.81, 110.4].map((f, i) => { const o = ac.createOscillator(); o.type = i === 1 ? 'triangle' : 'sine'; o.frequency.value = f; o.connect(dl); o.start(t); return o; });
+    bed = { n, lfo, oscs, dg };
+  }
+
+  function bell(i) {
+    if (!ensure()) return; const t = ac.currentTime, f = SCALE[Math.min(SCALE.length - 1, Math.max(0, i))];
+    [[1, 0.16, 2.2], [2.76, 0.05, 0.9], [5.4, 0.02, 0.4]].forEach(([m, p, d]) => {
+      const o = ac.createOscillator(), g = ac.createGain(); o.type = 'sine'; o.frequency.value = f * m; o.connect(g); g.connect(master); env(g, t, 0.006, p, d); o.start(t); o.stop(t + d + 0.1);
+    });
+  }
+  function knock() {
+    if (!ensure()) return; const t = ac.currentTime;
+    const o = ac.createOscillator(), g = ac.createGain(); o.frequency.setValueAtTime(140, t); o.frequency.exponentialRampToValueAtTime(55, t + 0.25); o.connect(g); g.connect(master); env(g, t, 0.004, 0.35, 0.3); o.start(t); o.stop(t + 0.4);
+    const n = ac.createBufferSource(); n.buffer = noiseBuf(0.3); const bp = ac.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 320; bp.Q.value = 1.2;
+    const ng = ac.createGain(); n.connect(bp); bp.connect(ng); ng.connect(master); env(ng, t, 0.003, 0.3, 0.22); n.start(t);
+  }
+  function horn() {
+    if (!ensure()) return; const t = ac.currentTime;
+    const lp = ac.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 360; lp.Q.value = 2;
+    const g = ac.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.22, t + 0.18); g.gain.setValueAtTime(0.22, t + 1.1); g.gain.exponentialRampToValueAtTime(0.0001, t + 1.7);
+    lp.connect(g); g.connect(master);
+    [98, 103.6].forEach(f => { const o = ac.createOscillator(); o.type = 'sawtooth'; o.frequency.value = f; o.connect(lp); o.start(t); o.stop(t + 1.8); });
+  }
+  function gust() {
+    if (!ensure()) return; const t = ac.currentTime;
+    const n = ac.createBufferSource(); n.buffer = noiseBuf(1.3); const bp = ac.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = 0.8;
+    bp.frequency.setValueAtTime(300, t); bp.frequency.exponentialRampToValueAtTime(1300, t + 0.6); bp.frequency.exponentialRampToValueAtTime(400, t + 1.2);
+    const g = ac.createGain(); n.connect(bp); bp.connect(g); g.connect(master); env(g, t, 0.35, 0.16, 0.9); n.start(t);
+  }
+  function chord(won) {
+    if (!ensure()) return; const t = ac.currentTime;
+    const notes = won ? [220, 277.18, 329.63, 440, 554.37] : [146.83, 174.61];
+    notes.forEach((f, i) => { const o = ac.createOscillator(), g = ac.createGain(); o.type = won ? 'sine' : 'triangle'; o.frequency.value = f; o.connect(g); g.connect(master); const s = t + i * (won ? 0.09 : 0.35); env(g, s, 0.02, won ? 0.09 : 0.08, won ? 3 : 1.4); o.start(s); o.stop(s + 3.2); });
+  }
+  function tick() {
+    if (!ensure()) return; const t = ac.currentTime;
+    const o = ac.createOscillator(), g = ac.createGain(); o.type = 'triangle'; o.frequency.value = 1320; o.connect(g); g.connect(master); env(g, t, 0.003, 0.03, 0.12); o.start(t); o.stop(t + 0.2);
+  }
+  function setOn(v) { on = !!v; if (master) master.gain.setTargetAtTime(on ? 0.9 : 0, ac.currentTime, 0.05); }
+
+  window.LKA = { ensure, startBed, bell, knock, horn, gust, chord, tick, setOn, get on() { return on; } };
+})();
+
+</script>
+<script>
+// Lightkeeper UI: input, sheets, HUD, save, feedback. Every player action goes through LK.act().
+// © 2026 justaskjoe. All rights reserved.
+(function () {
+  'use strict';
+  const LK = window.LK, R = window.LKR, A = window.LKA;
+  const $ = id => document.getElementById(id);
+  const cv = $('cv'), sheet = $('sheet'), card = $('card');
+  const SAVE_KEY = 'lightkeeper-v1';
+  const VERSION = 'v1';
+
+  function readSave() { try { const s = JSON.parse(localStorage.getItem(SAVE_KEY)); if (s && Array.isArray(s.stars)) return s; } catch (e) {} return { stars: LK.NIGHTS.map(() => 0), sound: true }; }
+  function writeSave() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(U.save)); } catch (e) {} }
+
+  const U = {
+    G: LK.create(0, 1), mode: 'title', night: 0, save: readSave(), speed: 1, test: false,
+    acc: 0, last: 0, wakes: {}, fx: [], fb: {}, lastRes: null, keys: {}, down: false, toastT: 0, seed: 1,
+  };
+  A.setOn(U.save.sound !== false);
+
+  const unlocked = i => U.test || i === 0 || U.save.stars[i - 1] > 0;
+  const fmtT = t => Math.floor(t / 60) + ':' + String(Math.floor(t % 60)).padStart(2, '0');
+  const starStr = n => '★'.repeat(n) + '<span class="off">' + '★'.repeat(3 - n) + '</span>';
+  const TWIST = [
+    'Drag anywhere to swing the beam. A lit boat turns toward the lighthouse.',
+    'Dotted lines show where a dark boat is heading. Light her only once that line is clear of rocks.',
+    'A boat pointing at you keeps coming in the dark. Point one, then move to the next.',
+    'The current pushes boats east, even ones you already pointed home.',
+    'You can only see a boat when your light finds her. Watch for faint lantern glimmers.',
+    'Gusts knock dark boats off course. Lit boats hold steady. The horn buys time.',
+  ];
+
+  // ---------- sheets ----------
+  function showSheet(html) { card.innerHTML = html; sheet.hidden = false; card.scrollTop = 0; sheet.scrollTop = 0; }
+  function hideSheet() { sheet.hidden = true; }
+  function setHud(on) { ['hudL', 'hudR', 'menuBtn', 'hornBtn'].forEach(id => { $(id).hidden = !on; }); }
+
+  function titleScreen() {
+    U.mode = 'title'; setHud(false); U.G = LK.create(0, 1); U.wakes = {};
+    const total = U.save.stars.reduce((a, b) => a + b, 0);
+    showSheet(`<span class="tag">Prototype ${VERSION} · six nights</span>
+      <h1>Light<em>keeper</em></h1>
+      <p>Boats are coming home in the dark, and your lamp is the only thing they can see. Sweep the beam: every boat in your light turns toward the harbor. Every boat in the dark holds her course.</p>
+      <button class="btn pri" data-act="nights" type="button">${total ? 'Choose a night' : 'Light the lamp'}</button>
+      <button class="btn" data-act="how" type="button">How to play</button>
+      <div class="row"><button class="btn sm" data-act="sound" type="button">Sound: ${A.on ? 'on' : 'off'}</button><button class="btn sm" data-act="feedback" type="button">Feedback</button></div>
+      <div class="small">${total ? `${total} of 18 stars` : 'Sound on. One thumb.'} · © 2026 justaskjoe</div>`);
+  }
+  function howScreen() {
+    showSheet(`<h2>How to keep the light</h2>
+      <ul>
+        <li><b>Drag anywhere</b> to swing the beam (arrow keys on a keyboard).</li>
+        <li>A <b>lit boat turns toward you</b>. A <b>dark boat sails straight</b>, along her dotted line.</li>
+        <li>You never steer a boat. You choose <b>when</b> to light her, so she clears the rocks first.</li>
+        <li>Once a boat points at the lighthouse she keeps coming in the dark. Move on to the next one.</li>
+        <li><b>Horn</b> (or Space) slows every boat for a moment. It needs a few seconds to recover.</li>
+        <li>Three wrecks and the night is lost. Boats that sail off the edge are lost too.</li>
+        <li>Stars: every boat home, no wrecks, under par time.</li>
+      </ul>
+      <button class="btn pri" data-act="nights" type="button">Choose a night</button>
+      <button class="btn" data-act="title" type="button">Back</button>`);
+  }
+  function nightsScreen() {
+    U.mode = 'title'; setHud(false);
+    const btns = LK.NIGHTS.map((d, i) => `<button class="night" data-night="${i}" type="button" ${unlocked(i) ? '' : 'disabled'}>Night ${d.id}<small>${d.name}</small><span class="st">${unlocked(i) ? starStr(U.save.stars[i]) : 'locked'}</span></button>`).join('');
+    showSheet(`<h2>Nights</h2><div class="nights">${btns}</div>
+      <button class="btn" data-act="title" type="button">Back</button>
+      ${U.test ? '<div class="small">Tester mode: every night is open. Runs are tagged in feedback.</div>' : ''}`);
+  }
+  function logScreen(i) {
+    U.night = i; const d = LK.NIGHTS[i];
+    showSheet(`<span class="tag">Night ${d.id} of ${LK.NIGHTS.length} · ${d.ships.length} boats</span>
+      <h2>${d.name}</h2>
+      <p class="log">${d.log}</p>
+      <p>${TWIST[i]}</p>
+      <button class="btn pri" data-act="start" type="button">Light the lamp</button>
+      <button class="btn" data-act="nights" type="button">Back</button>`);
+  }
+  function pauseScreen() {
+    if (U.mode !== 'play') return; U.mode = 'pause';
+    showSheet(`<h2>Paused</h2><p>Night ${U.G.def.id}: ${U.G.def.name}. Home ${U.G.docked} of ${U.G.def.ships.length}.</p>
+      <button class="btn pri" data-act="resume" type="button">Resume</button>
+      <button class="btn" data-act="retry" type="button">Restart night</button>
+      <button class="btn" data-act="nights" type="button">Nights</button>
+      <div class="row"><button class="btn sm" data-act="sound" type="button">Sound: ${A.on ? 'on' : 'off'}</button><button class="btn sm" data-act="how" type="button">How to play</button></div>
+      <button class="btn sm" data-act="tester" type="button">${U.test ? 'Tester mode is on' : 'Tester: open every night'}</button>`);
+  }
+  function resultsScreen() {
+    const G = U.G, d = G.def, won = G.over === 'won';
+    U.mode = 'done'; setHud(false); $('toast').classList.remove('on');
+    if (won && !U.test) { U.save.stars[U.night] = Math.max(U.save.stars[U.night], G.stars); writeSave(); }
+    U.lastRes = { night: d.id, won, stars: G.stars, home: G.docked, boats: d.ships.length, wrecks: G.wrecks, time: +G.t.toFixed(1), par: d.par, horns: G.log.filter(l => l[1] === 'horn').length };
+    const last = U.night === LK.NIGHTS.length - 1;
+    const head = won ? (G.wrecks === 0 ? 'Every boat home' : 'The light held') : 'A hard night';
+    const msg = won ? (last ? 'You kept the light through all six nights. That is the whole prototype, thank you for playing.' : `${G.docked} of ${d.ships.length} boats made harbor.`)
+      : 'Three boats were lost. The sea will be the same next time, so you can plan for it.';
+    showSheet(`<span class="tag">Night ${d.id} · ${d.name}</span><h2>${head}</h2>
+      <div class="stars">${starStr(won ? G.stars : 0)}</div>
+      <p>${msg}</p>
+      <div class="stat"><span>Home</span><b>${G.docked} / ${d.ships.length}</b></div>
+      <div class="stat"><span>Wrecks</span><b>${G.wrecks}</b></div>
+      <div class="stat"><span>Time</span><b>${fmtT(G.t)} (par ${fmtT(d.par)})</b></div>
+      ${won && !last ? '<button class="btn pri" data-act="next" type="button">Next night</button>' : ''}
+      <button class="btn ${won ? '' : 'pri'}" data-act="retry" type="button">${won ? 'Play it again' : 'Try again'}</button>
+      <div class="row"><button class="btn sm" data-act="nights" type="button">Nights</button><button class="btn sm" data-act="feedback" type="button">Give feedback</button></div>`);
+  }
+
+  // ---------- feedback ----------
+  const FQ = [
+    { id: 'fun', q: 'How fun was it?', o: ['1', '2', '3', '4', '5'] },
+    { id: 'clear', q: 'Did you get what the light does by Night 2?', o: ['Yes', 'Sort of', 'No'] },
+    { id: 'again', q: 'Did you want to play another night?', o: ['Yes', 'Maybe', 'No'] },
+    { id: 'hard', q: 'Difficulty?', o: ['Too easy', 'About right', 'Too hard'] },
+  ];
+  function feedbackScreen() {
+    U.fb = {};
+    const qs = FQ.map(f => `<div class="fq"><div class="q">${f.q}</div><div class="opts">${f.o.map(o => `<button type="button" data-fq="${f.id}" data-fv="${o}" aria-pressed="false">${o}</button>`).join('')}</div></div>`).join('');
+    showSheet(`<h2>Quick feedback</h2><p>Tap what fits. One answer is enough.</p>${qs}
+      <textarea id="fbNote" placeholder="Anything else? What confused you, what you loved."></textarea>
+      <input type="text" id="fbName" placeholder="Your first name (optional)" maxlength="40">
+      <div class="err" id="fbErr"></div>
+      <button class="btn pri" data-act="fbSend" type="button">Send</button>
+      <button class="btn" data-act="back" type="button">Back</button>`);
+  }
+  async function sendFeedback() {
+    U.fb.note = ($('fbNote') || {}).value || ''; U.fb.name = ($('fbName') || {}).value || '';
+    if (!FQ.some(f => U.fb[f.id])) { $('fbErr').textContent = 'Tap at least one answer first.'; return; }
+    const body = { answers: Object.fromEntries(FQ.map(f => [f.id, U.fb[f.id] || null])), notes: U.fb.note, name: U.fb.name, result: U.lastRes, tester: U.test, version: VERSION, at: new Date().toISOString() };
+    let ok = false;
+    try { const db = window.claude && window.claude.use ? await window.claude.use('db') : null; if (db) { await db.collection('feedback').add(body); ok = true; } } catch (e) {}
+    if (!ok && location.protocol !== 'file:') { try { const res = await fetch('/forge/api/feedback', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(Object.assign({ game: 'lightkeeper' }, body)) }); ok = res.ok; } catch (e) {} }
+    if (ok) showSheet(`<h2>Thank you</h2><p>Your answers went to the crew.</p><button class="btn pri" data-act="nights" type="button">Back to the nights</button><button class="btn" data-act="title" type="button">Title</button>`);
+    else {
+      const txt = 'Lightkeeper ' + VERSION + ' feedback\n' + FQ.map(f => f.q + ' ' + (U.fb[f.id] || '-')).join('\n') + '\nNotes: ' + (U.fb.note || '-') + '\nResult: ' + JSON.stringify(U.lastRes);
+      showSheet(`<h2>Couldn't send</h2><p>This copy isn't connected to the Lab. Copy your answers and paste them to the crew.</p><textarea readonly id="fbCopy">${txt.replace(/</g, '&lt;')}</textarea><button class="btn pri" data-act="fbCopy" type="button">Copy answers</button><button class="btn" data-act="title" type="button">Title</button>`);
+    }
+  }
+
+  // ---------- run ----------
+  function startNight(i) {
+    A.ensure(); A.startBed();
+    U.night = i; U.G = LK.create(i, U.seed); U.wakes = {}; U.fx = []; U.acc = 0; U.mode = 'play';
+    hideSheet(); setHud(true); hud(true);
+    toast(LK.NIGHTS[i].name);
+  }
+  function resume() { if (U.mode === 'pause') { U.mode = 'play'; hideSheet(); } }
+
+  function toast(text) { const t = $('toast'); t.textContent = text; t.classList.add('on'); U.toastT = performance.now() + 1900; }
+
+  let hudKey = '';
+  function hud(force) {
+    const G = U.G, d = G.def;
+    const key = [G.docked, G.wrecks, Math.floor(G.t), Math.ceil(G.horn.cd), U.night].join('|');
+    if (key === hudKey && !force) return; hudKey = key;
+    $('hudNight').textContent = `Night ${d.id} · ${d.name}`;
+    $('hudDock').textContent = `Home ${G.docked} / ${d.ships.length}`;
+    $('hudWreck').innerHTML = Array.from({ length: LK.MAX_WRECKS }, (_, i) => `<i class="${i < G.wrecks ? 'on' : ''}"></i>`).join('');
+    $('hudTime').textContent = fmtT(G.t) + ' · par ' + fmtT(d.par);
+    const hb = $('hornBtn'), cd = G.horn.cd;
+    hb.disabled = cd > 0;
+    $('hornLbl').textContent = cd > 0 ? Math.ceil(cd) + 's' : 'Horn';
+    $('hornRing').style.boxShadow = cd > 0 ? 'none' : '0 0 0 2px rgba(255,190,92,.55)';
+  }
+
+  function drainEvents() {
+    const G = U.G;
+    for (const e of G.ev) {
+      const s = e.id !== undefined ? G.ships[e.id] : null;
+      if (e.k === 'dock') { s.endT = U.clock; U.fx.push({ k: 'dock', x: s.x, y: s.y, t0: U.clock }); A.bell(e.n - 1); toast(`${s.name} is home`); }
+      else if (e.k === 'wreck') { if (s) s.endT = U.clock; U.fx.push({ k: 'wreck', x: e.x, y: e.y, t0: U.clock }); A.knock(); toast(e.both ? 'Two boats collided' : `${s.name} hit the rocks`); if (navigator.vibrate) try { navigator.vibrate(60); } catch (er) {} }
+      else if (e.k === 'lost') { s.endT = U.clock; A.knock(); toast(`${s.name} is lost at sea`); }
+      else if (e.k === 'horn') A.horn();
+      else if (e.k === 'gust') A.gust();
+      else if (e.k === 'spawn') A.tick();
+      else if (e.k === 'over') { A.chord(e.won); setTimeout(resultsScreen, 1100); }
+    }
+    G.ev.length = 0;
+  }
+
+  // ---------- input ----------
+  function aimAtScreen(px, py) {
+    if (U.mode !== 'play') return;
+    const w = R.toWorld(px, py); let a = Math.atan2(w.y - LK.LAMP.y, w.x - LK.LAMP.x);
+    if (a > 0) a = a > Math.PI / 2 ? -Math.PI + 0.04 : -0.04;
+    LK.act(U.G, { k: 'aim', a });
+  }
+  const game = $('game');
+  game.addEventListener('pointerdown', e => {
+    if (e.target.closest('button')) return;
+    A.ensure(); U.down = true; try { game.setPointerCapture(e.pointerId); } catch (er) {}
+    aimAtScreen(e.clientX, e.clientY); e.preventDefault();
+  });
+  game.addEventListener('pointermove', e => { if (U.down || e.pointerType === 'mouse') aimAtScreen(e.clientX, e.clientY); });
+  const up = () => { U.down = false; };
+  game.addEventListener('pointerup', up); game.addEventListener('pointercancel', up);
+  $('menuBtn').addEventListener('click', pauseScreen);
+  $('hornBtn').addEventListener('click', () => { if (U.mode === 'play') LK.act(U.G, { k: 'horn' }); });
+  addEventListener('keydown', e => {
+    if (e.target && (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT')) return;
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === 'a' || e.key === 'd') { U.keys[e.key] = true; e.preventDefault(); }
+    else if (e.key === ' ' || e.key === 'h') { if (U.mode === 'play') { LK.act(U.G, { k: 'horn' }); e.preventDefault(); } }
+    else if (e.key === 'Escape' || e.key === 'p') { if (U.mode === 'play') pauseScreen(); else if (U.mode === 'pause') resume(); }
+  });
+  addEventListener('keyup', e => { delete U.keys[e.key]; });
+  addEventListener('resize', () => R.resize());
+  document.addEventListener('visibilitychange', () => { if (document.hidden && U.mode === 'play') pauseScreen(); });
+
+  card.addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.fq) { U.fb[b.dataset.fq] = b.dataset.fv; card.querySelectorAll(`[data-fq="${b.dataset.fq}"]`).forEach(x => x.setAttribute('aria-pressed', x === b)); return; }
+    if (b.dataset.night !== undefined) { logScreen(+b.dataset.night); return; }
+    const a = b.dataset.act;
+    if (a === 'nights') nightsScreen();
+    else if (a === 'how') howScreen();
+    else if (a === 'title') titleScreen();
+    else if (a === 'start') startNight(U.night);
+    else if (a === 'retry') startNight(U.night);
+    else if (a === 'next') logScreen(U.night + 1);
+    else if (a === 'resume') resume();
+    else if (a === 'sound') { A.setOn(!A.on); U.save.sound = A.on; writeSave(); b.textContent = 'Sound: ' + (A.on ? 'on' : 'off'); if (A.on) { A.ensure(); A.startBed(); } }
+    else if (a === 'tester') { U.test = true; b.textContent = 'Tester mode is on'; }
+    else if (a === 'feedback') feedbackScreen();
+    else if (a === 'fbSend') sendFeedback();
+    else if (a === 'back') { if (U.lastRes && U.mode === 'done') resultsScreen(); else titleScreen(); }
+    else if (a === 'fbCopy') { const ta = $('fbCopy'); ta.select(); try { navigator.clipboard.writeText(ta.value); b.textContent = 'Copied'; } catch (er) { try { document.execCommand('copy'); } catch (er2) {} } }
+  });
+
+  // ---------- loop ----------
+  U.clock = 0;
+  function frame(now) {
+    requestAnimationFrame(frame);
+    const dt = Math.min(0.1, (now - (U.last || now)) / 1000); U.last = now; U.clock += dt;
+    const G = U.G;
+    if (U.mode === 'play') {
+      const turn = (U.keys.ArrowLeft || U.keys.a ? -1 : 0) + (U.keys.ArrowRight || U.keys.d ? 1 : 0);
+      if (turn) LK.act(G, { k: 'aim', a: G.beam.target + turn * 2.4 * dt });
+      U.acc += dt * U.speed;
+      while (U.acc >= LK.DT && !G.over) {
+        LK.step(G); U.acc -= LK.DT;
+        if (G.tick % 6 === 0) for (const s of G.ships) if (s.st === 'sail') { const w = U.wakes[s.id] || (U.wakes[s.id] = []); w.push([s.x, s.y]); if (w.length > 6) w.shift(); }
+      }
+      drainEvents(); hud();
+    } else if (U.mode === 'title' || U.mode === 'done') {
+      G.beam.a = -Math.PI / 2 + Math.sin(U.clock * 0.5) * 1.1;
+    }
+    if (U.toastT && now > U.toastT) { $('toast').classList.remove('on'); U.toastT = 0; }
+    R.draw(G, U, U.clock, { demo: U.mode !== 'play' && U.mode !== 'pause' });
+  }
+
+  R.init(cv);
+  titleScreen();
+  requestAnimationFrame(frame);
+  window.LKUI = { U, startNight, toScreen: R.toScreen, pauseScreen, resume };
+})();
+
+</script>
+</body>
+</html>
