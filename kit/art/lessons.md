@@ -24,6 +24,13 @@ What we learned making art, for every game. This is how the studio's art rules (
 
 ---
 
+### L16. The lead-plan check has a gap for concepts made after Oct 31 (Nov 2, 2026, rogue-shooter)
+- What happened: Rogue Shooter's art request #92 came in with no `art/lead-plan.md`. The game wasn't "new" by the Artist's rule (it already had `art/concepts/sketches.html`), but those sketches were made by hand on Nov 1, after the Oct 31 lead-plan rule, so neither case in `artist.md` step 0 fit. The Artist carried on (the request is vector UI, free under R2) and flagged it.
+- Why: step 0 only covers "no plan and no concepts" and "concepts from before Oct 31".
+- Next time: a person decides whether hand-made sketches after Oct 31 count as earlier concepts, and `artist.md` step 0 says so. Running the Lead Artist on any game that reaches the Art Cottage without a plan avoids the question.
+- Source: JustAskJoe/games #92
+- Rule: none yet
+
 ### L15. Canva slows to one image every 10–30 minutes after a burst (Nov 1, 2026, card-trader)
 - What happened: making Card Trader v2's art, Canva throttled after the first few jobs and then gave about one image every 10 to 30 minutes. Only 4 of v2's 12 paintings came from Canva; Gemini made the other 8 for about $0.72.
 - Why: Canva rate-limits AI credit use, and the limit tightens as a session goes on (L11).

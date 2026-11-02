@@ -32,3 +32,14 @@ These replace the P1-art player and enemy sprites above.
 | Enemy concept sprites (Slime, Bat, Skeleton, Demon, Demon King) | Claude-authored string sprite data | In the build; slime squash and bat wings-down frames added |
 | New monster concepts (Wisp, Shroomling, Moss Golem) and slime colorways | Claude-authored string sprite data and palettes | In the build as new enemy types and slime variants |
 | Class-select and level-up menu styling | Claude-authored CSS/HTML | In `builds/rogue-shooter.html`; previews use the class sprites |
+
+## Art request #92: title menu concepts (Nov 2, 2026)
+
+Concept sheets only, not shipped. Drawn as SVG by Claude (Artist agent) with no image model; the sprites on them are copies of the P1.1 build's own sprite data.
+
+| Date | File | Tool | Status | Issue |
+|---|---|---|---|---|
+| 2026-11-02 | `art/concepts/92-A.svg` (Campfire Lineup) | Claude-authored SVG (script from `SPR`/`HERO_PAL`/`MON_PAL`) | concept, not shipped | #92 |
+| 2026-11-02 | `art/concepts/92-B.svg` (Demon King Looms) | Claude-authored SVG | concept, not shipped | #92 |
+| 2026-11-02 | `art/concepts/92-C.svg` (Field Journal) | Claude-authored SVG | concept, not shipped | #92 |
+| 2026-11-02 | Pixel wordmark "ROGUE SHOOTER" (5×7 block letters, on all three sheets) | Claude-authored SVG rects | concept, not shipped | #92 |
