@@ -1,0 +1,16 @@
+{
+  "name": "wormsbound-rooms",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Online 1v1 room server for Wormsbound (JustAskJoe). The server runs the game engine and checks every move. Local Node server for testing; Cloudflare Worker + Durable Object for hosting.",
+  "license": "UNLICENSED",
+  "main": "node-server.js",
+  "scripts": {
+    "start": "node node-server.js",
+    "test": "node test.js && node smoke.js"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  },
+  "engines": { "node": ">=18" }
+}

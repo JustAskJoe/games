@@ -6,6 +6,28 @@ Newest on top. See the repo's CLAUDE.md for how patch notes work.
 
 ---
 
+## P1 online · 2026-11-02 · Louiemark (with Claude)
+Online 1v1: play a friend on another computer. Built and tested on a local server; the Cloudflare server isn't deployed yet.
+
+### What's new
+- **ONLINE 1v1** on the title screen. Make a room and read out the 4-letter code, or join with one. Each of you picks a character and presses Ready; then it's a normal best-of-three 1v1, with turn delay, SS and live duds.
+- **The server referees.** Every move goes to the room server, which plays it on its own copy of the game and sends it to both of you. You can't cheat with a modified page, and both screens always show the same game (each one checks a checksum after every move and quietly re-syncs if needed).
+- You **see the other player's aim live** while they drag. On their turn your controls are replaced by "Ana (Brick) is aiming…".
+- **Dropped connection?** The game reconnects by itself and puts you back in your seat. A player who vanishes has their turn passed after 50 seconds.
+- Rematch from the end screen when both of you ask (R works too).
+
+### Next up
+- [ ] @Louiemark: deploy it. Open a **new session** (so it sees `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`) and say "deploy the Wormsbound room server". Steps in `wormsbound/server/README.md`: `npx wrangler@3 deploy`, then put the address in `ONLINE_SERVER` and merge.
+- [ ] @Louiemark: play an online match with a friend on two computers and fill in the feedback form.
+- [ ] Decide whether rooms should be crew-only (behind the Lab's sign-in) or open to anyone with a code.
+
+### Watch out
+- [ ] **Not deployed:** until `ONLINE_SERVER` is set, ONLINE 1v1 on the Lab says the server isn't set up (on your own machine it uses the local test server). `?server=wss://…` on the build's address overrides it for testing.
+- [ ] **Not tested on Cloudflare itself:** the Worker bundles and loads (checked with esbuild, the bundler Wrangler uses), and the room logic is the same file the local server runs, but no real Durable Object has run it yet.
+- [ ] Rooms are in memory: if both players leave and Cloudflare evicts the room, it's gone. Anyone with the code can join; there's no sign-in.
+- [ ] Tested with two headless browser pages on one machine, not two real computers over the internet; no lag or flaky-connection testing beyond one forced drop and reconnect.
+- [ ] The server lives on Louiemark's own Cloudflare account (documented in `ARCHITECTURE.md`).
+
 ## P1 modes · 2026-11-02 · Louiemark (with Claude)
 Turn delay, 1 Player vs 3 computers, and 1v1 with one character each. Full `build-and-test.py`: ALL GOOD.
 
