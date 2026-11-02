@@ -6,6 +6,27 @@ Newest on top. Each entry covers **what's new** for players, **next up** for the
 
 ---
 
+## Art #92 concepts · Nov 2, 2026 · Artist agent (with Claude)
+Art only, no build change. Three title-menu concepts for Joe's request #92, and a draft art direction for the game.
+
+### What's new
+- Nothing for players yet. Three title-screen concepts are up for a vote: **A: Campfire Lineup**, **B: Demon King Looms**, **C: Field Journal** (`art/concepts/92-A.svg`, `92-B.svg`, `92-C.svg`, brief in `art/briefs/92-title-menu.md`).
+- First `art/art-direction.md` for Rogue Shooter, a **draft** built from the P1.1 build and the sketches sheet.
+
+### Next up
+- [ ] @Joe: reply `Pick: A`, `B` or `C` on the concepts pull request, and say which menu items you want (the sheets show PLAY, HOW TO PLAY, CREDITS; only PLAY has a screen today).
+- [ ] Review the draft `art/art-direction.md`: palette, the proposed style anchor (the P1.1 sprites), key light, `roughs: off`.
+- [ ] Run the Lead Artist (`kit/agents/lead-artist.md`) to write `art/lead-plan.md` before the next art request.
+
+### Watch out
+- [ ] No `art/lead-plan.md` yet. The Artist went ahead because the game already had concepts (`sketches.html`), but those are from Nov 1, after the Oct 31 lead-plan rule; a person should confirm that was the right call.
+- [ ] The key light "top-left, warm" in the draft art direction is a guess, not checked against every sprite.
+- [ ] The sheets' button labels use Press Start 2P with a Courier/monospace fallback; GitHub's SVG preview will show the fallback, so spacing differs a little from the game.
+- [ ] The reference links in the brief (Wikimedia Commons categories) couldn't be opened from the agent's cloud run; check they load.
+- [ ] Sheets checked only as rendered PNGs in headless Chromium at 1880 px; not looked at on a phone.
+
+---
+
 ## P1.1 · Nov 1, 2026 · Joe (with Claude)
 New hero and monster sprites from the sketches, three new monsters, and new class-select and level-up menus.
 
