@@ -2,7 +2,7 @@
 
 Other · team pitch · approved in Forge on 2026-11-02 by Louiemark
 
-**Status:** Prototype 1 (Nov 2, 2026): **1 Player** (you vs 3 computers, Easy / Medium / Hard) or **2 Players** (1v1 on one keyboard), five characters, four maps, GunBound-style turn delay, best of three. **Next:** online 1v1. **Next:** play it with a friend and fill in the feedback form. Current decisions: [design/handoff.md](design/handoff.md).
+**Status:** Prototype 1 (Nov 2, 2026): **1 Player** (you vs 3 computers, Easy / Medium / Hard) or **2 Players** (1v1 on one keyboard), five characters, generated maps (10 themes, presets, custom settings, share codes and a Map Lab), GunBound-style turn delay, best of three. **Next:** online 1v1. **Next:** play it with a friend and fill in the feedback form. Current decisions: [design/handoff.md](design/handoff.md).
 
 A turn-based artillery brawler for 2 to 4 friends on one screen: pick a character (Brick, Zip, Volt, Digger or Gale, each with its own shots and an SS ultimate), aim, read the wind, and lob shells across ground that blows apart. Shells that land without exploding stay live, and anyone close enough can lob them on.
 
@@ -12,7 +12,7 @@ A turn-based artillery brawler for 2 to 4 friends on one screen: pick a characte
 
 ### Adding things
 - **A character:** add it to `CHARS` in `engine.js` (health, armour, steps, climb, `shot1`, `shot2` and `ss`). Shots can use the existing fields (`wind`, `speed`, `knock`, `bounce`, `drill`, `strike`, `double`, and for an SS `rain`, `storm`, `quake`, `tornado`); anything new needs handling in `advance()` or `land()` and a line in the bots' `scoreLanding()`. Give it a look in `drawBody()` in `ui.js`, then run the full sim: it must win 40–60% of the round-robin.
-- **A map:** add a generator to `MAPS` in `engine.js` (it fills `G.T` from the seed; spawns move to dry ground on their own) and a sky and ground palette to `THEMES` in `ui.js`. The full sim prints a `map` line for each one, and every match on every map has to finish.
+- **A map:** maps come from `prototype/mapgen.js` ([design/mapgen.md](design/mapgen.md)). A new preset is one entry in `PRESETS`; a new theme is one entry in `THEMES` (landform, props, hazard, colours); a new landform is one function in `LANDFORMS`. Try it in the Map Lab (`builds/wormsbound-maplab.html`). The full sim prints a `map` line for every preset, and every match on every map has to finish.
 - **A player action:** add a case to `act()`. The UI and later online play both go through it.
 - **Touched numbers?** Run the sim and put the before and after results in your pull request.
 

@@ -36,11 +36,19 @@
 
   const ui = {
     screen: 'title', G: null, matchSeed: 0, round: 1, wins: [0, 0], aim: {}, weapon: 'shot1', lob: false, picks: [null, null], pickTeam: 0, cursor: 2,
-    mode: 'duel', level: 'medium', cpu: null, mapPick: WB.MAPS[lsGet('wb-map')] ? lsGet('wb-map') : 'shuffle',
+    mode: 'duel', level: 'medium', cpu: null, mapPick: startMap(),
     drag: null, acc: 0, last: 0, slow: 0, shake: 0, parts: [], trails: {}, scorch: [], clouds: [], dust: [], pops: [],
     tLeft: TURN_SECONDS, timerOn: lsGet('wb-timer') !== 'off', sound: lsGet('wb-sound') !== 'off', coach: lsGet('wb-coach') !== 'off',
     fast: false, tester: false, overAt: 0, turnsSeen: 0, paused: false, fb: { q: {}, text: '', nm: '', saved: null },
   };
+  // Map choice: 'shuffle', a preset id (theme maps and modes) or a share code from the Map Lab. ?map=<code or preset> in the
+  // page address picks it (the Map Lab's "Play this map" link) and is remembered like a pick from the menu.
+  function okMap(m) { return m === 'shuffle' || !!WB.MapGen.PRESETS[m] || !!WB.MapGen.decode(m); }
+  function startMap() {
+    let q = null; try { q = new URLSearchParams(location.search).get('map'); } catch (e) { /* no address bar (tests) */ }
+    if (q && okMap(q.trim().toLowerCase())) { lsSet('wb-map', q.trim().toLowerCase()); return q.trim().toLowerCase(); }
+    const m = lsGet('wb-map'); return m && okMap(m) ? m : 'shuffle';
+  }
   const nSides = () => (ui.mode === 'solo' ? 4 : 2);
   const isCPU = (t) => ui.mode === 'solo' && t !== 0;
   // what a side is called: "You" and "Tide CPU" in 1 Player, "Player 1" and "Player 2" in 1v1
@@ -80,18 +88,8 @@
   };
 
   // ---------- background: sunset sky, sun, two parallax ridges (baked once per round) ----------
-  // Each map has its own sky, far ridges and ground colours (all drawn in code).
-  const THEMES = {
-    hills: { sky: ['#2B1E45', '#7A3B5E', '#FF8A3D', '#FFC37A'], ridges: ['rgba(107,58,91,.55)', 'rgba(70,40,78,.7)'],
-      shades: [['#A6DE62', '#93CF55'], ['#6FAE45', '#62A03C'], ['#D2834A', '#C47640'], ['#B2643A', '#A55B36'], ['#8C4C3A', '#7F4436'], ['#6A3E4A', '#5E3743']], tuft: '#B8EC74' },
-    isles: { sky: ['#3A6FB0', '#69A7DA', '#A9D8F0', '#E6F6FF'], ridges: ['rgba(120,160,200,.45)', 'rgba(90,130,180,.55)'], float: true,
-      shades: [['#9BE36A', '#88D45A'], ['#5FB04A', '#52A040'], ['#B9A27A', '#AC966F'], ['#8F7E66', '#84745D'], ['#6E6378', '#63596D'], ['#55506A', '#4B465E']], tuft: '#C6F58A' },
-    scrap: { sky: ['#3B2A28', '#7A4A30', '#C9773A', '#E8B070'], ridges: ['rgba(90,60,50,.55)', 'rgba(60,40,38,.75)'], blocky: true,
-      shades: [['#C98A4B', '#B97C42'], ['#9A6A44', '#8C5F3D'], ['#7C7A80', '#706E74'], ['#66646C', '#5C5A62'], ['#56484A', '#4C4042'], ['#42363A', '#3A3034']], tuft: '#E0A060' },
-    roofs: { sky: ['#0F1530', '#2A2A5A', '#5A3A78', '#C8608A'], ridges: ['rgba(40,40,80,.65)', 'rgba(25,25,55,.85)'], blocky: true, windows: true,
-      shades: [['#8A8FA8', '#7E8399'], ['#6C7088', '#62667C'], ['#B0604A', '#A35842'], ['#8E4C3E', '#834538'], ['#5E4048', '#543940'], ['#40303C', '#382A35']], tuft: '#FFD86A' },
-  };
-  const theme = () => THEMES[(ui.G && ui.G.map) || 'hills'] || THEMES.hills;
+  // Each map's sky, far background, ground, prop and liquid colours come from its theme in mapgen.js (all drawn in code).
+  const theme = () => WB.MapGen.THEMES[(ui.G && ui.G.theme) || 'hills'].look;
   function bakeBackground(seed) {
     let s = seed >>> 0; const r = () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
     const TH = theme(), g = bctx.createLinearGradient(0, 0, 0, H);
@@ -104,14 +102,23 @@
     const ridge = (base, amp, col, k) => {
       bctx.fillStyle = col; bctx.beginPath(); bctx.moveTo(0, H);
       const p1 = r() * 6, p2 = r() * 6;
-      if (TH.blocky) { // a skyline (or scrap heaps): flat-topped blocks instead of hills
+      if (TH.bg === 'blocky') { // a skyline (or scrap heaps, or a foundry): flat-topped blocks instead of hills
         for (let x = 0; x <= W;) { const w = 30 + r() * 70, y = base - amp * (0.3 + r() * 0.9); bctx.lineTo(x, y); bctx.lineTo(x + w, y); x += w; }
+      } else if (TH.bg === 'peaks') { // jagged mountains
+        for (let x = 0; x <= W;) { const w = 50 + r() * 90; bctx.lineTo(x + w / 2, base - amp * (0.8 + r() * 1.4)); bctx.lineTo(x + w, base - amp * 0.2 * r()); x += w; }
       } else for (let x = 0; x <= W; x += 8) bctx.lineTo(x, base - amp * (0.6 * Math.sin(x / (180 * k) + p1) + 0.4 * Math.sin(x / (63 * k) + p2)));
       bctx.lineTo(W, H); bctx.closePath(); bctx.fill();
     };
-    if (TH.float) { // far-off floating rocks instead of ridges
+    if (TH.bg === 'cave') { // a cave: rock teeth hanging from the top, a dim glow below
+      for (let i = 0; i < 2; i++) { bctx.fillStyle = TH.ridges[i]; bctx.beginPath(); bctx.moveTo(0, 0); for (let x = 0; x <= W;) { const w = 30 + r() * 60; bctx.lineTo(x + w / 2, 60 + i * 50 + r() * 120); bctx.lineTo(x + w, 20 + r() * 30); x += w; } bctx.lineTo(W, 0); bctx.closePath(); bctx.fill(); }
+      ridge(560, 40, TH.ridges[1], 1);
+    } else if (TH.bg === 'float') { // far-off floating rocks instead of ridges
       for (let i = 0; i < 9; i++) { const x = r() * W, y = 300 + r() * 260, w = 40 + r() * 90; bctx.fillStyle = TH.ridges[i & 1]; bctx.beginPath(); bctx.moveTo(x - w / 2, y); bctx.lineTo(x + w / 2, y); bctx.lineTo(x + w * 0.1, y + w * 0.6); bctx.closePath(); bctx.fill(); }
     } else { ridge(470, 60, TH.ridges[0], 1.4); ridge(540, 45, TH.ridges[1], 1); }
+    if (TH.moon) { bctx.fillStyle = 'rgba(240,235,255,.85)'; bctx.beginPath(); bctx.arc(1040, 120, 46, 0, 7); bctx.fill(); bctx.fillStyle = TH.sky[0]; bctx.beginPath(); bctx.arc(1062, 108, 40, 0, 7); bctx.fill(); }
+    if (TH.snow) for (let i = 0; i < 120; i++) { bctx.fillStyle = `rgba(255,255,255,${0.3 + r() * 0.5})`; bctx.fillRect(r() * W, r() * H, 2 + r() * 2, 2 + r() * 2); }
+    if (TH.embers) for (let i = 0; i < 80; i++) { bctx.fillStyle = `rgba(255,${120 + r() * 100 | 0},40,${0.3 + r() * 0.6})`; bctx.fillRect(r() * W, 250 + r() * 470, 2, 2); }
+    if (TH.glow) for (let i = 0; i < 60; i++) { bctx.fillStyle = `rgba(184,240,112,${0.15 + r() * 0.4})`; bctx.beginPath(); bctx.arc(r() * W, 150 + r() * 560, 1 + r() * 3, 0, 7); bctx.fill(); }
     if (TH.windows) for (let i = 0; i < 90; i++) { bctx.fillStyle = `rgba(255,214,120,${0.25 + r() * 0.5})`; bctx.fillRect(r() * W, 430 + r() * 250, 3, 4); }
     ui.clouds = Array.from({ length: 6 }, () => ({ x: r() * W, y: 60 + r() * 220, s: 0.6 + r() * 0.9 }));
     ui.dust = Array.from({ length: reduced ? 0 : 46 }, () => ({ x: r() * W, y: 90 + r() * 560, z: 0.4 + r() * 0.8 }));
@@ -128,8 +135,10 @@
       for (let y = 0; y < R; y++) {
         if (!T[y * C + x]) { depth = -1; continue; }
         depth++;
-        const pair = theme().shades[shadeFor(depth)];
+        const v = T[y * C + x], L = theme(); // ground by depth; hard rock, props and accents in their own colours
+        const pair = v === WB.MapGen.ROCK ? L.rock : v === WB.MapGen.PROP ? L.prop : v === WB.MapGen.ACCENT ? L.accent : L.shades[shadeFor(depth)];
         tctx.fillStyle = pair[hash2(x, y) & 1]; tctx.fillRect(x * CELL, y * CELL, CELL, CELL);
+        if (v === WB.MapGen.ROCK && (hash2(x, y) & 7) === 0) { tctx.fillStyle = 'rgba(255,255,255,.08)'; tctx.fillRect(x * CELL + 1, y * CELL + 1, 3, 2); }
         if (depth > 3 && (hash2(x, y) & 31) === 0) { tctx.fillStyle = 'rgba(30,20,35,.25)'; tctx.fillRect(x * CELL + 2, y * CELL + 2, 3, 3); }
       }
     }
@@ -148,7 +157,7 @@
       if (y < R - 1 && !T[(y + 1) * C + x]) tctx.fillRect(px, py + CELL - 2, CELL, 2);
       if (y > 0 && !T[(y - 1) * C + x]) {
         tctx.fillRect(px, py - 1, CELL, 2);
-        if ((hash2(x, y) & 3) === 0) { tctx.fillStyle = theme().tuft; tctx.fillRect(px + 2, py - 4, 2, 4); tctx.fillRect(px + 5, py - 3, 2, 3); tctx.fillStyle = '#2A1A2A'; }
+        if (T[y * C + x] === WB.MapGen.DIRT && (hash2(x, y) & 3) === 0) { tctx.fillStyle = theme().tuft; tctx.fillRect(px + 2, py - 4, 2, 4); tctx.fillRect(px + 5, py - 3, 2, 3); tctx.fillStyle = '#2A1A2A'; }
       }
     }
     ui.terrainDirty = false;
@@ -207,7 +216,7 @@
       else if (e.k === 'dud') { SFX.thunk(); ui.pops.push({ x: e.x * CELL, y: e.y * CELL - 22, t: 0, text: 'LIVE DUD!', c: '#FFD34D' }); }
       else if (e.k === 'ko') {
         const u = ui.G.units.find((x) => x.id === e.id);
-        ui.pops.push({ x: e.x * CELL, y: e.y * CELL - 40, t: 0, text: e.why === 'water' ? 'SPLASH OUT!' : 'K.O.!', c: '#FF4D5E' });
+        ui.pops.push({ x: e.x * CELL, y: e.y * CELL - 40, t: 0, text: e.why === 'water' ? (theme().liquid.name === 'lava' ? 'MELTED!' : 'SPLASH OUT!') : 'K.O.!', c: '#FF4D5E' });
         if (!reduced) ui.slow = 0.75;
         SFX.ko(); if (u) banner(`${unitName(u)} ${unitName(u) === 'You' ? 'are' : 'is'} out!`, charName(u.team), TEAMS[u.team].c);
       } else if (e.k === 'turn') { onTurn(); }
@@ -340,7 +349,7 @@
     const w = G.wind, arrows = Math.round(Math.abs(w) / WB.WIND_MAX * 4);
     const windTxt = Math.abs(w) < 0.2 ? 'calm' : `${w < 0 ? '◀'.repeat(Math.max(1, arrows)) : ''} ${Math.abs(w).toFixed(1)} ${w > 0 ? '▶'.repeat(Math.max(1, arrows)) : ''}`;
     const left = Array.from({ length: half }, (_, t) => side(t)).join(''), right = Array.from({ length: n - half }, (_, i) => side(n - 1 - i)).join('');
-    $('#hud').innerHTML = `<div class="sidegrp">${left}</div>` + `<div class="mid"><div class="timer${ui.timerOn ? '' : ' off'}" id="timer">${ui.timerOn ? Math.ceil(ui.tLeft) : '∞'}</div><div class="wind" aria-label="wind">WIND ${windTxt}</div><div class="wind" style="font-size:12px;opacity:.8">Round ${ui.round} · ${esc(WB.MAPS[G.map].name)}${ui.mode === 'solo' ? ' · ' + LEVELS[ui.level].name : ''}${G.turn >= WB.suddenTurn(G) ? ' · <span style="color:#FF4D5E">SUDDEN DEATH: the water rises</span>' : ''}</div>${orderHTML()}</div><div class="sidegrp r">${right}</div>`;
+    $('#hud').innerHTML = `<div class="sidegrp">${left}</div>` + `<div class="mid"><div class="timer${ui.timerOn ? '' : ' off'}" id="timer">${ui.timerOn ? Math.ceil(ui.tLeft) : '∞'}</div><div class="wind" aria-label="wind">WIND ${windTxt}</div><div class="wind" style="font-size:12px;opacity:.8">Round ${ui.round} · ${esc(G.mapName)}${ui.mode === 'solo' ? ' · ' + LEVELS[ui.level].name : ''}${G.turn >= WB.suddenTurn(G) ? ' · <span style="color:#FF4D5E">SUDDEN DEATH: the water rises</span>' : ''}</div>${orderHTML()}</div><div class="sidegrp r">${right}</div>`;
   }
   // The next turns if everyone keeps firing their Shot 1, counting the current side's chosen shot: what the
   // turn delay means right now. Light shot: you may go again before them; heavy shot: they may go twice.
@@ -403,8 +412,23 @@
       <p>Pick a character, read the wind, blast the ground, and throw their own duds back at them. Best of three.</p>${HOW}
       <div class="row"><button class="btn fire" type="button" data-act="mode" data-mode="solo">1 PLAYER<small style="display:block;font-family:var(--body);font-size:12px">you vs 3 computers</small></button>
       <button class="btn teal" type="button" data-act="mode" data-mode="duel">2 PLAYERS<small style="display:block;font-family:var(--body);font-size:12px">1v1 on one keyboard</small></button></div>
-      <div class="row maps"><span style="align-self:center;font-size:13px;opacity:.8">MAP</span>${['shuffle'].concat(WB.MAP_IDS).map((k) => `<button class="btn ${k === ui.mapPick ? 'gold' : 'ghost'} sm" type="button" data-act="map" data-map="${k}" title="${esc(k === 'shuffle' ? 'A different map every round' : WB.MAPS[k].blurb)}">${esc(k === 'shuffle' ? 'Shuffle' : WB.MAPS[k].name)}</button>`).join('')}</div>`);
+      ${mapRow()}`);
   }
+  // The map row: Shuffle, the ten theme maps and the modes in one list, plus a box for a Map Lab share code.
+  function mapRow() {
+    const P = WB.MapGen.PRESETS, code = !P[ui.mapPick] && ui.mapPick !== 'shuffle';
+    const opt = (v, label) => `<option value="${esc(v)}"${v === ui.mapPick ? ' selected' : ''}>${esc(label)}</option>`;
+    const groups = {}; for (const id of WB.MapGen.PRESET_IDS) (groups[P[id].group] = groups[P[id].group] || []).push(opt(id, P[id].name));
+    const about = ui.mapPick === 'shuffle' ? 'A different theme map every round.' : code ? `Custom map from the Map Lab (${WB.MapGen.THEMES[WB.MapGen.decode(ui.mapPick).theme].name}).` : P[ui.mapPick].blurb;
+    return `<div class="row maps"><label for="mapSel" style="align-self:center;font-size:13px;opacity:.8">MAP</label>
+      <select id="mapSel" class="mapsel">${opt('shuffle', 'Shuffle')}${Object.entries(groups).map(([g, o]) => `<optgroup label="${esc(g)}">${o.join('')}</optgroup>`).join('')}${code ? opt(ui.mapPick, 'Custom (Map Lab code)') : ''}</select>
+      <input id="mapCode" class="mapcode" type="text" placeholder="or paste a Map Lab code" value="${code ? esc(ui.mapPick) : ''}" aria-label="Map Lab share code" spellcheck="false">
+      <button class="btn ghost sm" type="button" data-act="mapcode">Use code</button>
+      <a class="btn ghost sm" href="wormsbound-maplab.html" target="_blank" rel="noopener">Map Lab</a></div>
+      <p class="mapabout" id="mapAbout">${esc(about)}</p>`;
+  }
+  function setMap(m) { m = String(m || '').trim().toLowerCase(); if (!okMap(m)) return false; ui.mapPick = m; lsSet('wb-map', m); titleScreen(); return true; }
+  document.addEventListener('change', (e) => { if (e.target && e.target.id === 'mapSel') setMap(e.target.value); });
   // Shuffle: every map once (in a seeded order) before any repeats, so a best-of-3 shows three different maps.
   function mapFor(round) {
     if (ui.mapPick !== 'shuffle') return ui.mapPick;
@@ -553,7 +577,7 @@
       case 'level': ui.level = LEVELS[b.dataset.level] ? b.dataset.level : 'medium'; lsSet('wb-level', ui.level); ui.cursor = 2; selectScreen(0); break;
       case 'start': case 'pickagain': ui.picks = new Array(nSides()).fill(null); ui.cursor = 2; selectScreen(0); break;
       case 'rematch': startMatch(); break;
-      case 'map': ui.mapPick = b.dataset.map === 'shuffle' || WB.MAPS[b.dataset.map] ? b.dataset.map : 'shuffle'; lsSet('wb-map', ui.mapPick); titleScreen(); break;
+      case 'mapcode': { const inp = $('#mapCode'); if (!setMap(inp && inp.value)) { const a = $('#mapAbout'); if (a) a.textContent = "That code doesn't look right. Copy it again from the Map Lab."; } break; }
       case 'pick': choose(b.dataset.char); break;
       case 'pickback': if (ui.mode === 'duel' && ui.pickTeam === 1) { ui.picks[0] = null; selectScreen(0); } else if (ui.mode === 'solo') levelScreen(); else titleScreen(); break;
       case 'next': ui.round += ui.G.winner >= 0 ? 1 : 0; startRound(); break;
@@ -670,6 +694,14 @@
       ctx.font = FONT(18); ctx.textAlign = 'center'; ctx.lineWidth = 4; ctx.strokeStyle = '#1E1A2B'; ctx.strokeText(String(d.fuse), x, y - 20); ctx.fillStyle = d.fuse <= 1 ? '#FF4D5E' : '#FFD34D'; ctx.fillText(String(d.fuse), x, y - 20);
     }
   }
+  // a map hazard (oil drum, gas canister, spore pod...): a drum in the theme's hazard colour with a warning band
+  function drawBarrel(b) {
+    const x = b.x * CELL, y = b.y * CELL;
+    ctx.fillStyle = theme().hazard; ctx.strokeStyle = '#1E1A2B'; ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.rect(x - 8, y - 18, 16, 18); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#FFD34D'; ctx.fillRect(x - 7, y - 11, 14, 4);
+    ctx.fillStyle = 'rgba(255,255,255,.25)'; ctx.fillRect(x - 5, y - 16, 3, 12);
+  }
   function drawProj(p, t) {
     if (p.wait > 0) return; // Double Tap's second dart hasn't left yet
     const x = p.x * CELL, y = p.y * CELL;
@@ -712,11 +744,11 @@
   }
   function drawWater(t) {
     const wy = ui.G.water * CELL;
-    const g = ctx.createLinearGradient(0, wy, 0, H); g.addColorStop(0, 'rgba(34,195,181,.85)'); g.addColorStop(1, 'rgba(14,60,90,.95)');
+    const L = theme().liquid, g = ctx.createLinearGradient(0, wy, 0, H); g.addColorStop(0, L.top); g.addColorStop(1, L.deep);
     ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(0, H);
     for (let x = 0; x <= W; x += 16) ctx.lineTo(x, wy + (reduced ? 0 : Math.sin(x / 40 + t * 2) * 3 + Math.sin(x / 17 - t * 3) * 1.5));
     ctx.lineTo(W, H); ctx.closePath(); ctx.fill();
-    ctx.strokeStyle = 'rgba(200,255,250,.7)'; ctx.lineWidth = 2; ctx.beginPath();
+    ctx.strokeStyle = L.foam; ctx.lineWidth = 2; ctx.beginPath();
     for (let x = 0; x <= W; x += 16) { const y = wy + (reduced ? 0 : Math.sin(x / 40 + t * 2) * 3 + Math.sin(x / 17 - t * 3) * 1.5); x ? ctx.lineTo(x, y) : ctx.moveTo(x, y); } ctx.stroke();
   }
   function draw(t, dt) {
@@ -737,6 +769,7 @@
       if (d.x > W) d.x = 0; if (d.x < 0) d.x = W;
       ctx.fillStyle = `rgba(255,236,200,${0.15 + d.z * 0.25})`; ctx.fillRect(d.x, d.y, 2 + d.z * 6 * Math.min(1, Math.abs(G.wind) / 3), 2);
     }
+    for (const b of G.barrels) drawBarrel(b);
     for (const d of G.duds) drawDud(d, t, false);
     const cur = WB.current(G);
     for (const u of G.units) if (!u.alive) drawUnit(u, false, t);

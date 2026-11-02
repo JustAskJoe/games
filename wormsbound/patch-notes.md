@@ -6,6 +6,35 @@ Newest on top. See the repo's CLAUDE.md for how patch notes work.
 
 ---
 
+## Map generator · 2026-11-02 · Hunter (with Claude)
+Every map is now generated: 10 themes, custom settings, presets and share codes, plus a Map Lab to build and share maps. A proposal for Louiemark (Wormsbound lead) to confirm. Design: [`design/mapgen.md`](design/mapgen.md).
+
+### What's new
+- **10 themes:** Crater Hills, Sky Isles, Scrap Yard and Rooftops (rebuilt on the generator, so their layouts differ from yesterday's), plus **Frostbite Peaks** (one big snowy mountain), **Dune Mesas** (flat-topped plateaus), **Fungal Hollow** (glowing caverns, giant mushrooms), **Shipwreck Cove** (a sandy bowl with a wrecked ship), **Magma Works** (girder bridges over lava) and **Haunted Hollow** (graves on two cliffs over a gorge). Each has its own sky, ground, props and liquid (water, sludge, icy water, toxic ooze, sea, lava, murk).
+- **Each theme plays differently:** its own wind strength (still air underground, gusts on rooftops and peaks), **explosive barrels** (oil drums, gas canisters, spore pods, powder kegs, fuel drums) that blow up and chain when a blast reaches them, or **old live duds** on the map that anyone can lob and that tick from turn 1. Some maps have **hard rock** that blasts can't break.
+- **Custom maps, like a strategy game's map setup:** pick a preset, then change landform (10 shapes), height, ruggedness, land, caves, overhangs, platforms, props, hazards, liquid level, hard rock, wind and mirror symmetry.
+- **9 mode presets:** Classic Duel, Tournament (mirrored, no hazards), Archipelago, Worm Warren, High Rise, High Tide, Fortress, Chaos and First Steps.
+- **Share codes** like `frost-peak-1222120211020-k3j9a` rebuild the same map anywhere. Paste one into the title screen's map box.
+- **Map Lab** (`builds/wormsbound-maplab.html`): every setting with a live preview, spawn markers, six variations, checks (land, fairness, spawn room), Copy, **Play this map** and Save PNG.
+- The title screen's map row is now one list (Shuffle, the theme maps, the modes) plus the code box and a Map Lab button. Shuffle deals from the 10 theme maps.
+- Build and test: the sim plays every preset and a line of random custom settings, and fails if any match gets stuck or times out. Rule checks: every preset on 15 seeds, 200 random settings (codes round-trip, mirror maps are mirrored), all sizes, hard rock survives blasts, barrels chain, old duds tick, wind follows the theme.
+
+### Next up
+- [ ] @Louiemark: open the Map Lab and play a few theme maps. Keep, rename or cut themes, and answer the open questions at the end of `design/mapgen.md` (which mechanics next, Shuffle's pool, hazards on or off by default).
+- [ ] Next map mechanics once picked (each small): tides, slippery ice, bouncy mushroom caps, updrafts, mines.
+- [ ] Art: the themes are code-drawn placeholders; a Lead Artist plan (`art/lead-plan.md`) comes first (studio rule).
+
+### Watch out
+- [ ] **Matches run longer on several maps** than on the old four. Median turns per preset are in `design/mapgen.md`; the longest are Fortress (median 27 turns, 64% reach sudden death), Rooftops (25, 68%), Tournament and High Rise (24), Scrap Yard and Dune Mesas (23), against 14 on the default mirror line. Props were the biggest cause (shortened and thinned once); more cuts if people feel it.
+- [ ] Yesterday's four maps were rebuilt on the generator, so their layouts and sim numbers changed (Crater Hills also has old duds now). The four tests that leaned on the old Crater Hills layout were made layout-independent (a flat floor under the target, a no-hazard map for the dud count, a 40-seed spread for spawns) without loosening what they check.
+- [ ] The "Map Lab" link on the title screen and the Lab's "Play this map" assume both build files sit in the same folder. The studio Lab only lists `wormsbound.html`; whether it serves the Map Lab file next to it is unchecked.
+- [ ] Caves show the background sky through them (as before). On Fungal Hollow a dark cave wall behind the ground would look better.
+- [ ] The bots don't aim at barrels or lob old duds on purpose (they lob duds only when a dud is about to blow near them), so the sim undervalues hazards. People will use them more.
+- [ ] Checked in the headless browser (screenshots of the Lab and four themes in a match, phone width 390 with no sideways scroll) and the bot sim. No person has played the new themes yet.
+- [ ] **Archipelago is swingy:** about 10% of its matches end on turn 1 with a knock into the water (Sparse land made it 25%, so it now uses Light).
+- [ ] Zip sits right on the 40% floor of the character round-robin (was 44% before the generator); the band still passes.
+- [ ] Barrel damage (44, radius 4.5), old-dud fuses (4–6) and the wind multipliers are first guesses.
+
 ## Maps and weapons proposal · 2026-11-01 · Hunter (with Claude)
 Three new maps you can play now, and a design proposal for crate weapons.
 
