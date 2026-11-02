@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<!-- Lightkeeper · prototype v1 · © 2026 justaskjoe. All rights reserved. Built by build.py from prototype/v1; edit the source, not this file. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Lightkeeper</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#0d1a2b">
+<style>
+:root{
+  --ink:#0d1a2b; --ink2:#14263b; --panel:#132235; --cream:#efe6d2; --mute:#b8b09c; --dim:#857f70;
+  --amber:#ffbe5c; --amber2:#ffd690; --rust:#c8643c; --sea:#2a4a63; --line:rgba(239,230,210,.2);
+  --sat:env(safe-area-inset-top,0px); --sab:env(safe-area-inset-bottom,0px); --sal:env(safe-area-inset-left,0px); --sar:env(safe-area-inset-right,0px);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+html,body{margin:0;width:100%;height:100%;background:var(--ink);color:var(--cream);font-family:Georgia,'Iowan Old Style','Palatino Linotype',serif;overflow:hidden;overscroll-behavior:none}
+#game{position:fixed;inset:0;touch-action:none;user-select:none;-webkit-user-select:none}
+#cv{position:absolute;inset:0;width:100%;height:100%;display:block}
+.hud{position:absolute;pointer-events:none;font-family:system-ui,-apple-system,'Segoe UI',sans-serif}
+#hudL{top:calc(10px + var(--sat));left:calc(10px + var(--sal));background:rgba(8,16,27,.62);border:1px solid var(--line);border-radius:10px;padding:7px 11px;max-width:60vw}
+#hudL .a{font:600 14px Georgia,serif;color:var(--amber2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#hudL .b{font-size:12px;color:var(--mute);margin-top:2px}
+#hudR{top:calc(10px + var(--sat));right:calc(62px + var(--sar));background:rgba(8,16,27,.62);border:1px solid var(--line);border-radius:10px;padding:7px 10px;text-align:right}
+#hudR .w{display:flex;gap:5px;justify-content:flex-end} #hudR .w i{width:11px;height:11px;border-radius:50%;border:1.5px solid var(--cream);opacity:.85}
+#hudR .w i.on{background:var(--rust);border-color:var(--rust)}
+#hudR .t{font-size:11px;color:var(--mute);margin-top:4px;font-variant-numeric:tabular-nums}
+.rbtn{position:absolute;border:1px solid var(--line);background:rgba(8,16,27,.7);color:var(--cream);pointer-events:auto;font:600 18px system-ui,sans-serif;cursor:pointer}
+#menuBtn{top:calc(10px + var(--sat));right:calc(10px + var(--sar));width:44px;height:44px;border-radius:12px}
+#hornBtn{bottom:calc(14px + var(--sab));right:calc(14px + var(--sar));width:64px;height:64px;border-radius:50%;font-size:12px;line-height:1.1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+#hornBtn .ic{font-size:20px} #hornBtn[disabled]{color:var(--dim)}
+#hornBtn .ring{position:absolute;inset:-4px;border-radius:50%;pointer-events:none}
+#toast{position:absolute;left:50%;top:calc(66px + var(--sat));transform:translateX(-50%);background:rgba(8,16,27,.78);border:1px solid var(--line);border-radius:99px;padding:6px 14px;font:14px Georgia,serif;color:var(--amber2);white-space:nowrap;opacity:0;transition:opacity .3s;max-width:92vw;overflow:hidden;text-overflow:ellipsis}
+#toast.on{opacity:1}
+.sheet{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;padding:calc(14px + var(--sat)) calc(14px + var(--sar)) calc(14px + var(--sab)) calc(14px + var(--sal));background:rgba(6,12,21,.8);overflow-y:auto;overflow-x:hidden}
+.sheet[hidden]{display:none}
+.card{width:100%;max-width:420px;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px;margin:auto;box-shadow:0 0 0 4px rgba(239,230,210,.04)}
+.card h1{margin:0 0 2px;font-size:38px;letter-spacing:1px;line-height:1.05;font-weight:600}
+.card h1 em{color:var(--amber);font-style:normal}
+.card h2{margin:0 0 10px;font-size:22px;font-weight:600}
+.card p{margin:0 0 12px;color:var(--mute);line-height:1.5;font-size:15px}
+.card .tag{display:inline-block;font:12px system-ui,sans-serif;color:var(--amber2);border:1px solid rgba(255,190,92,.4);border-radius:99px;padding:3px 10px;margin-bottom:12px}
+.card .log{font-style:italic;color:var(--cream);border-left:3px solid var(--amber);padding:2px 0 2px 12px;margin:0 0 14px;line-height:1.5}
+.card ul{margin:0 0 14px;padding-left:18px;color:var(--mute);line-height:1.5;font-size:15px} .card li{margin-bottom:6px} .card b{color:var(--cream)}
+.btn{display:block;width:100%;min-height:48px;margin:8px 0 0;border-radius:12px;border:1px solid var(--line);background:var(--ink2);color:var(--cream);font:600 16px system-ui,sans-serif;cursor:pointer}
+.btn.pri{background:var(--amber);color:#2a1a05;border-color:var(--amber)}
+.btn.sm{min-height:40px;font-size:14px}
+.row{display:flex;gap:8px} .row .btn{flex:1}
+.nights{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:6px 0 4px}
+.night{min-height:74px;border-radius:12px;border:1px solid var(--line);background:var(--ink2);color:var(--cream);font:600 15px Georgia,serif;cursor:pointer;padding:8px;text-align:left}
+.night small{display:block;font:12px system-ui,sans-serif;color:var(--mute);margin-top:3px}
+.night .st{color:var(--amber);letter-spacing:2px;font-size:14px;margin-top:4px;display:block}
+.night[disabled]{opacity:.38;cursor:default}
+.stars{font-size:34px;letter-spacing:6px;color:var(--amber);text-align:center;margin:4px 0 8px}
+.stars .off{color:rgba(239,230,210,.18)}
+.stat{display:flex;justify-content:space-between;font:15px system-ui,sans-serif;color:var(--mute);padding:6px 0;border-bottom:1px solid var(--line)} .stat b{font-variant-numeric:tabular-nums}
+.fq{margin:0 0 12px} .fq .q{font:14px system-ui,sans-serif;color:var(--cream);margin-bottom:6px}
+.fq .opts{display:flex;flex-wrap:wrap;gap:6px}
+.fq button{min-height:40px;min-width:44px;padding:0 12px;border-radius:10px;border:1px solid var(--line);background:var(--ink2);color:var(--cream);font:14px system-ui,sans-serif;cursor:pointer}
+.fq button[aria-pressed="true"]{background:var(--amber);color:#2a1a05;border-color:var(--amber)}
+textarea,input[type=text]{width:100%;border-radius:10px;border:1px solid var(--line);background:var(--ink2);color:var(--cream);font:15px system-ui,sans-serif;padding:10px;margin-bottom:8px}
+textarea{min-height:76px;resize:vertical}
+.err{color:#ff9d7a;font:13px system-ui,sans-serif;min-height:18px}
+.small{font:12px system-ui,sans-serif;color:var(--dim);text-align:center;margin-top:12px}
+@media (prefers-reduced-motion:reduce){#toast{transition:none}}
+</style>
+</head>

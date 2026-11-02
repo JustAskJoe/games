@@ -17,7 +17,8 @@
       "blurb": "Isometric rogue-like auto-shooter: pick a class, collect and evolve weapons, unlock synergies, survive 10 waves and a boss." },
     { "slug": "card-trader", "name": "Intergalactic Card Trader", "kind": "Card shop sim", "build": "v3", "dir": "card-trader", "file": "card-trader.html", "img": true,
       "blurb": "Happy space Akihabara: a 5-day week running a card stall. Inspect, haggle, chase variants and promos, beat scalpers, fake rings and a pump, then pick an After Hours event each night. Desktop landscape." },
-    {"slug":"lightkeeper", "name":"Lightkeeper", "kind":"Other", "dir":"lightkeeper", "stage":"pitch", "blurb":"Approved pitch (Other); no build yet."},
-    {"slug":"wormsbound", "name":"Wormsbound", "kind":"Other", "dir":"wormsbound", "stage":"pitch", "blurb":"Approved pitch (Other); no build yet."}
+    {"slug":"wormsbound", "name":"Wormsbound", "kind":"Other", "dir":"wormsbound", "stage":"pitch", "blurb":"Approved pitch (Other); no build yet."},
+    { "slug": "lightkeeper", "name": "Lightkeeper", "kind": "Night sea puzzle", "build": "v1", "dir": "lightkeeper", "file": "lightkeeper.html",
+      "blurb": "One-thumb lighthouse puzzle: sweep the beam and every boat in your light turns for home, every boat in the dark holds her course. Six nights: reefs, crossings, a current, fog and a storm." }
   ]
 }
