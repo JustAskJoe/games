@@ -31,7 +31,7 @@ button { font: inherit; color: inherit; }
 
 /* ---------- HUD (inside the stage, in stage pixels) ---------- */
 .hud { position: absolute; left: 0; right: 0; top: 0; height: 74px; display: flex; align-items: center; justify-content: space-between; padding: 10px 18px; pointer-events: none; z-index: 5; }
-.team { display: flex; align-items: center; gap: 10px; min-width: 330px; }
+.team { display: flex; align-items: center; gap: 10px; min-width: 300px; }
 .team.r { flex-direction: row-reverse; text-align: right; }
 .team .nm { font-family: var(--display); font-size: 26px; line-height: 1; letter-spacing: .5px; text-shadow: 0 3px 0 rgba(0,0,0,.35); }
 .team .bar { width: 200px; height: 14px; border-radius: 99px; background: rgba(0,0,0,.4); border: 2px solid var(--ink); overflow: hidden; }
@@ -45,6 +45,21 @@ button { font: inherit; color: inherit; }
 .timer.off { opacity: .5; }
 .wind { display: flex; align-items: center; gap: 6px; font-weight: 900; font-size: 15px; color: var(--cream); text-shadow: 0 2px 0 rgba(0,0,0,.4); }
 
+.sidegrp { display: flex; gap: 10px; } .sidegrp.r { flex-direction: row-reverse; }
+.team.plum .nm { color: #B57BFF; } .team.plum .bar i { background: linear-gradient(90deg, #7A4BC9, #B57BFF); }
+.team.sun .nm { color: #FFD34D; } .team.sun .bar i { background: linear-gradient(90deg, #C99A1A, #FFD34D); }
+.team .cn { font-size: 17px; opacity: .85; }
+.team.sm { min-width: 0; gap: 6px; } .team.sm .nm { font-size: 19px; } .team.sm .cn { font-size: 13px; } .team.sm .bar { width: 150px; height: 11px; }
+.team.sm .pips b { width: 11px; height: 11px; }
+.team.out { opacity: .35; filter: grayscale(.6); }
+.team.cur .bar { box-shadow: 0 0 0 2px var(--gold), 0 0 12px var(--gold); }
+.order { display: flex; align-items: center; gap: 4px; font-weight: 900; font-size: 11px; letter-spacing: 1px; color: var(--cream-2); min-height: 20px; text-shadow: 0 2px 0 rgba(0,0,0,.4); }
+.order b { min-width: 22px; padding: 1px 5px; border-radius: 99px; border: 2px solid var(--ink); color: var(--ink); text-shadow: none; text-align: center; font-size: 11px; }
+.cputag { font-family: var(--display); font-size: 22px; color: var(--tc); background: rgba(30,26,43,.85); border: 3px solid var(--tc); border-radius: 16px; padding: 10px 20px; }
+.card .row.lv { flex-wrap: nowrap; align-items: stretch; }
+.btn.lvl { position: relative; flex-direction: column; flex: 1; min-width: 0; width: 180px; min-height: 110px; padding: 12px 14px; font-size: 28px; }
+.btn.lvl small { font-family: var(--body); font-weight: 800; font-size: 13px; line-height: 1.25; margin-top: 4px; }
+.btn.lvl .num { position: absolute; left: 8px; top: 6px; font-size: 13px; opacity: .6; }
 /* ---------- control bar ---------- */
 .ctl { position: absolute; left: 0; right: 0; bottom: 0; height: 78px; display: flex; align-items: center; justify-content: center; gap: 10px; padding: 0 90px 10px 230px; z-index: 5; pointer-events: none; }
 .ctl > * { pointer-events: auto; }
@@ -158,7 +173,11 @@ button { font: inherit; color: inherit; }
 
    The map is a grid of terrain cells (1 = ground). Units, shells and duds move in cell units, y pointing down.
    Turn flow: aim (move, pick a shot, fire or lob a live dud, or pass) → flight (step() until everything
-   settles) → live duds tick down one → next team's turn, with new wind. Last team standing wins. */
+   settles) → live duds tick down one → the next turn, with new wind. Last team standing wins.
+
+   Turn delay (GunBound's idea): there is no fixed back-and-forth. Every unit has a delay; whatever it does on its
+   turn adds to it (each shot has its own cost, walking adds a little per step, passing isn't free), and the next
+   turn always goes to the living unit with the lowest delay. Light shots get you back sooner, heavy ones later. */
 (function (root) {
   'use strict';
 
@@ -170,7 +189,7 @@ button { font: inherit; color: inherit; }
   const VMAX = 60;              // launch speed at full power, cells / s
   const WIND_MAX = 7;           // strongest wind push, cells / s² sideways
   const UNIT_R = 1.5;           // unit body radius, cells
-  const UNITS_PER_TEAM = 2;
+  const UNITS_PER_TEAM = 1;     // default side size: 1v1 and the 4-way free-for-all both use one unit a side
   const HP = 100;               // a "standard" unit; characters scale from it
   const MOVE_STEPS = 14;        // default steps a turn (characters override)
   const CLIMB = 2;              // default highest ledge a step can climb
@@ -179,47 +198,54 @@ button { font: inherit; color: inherit; }
   const KNOCK = 26;             // knockback speed at the blast centre
   const LOB_RANGE = 5;          // how close a unit must be to pick up a live dud
   const LOB_POWER = 0.65;       // a thrown dud tops out below a full-power shot
-  const SUDDEN_TURN = 24;       // from this turn on the water rises
+  const SUDDEN_ROUNDS = 12;     // after this many rounds (a round = one turn per side) the water rises
   const SUDDEN_RISE = 2;        // rows per turn
-  const MAX_TURNS = 80;         // hard stop (the rising water should end it well before this)
+  const MAX_ROUNDS = 40;        // hard stop (the rising water should end it well before this)
+  const suddenTurn = (G) => SUDDEN_ROUNDS * G.teams, maxTurns = (G) => MAX_ROUNDS * G.teams;
   const DMG_SPREAD = 1.6;       // damage falls off to 0 at r × 1.6
   const SS_CHARGE = 4;          // the SS is ready on your 4th turn, then every 4th turn after you use it
+  // Turn delay: what each action adds to the acting unit's delay (shots carry their own `delay`).
+  const DELAY = { move: 12, pass: 520, lob: 620, dud: 720 };
+  // Health scale by format: characters' hp numbers are for a crew of two; one unit a side needs more to last.
+  const HP_MUL = { duel: 2.6, ffa: 1.8, crew: 1 };
+  const START_GAP = 10;         // starting delays alternate teams 0, 10, 20, 30 so the first round goes A B A B
 
   // The Live dud: every character has 2. Lands without exploding, ticks down 3 turns, anyone near can lob it.
-  const DUD = { name: 'Live dud', ammo: 2, r: 6, dmg: 60, fuse: 3, desc: 'Lands without exploding and ticks for 3 turns. Anyone close can lob it on.' };
+  const DUD = { name: 'Live dud', ammo: 2, r: 6, dmg: 60, fuse: 3, delay: DELAY.dud, desc: 'Lands without exploding and ticks for 3 turns. Anyone close can lob it on.' };
 
   // Shot fields: r crater, dmg centre damage, wind (× wind push), speed (× launch speed), knock (× knockback),
   // bounce (bounces off the ground first), drill (cells it tunnels through), strike (lightning: {w, dmg}),
-  // double (a second shot follows), ammo (-1 = unlimited).
+  // double (a second shot follows), ammo (-1 = unlimited), delay (turn delay it adds: heavier = your next turn later).
   // SS-only fields: rain (a fan of darts), storm (three lightning strikes), quake (hits every enemy on the ground),
   // tornado (flings everyone within reach).
-  // Numbers tuned Nov 2, 2026 (with SS) so every character wins 40-60% of smart-bot matches across the roster (sim.js).
+  // Numbers tuned Nov 2, 2026 (1v1, one unit a side, with SS and turn delay) so every character wins 40-60% of
+  // smart-bot matches across the roster (sim.js). Health here is the base; HP_MUL scales it by format.
   const CHARS = {
     brick: { name: 'Brick', role: 'Tank', hp: 110, armor: 0.88, steps: 10, climb: 2,
       blurb: 'Big, tough and slow. Takes 12% less damage. His heavy shots barely feel the wind.',
-      shot1: { name: 'Slug', ammo: -1, r: 3.5, dmg: 40, wind: 0.45, desc: 'A heavy shell. Wind hardly moves it.' },
-      shot2: { name: 'Wrecking Ball', ammo: 2, r: 5, dmg: 56, wind: 0.45, bounce: 1, desc: 'Bounces once, then a big blast.' },
-      ss: { name: 'Meteor Slam', r: 6, dmg: 56, wind: 0.3, speed: 0.95, desc: 'A huge, heavy shell: the biggest crater in the game.' } },
+      shot1: { name: 'Slug', ammo: -1, delay: 680, r: 3.5, dmg: 40, wind: 0.45, desc: 'A heavy shell. Wind hardly moves it.' },
+      shot2: { name: 'Wrecking Ball', ammo: 2, delay: 840, r: 5, dmg: 56, wind: 0.45, bounce: 1, desc: 'Bounces once, then a big blast.' },
+      ss: { name: 'Meteor Slam', delay: 1040, r: 6, dmg: 56, wind: 0.3, speed: 0.95, desc: 'A huge, heavy shell: the biggest crater in the game.' } },
     zip: { name: 'Zip', role: 'Scout', hp: 105, armor: 1, steps: 22, climb: 3,
       blurb: 'Quick on her feet. Walks twice as far as most and climbs higher ledges.',
-      shot1: { name: 'Dart', ammo: -1, r: 3, dmg: 46, speed: 1.15, wind: 0.8, desc: 'Fast and flat, with a small blast.' },
-      shot2: { name: 'Double Tap', ammo: 2, r: 3, dmg: 38, speed: 1.15, wind: 0.8, double: true, desc: 'Two darts, one right after the other.' },
-      ss: { name: 'Bullet Rain', r: 3.2, dmg: 36, speed: 1.15, wind: 0.8, rain: { n: 5, spread: 4 }, desc: 'Five darts fanned out in a quick burst.' } },
+      shot1: { name: 'Dart', ammo: -1, delay: 560, r: 3, dmg: 46, speed: 1.15, wind: 0.8, desc: 'Fast and flat, with a small blast.' },
+      shot2: { name: 'Double Tap', ammo: 2, delay: 740, r: 3, dmg: 38, speed: 1.15, wind: 0.8, double: true, desc: 'Two darts, one right after the other.' },
+      ss: { name: 'Bullet Rain', delay: 960, r: 3.2, dmg: 36, speed: 1.15, wind: 0.8, rain: { n: 5, spread: 4 }, desc: 'Five darts fanned out in a quick burst.' } },
     volt: { name: 'Volt', role: 'All-rounder', hp: 100, armor: 1, steps: 14, climb: 2,
       blurb: 'Steady and simple. Calls lightning down on anyone hiding under cover.',
-      shot1: { name: 'Arc Ball', ammo: -1, r: 3.2, dmg: 46, desc: 'A plain, reliable shell.' },
-      shot2: { name: 'Thunderstrike', ammo: 2, r: 3, dmg: 26, strike: { w: 2.2, dmg: 34 }, desc: 'Where it lands, lightning hits everyone close by, cover or not.' },
-      ss: { name: 'Storm Call', r: 3, dmg: 24, storm: { gap: 7, w: 2.4, dmg: 42 }, desc: 'Three lightning bolts: where it lands and 7 cells to each side.' } },
+      shot1: { name: 'Arc Ball', ammo: -1, delay: 600, r: 3.2, dmg: 46, desc: 'A plain, reliable shell.' },
+      shot2: { name: 'Thunderstrike', ammo: 2, delay: 800, r: 3, dmg: 26, strike: { w: 2.2, dmg: 34 }, desc: 'Where it lands, lightning hits everyone close by, cover or not.' },
+      ss: { name: 'Storm Call', delay: 1000, r: 3, dmg: 24, storm: { gap: 7, w: 2.4, dmg: 42 }, desc: 'Three lightning bolts: where it lands and 7 cells to each side.' } },
     digger: { name: 'Digger', role: 'Miner', hp: 110, armor: 0.95, steps: 12, climb: 2,
       blurb: 'Sturdy. Can tunnel straight through hills to reach someone dug in.',
-      shot1: { name: 'Pick Shell', ammo: -1, r: 4, dmg: 40, desc: 'Digs a wide crater.' },
-      shot2: { name: 'Drill', ammo: 2, r: 4, dmg: 48, drill: 14, desc: 'Bores through up to 14 cells of ground, then explodes.' },
-      ss: { name: 'Earthquake', r: 5, dmg: 40, quake: { dmg: 20 }, desc: 'A big blast, then a quake that hits every enemy standing on the ground.' } },
-    gale: { name: 'Gale', role: 'Wind-rider', hp: 95, armor: 1, steps: 16, climb: 2,
+      shot1: { name: 'Pick Shell', ammo: -1, delay: 620, r: 4, dmg: 40, desc: 'Digs a wide crater.' },
+      shot2: { name: 'Drill', ammo: 2, delay: 800, r: 4, dmg: 48, drill: 14, desc: 'Bores through up to 14 cells of ground, then explodes.' },
+      ss: { name: 'Earthquake', delay: 1000, r: 5, dmg: 40, quake: { dmg: 20 }, desc: 'A big blast, then a quake that hits every enemy standing on the ground.' } },
+    gale: { name: 'Gale', role: 'Wind-rider', hp: 90, armor: 1, steps: 16, climb: 2,
       blurb: 'Rides the wind. Her shots curve hard, and her Gust throws people into the water.',
-      shot1: { name: 'Kite Bomb', ammo: -1, r: 4, dmg: 42, wind: 1.7, desc: 'Strong, but the wind pushes it a lot.' },
-      shot2: { name: 'Gust Bomb', ammo: 2, r: 4.5, dmg: 24, wind: 1.7, knock: 2.6, desc: 'Weak blast, huge knockback.' },
-      ss: { name: 'Tornado', r: 3, dmg: 20, wind: 1.3, tornado: { reach: 12, dmg: 18, push: 34 }, desc: 'Flings everyone within 12 cells away from it, your own crew too.' } },
+      shot1: { name: 'Kite Bomb', ammo: -1, delay: 600, r: 4, dmg: 42, wind: 1.7, desc: 'Strong, but the wind pushes it a lot.' },
+      shot2: { name: 'Gust Bomb', ammo: 2, delay: 780, r: 4.5, dmg: 24, wind: 1.7, knock: 2.2, desc: 'Weak blast, huge knockback.' },
+      ss: { name: 'Tornado', delay: 980, r: 3, dmg: 20, wind: 1.3, tornado: { reach: 11, dmg: 16, push: 26 }, desc: 'Flings everyone within 11 cells away from it, you too.' } },
   };
   const CHAR_IDS = Object.keys(CHARS);
   const WEAPON_IDS = ['shot1', 'shot2', 'dud', 'ss'];
@@ -262,30 +288,41 @@ button { font: inherit; color: inherit; }
   }
 
   // ---------- game state ----------
-  // opts.first: which team shoots first (0 or 1). opts.chars: the two teams' character ids (default Volt vs Volt).
+  // opts.teams: 2 (1v1) or 4 (free-for-all). opts.size: units per side (default 1). opts.first: which side shoots first.
+  // opts.chars: each side's character id (default Volt).
   function newGame(seed, opts = {}) {
-    const chars = [0, 1].map((t) => (opts.chars && CHARS[opts.chars[t]]) ? opts.chars[t] : 'volt');
+    const teams = opts.teams === 4 ? 4 : opts.teams === 3 ? 3 : 2, size = Math.max(1, Math.min(2, opts.size || UNITS_PER_TEAM));
+    const chars = Array.from({ length: teams }, (_, t) => (opts.chars && CHARS[opts.chars[t]]) ? opts.chars[t] : 'volt');
     const G = {
       v: 2, seed: seed >>> 0, _s: (seed >>> 0) || 1, _id: 0,
-      phase: 'aim', turn: 0, team: 0, teams: 2, unitIdx: [0, 0], chars,
+      phase: 'aim', turn: 0, team: 0, teams, size, actor: 0, spent: 0, chars,
       wind: 0, water: WATER0, moves: 0, weapon: 'shot1',
       T: null, units: [], proj: [], duds: [], fx: [],
-      ammo: [], ss: [0, 0], fused: false, winner: null,
-      stats: { shots: 0, shot2: 0, ss: 0, lobs: 0, dudBlasts: 0, chains: 0, strikes: 0, drowned: 0, fallKOs: 0, selfDmg: [0, 0], dmg: [0, 0] },
+      ammo: [], ss: new Array(teams).fill(0), fused: false, winner: null,
+      stats: { shots: 0, shot2: 0, ss: 0, lobs: 0, dudBlasts: 0, chains: 0, strikes: 0, drowned: 0, fallKOs: 0, selfDmg: new Array(teams).fill(0), dmg: new Array(teams).fill(0) },
     };
     genTerrain(G);
     for (let t = 0; t < G.teams; t++) { const C = CHARS[chars[t]]; G.ammo.push({ shot1: C.shot1.ammo, shot2: C.shot2.ammo, dud: DUD.ammo }); }
-    const slots = [[0.1, 0.32], [0.68, 0.9]]; // two units a side, spread across each team's half
-    for (let t = 0; t < G.teams; t++) for (let i = 0; i < UNITS_PER_TEAM; i++) {
-      const [a, b] = slots[t]; const x = Math.round(COLS * (a + (b - a) * (i + 0.2 + R(G) * 0.6) / UNITS_PER_TEAM));
-      const C = CHARS[chars[t]];
-      G.units.push({ id: ++G._id, team: t, char: chars[t], x: x + 0.5, y: surfaceY(G, x), vx: 0, vy: 0, hp: C.hp, maxHp: C.hp, alive: true, air: false, face: t === 0 ? 1 : -1 });
+    // spawn spots spread evenly across the map; each side takes a block of them. In 1v1, side 0 starts on the left;
+    // in a free-for-all the sides are shuffled along the map so nobody always gets the same spot.
+    const order = Array.from({ length: teams }, (_, t) => t);
+    if (teams > 2) for (let i = teams - 1; i > 0; i--) { const j = Math.floor(R(G) * (i + 1)); [order[i], order[j]] = [order[j], order[i]]; }
+    const spots = teams * size;
+    const mul = opts.hpMul || (size > 1 ? HP_MUL.crew : teams > 2 ? HP_MUL.ffa : HP_MUL.duel);
+    for (let k = 0; k < spots; k++) {
+      const t = order[Math.floor(k / size)], C = CHARS[chars[t]], hp = Math.round(C.hp * mul);
+      const x = Math.round(COLS * (0.08 + 0.84 * (k + 0.3 + R(G) * 0.4) / spots));
+      G.units.push({ id: ++G._id, team: t, char: chars[t], x: x + 0.5, y: surfaceY(G, x), vx: 0, vy: 0, hp, maxHp: hp, alive: true, air: false, face: x < COLS / 2 ? 1 : -1, delay: 0 });
     }
-    // who shoots first (a best-of-3 alternates it, since going first is worth a few points)
-    G.team = G.first = opts.first === 1 ? 1 : 0;
+    G.units.sort((a, b) => a.team - b.team || a.x - b.x); // ids stay as made; keep the list grouped by side
+    // who shoots first (a best-of-3 alternates it, since going first is worth a few points);
+    // starting delays alternate the teams: first team's unit 1, other team's unit 1, first team's unit 2, ...
+    G.first = Number.isInteger(opts.first) && opts.first >= 0 && opts.first < teams ? opts.first : 0;
+    for (const u of G.units) { const i = G.units.filter((v) => v.team === u.team).indexOf(u), rank = (u.team - G.first + teams) % teams; u.delay = (i * teams + rank) * START_GAP; }
+    const a0 = nextActor(G); G.actor = a0.id; G.team = a0.team;
     G.moves = CHARS[chars[G.team]].steps;
     chargeSS(G);
-    G.ss[1 - G.team] = 1; // the team that shoots second gets a one-notch SS head start (first turn wins 58% → 51% in the sim)
+    for (let t = 0; t < teams; t++) if (t !== G.team) G.ss[t] = 1; // sides that don't shoot first get a one-notch SS head start (first turn wins 58% → 51% in the 1v1 sim)
     G.wind = rollWind(G);
     return G;
   }
@@ -294,7 +331,23 @@ button { font: inherit; color: inherit; }
   const ssReady = (G, t = G.team) => G.ss[t] >= SS_CHARGE;
   const rollWind = (G) => Math.round((R(G) * 2 - 1) * WIND_MAX * 10) / 10;
   const teamUnits = (G, t) => G.units.filter((u) => u.team === t && u.alive);
-  function current(G) { const us = teamUnits(G, G.team); if (!us.length) return null; return us[G.unitIdx[G.team] % us.length]; }
+  function current(G) { return G.units.find((u) => u.id === G.actor && u.alive) || null; }
+  // The living unit with the lowest delay goes next. Ties: the team that didn't just play, then the older unit.
+  function nextActor(G, lastTeam = -1) {
+    let best = null;
+    for (const u of G.units) {
+      if (!u.alive) continue;
+      if (!best || u.delay < best.delay || (u.delay === best.delay && ((best.team === lastTeam && u.team !== lastTeam) || (u.team === best.team && u.id < best.id)))) best = u;
+    }
+    return best;
+  }
+  // What this turn will have cost so far if you fire `w` now (or pass): for the UI's turn-order preview.
+  function delayIf(G, w) { const u = current(G); if (!u) return 0; return u.delay + G.spent + (w === 'pass' ? DELAY.pass : w === 'lob' ? DELAY.lob : shotSpec(G, G.team, w).delay); }
+  // The coming turns, in order, if every unit's delay stays as it is now (the current unit counted with `extra`).
+  function turnOrder(G, extra = 0, n = 6) {
+    const live = G.units.filter((u) => u.alive).map((u) => ({ id: u.id, team: u.team, d: u.delay + (u.id === G.actor ? G.spent + extra : 0) }));
+    return live.sort((a, b) => a.d - b.d || a.id - b.id).slice(0, n);
+  }
   const center = (u) => [u.x, u.y - UNIT_R];
   const charOf = (G, t) => CHARS[G.chars[t]];
   // The full spec of a team's weapon: { name, r, dmg, wind, speed, ... } with defaults filled in.
@@ -492,25 +545,27 @@ button { font: inherit; color: inherit; }
     nextTurn(G);
   }
   function checkWin(G) {
-    const alive = [0, 1].map((t) => teamUnits(G, t).length);
-    if (alive[0] && alive[1]) return;
-    G.phase = 'over'; G.winner = alive[0] ? 0 : alive[1] ? 1 : -1; // -1 = draw
+    const alive = []; for (let t = 0; t < G.teams; t++) if (teamUnits(G, t).length) alive.push(t);
+    if (alive.length > 1) return;
+    G.phase = 'over'; G.winner = alive.length ? alive[0] : -1; // -1 = draw
     G.fx.push({ k: 'over', winner: G.winner });
   }
   function nextTurn(G) {
-    G.unitIdx[G.team]++;
-    G.turn++; G.team = (G.team + 1) % G.teams;
-    if (G.turn >= SUDDEN_TURN) {
+    const was = G.units.find((u) => u.id === G.actor); if (was) was.delay += G.spent;
+    G.spent = 0;
+    G.turn++;
+    if (G.turn >= suddenTurn(G)) {
       G.water = Math.max(4, G.water - SUDDEN_RISE);
       for (const u of G.units) if (u.alive && u.y >= G.water) ko(G, u, 'water');
       for (const d of G.duds) if (d.y >= G.water) d.gone = true;
       G.duds = G.duds.filter((d) => !d.gone);
       checkWin(G); if (G.phase === 'over') return;
     }
-    if (G.turn >= MAX_TURNS) { // a stalemate nobody can break: the side with more health left (as a share) wins
-      const hp = [0, 1].map((t) => teamUnits(G, t).reduce((a, u) => a + u.hp / u.maxHp, 0));
-      G.phase = 'over'; G.winner = hp[0] === hp[1] ? -1 : hp[0] > hp[1] ? 0 : 1; G.timeout = true; return;
+    if (G.turn >= maxTurns(G)) { // a stalemate nobody can break: the side with more health left (as a share) wins
+      const hp = Array.from({ length: G.teams }, (_, t) => teamUnits(G, t).reduce((a, u) => a + u.hp / u.maxHp, 0)), top = Math.max(...hp);
+      G.phase = 'over'; G.winner = hp.filter((h) => h === top).length > 1 ? -1 : hp.indexOf(top); G.timeout = true; return;
     }
+    const nx = nextActor(G, was ? was.team : -1); G.actor = nx.id; G.team = nx.team;
     G.phase = 'aim'; G.moves = charOf(G, G.team).steps; G.fused = false; G.weapon = 'shot1';
     chargeSS(G);
     G.wind = rollWind(G);
@@ -545,7 +600,7 @@ button { font: inherit; color: inherit; }
       case 'move': {
         if (G.moves <= 0 || (it.dir !== 1 && it.dir !== -1)) return false;
         if (!walk(G, u, it.dir)) return false;
-        G.moves--;
+        G.moves--; G.spent += DELAY.move;
         if (!u.alive) G.phase = 'flight'; // walked into the water: end the turn
         return true;
       }
@@ -560,6 +615,7 @@ button { font: inherit; color: inherit; }
         if (w === 'ss') { if (!ssReady(G)) return false; G.ss[G.team] = 0; G.stats.ss++; }
         else { if (am[w] === 0) return false; if (am[w] > 0) am[w]--; }
         const sp = shotSpec(G, G.team, w);
+        G.spent += sp.delay;
         if (sp.rain) { // Bullet Rain: a fan of darts, one after another
           const n = sp.rain.n;
           for (let i = 0; i < n; i++) { const q = newShot(G, u, w, it.angle + (i - (n - 1) / 2) * sp.rain.spread, it.power * (1 - 0.015 * i), G.team); q.wait = i * 7; G.proj.push(q); }
@@ -579,10 +635,10 @@ button { font: inherit; color: inherit; }
         if (!d || !canLob(G, u, d)) return false;
         G.duds = G.duds.filter((x) => x !== d);
         const p = Object.assign(launch(u, it.angle, Math.min(it.power, 1) * LOB_POWER), { id: ++G._id, w: 'dud', dudId: d.id, fuse: d.fuse, team: G.team, from: u.id, age: 0, wm: 1 });
-        G.proj.push(p); G.stats.lobs++;
+        G.proj.push(p); G.stats.lobs++; G.spent += DELAY.lob;
         G.phase = 'flight'; return true;
       }
-      case 'pass': G.phase = 'flight'; return true;
+      case 'pass': G.spent += DELAY.pass; G.phase = 'flight'; return true;
       default: return false;
     }
   }
@@ -623,6 +679,10 @@ button { font: inherit; color: inherit; }
     sloppy: { tries: 10, refine: 0,  noiseA: 5.0, noiseP: 0.07,  dud: 1, lob: 1, dodge: 0 },
     nodud:  { tries: 36, refine: 14, noiseA: 1.4, noiseP: 0.018, dud: 0, lob: 0, dodge: 1 },
     duder:  { tries: 36, refine: 14, noiseA: 1.4, noiseP: 0.018, dud: 2.2, lob: 1, dodge: 1 },
+    // the computer opponents in 1 Player mode
+    easy:   { tries: 8,  refine: 0,  noiseA: 7.0, noiseP: 0.09,  dud: 0.6, lob: 0, dodge: 0, ssSkip: 0.5 },
+    medium: { tries: 18, refine: 6,  noiseA: 3.2, noiseP: 0.04,  dud: 1, lob: 1, dodge: 1 },
+    hard:   { tries: 36, refine: 14, noiseA: 1.4, noiseP: 0.018, dud: 1, lob: 1, dodge: 1 },
   };
   function botRng(G) { let s = (G.seed ^ Math.imul(G.turn + 1, 2654435761)) >>> 0; return () => { s = (s + 0x6D2B79F5) >>> 0; let t = s; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
   const gauss = (r) => (r() + r() + r() - 1.5) * 1.15;
@@ -684,7 +744,7 @@ button { font: inherit; color: inherit; }
     }
     const opts = [];
     const s1 = bestShot(G, u, 'shot1', st, rnd, 0); opts.push({ w: 'shot1', ...s1 });
-    if (ssReady(G)) { const x = bestShot(G, u, 'ss', st, rnd, 0); opts.push({ w: 'ss', ...x }); }
+    if (ssReady(G) && !(st.ssSkip && rnd() < st.ssSkip)) { const x = bestShot(G, u, 'ss', st, rnd, 0); opts.push({ w: 'ss', ...x }); }
     if (G.ammo[u.team].shot2 !== 0) { const c = bestShot(G, u, 'shot2', st, rnd, 0); opts.push({ w: 'shot2', ...c, score: c.score * 1.05 }); }
     if (st.dud && G.ammo[u.team].dud !== 0) { const d = bestShot(G, u, 'dud', st, rnd, DUD.fuse); opts.push({ w: 'dud', ...d, score: d.score * st.dud }); }
     if (st.lob) for (const d of lobbable(G)) {
@@ -692,6 +752,8 @@ button { font: inherit; color: inherit; }
       const here = blastScore(G, d.x, d.y, DUD.r, DUD.dmg, u.team); // getting a dud away from our own units is worth something
       opts.push({ lob: d.id, ...b, score: b.score + here.mine * (d.fuse <= 1 ? 1.2 : 0.5) });
     }
+    // turn delay: a heavier shot has to be worth the turns it gives away (about 2 points of damage per 100 delay)
+    for (const o of opts) o.score -= 0.02 * (o.lob ? DELAY.lob : shotSpec(G, u.team, o.w).delay);
     opts.sort((a, b) => b.score - a.score);
     const o = opts[0];
     if (!o || o.angle == null) { send({ k: 'pass' }); return sent; }
@@ -705,7 +767,7 @@ button { font: inherit; color: inherit; }
   // Play a whole match with one bot style per team. Returns the finished game and its intent log.
   function playOut(G, styles) {
     const log = []; let guard = 0;
-    while (G.phase !== 'over' && guard++ < MAX_TURNS + 5) {
+    while (G.phase !== 'over' && guard++ < maxTurns(G) + 5) {
       const its = botTurn(G, styles[G.team]); log.push(...its);
       resolve(G);
     }
@@ -716,7 +778,7 @@ button { font: inherit; color: inherit; }
   // ---------- checksum and replay ----------
   function hash(G) {
     const r = (v) => Math.round(v * 100);
-    const parts = [G.turn, G.team, G.phase, r(G.wind), G.water, G.moves, G.winner, G.chars.join(','),
+    const parts = [G.turn, G.team, G.actor, G.spent, G.units.map((u) => u.delay).join(','), G.phase, r(G.wind), G.water, G.moves, G.winner, G.chars.join(','),
       G.units.map((u) => `${u.id}:${r(u.x)},${r(u.y)},${u.hp},${u.alive ? 1 : 0}`).join(';'),
       G.duds.map((d) => `${d.id}:${r(d.x)},${r(d.y)},${d.fuse}`).join(';'),
       G.ammo.map((a) => `${a.shot2},${a.dud}`).join(';'), G.ss.join(','), G.T.join('')];
@@ -732,8 +794,8 @@ button { font: inherit; color: inherit; }
     return G;
   }
 
-  const WB = { TICK, COLS, ROWS, WATER0, GRAV, VMAX, WIND_MAX, UNIT_R, UNITS_PER_TEAM, HP, MOVE_STEPS, LOB_RANGE, LOB_POWER, SUDDEN_TURN, MAX_TURNS, DMG_SPREAD, SS_CHARGE,
-    DUD, CHARS, CHAR_IDS, WEAPON_IDS, STYLES, newGame, act, step, resolve, current, teamUnits, charOf, shotSpec, ssReady, solidAt, surfaceY, center, lobbable, canLob,
+  const WB = { TICK, COLS, ROWS, WATER0, GRAV, VMAX, WIND_MAX, UNIT_R, UNITS_PER_TEAM, HP, MOVE_STEPS, LOB_RANGE, LOB_POWER, SUDDEN_ROUNDS, MAX_ROUNDS, suddenTurn, maxTurns, DMG_SPREAD, SS_CHARGE, DELAY, HP_MUL,
+    DUD, CHARS, CHAR_IDS, WEAPON_IDS, STYLES, newGame, act, step, resolve, current, teamUnits, charOf, shotSpec, ssReady, turnOrder, delayIf, solidAt, surfaceY, center, lobbable, canLob,
     predict, blastScore, botTurn, playOut, hash, replay };
   if (typeof module !== 'undefined' && module.exports) module.exports = WB; else root.WB = WB;
 })(typeof window !== 'undefined' ? window : globalThis);
@@ -743,7 +805,9 @@ button { font: inherit; color: inherit; }
 /* Wormsbound Prototype 1 · local hotseat UI. © 2026 justaskjoe. All rights reserved.
    Draws the engine (window.WB) on one 1280×720 canvas and turns mouse, touch and keyboard into act() intents.
    The UI never changes the game itself: it only calls WB.act() and steps WB.step() on the clock.
-   Each team picks one of five characters first (WB.CHARS), then best-of-3 rounds, alternating who shoots first.
+   Two modes: 1 Player (you against 3 computer opponents in a 4-way free-for-all, Easy / Medium / Hard) and
+   2 Players (1v1 on one keyboard). Each side picks one of five characters (WB.CHARS); best of 3 rounds, with the
+   first turn rotating. Turn order follows the engine's turn delay.
    Placeholder art, all drawn in code. */
 (function () {
   'use strict';
@@ -758,9 +822,16 @@ button { font: inherit; color: inherit; }
   const W = 1280, H = 720, CELL = W / WB.COLS; // 8 px per terrain cell
   const TURN_SECONDS = 30, BEST_OF = 3, DRAG_FULL = 220, DRAG_MIN = 14;
   const TEAMS = [
-    { name: 'Ember Crew', key: 'ember', c: '#FF7A30', c2: '#C9481A', names: ['Rook', 'Blaze'] },
-    { name: 'Tide Crew', key: 'tide', c: '#22C3B5', c2: '#0E7C7B', names: ['Pip', 'Marlo'] },
+    { name: 'Ember', key: 'ember', c: '#FF7A30', c2: '#C9481A' },
+    { name: 'Tide', key: 'tide', c: '#22C3B5', c2: '#0E7C7B' },
+    { name: 'Plum', key: 'plum', c: '#B57BFF', c2: '#7A4BC9' },
+    { name: 'Sun', key: 'sun', c: '#FFD34D', c2: '#C99A1A' },
   ];
+  const LEVELS = {
+    easy: { name: 'Easy', blurb: 'Shaky aim, few tricks. Good for learning the ropes.' },
+    medium: { name: 'Medium', blurb: 'Decent aim. Uses duds, lobs them back and saves its SS.' },
+    hard: { name: 'Hard', blurb: 'Sharp aim and every trick. Beating three of them is a real win.' },
+  };
   const FONT = (px) => `${px}px "Lilita One", "Arial Black", system-ui, sans-serif`;
 
   const cv = $('#map'), ctx = cv.getContext('2d');
@@ -769,11 +840,16 @@ button { font: inherit; color: inherit; }
 
   const ui = {
     screen: 'title', G: null, matchSeed: 0, round: 1, wins: [0, 0], aim: {}, weapon: 'shot1', lob: false, picks: [null, null], pickTeam: 0, cursor: 2,
+    mode: 'duel', level: 'medium', cpu: null,
     drag: null, acc: 0, last: 0, slow: 0, shake: 0, parts: [], trails: {}, scorch: [], clouds: [], dust: [], pops: [],
     tLeft: TURN_SECONDS, timerOn: lsGet('wb-timer') !== 'off', sound: lsGet('wb-sound') !== 'off', coach: lsGet('wb-coach') !== 'off',
     fast: false, tester: false, overAt: 0, turnsSeen: 0, paused: false, fb: { q: {}, text: '', nm: '', saved: null },
   };
-  const unitName = (u) => { const i = ui.G.units.filter((x) => x.team === u.team).indexOf(u); return TEAMS[u.team].names[i] || 'Unit'; };
+  const nSides = () => (ui.mode === 'solo' ? 4 : 2);
+  const isCPU = (t) => ui.mode === 'solo' && t !== 0;
+  // what a side is called: "You" and "Tide CPU" in 1 Player, "Player 1" and "Player 2" in 1v1
+  const sideLabel = (t) => ui.mode === 'solo' ? (t === 0 ? 'You' : `${TEAMS[t].name} CPU`) : `Player ${t + 1}`;
+  const unitName = (u) => sideLabel(u.team);
   const charName = (t) => WB.CHARS[ui.G.chars[t]].name;
 
   // ---------- stage fit ----------
@@ -922,30 +998,49 @@ button { font: inherit; color: inherit; }
         const u = ui.G.units.find((x) => x.id === e.id);
         ui.pops.push({ x: e.x * CELL, y: e.y * CELL - 40, t: 0, text: e.why === 'water' ? 'SPLASH OUT!' : 'K.O.!', c: '#FF4D5E' });
         if (!reduced) ui.slow = 0.75;
-        SFX.ko(); if (u) banner(`${unitName(u)} is out!`, TEAMS[u.team].name);
+        SFX.ko(); if (u) banner(`${unitName(u)} ${unitName(u) === 'You' ? 'are' : 'is'} out!`, charName(u.team), TEAMS[u.team].c);
       } else if (e.k === 'turn') { onTurn(); }
     }
   }
   function onTurn() {
     const G = ui.G, u = WB.current(G); if (!u) return;
     const ss = WB.ssReady(G);
-    ui.tLeft = TURN_SECONDS; ui.lob = false; ui.weapon = ss ? 'ss' : 'shot1'; ui.turnsSeen++;
-    banner(`${TEAMS[G.team].name}`, `${unitName(u)} · ${charName(G.team)}${ss ? ' · SS READY!' : ''}`);
+    ui.tLeft = TURN_SECONDS; ui.lob = false; ui.weapon = ss ? 'ss' : 'shot1'; ui.cpu = null;
+    if (!isCPU(G.team)) ui.turnsSeen++;
+    banner(sideLabel(G.team), `${charName(G.team)}${ss ? ' · SS READY!' : ''}${isCPU(G.team) ? '' : ui.mode === 'solo' ? ' · your turn' : ''}`, TEAMS[G.team].c);
     if (ss) tone(660, 990, 0.25, 0.12, 'triangle');
     renderHUD(); renderCtl(); coachLine();
   }
-  function banner(big, small) {
+  function banner(big, small, color) {
     const h = $('#bannerHost');
-    h.innerHTML = `<div class="banner" style="color:${TEAMS.find((t) => t.name === big) ? TEAMS.find((t) => t.name === big).c : '#FFF3E0'}">${esc(big)}${small ? `<small>${esc(small)}</small>` : ''}</div>`;
+    h.innerHTML = `<div class="banner" style="color:${color || '#FFF3E0'}">${esc(big)}${small ? `<small>${esc(small)}</small>` : ''}</div>`;
     clearTimeout(banner.t); banner.t = setTimeout(() => { h.innerHTML = ''; }, 1600);
   }
 
   // ---------- aiming ----------
   function aimOf(u) {
-    if (!ui.aim[u.id]) ui.aim[u.id] = { angle: u.team === 0 ? 50 : 130, power: 0.62 };
+    if (!ui.aim[u.id]) ui.aim[u.id] = { angle: u.x < WB.COLS / 2 ? 50 : 130, power: 0.62 };
     return ui.aim[u.id];
   }
-  function canAct() { return ui.screen === 'game' && !ui.paused && ui.G && ui.G.phase === 'aim'; }
+  function canAct() { return ui.screen === 'game' && !ui.paused && ui.G && ui.G.phase === 'aim' && !isCPU(ui.G.team); }
+
+  // ---------- computer turns (1 Player) ----------
+  // The bot decides on a copy of the game (same seed and state, so the same choice), then the moves are played on
+  // the real game one by one, with pauses so you can watch it walk, aim and fire.
+  function cpuStart() {
+    const plan = WB.botTurn(JSON.parse(JSON.stringify(ui.G)), ui.level);
+    ui.cpu = { plan, i: 0, t: 0.8, aimed: false };
+  }
+  function cpuStep(dt) {
+    const c = ui.cpu, G = ui.G; c.t -= dt * (ui.fast ? 8 : 1); if (c.t > 0) return;
+    const it = c.plan[c.i++], u = WB.current(G);
+    if (!it || !u) { if (G.phase === 'aim') WB.act(G, { k: 'pass' }); ui.cpu = null; renderCtl(); return; }
+    if (it.k === 'move') { WB.act(G, it); c.t = 0.09; renderCtl(); return; }
+    if (it.k === 'weapon') { WB.act(G, it); ui.weapon = it.w; c.t = 0.3; renderCtl(); coachLine(); return; }
+    if ((it.k === 'fire' || it.k === 'lob') && !c.aimed) { const a = aimOf(u); a.angle = it.angle; a.power = it.power; ui.lob = it.k === 'lob'; c.aimed = true; c.i--; c.t = 0.75; return; }
+    if (WB.act(G, it) && (it.k === 'fire' || it.k === 'lob')) { SFX.fire(); burst(...muzzle(u, aimOf(u)), 8, 'spark'); }
+    if (G.phase !== 'aim') { ui.cpu = null; renderCtl(); coachLine(); }
+  }
   function doFire() {
     if (!canAct()) return false;
     const G = ui.G, u = WB.current(G), a = aimOf(u);
@@ -992,6 +1087,7 @@ button { font: inherit; color: inherit; }
     if (e.target && /INPUT|TEXTAREA/.test(e.target.tagName)) return;
     const k = e.key;
     if (ui.screen === 'end' && (k === 'r' || k === 'R')) { startMatch(); return; }
+    if (ui.screen === 'level') { if (/^[1-3]$/.test(k)) { ui.level = Object.keys(LEVELS)[+k - 1]; ui.cursor = 2; selectScreen(0); } return; }
     if (ui.screen === 'select') {
       const n = WB.CHAR_IDS.length;
       if (k === 'ArrowLeft' || k === 'a' || k === 'A') { ui.cursor = (ui.cursor + n - 1) % n; selectScreen(ui.pickTeam); }
@@ -1022,26 +1118,40 @@ button { font: inherit; color: inherit; }
   // ---------- HUD and controls (DOM) ----------
   function renderHUD() {
     const G = ui.G; if (!G) { $('#hud').innerHTML = ''; return; }
+    const n = G.teams, half = Math.ceil(n / 2);
     const side = (t) => {
       const us = G.units.filter((u) => u.team === t), hp = us.reduce((a, u) => a + Math.max(0, u.hp), 0), max = us.reduce((a, u) => a + u.maxHp, 0);
-      return `<div class="team ${TEAMS[t].key}${t ? ' r' : ''}"><div><div class="nm">${TEAMS[t].name} <span style="font-size:17px;opacity:.85">· ${esc(charName(t))}</span></div><div class="bar"><i style="width:${(100 * hp / max).toFixed(1)}%"></i></div></div>
+      const out = !us.some((u) => u.alive), cur = t === G.team && G.phase !== 'over';
+      return `<div class="team ${TEAMS[t].key}${t >= half ? ' r' : ''}${n > 2 ? ' sm' : ''}${out ? ' out' : ''}${cur ? ' cur' : ''}"><div><div class="nm">${esc(sideLabel(t))} <span class="cn">· ${esc(charName(t))}</span></div><div class="bar"><i style="width:${(100 * hp / max).toFixed(1)}%"></i></div></div>
         <div class="ssm${WB.ssReady(G, t) ? ' on' : ''}" title="SS charge: ready every ${WB.SS_CHARGE} turns"><span>SS</span>${Array.from({ length: WB.SS_CHARGE }, (_, i) => `<b class="${G.ss[t] > i ? 'f' : ''}"></b>`).join('')}</div>
         <div class="pips" title="rounds won">${Array.from({ length: Math.ceil(BEST_OF / 2) }, (_, i) => `<b class="${ui.wins[t] > i ? 'on' : ''}"></b>`).join('')}</div></div>`;
     };
     const w = G.wind, arrows = Math.round(Math.abs(w) / WB.WIND_MAX * 4);
     const windTxt = Math.abs(w) < 0.2 ? 'calm' : `${w < 0 ? '◀'.repeat(Math.max(1, arrows)) : ''} ${Math.abs(w).toFixed(1)} ${w > 0 ? '▶'.repeat(Math.max(1, arrows)) : ''}`;
-    $('#hud').innerHTML = side(0) + `<div class="mid"><div class="timer${ui.timerOn ? '' : ' off'}" id="timer">${ui.timerOn ? Math.ceil(ui.tLeft) : '∞'}</div><div class="wind" aria-label="wind">WIND ${windTxt}</div><div class="wind" style="font-size:12px;opacity:.8">Round ${ui.round}${G.turn >= WB.SUDDEN_TURN ? ' · <span style="color:#FF4D5E">SUDDEN DEATH: the water rises</span>' : ''}</div></div>` + side(1);
+    const left = Array.from({ length: half }, (_, t) => side(t)).join(''), right = Array.from({ length: n - half }, (_, i) => side(n - 1 - i)).join('');
+    $('#hud').innerHTML = `<div class="sidegrp">${left}</div>` + `<div class="mid"><div class="timer${ui.timerOn ? '' : ' off'}" id="timer">${ui.timerOn ? Math.ceil(ui.tLeft) : '∞'}</div><div class="wind" aria-label="wind">WIND ${windTxt}</div><div class="wind" style="font-size:12px;opacity:.8">Round ${ui.round}${ui.mode === 'solo' ? ' · ' + LEVELS[ui.level].name : ''}${G.turn >= WB.suddenTurn(G) ? ' · <span style="color:#FF4D5E">SUDDEN DEATH: the water rises</span>' : ''}</div>${orderHTML()}</div><div class="sidegrp r">${right}</div>`;
+  }
+  // The next turns if everyone keeps firing their Shot 1, counting the current side's chosen shot: what the
+  // turn delay means right now. Light shot: you may go again before them; heavy shot: they may go twice.
+  function orderHTML() {
+    const G = ui.G; if (!G || G.phase !== 'aim') return '<div class="order"></div>';
+    const w = ui.lob ? 'lob' : ui.weapon, d = G.units.filter((u) => u.alive).map((u) => ({ u, d: u.id === G.actor ? WB.delayIf(G, w) : u.delay }));
+    const seq = [];
+    for (let i = 0; i < 6 && d.length; i++) { d.sort((a, b) => a.d - b.d || a.u.id - b.u.id); const x = d[0]; seq.push(x.u.team); x.d += WB.shotSpec(G, x.u.team, 'shot1').delay; }
+    return `<div class="order" title="Who plays next, if everyone fires their Shot 1 after this">NEXT ${seq.map((t) => `<b style="background:${TEAMS[t].c}">${esc(sideLabel(t) === 'You' ? 'You' : ui.mode === 'solo' ? TEAMS[t].name[0] : 'P' + (t + 1))}</b>`).join('')}</div>`;
   }
   function renderCtl() {
     const G = ui.G; $('#bMenu').hidden = !G || ui.screen !== 'game';
     if (!G || ui.screen !== 'game') { $('#ctl').innerHTML = ''; return; }
+    const o = $('.order'); if (o) o.outerHTML = orderHTML();
+    if (isCPU(G.team) && G.phase === 'aim') { $('#ctl').innerHTML = `<span class="cputag" style="--tc:${TEAMS[G.team].c}">${esc(sideLabel(G.team))} (${esc(charName(G.team))}) is taking its turn…</span>`; return; }
     const aim = G.phase === 'aim', am = G.ammo[G.team], lob = WB.lobbable(G).length > 0;
     const wb = (w, key) => { const S = WB.shotSpec(G, G.team, w);
-      return `<button class="btn wpn${ui.weapon === w && !ui.lob ? '' : ' ghost'}" type="button" data-w="${w}" aria-pressed="${ui.weapon === w && !ui.lob}" title="${esc(S.desc)}" ${!aim || am[w] === 0 ? 'disabled' : ''}>${esc(S.name)}<small>${key} · ${am[w] < 0 ? '∞' : am[w] + ' left'}</small></button>`; };
+      return `<button class="btn wpn${ui.weapon === w && !ui.lob ? '' : ' ghost'}" type="button" data-w="${w}" aria-pressed="${ui.weapon === w && !ui.lob}" title="${esc(S.desc)} Turn delay +${S.delay}." ${!aim || am[w] === 0 ? 'disabled' : ''}>${esc(S.name)}<small>${key} · ${am[w] < 0 ? '∞' : am[w] + ' left'} · ⏱${S.delay}</small></button>`; };
     $('#ctl').innerHTML = `<button class="btn ghost" type="button" data-walk="-1" aria-label="Walk left" ${aim && G.moves ? '' : 'disabled'}>◀</button>
       <span class="steps">${G.moves} steps</span>
       <button class="btn ghost" type="button" data-walk="1" aria-label="Walk right" ${aim && G.moves ? '' : 'disabled'}>▶</button>
-      ${WB.ssReady(G) ? `<button class="btn wpn ss${ui.weapon === 'ss' && !ui.lob ? '' : ' dim'}" type="button" data-w="ss" aria-pressed="${ui.weapon === 'ss' && !ui.lob}" title="${esc(WB.shotSpec(G, G.team, 'ss').desc)}" ${aim ? '' : 'disabled'}>SS · ${esc(WB.shotSpec(G, G.team, 'ss').name)}<small>1 · ready</small></button>` : wb('shot1', '1')}${wb('shot2', '2')}${wb('dud', '3')}
+      ${WB.ssReady(G) ? `<button class="btn wpn ss${ui.weapon === 'ss' && !ui.lob ? '' : ' dim'}" type="button" data-w="ss" aria-pressed="${ui.weapon === 'ss' && !ui.lob}" title="${esc(WB.shotSpec(G, G.team, 'ss').desc)}" ${aim ? '' : 'disabled'}>SS · ${esc(WB.shotSpec(G, G.team, 'ss').name)}<small>1 · ready · ⏱${WB.shotSpec(G, G.team, 'ss').delay}</small></button>` : wb('shot1', '1')}${wb('shot2', '2')}${wb('dud', '3')}
       <button class="btn teal" type="button" data-act="lob" aria-pressed="${ui.lob}" ${aim && lob ? '' : 'disabled'} title="Pick up a live dud in reach (L)">LOB</button>
       <button class="btn fire" type="button" data-act="fire" ${aim ? '' : 'disabled'}>FIRE</button>
       <button class="btn ghost sm" type="button" data-act="pass" ${aim ? '' : 'disabled'} title="End your turn (X)">Skip</button>`;
@@ -1049,6 +1159,7 @@ button { font: inherit; color: inherit; }
   function coachLine() {
     const el = $('#coach'); if (!ui.coach || ui.screen !== 'game' || !ui.G) { el.innerHTML = ''; return; }
     const G = ui.G, u = WB.current(G); if (!u || G.phase !== 'aim') { el.innerHTML = ''; return; }
+    if (isCPU(G.team)) { el.innerHTML = ''; return; }
     const danger = G.duds.find((d) => d.fuse <= 1 && Math.hypot(d.x - u.x, d.y - u.y) < WB.DUD.r * WB.DMG_SPREAD);
     let t;
     if (danger && WB.lobbable(G).includes(danger)) t = '<b>That dud blows at the end of this turn!</b> Tap LOB (L), then drag to throw it away.';
@@ -1056,7 +1167,8 @@ button { font: inherit; color: inherit; }
     else if (ui.lob) t = 'Lob armed: drag back from your unit and let go to throw the dud. It keeps its countdown.';
     else if (WB.lobbable(G).length) t = 'A <b>live dud</b> is in reach. Tap <b>LOB</b> (L) to throw it at them instead of firing.';
     else if (ui.turnsSeen <= 2) t = '<b>Drag back</b> from your glowing unit and <b>let go</b> to fire. Further back = more power. Watch the wind.';
-    else if (ui.turnsSeen <= 4) t = 'Keys: <b>◀ ▶</b> walk · <b>▲ ▼</b> angle · <b>Q/E</b> power · <b>1 2 3</b> shots · <b>Space</b> fire.';
+    else if (ui.turnsSeen === 3) t = '<b>Turn delay:</b> every shot has a cost (⏱ on the buttons). Light shots bring your next turn sooner. The NEXT strip up top shows who plays next.';
+    else if (ui.turnsSeen <= 5) t = 'Keys: <b>◀ ▶</b> walk · <b>▲ ▼</b> angle · <b>Q/E</b> power · <b>1 2 3</b> shots · <b>Space</b> fire.';
     else if (ui.weapon === 'ss') t = `<b>SS ready: ${esc(WB.shotSpec(G, G.team, 'ss').name)}!</b> ${esc(WB.shotSpec(G, G.team, 'ss').desc)} It replaces Shot 1 until you use it.`;
     else if (ui.weapon === 'shot2') t = `<b>${esc(WB.shotSpec(G, G.team, 'shot2').name)}:</b> ${esc(WB.shotSpec(G, G.team, 'shot2').desc)} (${G.ammo[G.team].shot2} left this match)`;
     else if (ui.weapon === 'dud') t = 'A live dud lands and ticks for <b>3 turns</b>. Anyone close can lob it back, so drop it where they can\'t reach.';
@@ -1076,38 +1188,50 @@ button { font: inherit; color: inherit; }
     <p class="keys">Keys: ◀ ▶ / A D walk · ▲ ▼ / W S angle (Shift = fine) · Q E power · F flip · 1 2 3 shots · L lob · Space fire · X skip · Esc menu</p>`;
   function titleScreen() {
     ui.screen = 'title'; renderCtl(); coachLine();
-    show(`<div class="tag">JustAskJoe · Prototype 1 · local hotseat</div><h1>WORMSBOUND</h1>
-      <p>Two crews, one keyboard. Pick a character each, read the wind, blast the ground, and throw their own duds back at them. Best of three.</p>${HOW}
-      <div class="row"><button class="btn fire" type="button" data-act="start">PICK CHARACTERS</button></div>`);
+    show(`<div class="tag">JustAskJoe · Prototype 1</div><h1>WORMSBOUND</h1>
+      <p>Pick a character, read the wind, blast the ground, and throw their own duds back at them. Best of three.</p>${HOW}
+      <div class="row"><button class="btn fire" type="button" data-act="mode" data-mode="solo">1 PLAYER<small style="display:block;font-family:var(--body);font-size:12px">you vs 3 computers</small></button>
+      <button class="btn teal" type="button" data-act="mode" data-mode="duel">2 PLAYERS<small style="display:block;font-family:var(--body);font-size:12px">1v1 on one keyboard</small></button></div>`);
+  }
+  function levelScreen() {
+    ui.screen = 'level'; ui.G = null; renderHUD(); renderCtl(); coachLine();
+    show(`<div class="tag">1 Player · step 1 of 2</div><h2>How tough should the computers be?</h2>
+      <p>You against three of them, every side for itself. Last one standing takes the round.</p>
+      <div class="row lv">${Object.entries(LEVELS).map(([k, L], i) => `<button class="btn ${k === ui.level ? 'gold' : 'ghost'} lvl" type="button" data-act="level" data-level="${k}">${L.name}<small>${esc(L.blurb)}</small><span class="num">${i + 1}</span></button>`).join('')}</div>
+      <div class="row"><button class="btn ghost sm" type="button" data-act="quit">Back</button></div>`);
   }
   // ---------- character select: each crew picks one of five ----------
   function statBar(label, v, txt) { return `<div class="sb"><span>${label}</span><i><b style="width:${Math.round(clamp(v, 0.06, 1) * 100)}%"></b></i><em>${txt}</em></div>`; }
   function selectScreen(team) {
     ui.screen = 'select'; ui.pickTeam = team; ui.G = null; ui.paused = false;
     renderHUD(); renderCtl(); coachLine();
-    const T = TEAMS[team], other = team === 1 && ui.picks[0] ? `${TEAMS[0].name} picked <b style="color:${TEAMS[0].c}">${esc(WB.CHARS[ui.picks[0]].name)}</b>. ` : '';
+    const T = TEAMS[team], other = ui.mode === 'duel' && team === 1 && ui.picks[0] ? `Player 1 picked <b style="color:${TEAMS[0].c}">${esc(WB.CHARS[ui.picks[0]].name)}</b>. ` : '';
+    const mul = ui.mode === 'solo' ? WB.HP_MUL.ffa : WB.HP_MUL.duel;
     const cards = WB.CHAR_IDS.map((id, i) => {
       const C = WB.CHARS[id];
       return `<button class="char${i === ui.cursor ? ' cur' : ''}" type="button" data-act="pick" data-char="${id}" style="--tc:${T.c}" aria-label="${esc(C.name)}, ${esc(C.role)}">
         <img src="${portrait(id, team)}" alt="" width="150" height="110"><span class="num">${i + 1}</span>
         <b class="cn">${esc(C.name)}</b><span class="role">${esc(C.role)}</span>
-        ${statBar('Health', C.hp / 115, C.hp)}${statBar('Armour', (1 - C.armor) / 0.15 + 0.06, C.armor < 1 ? `−${Math.round((1 - C.armor) * 100)}%` : '–')}${statBar('Move', C.steps / 22, C.steps + ' steps')}${statBar('Wind grip', (2 - (C.shot1.wind || 1)) / 1.55, (C.shot1.wind || 1) < 1 ? 'steady' : (C.shot1.wind || 1) > 1 ? 'curvy' : 'normal')}
+        ${statBar('Health', C.hp / 115, Math.round(C.hp * mul))}${statBar('Armour', (1 - C.armor) / 0.15 + 0.06, C.armor < 1 ? `−${Math.round((1 - C.armor) * 100)}%` : '–')}${statBar('Move', C.steps / 22, C.steps + ' steps')}${statBar('Wind grip', (2 - (C.shot1.wind || 1)) / 1.55, (C.shot1.wind || 1) < 1 ? 'steady' : (C.shot1.wind || 1) > 1 ? 'curvy' : 'normal')}
         <span class="bl">${esc(C.blurb)}</span>
         <span class="sh"><b>1 · ${esc(C.shot1.name)}</b> ${esc(C.shot1.desc)}</span>
         <span class="sh two"><b>2 · ${esc(C.shot2.name)}</b> ${esc(C.shot2.desc)} <em>2 a match</em></span>
         <span class="sh ss"><b>SS · ${esc(C.ss.name)}</b> ${esc(C.ss.desc)} <em>every ${WB.SS_CHARGE} turns</em></span></button>`;
     }).join('');
     $('#screen').innerHTML = `<div class="screen"><div class="pick" role="dialog" aria-modal="true">
-      <div class="tag">Step ${team + 1} of 2 · everyone also carries 2 Live duds</div>
-      <h2 style="color:${T.c}">${esc(T.name)}, pick your character</h2>
-      <p class="sub">${other}Both of your crew will be this character.</p>
+      <div class="tag">${ui.mode === 'solo' ? `1 Player · ${LEVELS[ui.level].name} · step 2 of 2` : `2 Players · step ${team + 1} of 2`} · everyone also carries 2 Live duds</div>
+      <h2 style="color:${T.c}">${ui.mode === 'solo' ? 'Pick your character' : `Player ${team + 1}, pick your character`}</h2>
+      <p class="sub">${other}${ui.mode === 'solo' ? 'The three computers get random characters.' : 'Same pick as the other player is fine.'}</p>
       <div class="chars">${cards}</div>
       <div class="row"><button class="btn ghost sm" type="button" data-act="pickback">Back</button><span class="keys">← → choose · Enter to pick · or press 1–5</span></div></div></div>`;
   }
   function choose(id) {
     if (!WB.CHARS[id] || ui.screen !== 'select') return;
     ui.picks[ui.pickTeam] = id; SFX.click();
-    if (ui.pickTeam === 0) { ui.cursor = 2; selectScreen(1); } else startMatch();
+    if (ui.mode === 'solo') { // the computers take random characters, different from each other where possible
+      const rest = WB.CHAR_IDS.filter((c) => c !== id).sort(() => Math.random() - 0.5);
+      ui.picks = [id, rest[0], rest[1], rest[2]]; startMatch();
+    } else if (ui.pickTeam === 0) { ui.cursor = 2; selectScreen(1); } else startMatch();
   }
 
   function toggleMenu() {
@@ -1123,14 +1247,16 @@ button { font: inherit; color: inherit; }
     const G = ui.G, w = G.winner;
     if (w >= 0) ui.wins[w]++;
     const need = Math.ceil(BEST_OF / 2);
-    const done = ui.wins[0] >= need || ui.wins[1] >= need;
+    const done = ui.wins.some((x) => x >= need);
     ui.screen = done ? 'end' : 'round'; renderCtl(); coachLine(); renderHUD();
     if (done) SFX.win();
-    const head = w < 0 ? 'Draw!' : `${TEAMS[w].name} ${done ? 'wins the match!' : `takes round ${ui.round}`}`;
+    const you = ui.mode === 'solo' && w === 0;
+    const head = w < 0 ? 'Draw!' : you ? (done ? 'You win the match!' : `You take round ${ui.round}!`) : `${sideLabel(w)} ${done ? 'wins the match!' : `takes round ${ui.round}`}`;
     const col = w < 0 ? '#FFF3E0' : TEAMS[w].c;
     const st = G.stats;
-    ui.endHTML = `<div class="tag">${done ? 'Match over' : `Round ${ui.round} of ${BEST_OF}`}${ui.tester ? ' · TESTER' : ''}</div><h2 style="color:${col}">${esc(head)}</h2><p style="margin:0">${esc(TEAMS[0].name)} played <b>${esc(charName(0))}</b> · ${esc(TEAMS[1].name)} played <b>${esc(charName(1))}</b></p>
-      <div class="score"><span class="e">${ui.wins[0]}</span> – <span class="t">${ui.wins[1]}</span></div>
+    ui.endHTML = `<div class="tag">${done ? 'Match over' : `Round ${ui.round} of ${BEST_OF}`}${ui.tester ? ' · TESTER' : ''}</div><h2 style="color:${col}">${esc(head)}</h2>${ui.mode === 'solo' ? `<p style="margin:0">vs three ${LEVELS[ui.level].name} computers</p>` : ''}
+      <div class="score">${ui.wins.map((x, t) => `<span style="color:${TEAMS[t].c}" title="${esc(sideLabel(t))} · ${esc(charName(t))}">${x}</span>`).join(' – ')}</div>
+      <p style="margin:0;font-size:15px">${ui.wins.map((x, t) => `<b style="color:${TEAMS[t].c}">${esc(sideLabel(t))}</b> ${esc(charName(t))}`).join(' · ')}</p>
       <p>${done ? 'Last round: ' : ''}${G.turn} turns · ${st.shots} shots · ${st.lobs} lobs · ${st.dudBlasts} dud blasts${st.chains ? ` · ${st.chains} chain reaction${st.chains > 1 ? 's' : ''}` : ''}${st.drowned ? ` · ${st.drowned} splashed out` : ''}</p>
       <div class="row">${done
         ? `<button class="btn fire" type="button" data-act="rematch">REMATCH (R)</button><button class="btn gold" type="button" data-act="pickagain">New characters</button><button class="btn teal" type="button" data-act="feedback">Give feedback</button><button class="btn ghost" type="button" data-act="quit">Title</button>`
@@ -1141,6 +1267,8 @@ button { font: inherit; color: inherit; }
   // ---------- feedback (artifact db, then the site's feedback route, then copy) ----------
   const FQ = [
     { id: 'rematch', q: 'Did you want a rematch right away?', opts: ['Yes, right now', 'Maybe later', 'No'] },
+    { id: 'level', q: 'The computers (1 Player): how hard did they feel?', opts: ['Too easy', 'About right', 'Too hard', 'Played 1v1'] },
+    { id: 'delay', q: 'Turn delay (heavy shots make you wait longer): did it make sense?', opts: ['Yes, I used it', 'Sort of', "Didn't notice"] },
     { id: 'char', q: 'Which character was the most fun?', opts: WB.CHAR_IDS.map((c) => WB.CHARS[c].name) },
     { id: 'fair', q: 'Did any character feel too strong or too weak?', opts: ['All felt fair', 'One was too strong', 'One was too weak'] },
     { id: 'duds', q: 'Live duds: how did they feel?', opts: ['Loved them', 'Fine', "Didn't notice", 'Annoying'] },
@@ -1158,11 +1286,11 @@ button { font: inherit; color: inherit; }
   function feedbackText() {
     const F = ui.fb, G = ui.G;
     return ['Wormsbound P1 feedback', ...FQ.map((f) => `${f.q} ${F.q[f.id] || '–'}`), `Notes: ${F.text || '–'}`,
-      `From: ${F.nm || 'anonymous'} · ${ui.picks.join(' vs ')} · score ${ui.wins[0]}-${ui.wins[1]} · seed ${ui.matchSeed}${ui.tester ? ' · TESTER' : ''}${G ? ` · last round ${G.turn} turns, ${G.stats.lobs} lobs` : ''}`].join('\n');
+      `From: ${F.nm || 'anonymous'} · ${ui.mode === 'solo' ? '1 Player, ' + ui.level : '1v1'} · ${ui.picks.join(' vs ')} · score ${ui.wins.join('-')} · seed ${ui.matchSeed}${ui.tester ? ' · TESTER' : ''}${G ? ` · last round ${G.turn} turns, ${G.stats.lobs} lobs` : ''}`].join('\n');
   }
   async function sendFeedback() {
     const F = ui.fb; const t = $('#fbText'), n = $('#fbName'); if (t) F.text = t.value; if (n) F.nm = n.value;
-    const body = { answers: F.q, notes: F.text, name: F.nm, chars: ui.picks.slice(), score: ui.wins.slice(), seed: ui.matchSeed, tester: ui.tester, build: 'P1', at: new Date().toISOString() };
+    const body = { answers: F.q, notes: F.text, name: F.nm, mode: ui.mode, level: ui.mode === 'solo' ? ui.level : null, chars: ui.picks.slice(), score: ui.wins.slice(), seed: ui.matchSeed, tester: ui.tester, build: 'P1', at: new Date().toISOString() };
     try {
       const db = window.claude && window.claude.use ? await window.claude.use('db') : null;
       if (!db) throw new Error('no db');
@@ -1176,17 +1304,17 @@ button { font: inherit; color: inherit; }
 
   // ---------- match flow ----------
   function startRound() {
-    const first = (ui.round - 1) % 2;
-    ui.G = WB.newGame((ui.matchSeed + ui.round * 7919) >>> 0, { first, chars: ui.picks });
-    ui.aim = {}; ui.parts = []; ui.trails = {}; ui.scorch = []; ui.pops = []; ui.acc = 0; ui.slow = 0; ui.shake = 0; ui.overAt = 0; ui.paused = false;
+    const first = (ui.round - 1) % nSides();
+    ui.G = WB.newGame((ui.matchSeed + ui.round * 7919) >>> 0, { teams: nSides(), first, chars: ui.picks });
+    ui.aim = {}; ui.cpu = null; ui.parts = []; ui.trails = {}; ui.scorch = []; ui.pops = []; ui.acc = 0; ui.slow = 0; ui.shake = 0; ui.overAt = 0; ui.paused = false;
     bakeBackground(ui.G.seed); renderTerrain();
     ui.screen = 'game'; hide(); onTurn();
   }
   function startMatch() {
-    if (!ui.picks[0] || !ui.picks[1]) { ui.cursor = 2; selectScreen(0); return; }
+    if (ui.picks.length !== nSides() || ui.picks.some((c) => !c)) { ui.cursor = 2; selectScreen(0); return; }
     ui.matchSeed = (Date.now() ^ Math.floor(Math.random() * 1e9)) >>> 0;
     if (window.__WB_SEED != null) ui.matchSeed = window.__WB_SEED >>> 0; // tests pin the seed
-    ui.round = 1; ui.wins = [0, 0]; ui.tester = false; ui.fb = { q: {}, text: '', nm: '', saved: null };
+    ui.round = 1; ui.wins = new Array(nSides()).fill(0); ui.tester = false; ui.fb = { q: {}, text: '', nm: '', saved: null };
     startRound();
   }
   function botTurn() { if (!canAct() && !(ui.paused && ui.G && ui.G.phase === 'aim')) return; ui.tester = true; ui.paused = false; hide(); WB.botTurn(ui.G, 'smart'); renderCtl(); }
@@ -1202,10 +1330,12 @@ button { font: inherit; color: inherit; }
       lsSet('wb-' + k, ui[k === 'timer' ? 'timerOn' : k] ? 'on' : 'off'); ui.paused = false; toggleMenu(); renderHUD(); coachLine(); return;
     }
     switch (act) {
-      case 'start': case 'pickagain': ui.picks = [null, null]; ui.cursor = 2; selectScreen(0); break;
+      case 'mode': ui.mode = b.dataset.mode === 'solo' ? 'solo' : 'duel'; ui.picks = new Array(nSides()).fill(null); if (ui.mode === 'solo') levelScreen(); else { ui.cursor = 2; selectScreen(0); } break;
+      case 'level': ui.level = LEVELS[b.dataset.level] ? b.dataset.level : 'medium'; lsSet('wb-level', ui.level); ui.cursor = 2; selectScreen(0); break;
+      case 'start': case 'pickagain': ui.picks = new Array(nSides()).fill(null); ui.cursor = 2; selectScreen(0); break;
       case 'rematch': startMatch(); break;
       case 'pick': choose(b.dataset.char); break;
-      case 'pickback': if (ui.pickTeam === 1) { ui.picks[0] = null; selectScreen(0); } else titleScreen(); break;
+      case 'pickback': if (ui.mode === 'duel' && ui.pickTeam === 1) { ui.picks[0] = null; selectScreen(0); } else if (ui.mode === 'solo') levelScreen(); else titleScreen(); break;
       case 'next': ui.round += ui.G.winner >= 0 ? 1 : 0; startRound(); break;
       case 'fire': doFire(); break;
       case 'lob': toggleLob(); break;
@@ -1391,7 +1521,7 @@ button { font: inherit; color: inherit; }
     const cur = WB.current(G);
     for (const u of G.units) if (!u.alive) drawUnit(u, false, t);
     for (const u of G.units) if (u.alive) drawUnit(u, u === cur && G.phase === 'aim', t);
-    if (cur && G.phase === 'aim' && ui.screen === 'game' && !ui.paused) drawAim(cur, t);
+    if (cur && G.phase === 'aim' && ui.screen === 'game' && !ui.paused && (!isCPU(G.team) || (ui.cpu && ui.cpu.aimed))) drawAim(cur, t);
     for (const p of G.proj) drawProj(p, t);
     for (const id of Object.keys(ui.trails)) if (!G.proj.some((p) => String(p.id) === id)) delete ui.trails[id];
     for (const p of ui.parts) {
@@ -1432,6 +1562,9 @@ button { font: inherit; color: inherit; }
         ui.acc += dt * speed; let n = 0;
         while (ui.acc >= WB.TICK && G.phase === 'flight' && n++ < 400) { onFx(WB.step(G)); ui.acc -= WB.TICK; }
         if (G.phase !== 'flight') { ui.acc = 0; renderHUD(); renderCtl(); coachLine(); }
+      } else if (G.phase === 'aim' && isCPU(G.team)) {
+        if (!ui.cpu) cpuStart();
+        cpuStep(dt);
       } else if (G.phase === 'aim' && ui.timerOn) {
         const before = Math.ceil(ui.tLeft); ui.tLeft -= dt;
         if (Math.ceil(ui.tLeft) !== before && ui.tLeft <= 5 && ui.tLeft > 0) SFX.tick();
@@ -1453,10 +1586,11 @@ button { font: inherit; color: inherit; }
 
   // ---------- boot ----------
   window.WBUI = {
-    get G() { return ui.G; }, ui, startMatch, selectScreen, choose, startRound, roundOver, doFire, walk, pass, botTurn, renderAll: () => { renderHUD(); renderCtl(); coachLine(); },
+    get G() { return ui.G; }, ui, startMatch, levelScreen, selectScreen, choose, startRound, roundOver, doFire, walk, pass, botTurn, renderAll: () => { renderHUD(); renderCtl(); coachLine(); },
     aim: (angle, power) => { const u = WB.current(ui.G); const a = aimOf(u); a.angle = angle; a.power = power; },
   };
   fit(); addEventListener('resize', fit);
+  { const lv = lsGet('wb-level'); if (LEVELS[lv]) ui.level = lv; }
   bakeBackground(20261102); titleScreen();
   requestAnimationFrame(frame);
 })();

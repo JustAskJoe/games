@@ -83,7 +83,8 @@ for (const seed of [11, 222, 3333]) {
 for (const a of WB.CHAR_IDS) {
   const b = WB.CHAR_IDS[(WB.CHAR_IDS.indexOf(a) + 2) % WB.CHAR_IDS.length], opts = { chars: [a, b] };
   const G = WB.newGame(500, opts);
-  ok(G.units.filter((u) => u.team === 0).every((u) => u.char === a && u.hp === WB.CHARS[a].hp), `${a}: team 0 units are ${a} with ${WB.CHARS[a].hp} hp`);
+  const hp = Math.round(WB.CHARS[a].hp * WB.HP_MUL.duel);
+  ok(G.units.filter((u) => u.team === 0).every((u) => u.char === a && u.hp === hp), `${a}: side 0 is ${a} with ${hp} hp (×${WB.HP_MUL.duel} in a 1v1)`);
   ok(G.moves === WB.CHARS[a].steps && G.ammo[0].shot2 === 2 && G.ammo[0].dud === 2, `${a}: steps ${WB.CHARS[a].steps}, 2 Shot 2s, 2 duds`);
   const { G: F, log } = WB.playOut(WB.newGame(600, opts), ['smart', 'smart']);
   ok(WB.hash(WB.replay(600, log, opts)) === WB.hash(F), `${a} vs ${b}: a bot match replays exactly`);
@@ -125,7 +126,7 @@ const shoot = (chars, w, angle, power, setup) => {
   ok(lost(b) < lost(a), `armour: Brick loses ${lost(b)} where Volt loses ${lost(a)}`);
 }
 { // Gust Bomb throws harder than a normal shot
-  const kick = (w) => { const G = WB.newGame(9, { chars: ['gale', 'volt'] }), u = G.units[2]; G.phase = 'flight'; G.proj.push({ id: 997, w, team: 0, from: -1, age: 9, x: u.x - 2, y: u.y - 1, vx: 0, vy: 5, wm: 1 });
+  const kick = (w) => { const G = WB.newGame(9, { chars: ['gale', 'volt'] }), u = G.units.find((x) => x.team === 1); G.phase = 'flight'; G.proj.push({ id: 997, w, team: 0, from: -1, age: 9, x: u.x - 2, y: u.y - 1, vx: 0, vy: 5, wm: 1 });
     let top = 0; for (let i = 0; i < 90 && G.phase === 'flight'; i++) { WB.step(G); top = Math.max(top, Math.hypot(u.vx, u.vy)); } return top; };
   ok(kick('shot2') > kick('shot1') * 1.6, `Gust Bomb knockback ${kick('shot2').toFixed(0)} vs Kite Bomb ${kick('shot1').toFixed(0)}`);
 }
@@ -149,8 +150,8 @@ const shoot = (chars, w, angle, power, setup) => {
   ok(G.team === 0 && WB.ssReady(G) && G.ss[0] === WB.SS_CHARGE, `ready on your ${WB.SS_CHARGE}th turn`);
   ok(WB.act(G, { k: 'weapon', w: 'ss' }) && WB.act(G, { k: 'fire', angle: 60, power: 0.6 }), 'fire the SS');
   ok(G.ss[0] === 0 && G.stats.ss === 1, 'firing it empties the charge');
-  WB.resolve(G); WB.act(G, { k: 'pass' }); WB.resolve(G);
-  ok(G.ss[0] === 1, 'and it starts charging again');
+  WB.resolve(G); let g = 0; while (G.team !== 0 && g++ < 6) { WB.act(G, { k: 'pass' }); WB.resolve(G); } // the delay may give side 1 two turns
+  ok(G.ss[0] === 1, 'and it starts charging again on your next turn');
 }
 const ssGame = (chars, seed = 11) => { const G = WB.newGame(seed, { chars }); G.ss[G.team] = WB.SS_CHARGE; WB.act(G, { k: 'weapon', w: 'ss' }); return G; };
 { // Bullet Rain: five darts
@@ -167,7 +168,7 @@ const ssGame = (chars, seed = 11) => { const G = WB.newGame(seed, { chars }); G.
   G.proj.push({ id: 900, w: 'ss', team: 0, from: -1, age: 9, x: 80, y: WB.surfaceY(G, 80) - 1, vx: 0, vy: 4, wm: 1 }); G.phase = 'flight';
   const fx = []; for (let i = 0; i < 4000 && G.phase === 'flight'; i++) fx.push(...WB.step(G));
   const q = fx.find((e) => e.k === 'quake');
-  ok(q && q.hits.length === 2 && foes.every((u, i) => u.hp < before[i]), `Earthquake hits both enemies (${before} → ${foes.map((u) => u.hp)})`);
+  ok(q && q.hits.length === foes.length && foes.every((u, i) => u.hp < before[i]), `Earthquake hits every enemy (${before} → ${foes.map((u) => u.hp)})`);
   ok(G.units.filter((u) => u.team === 0).every((u, i) => u.hp === mine[i]), 'Earthquake doesn\'t touch your own crew far from the blast');
 }
 { // Tornado: flings units in reach away from the centre
@@ -179,6 +180,47 @@ const ssGame = (chars, seed = 11) => { const G = WB.newGame(seed, { chars }); G.
 { // Meteor Slam: the biggest crater
   const crater = (w) => { const G = WB.newGame(5, { chars: ['brick', 'volt'] }), before = G.T.reduce((a, v) => a + v, 0); G.proj.push({ id: 902, w, team: 0, from: -1, age: 9, x: 80, y: WB.surfaceY(G, 80) - 1, vx: 0, vy: 4, wm: 1 }); G.phase = 'flight'; WB.resolve(G); return before - G.T.reduce((a, v) => a + v, 0); };
   ok(crater('ss') > crater('shot2') * 1.3, `Meteor Slam digs ${crater('ss')} cells vs Wrecking Ball ${crater('shot2')}`);
+}
+
+// 10. Turn delay: the lowest delay goes next; heavy shots push your next turn back.
+{
+  const G = WB.newGame(55, { chars: ['brick', 'zip'] });
+  ok(WB.turnOrder(G).map((x) => x.team).join('') === '01', 'the first round alternates the sides');
+  const a = WB.current(G); WB.act(G, { k: 'move', dir: 1 }); WB.act(G, { k: 'move', dir: 1 });
+  ok(G.spent === 2 * WB.DELAY.move, 'walking adds delay per step');
+  ok(WB.delayIf(G, 'ss') > WB.delayIf(G, 'shot2') && WB.delayIf(G, 'shot2') > WB.delayIf(G, 'shot1'), 'SS costs more delay than Shot 2, Shot 2 more than Shot 1');
+  WB.act(G, { k: 'weapon', w: 'shot2' }); WB.act(G, { k: 'fire', angle: 60, power: 0.4 }); WB.resolve(G);
+  ok(a.delay === 2 * WB.DELAY.move + WB.CHARS.brick.shot2.delay, `Brick's Wrecking Ball adds ${WB.CHARS.brick.shot2.delay} delay`);
+  ok(WB.current(G).team === 1, 'then the other team plays');
+}
+{ // light shots win extra turns: Zip firing Darts against Brick firing Slugs gets more turns over a match
+  const G = WB.newGame(56, { chars: ['zip', 'brick'] }); const turns = [0, 0];
+  // everyone fires off the edge of the map (no damage), so only the delays decide the turn order
+  for (let i = 0; i < 40 && G.phase !== 'over'; i++) { turns[G.team]++; WB.act(G, { k: 'fire', angle: G.team ? 4 : 176, power: 1 }); WB.resolve(G); }
+  ok(turns[0] > turns[1], `Zip (Dart, ${WB.CHARS.zip.shot1.delay}) gets more turns than Brick (Slug, ${WB.CHARS.brick.shot1.delay}): ${turns[0]} vs ${turns[1]}`);
+}
+{ // a team can play twice in a row if the other team throws heavy shots
+  const G = WB.newGame(57, { chars: ['volt', 'volt'] }); let twice = false, last = -1;
+  for (let i = 0; i < 16 && G.phase !== 'over'; i++) {
+    if (G.team === last) twice = true; last = G.team;
+    if (G.team === 1) { G.ss[1] = WB.SS_CHARGE; WB.act(G, { k: 'weapon', w: 'ss' }); WB.act(G, { k: 'fire', angle: 4, power: 1 }); } else WB.act(G, { k: 'fire', angle: 176, power: 1 });
+    WB.resolve(G);
+  }
+  ok(twice, 'heavy shots on one side let the other side play twice in a row');
+}
+
+// 11. Free-for-all: four sides, one unit each.
+{
+  const G = WB.newGame(70, { teams: 4, chars: ['zip', 'brick', 'gale', 'digger'], first: 2 });
+  ok(G.units.length === 4 && new Set(G.units.map((u) => u.team)).size === 4, 'four sides, one unit each');
+  ok(G.units.every((u) => u.char === G.chars[u.team] && WB.solidAt(G, u.x, u.y + 0.05)), 'each stands on the ground as its own character');
+  ok(WB.turnOrder(G).map((x) => x.team).join('') === '2301', 'the first round goes round the table from the side that starts');
+  ok(G.ss.filter((v) => v === 1).length === 4, 'everyone starts with one SS notch (the first side charges on its turn)');
+  const xs = [0, 1, 2, 3].map((s2) => WB.newGame(s2 + 1, { teams: 4 }).units.find((u) => u.team === 0).x);
+  ok(new Set(xs.map((x) => x < 40 ? 'L' : x < 80 ? 'l' : x < 120 ? 'r' : 'R')).size > 1, 'side 0 doesn\'t always start in the same spot');
+  const { G: F, log } = WB.playOut(WB.newGame(71, { teams: 4, chars: ['volt', 'zip', 'gale', 'brick'] }), ['smart', 'easy', 'medium', 'hard']);
+  ok(F.phase === 'over' && WB.teamUnits(F, F.winner >= 0 ? F.winner : 0).length <= 1, `a 4-way bot match finishes (winner side ${F.winner}, ${F.turn} turns)`);
+  ok(WB.hash(WB.replay(71, log, { teams: 4, chars: ['volt', 'zip', 'gale', 'brick'] })) === WB.hash(F), 'and replays exactly');
 }
 
 // 7. Rising water ends every match: bots that only pass still finish.
