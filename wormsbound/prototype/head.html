@@ -28,7 +28,7 @@ button { font: inherit; color: inherit; }
 
 /* ---------- HUD (inside the stage, in stage pixels) ---------- */
 .hud { position: absolute; left: 0; right: 0; top: 0; height: 74px; display: flex; align-items: center; justify-content: space-between; padding: 10px 18px; pointer-events: none; z-index: 5; }
-.team { display: flex; align-items: center; gap: 10px; min-width: 330px; }
+.team { display: flex; align-items: center; gap: 10px; min-width: 300px; }
 .team.r { flex-direction: row-reverse; text-align: right; }
 .team .nm { font-family: var(--display); font-size: 26px; line-height: 1; letter-spacing: .5px; text-shadow: 0 3px 0 rgba(0,0,0,.35); }
 .team .bar { width: 200px; height: 14px; border-radius: 99px; background: rgba(0,0,0,.4); border: 2px solid var(--ink); overflow: hidden; }
@@ -42,6 +42,21 @@ button { font: inherit; color: inherit; }
 .timer.off { opacity: .5; }
 .wind { display: flex; align-items: center; gap: 6px; font-weight: 900; font-size: 15px; color: var(--cream); text-shadow: 0 2px 0 rgba(0,0,0,.4); }
 
+.sidegrp { display: flex; gap: 10px; } .sidegrp.r { flex-direction: row-reverse; }
+.team.plum .nm { color: #B57BFF; } .team.plum .bar i { background: linear-gradient(90deg, #7A4BC9, #B57BFF); }
+.team.sun .nm { color: #FFD34D; } .team.sun .bar i { background: linear-gradient(90deg, #C99A1A, #FFD34D); }
+.team .cn { font-size: 17px; opacity: .85; }
+.team.sm { min-width: 0; gap: 6px; } .team.sm .nm { font-size: 19px; } .team.sm .cn { font-size: 13px; } .team.sm .bar { width: 150px; height: 11px; }
+.team.sm .pips b { width: 11px; height: 11px; }
+.team.out { opacity: .35; filter: grayscale(.6); }
+.team.cur .bar { box-shadow: 0 0 0 2px var(--gold), 0 0 12px var(--gold); }
+.order { display: flex; align-items: center; gap: 4px; font-weight: 900; font-size: 11px; letter-spacing: 1px; color: var(--cream-2); min-height: 20px; text-shadow: 0 2px 0 rgba(0,0,0,.4); }
+.order b { min-width: 22px; padding: 1px 5px; border-radius: 99px; border: 2px solid var(--ink); color: var(--ink); text-shadow: none; text-align: center; font-size: 11px; }
+.cputag { font-family: var(--display); font-size: 22px; color: var(--tc); background: rgba(30,26,43,.85); border: 3px solid var(--tc); border-radius: 16px; padding: 10px 20px; }
+.card .row.lv { flex-wrap: nowrap; align-items: stretch; }
+.btn.lvl { position: relative; flex-direction: column; flex: 1; min-width: 0; width: 180px; min-height: 110px; padding: 12px 14px; font-size: 28px; }
+.btn.lvl small { font-family: var(--body); font-weight: 800; font-size: 13px; line-height: 1.25; margin-top: 4px; }
+.btn.lvl .num { position: absolute; left: 8px; top: 6px; font-size: 13px; opacity: .6; }
 /* ---------- control bar ---------- */
 .ctl { position: absolute; left: 0; right: 0; bottom: 0; height: 78px; display: flex; align-items: center; justify-content: center; gap: 10px; padding: 0 90px 10px 230px; z-index: 5; pointer-events: none; }
 .ctl > * { pointer-events: auto; }

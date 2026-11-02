@@ -6,6 +6,26 @@ Newest on top. See the repo's CLAUDE.md for how patch notes work.
 
 ---
 
+## P1 modes · 2026-11-02 · Louiemark (with Claude)
+Turn delay, 1 Player vs 3 computers, and 1v1 with one character each. Full `build-and-test.py`: ALL GOOD.
+
+### What's new
+- **Two modes on the title screen.** **1 Player:** you against 3 computer opponents in a 4-way free-for-all (Easy, Medium or Hard; they get random characters). **2 Players:** a 1v1 on one keyboard. Both are one character a side now, best of three, and the first turn rotates each round.
+- **Turn delay (from GunBound):** no more strict back-and-forth. Every shot has a delay cost (⏱ on the buttons; heavier shots cost more, the SS most), walking adds a little, and the side with the lowest delay plays next. A NEXT strip up top shows the coming turns.
+- **Computer turns** play themselves: they think, walk, show their aim, then fire.
+- **More health** for one-unit play (×2.6 in a 1v1, ×1.8 in the 4-way) so a match lasts about 5–8 minutes; sudden death now starts after 12 rounds, however many sides there are.
+
+### Next up
+- [x] Finish this round: the full `build-and-test.py`, then a pull request. (done Nov 2, 2026, Louiemark with Claude)
+- [ ] Online 1v1: a room server (Cloudflare Worker + Durable Object) once @Hunter has set up a scoped deploy token. The prompt for him is in the session notes and handoff.
+
+### Watch out
+- [ ] Balance (1v1, one unit a side, full run): characters 46–55% after a Gale nerf (hp 90, Gust knockback ×2.2, Tornado reach 11); going first 52%; median match 14 turns. 1 Player: a good-player bot wins 51% / 42% / 25% against Easy / Medium / Hard computers, a weak one 33% / 16% / 10% (25% is an even share). The bots stand in for people; real players will differ.
+- [ ] New band lines in `build-and-test.py`: the difficulty curve (full run only). Medium's good-player number moved between 33% and 42% across two runs, so it's noisy at 100 matches.
+- [ ] Easy 4-way matches run long (median 38–52 turns) because Easy computers miss a lot.
+- [ ] The old two-units-a-side crews are gone from the game; the engine still supports them (`size: 2`).
+- [ ] Nobody has played the modes; checked only in headless Chromium.
+
 ## P1 characters · 2026-11-02 · Louiemark (with Claude)
 Five characters to pick from, each with an SS (Special Shot), in the spirit of GunBound's mobiles (our own characters, names and shots).
 

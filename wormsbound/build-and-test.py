@@ -16,7 +16,10 @@ Pass band (PROPOSED Nov 2, 2026: Louiemark to confirm; numbers recorded in desig
   - live duds pull their weight but don't take over: smart (uses duds) beats nodud 48%+,
     and duder (dud-happy) beats smart no more than 65%
   - no character is too strong or too weak: each of the five wins 40-60% of a smart-vs-smart round-robin
-    (added Nov 2, 2026 with the characters)
+    (added Nov 2, 2026 with the characters; 1v1 with one unit a side since the game modes)
+  - 1 Player difficulty (added Nov 2, 2026; a fair share of a 4-way is 25%): on Easy a new player (sloppy bot)
+    wins 28%+ and a good one (smart) 45%+; on Medium a good player wins 25-45%; on Hard a good player wins
+    12-35% and a new one 15% at most. Full run only (100 matches a line).
 Never loosen these to get a pass; change the game, or agree a new band with the game's owner.
 (c) 2026 justaskjoe. All rights reserved.
 """
@@ -62,6 +65,12 @@ for c, w in chars.items():  # only judged on the full run: 30 matches a pair (--
     if not 40 <= w <= 60:
         if quick: print(f'(quick run: {c} wins {w}% of the round-robin; the full run checks the 40-60% band)')
         else: fails.append(f'balance: {c} wins {w}% of the round-robin (band 40-60%)')
+ffa = {(m[1], m[2]): int(m[3]) for m in re.finditer(r'^ffa (\w+)\s+(\w+)\s+player wins (\d+)%', out, re.M)}
+if len(ffa) != 6: fails.append(f'sim output has {len(ffa)} 1-player lines, expected 6')
+elif not quick:
+    checks = [(('easy', 'sloppy'), 28, 100), (('easy', 'smart'), 45, 100), (('medium', 'smart'), 25, 45), (('hard', 'smart'), 12, 35), (('hard', 'sloppy'), 0, 15)]
+    for key, lo, hi in checks:
+        if not lo <= ffa[key] <= hi: fails.append(f'difficulty: {key[1]} player vs 3 {key[0]} computers wins {ffa[key]}% (band {lo}-{hi}%)')
 if 'NaN' in (r.stdout + r.stderr): fails.append('balance: NaN in a unit')
 
 if not quick:

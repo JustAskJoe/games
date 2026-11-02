@@ -29,8 +29,8 @@ with sync_playwright() as p:
     pg.add_init_script('window.__WB_SEED = 20261102;')
     pg.goto(build.as_uri()); pg.wait_for_timeout(700)
     pg.screenshot(path=str(shots / 'd1_title.png'))
-    pg.click('[data-act=start]'); pg.wait_for_timeout(300)
-    assert pg.evaluate('() => WBUI.ui.screen') == 'select', 'START should open character select'
+    pg.click('[data-act=mode][data-mode=duel]'); pg.wait_for_timeout(300)
+    assert pg.evaluate('() => WBUI.ui.screen') == 'select', '2 PLAYERS should open character select'
     pg.screenshot(path=str(shots / 'd1b_select_ember.png'))
     pg.keyboard.press('1'); pg.wait_for_timeout(200)          # Ember picks Brick with the keyboard
     pg.screenshot(path=str(shots / 'd1c_select_tide.png'))
@@ -130,7 +130,34 @@ with sync_playwright() as p:
         print(c, 'SS fired:', pg.evaluate('() => WBUI.G.stats.ss'), '· charge after:', pg.evaluate('() => WBUI.G.ss.join("/")'))
         assert pg.locator('[data-w=ss]').count() == 0 or pg.evaluate('() => WB.ssReady(WBUI.G)'), 'SS slot should go back to Shot 1 after use'
     pg.evaluate("() => { WBUI.ui.fast = false; }")
-    pg.keyboard.press('Escape'); pg.click('[data-act=quit]'); pg.click('[data-act=start]')
+    pg.keyboard.press('Escape'); pg.click('[data-act=quit]')
+
+    # 1 Player: you against 3 computers on Hard; the computers take their own turns
+    pg.click('[data-act=mode][data-mode=solo]'); pg.wait_for_timeout(200); pg.screenshot(path=str(shots / 'd14_levels.png'))
+    pg.keyboard.press('3'); assert pg.evaluate('() => WBUI.ui.level') == 'hard'
+    pg.click('[data-char=gale]'); pg.wait_for_timeout(300)
+    st = pg.evaluate('() => ({ teams: WBUI.G.teams, chars: WBUI.G.chars, mode: WBUI.ui.mode })'); print('1 player:', st)
+    assert st['teams'] == 4 and st['chars'][0] == 'gale' and len(set(st['chars'][1:])) == 3, st
+    pg.evaluate('() => { WBUI.ui.timerOn = false; }')
+    cpu_turns = 0; seen_cpu_aim = False
+    import time; deadline = time.time() + 120
+    while time.time() < deadline and pg.evaluate('() => WBUI.ui.screen') == 'game':
+        team = pg.evaluate("() => WBUI.G.phase === 'aim' ? WBUI.G.team : -1")
+        if team == 0: pg.evaluate('() => WBUI.botTurn()')
+        elif team > 0:
+            if not seen_cpu_aim and pg.evaluate('() => !!(WBUI.ui.cpu && WBUI.ui.cpu.aimed)'):
+                seen_cpu_aim = True; pg.screenshot(path=str(shots / 'd15_cpu_aiming.png'))
+                assert pg.locator('.cputag').count() == 1 and pg.locator('[data-act=fire]').count() == 0, 'controls should be hidden on a computer turn'
+            cpu_turns += 1 if pg.evaluate('() => !WBUI.ui.cpu') else 0
+        if seen_cpu_aim: pg.evaluate('() => { WBUI.ui.fast = true; }')
+        pg.wait_for_timeout(80)
+    print('1 player round ended on screen:', pg.evaluate('() => WBUI.ui.screen'), '· wins', pg.evaluate('() => WBUI.ui.wins'), '· saw a computer aim:', seen_cpu_aim)
+    assert seen_cpu_aim and pg.evaluate('() => WBUI.ui.screen') in ('round', 'end'), 'a 1 Player round should finish with computers playing'
+    pg.screenshot(path=str(shots / 'd16_solo_round.png'))
+    pg.evaluate('() => { WBUI.ui.fast = false; }')
+    pg.click('[data-act=next]') if pg.locator('[data-act=next]').count() else None
+    pg.wait_for_timeout(300); pg.screenshot(path=str(shots / 'd17_solo_hud.png'))
+    pg.keyboard.press('Escape'); pg.click('[data-act=quit]'); pg.click('[data-act=mode][data-mode=duel]')
     assert pg.evaluate('() => WBUI.ui.screen') == 'select'
     print('scrollWidth1280', pg.evaluate('document.documentElement.scrollWidth'))
     pg.close()
@@ -139,7 +166,7 @@ with sync_playwright() as p:
     for w, h in ((390, 844), (320, 640), (844, 390)):
         q = b.new_page(viewport={'width': w, 'height': h}, has_touch=True); watch(q)
         q.add_init_script('window.__WB_SEED = 7;'); q.goto(build.as_uri()); q.wait_for_timeout(500)
-        q.click('[data-act=start]'); q.wait_for_timeout(200); q.screenshot(path=str(shots / f'p_{w}x{h}_select.png'))
+        q.click('[data-act=mode][data-mode=duel]'); q.wait_for_timeout(200); q.screenshot(path=str(shots / f'p_{w}x{h}_select.png'))
         q.click('[data-char=gale]'); q.click('[data-char=digger]'); q.wait_for_timeout(400)
         q.evaluate('() => { WBUI.aim(60, 0.7); WBUI.doFire(); WBUI.ui.fast = true; }'); wait_aim(q)
         q.screenshot(path=str(shots / f'p_{w}x{h}.png'))

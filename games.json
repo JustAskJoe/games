@@ -20,6 +20,6 @@
     { "slug": "lightkeeper", "name": "Lightkeeper", "kind": "Night sea puzzle", "build": "v1", "dir": "lightkeeper", "file": "lightkeeper.html",
       "blurb": "One-thumb lighthouse puzzle: sweep the beam and every boat in your light turns for home, every boat in the dark holds her course. Six nights: reefs, crossings, a current, fog and a storm." },
     { "slug": "wormsbound", "name": "Wormsbound", "kind": "Artillery", "build": "P1", "dir": "wormsbound", "file": "wormsbound.html",
-      "blurb": "Turn-based artillery for two on one keyboard: read the wind, blast the ground, and lob live duds back at them. Best of three. Desktop first." }
+      "blurb": "Turn-based artillery with five characters and GunBound-style turn delay: 1 Player vs 3 computers (Easy/Medium/Hard) or a 1v1 on one keyboard. Desktop first." }
   ]
 }

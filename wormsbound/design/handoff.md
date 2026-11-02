@@ -5,7 +5,7 @@
 The one page to read before touching this game: what's decided, what's built, and what's next. The approved brief is in [`../pitch/brief.md`](../pitch/brief.md). This doc is the working version and wins if the two disagree.
 
 **Team:** Louiemark (direction, design, art direction), with Claude (code). Hours a week: not set yet.
-**Status (Nov 2, 2026):** Prototype 1 playable as a local hotseat (`builds/wormsbound.html`) with five characters to pick from. Bot-tested and checked in a headless browser; nobody has played it yet.
+**Status (Nov 2, 2026):** Prototype 1 playable in two modes: 1 Player (you vs 3 computers, Easy/Medium/Hard) and 2 Players (1v1 on one keyboard), with five characters and GunBound-style turn delay. Bot-tested and checked in a headless browser; nobody has played it yet.
 
 ## The game in one line
 A turn-based artillery brawler for 2 to 4 friends on one screen: pick a character, aim, read the wind, and lob shells across ground that blows apart. The twist is **live duds**: shells that land without exploding keep ticking, and anyone close enough can lob them on.
@@ -24,6 +24,9 @@ A turn-based artillery brawler for 2 to 4 friends on one screen: pick a characte
 | Teams | Ember Crew (orange: Rook, Blaze) and Tide Crew (teal: Pip, Marlo). Placeholder names. | Claude's first pass |
 | Controls | Drag back from your unit and let go (slingshot), plus keys: ◀ ▶ walk, ▲ ▼ angle, Q/E power, 1 2 3 weapons, L lob, Space fire, X skip, Esc menu. The aim preview shows the start of the arc without wind. | Claude's first pass; Louiemark to confirm |
 | SS (Special Shot) | Each character's ultimate. It charges one notch at the start of each of your turns and is ready at 4 (`SS_CHARGE`); when ready it **replaces Shot 1** in the shot bar (and is picked by default) until you use it. Using it empties the charge; an unused charge carries over. The team that shoots second starts with one notch, because the first team gets its SS first. | Louiemark, Nov 2 (SS replaces Shot 1); head start: Claude, from the sim |
+| Modes | **1 Player:** you against 3 computers in a 4-way free-for-all, Easy / Medium / Hard; computers get random characters. **2 Players:** 1v1 on one keyboard. Both one character a side (the two-unit crews are gone from the game; the engine still supports `size: 2`). Online 1v1 comes next, once Hunter sets up hosting. | Louiemark, Nov 2 |
+| Turn delay | From GunBound: every action adds delay to the acting unit (each shot has its own cost, heavier = more; walking 12 a step; pass 520; lob 620; Live dud 720) and the lowest delay plays next. Shown as ⏱ on the shot buttons and a NEXT strip up top. | Louiemark, Nov 2 |
+| Health by format | Characters' base hp × 2.6 in a 1v1 and × 1.8 in the 4-way (`HP_MUL`), so a match lasts about 5–8 minutes. Sudden death after 12 rounds (a round = one turn per side). | Claude, from the sim |
 | Screen | One 1280×720 stage that scales to fit; the whole map is always on screen (no following camera yet). | Claude's first pass |
 
 ### The characters (`CHARS` in `prototype/engine.js`)

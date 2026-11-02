@@ -18,7 +18,7 @@ function series(a, b) {
     const aTeam = swap ? 1 : 0;
     if (G.winner === -1) out.draws++; else if (G.winner === aTeam) out.aWins++; else out.bWins++;
     if (G.winner === G.first) out.firstWins++;
-    out.turns.push(G.turn); if (G.timeout) out.timeouts++; if (G.turn >= WB.SUDDEN_TURN) out.sudden++;
+    out.turns.push(G.turn); if (G.timeout) out.timeouts++; if (G.turn >= WB.suddenTurn(G)) out.sudden++;
     const s = G.stats; out.dudBlasts += s.dudBlasts; out.chains += s.chains; out.lobs += s.lobs; out.drowned += s.drowned;
     out.selfDmg += s.selfDmg[0] + s.selfDmg[1]; out.dmg += s.dmg[0] + s.dmg[1];
     for (const v of Object.values(G.units)) if (!Number.isFinite(v.x) || !Number.isFinite(v.y) || !Number.isFinite(v.hp)) throw new Error('NaN in a unit, seed ' + G.seed);
@@ -33,7 +33,7 @@ function line(label, a, b, r) {
 }
 
 const t0 = Date.now();
-console.log(`Wormsbound P1 sim: ${n} matches per pairing (Volt vs Volt), seeds 1234 + i×7919, seats swapped every match, first turn every two`);
+console.log(`Wormsbound P1 sim: ${n} matches per pairing (1v1, Volt vs Volt), seeds 1234 + i×7919, seats swapped every match, first turn every two`);
 line('mirror', 'smart', 'smart', series('smart', 'smart'));
 line('skill', 'smart', 'sloppy', series('smart', 'sloppy'));
 line('dud value', 'smart', 'nodud', series('smart', 'nodud'));
@@ -57,4 +57,20 @@ for (let i = 0; i < C.length; i++) for (let j = i + 1; j < C.length; j++) {
 console.log(`characters: round-robin, ${per} smart-vs-smart matches per pair`);
 for (const c of C) { const t = tally[c]; console.log(`char ${c.padEnd(7)} wins ${pct(t.w, t.m)}%  draws ${pct(t.d, t.m)}%  matches ${t.m}  turns p50 ${q(t.turns, .5)}`); }
 console.log('head to head (first named wins): ' + Object.entries(vs).map(([k, v]) => `${k} ${pct(v, per)}%`).join(' · '));
+
+// 1 Player: a player stand-in against 3 computers in a 4-way free-for-all, at each difficulty. Characters are
+// random each match and the player's spot and turn order rotate. "smart" plays like a good player, "sloppy" like
+// a new one. A coin-flip share in a 4-way is 25%.
+const ffaN = Math.max(20, Math.round(n / 2));
+console.log(`1 player vs 3 computers: ${ffaN} matches per line, random characters`);
+for (const level of ['easy', 'medium', 'hard']) for (const me of ['smart', 'sloppy']) {
+  let w = 0, turns = [];
+  for (let k = 0; k < ffaN; k++) {
+    let s = (777 + k * 7919) >>> 0; const r = () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
+    const chars = [0, 1, 2, 3].map(() => C[Math.floor(r() * C.length)]);
+    const G = WB.playOut(WB.newGame(9000 + k * 7919, { teams: 4, chars, first: k % 4 }), [me, level, level, level]).G;
+    if (G.winner === 0) w++; turns.push(G.turn);
+  }
+  console.log(`ffa ${level.padEnd(6)} ${me.padEnd(6)} player wins ${pct(w, ffaN)}%  turns p50 ${q(turns, .5)}`);
+}
 console.log(`done in ${((Date.now() - t0) / 1000).toFixed(1)}s`);

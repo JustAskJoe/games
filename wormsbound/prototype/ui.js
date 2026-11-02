@@ -1,7 +1,9 @@
 /* Wormsbound Prototype 1 · local hotseat UI. © 2026 justaskjoe. All rights reserved.
    Draws the engine (window.WB) on one 1280×720 canvas and turns mouse, touch and keyboard into act() intents.
    The UI never changes the game itself: it only calls WB.act() and steps WB.step() on the clock.
-   Each team picks one of five characters first (WB.CHARS), then best-of-3 rounds, alternating who shoots first.
+   Two modes: 1 Player (you against 3 computer opponents in a 4-way free-for-all, Easy / Medium / Hard) and
+   2 Players (1v1 on one keyboard). Each side picks one of five characters (WB.CHARS); best of 3 rounds, with the
+   first turn rotating. Turn order follows the engine's turn delay.
    Placeholder art, all drawn in code. */
 (function () {
   'use strict';
@@ -16,9 +18,16 @@
   const W = 1280, H = 720, CELL = W / WB.COLS; // 8 px per terrain cell
   const TURN_SECONDS = 30, BEST_OF = 3, DRAG_FULL = 220, DRAG_MIN = 14;
   const TEAMS = [
-    { name: 'Ember Crew', key: 'ember', c: '#FF7A30', c2: '#C9481A', names: ['Rook', 'Blaze'] },
-    { name: 'Tide Crew', key: 'tide', c: '#22C3B5', c2: '#0E7C7B', names: ['Pip', 'Marlo'] },
+    { name: 'Ember', key: 'ember', c: '#FF7A30', c2: '#C9481A' },
+    { name: 'Tide', key: 'tide', c: '#22C3B5', c2: '#0E7C7B' },
+    { name: 'Plum', key: 'plum', c: '#B57BFF', c2: '#7A4BC9' },
+    { name: 'Sun', key: 'sun', c: '#FFD34D', c2: '#C99A1A' },
   ];
+  const LEVELS = {
+    easy: { name: 'Easy', blurb: 'Shaky aim, few tricks. Good for learning the ropes.' },
+    medium: { name: 'Medium', blurb: 'Decent aim. Uses duds, lobs them back and saves its SS.' },
+    hard: { name: 'Hard', blurb: 'Sharp aim and every trick. Beating three of them is a real win.' },
+  };
   const FONT = (px) => `${px}px "Lilita One", "Arial Black", system-ui, sans-serif`;
 
   const cv = $('#map'), ctx = cv.getContext('2d');
@@ -27,11 +36,16 @@
 
   const ui = {
     screen: 'title', G: null, matchSeed: 0, round: 1, wins: [0, 0], aim: {}, weapon: 'shot1', lob: false, picks: [null, null], pickTeam: 0, cursor: 2,
+    mode: 'duel', level: 'medium', cpu: null,
     drag: null, acc: 0, last: 0, slow: 0, shake: 0, parts: [], trails: {}, scorch: [], clouds: [], dust: [], pops: [],
     tLeft: TURN_SECONDS, timerOn: lsGet('wb-timer') !== 'off', sound: lsGet('wb-sound') !== 'off', coach: lsGet('wb-coach') !== 'off',
     fast: false, tester: false, overAt: 0, turnsSeen: 0, paused: false, fb: { q: {}, text: '', nm: '', saved: null },
   };
-  const unitName = (u) => { const i = ui.G.units.filter((x) => x.team === u.team).indexOf(u); return TEAMS[u.team].names[i] || 'Unit'; };
+  const nSides = () => (ui.mode === 'solo' ? 4 : 2);
+  const isCPU = (t) => ui.mode === 'solo' && t !== 0;
+  // what a side is called: "You" and "Tide CPU" in 1 Player, "Player 1" and "Player 2" in 1v1
+  const sideLabel = (t) => ui.mode === 'solo' ? (t === 0 ? 'You' : `${TEAMS[t].name} CPU`) : `Player ${t + 1}`;
+  const unitName = (u) => sideLabel(u.team);
   const charName = (t) => WB.CHARS[ui.G.chars[t]].name;
 
   // ---------- stage fit ----------
@@ -180,30 +194,49 @@
         const u = ui.G.units.find((x) => x.id === e.id);
         ui.pops.push({ x: e.x * CELL, y: e.y * CELL - 40, t: 0, text: e.why === 'water' ? 'SPLASH OUT!' : 'K.O.!', c: '#FF4D5E' });
         if (!reduced) ui.slow = 0.75;
-        SFX.ko(); if (u) banner(`${unitName(u)} is out!`, TEAMS[u.team].name);
+        SFX.ko(); if (u) banner(`${unitName(u)} ${unitName(u) === 'You' ? 'are' : 'is'} out!`, charName(u.team), TEAMS[u.team].c);
       } else if (e.k === 'turn') { onTurn(); }
     }
   }
   function onTurn() {
     const G = ui.G, u = WB.current(G); if (!u) return;
     const ss = WB.ssReady(G);
-    ui.tLeft = TURN_SECONDS; ui.lob = false; ui.weapon = ss ? 'ss' : 'shot1'; ui.turnsSeen++;
-    banner(`${TEAMS[G.team].name}`, `${unitName(u)} · ${charName(G.team)}${ss ? ' · SS READY!' : ''}`);
+    ui.tLeft = TURN_SECONDS; ui.lob = false; ui.weapon = ss ? 'ss' : 'shot1'; ui.cpu = null;
+    if (!isCPU(G.team)) ui.turnsSeen++;
+    banner(sideLabel(G.team), `${charName(G.team)}${ss ? ' · SS READY!' : ''}${isCPU(G.team) ? '' : ui.mode === 'solo' ? ' · your turn' : ''}`, TEAMS[G.team].c);
     if (ss) tone(660, 990, 0.25, 0.12, 'triangle');
     renderHUD(); renderCtl(); coachLine();
   }
-  function banner(big, small) {
+  function banner(big, small, color) {
     const h = $('#bannerHost');
-    h.innerHTML = `<div class="banner" style="color:${TEAMS.find((t) => t.name === big) ? TEAMS.find((t) => t.name === big).c : '#FFF3E0'}">${esc(big)}${small ? `<small>${esc(small)}</small>` : ''}</div>`;
+    h.innerHTML = `<div class="banner" style="color:${color || '#FFF3E0'}">${esc(big)}${small ? `<small>${esc(small)}</small>` : ''}</div>`;
     clearTimeout(banner.t); banner.t = setTimeout(() => { h.innerHTML = ''; }, 1600);
   }
 
   // ---------- aiming ----------
   function aimOf(u) {
-    if (!ui.aim[u.id]) ui.aim[u.id] = { angle: u.team === 0 ? 50 : 130, power: 0.62 };
+    if (!ui.aim[u.id]) ui.aim[u.id] = { angle: u.x < WB.COLS / 2 ? 50 : 130, power: 0.62 };
     return ui.aim[u.id];
   }
-  function canAct() { return ui.screen === 'game' && !ui.paused && ui.G && ui.G.phase === 'aim'; }
+  function canAct() { return ui.screen === 'game' && !ui.paused && ui.G && ui.G.phase === 'aim' && !isCPU(ui.G.team); }
+
+  // ---------- computer turns (1 Player) ----------
+  // The bot decides on a copy of the game (same seed and state, so the same choice), then the moves are played on
+  // the real game one by one, with pauses so you can watch it walk, aim and fire.
+  function cpuStart() {
+    const plan = WB.botTurn(JSON.parse(JSON.stringify(ui.G)), ui.level);
+    ui.cpu = { plan, i: 0, t: 0.8, aimed: false };
+  }
+  function cpuStep(dt) {
+    const c = ui.cpu, G = ui.G; c.t -= dt * (ui.fast ? 8 : 1); if (c.t > 0) return;
+    const it = c.plan[c.i++], u = WB.current(G);
+    if (!it || !u) { if (G.phase === 'aim') WB.act(G, { k: 'pass' }); ui.cpu = null; renderCtl(); return; }
+    if (it.k === 'move') { WB.act(G, it); c.t = 0.09; renderCtl(); return; }
+    if (it.k === 'weapon') { WB.act(G, it); ui.weapon = it.w; c.t = 0.3; renderCtl(); coachLine(); return; }
+    if ((it.k === 'fire' || it.k === 'lob') && !c.aimed) { const a = aimOf(u); a.angle = it.angle; a.power = it.power; ui.lob = it.k === 'lob'; c.aimed = true; c.i--; c.t = 0.75; return; }
+    if (WB.act(G, it) && (it.k === 'fire' || it.k === 'lob')) { SFX.fire(); burst(...muzzle(u, aimOf(u)), 8, 'spark'); }
+    if (G.phase !== 'aim') { ui.cpu = null; renderCtl(); coachLine(); }
+  }
   function doFire() {
     if (!canAct()) return false;
     const G = ui.G, u = WB.current(G), a = aimOf(u);
@@ -250,6 +283,7 @@
     if (e.target && /INPUT|TEXTAREA/.test(e.target.tagName)) return;
     const k = e.key;
     if (ui.screen === 'end' && (k === 'r' || k === 'R')) { startMatch(); return; }
+    if (ui.screen === 'level') { if (/^[1-3]$/.test(k)) { ui.level = Object.keys(LEVELS)[+k - 1]; ui.cursor = 2; selectScreen(0); } return; }
     if (ui.screen === 'select') {
       const n = WB.CHAR_IDS.length;
       if (k === 'ArrowLeft' || k === 'a' || k === 'A') { ui.cursor = (ui.cursor + n - 1) % n; selectScreen(ui.pickTeam); }
@@ -280,26 +314,40 @@
   // ---------- HUD and controls (DOM) ----------
   function renderHUD() {
     const G = ui.G; if (!G) { $('#hud').innerHTML = ''; return; }
+    const n = G.teams, half = Math.ceil(n / 2);
     const side = (t) => {
       const us = G.units.filter((u) => u.team === t), hp = us.reduce((a, u) => a + Math.max(0, u.hp), 0), max = us.reduce((a, u) => a + u.maxHp, 0);
-      return `<div class="team ${TEAMS[t].key}${t ? ' r' : ''}"><div><div class="nm">${TEAMS[t].name} <span style="font-size:17px;opacity:.85">· ${esc(charName(t))}</span></div><div class="bar"><i style="width:${(100 * hp / max).toFixed(1)}%"></i></div></div>
+      const out = !us.some((u) => u.alive), cur = t === G.team && G.phase !== 'over';
+      return `<div class="team ${TEAMS[t].key}${t >= half ? ' r' : ''}${n > 2 ? ' sm' : ''}${out ? ' out' : ''}${cur ? ' cur' : ''}"><div><div class="nm">${esc(sideLabel(t))} <span class="cn">· ${esc(charName(t))}</span></div><div class="bar"><i style="width:${(100 * hp / max).toFixed(1)}%"></i></div></div>
         <div class="ssm${WB.ssReady(G, t) ? ' on' : ''}" title="SS charge: ready every ${WB.SS_CHARGE} turns"><span>SS</span>${Array.from({ length: WB.SS_CHARGE }, (_, i) => `<b class="${G.ss[t] > i ? 'f' : ''}"></b>`).join('')}</div>
         <div class="pips" title="rounds won">${Array.from({ length: Math.ceil(BEST_OF / 2) }, (_, i) => `<b class="${ui.wins[t] > i ? 'on' : ''}"></b>`).join('')}</div></div>`;
     };
     const w = G.wind, arrows = Math.round(Math.abs(w) / WB.WIND_MAX * 4);
     const windTxt = Math.abs(w) < 0.2 ? 'calm' : `${w < 0 ? '◀'.repeat(Math.max(1, arrows)) : ''} ${Math.abs(w).toFixed(1)} ${w > 0 ? '▶'.repeat(Math.max(1, arrows)) : ''}`;
-    $('#hud').innerHTML = side(0) + `<div class="mid"><div class="timer${ui.timerOn ? '' : ' off'}" id="timer">${ui.timerOn ? Math.ceil(ui.tLeft) : '∞'}</div><div class="wind" aria-label="wind">WIND ${windTxt}</div><div class="wind" style="font-size:12px;opacity:.8">Round ${ui.round}${G.turn >= WB.SUDDEN_TURN ? ' · <span style="color:#FF4D5E">SUDDEN DEATH: the water rises</span>' : ''}</div></div>` + side(1);
+    const left = Array.from({ length: half }, (_, t) => side(t)).join(''), right = Array.from({ length: n - half }, (_, i) => side(n - 1 - i)).join('');
+    $('#hud').innerHTML = `<div class="sidegrp">${left}</div>` + `<div class="mid"><div class="timer${ui.timerOn ? '' : ' off'}" id="timer">${ui.timerOn ? Math.ceil(ui.tLeft) : '∞'}</div><div class="wind" aria-label="wind">WIND ${windTxt}</div><div class="wind" style="font-size:12px;opacity:.8">Round ${ui.round}${ui.mode === 'solo' ? ' · ' + LEVELS[ui.level].name : ''}${G.turn >= WB.suddenTurn(G) ? ' · <span style="color:#FF4D5E">SUDDEN DEATH: the water rises</span>' : ''}</div>${orderHTML()}</div><div class="sidegrp r">${right}</div>`;
+  }
+  // The next turns if everyone keeps firing their Shot 1, counting the current side's chosen shot: what the
+  // turn delay means right now. Light shot: you may go again before them; heavy shot: they may go twice.
+  function orderHTML() {
+    const G = ui.G; if (!G || G.phase !== 'aim') return '<div class="order"></div>';
+    const w = ui.lob ? 'lob' : ui.weapon, d = G.units.filter((u) => u.alive).map((u) => ({ u, d: u.id === G.actor ? WB.delayIf(G, w) : u.delay }));
+    const seq = [];
+    for (let i = 0; i < 6 && d.length; i++) { d.sort((a, b) => a.d - b.d || a.u.id - b.u.id); const x = d[0]; seq.push(x.u.team); x.d += WB.shotSpec(G, x.u.team, 'shot1').delay; }
+    return `<div class="order" title="Who plays next, if everyone fires their Shot 1 after this">NEXT ${seq.map((t) => `<b style="background:${TEAMS[t].c}">${esc(sideLabel(t) === 'You' ? 'You' : ui.mode === 'solo' ? TEAMS[t].name[0] : 'P' + (t + 1))}</b>`).join('')}</div>`;
   }
   function renderCtl() {
     const G = ui.G; $('#bMenu').hidden = !G || ui.screen !== 'game';
     if (!G || ui.screen !== 'game') { $('#ctl').innerHTML = ''; return; }
+    const o = $('.order'); if (o) o.outerHTML = orderHTML();
+    if (isCPU(G.team) && G.phase === 'aim') { $('#ctl').innerHTML = `<span class="cputag" style="--tc:${TEAMS[G.team].c}">${esc(sideLabel(G.team))} (${esc(charName(G.team))}) is taking its turn…</span>`; return; }
     const aim = G.phase === 'aim', am = G.ammo[G.team], lob = WB.lobbable(G).length > 0;
     const wb = (w, key) => { const S = WB.shotSpec(G, G.team, w);
-      return `<button class="btn wpn${ui.weapon === w && !ui.lob ? '' : ' ghost'}" type="button" data-w="${w}" aria-pressed="${ui.weapon === w && !ui.lob}" title="${esc(S.desc)}" ${!aim || am[w] === 0 ? 'disabled' : ''}>${esc(S.name)}<small>${key} · ${am[w] < 0 ? '∞' : am[w] + ' left'}</small></button>`; };
+      return `<button class="btn wpn${ui.weapon === w && !ui.lob ? '' : ' ghost'}" type="button" data-w="${w}" aria-pressed="${ui.weapon === w && !ui.lob}" title="${esc(S.desc)} Turn delay +${S.delay}." ${!aim || am[w] === 0 ? 'disabled' : ''}>${esc(S.name)}<small>${key} · ${am[w] < 0 ? '∞' : am[w] + ' left'} · ⏱${S.delay}</small></button>`; };
     $('#ctl').innerHTML = `<button class="btn ghost" type="button" data-walk="-1" aria-label="Walk left" ${aim && G.moves ? '' : 'disabled'}>◀</button>
       <span class="steps">${G.moves} steps</span>
       <button class="btn ghost" type="button" data-walk="1" aria-label="Walk right" ${aim && G.moves ? '' : 'disabled'}>▶</button>
-      ${WB.ssReady(G) ? `<button class="btn wpn ss${ui.weapon === 'ss' && !ui.lob ? '' : ' dim'}" type="button" data-w="ss" aria-pressed="${ui.weapon === 'ss' && !ui.lob}" title="${esc(WB.shotSpec(G, G.team, 'ss').desc)}" ${aim ? '' : 'disabled'}>SS · ${esc(WB.shotSpec(G, G.team, 'ss').name)}<small>1 · ready</small></button>` : wb('shot1', '1')}${wb('shot2', '2')}${wb('dud', '3')}
+      ${WB.ssReady(G) ? `<button class="btn wpn ss${ui.weapon === 'ss' && !ui.lob ? '' : ' dim'}" type="button" data-w="ss" aria-pressed="${ui.weapon === 'ss' && !ui.lob}" title="${esc(WB.shotSpec(G, G.team, 'ss').desc)}" ${aim ? '' : 'disabled'}>SS · ${esc(WB.shotSpec(G, G.team, 'ss').name)}<small>1 · ready · ⏱${WB.shotSpec(G, G.team, 'ss').delay}</small></button>` : wb('shot1', '1')}${wb('shot2', '2')}${wb('dud', '3')}
       <button class="btn teal" type="button" data-act="lob" aria-pressed="${ui.lob}" ${aim && lob ? '' : 'disabled'} title="Pick up a live dud in reach (L)">LOB</button>
       <button class="btn fire" type="button" data-act="fire" ${aim ? '' : 'disabled'}>FIRE</button>
       <button class="btn ghost sm" type="button" data-act="pass" ${aim ? '' : 'disabled'} title="End your turn (X)">Skip</button>`;
@@ -307,6 +355,7 @@
   function coachLine() {
     const el = $('#coach'); if (!ui.coach || ui.screen !== 'game' || !ui.G) { el.innerHTML = ''; return; }
     const G = ui.G, u = WB.current(G); if (!u || G.phase !== 'aim') { el.innerHTML = ''; return; }
+    if (isCPU(G.team)) { el.innerHTML = ''; return; }
     const danger = G.duds.find((d) => d.fuse <= 1 && Math.hypot(d.x - u.x, d.y - u.y) < WB.DUD.r * WB.DMG_SPREAD);
     let t;
     if (danger && WB.lobbable(G).includes(danger)) t = '<b>That dud blows at the end of this turn!</b> Tap LOB (L), then drag to throw it away.';
@@ -314,7 +363,8 @@
     else if (ui.lob) t = 'Lob armed: drag back from your unit and let go to throw the dud. It keeps its countdown.';
     else if (WB.lobbable(G).length) t = 'A <b>live dud</b> is in reach. Tap <b>LOB</b> (L) to throw it at them instead of firing.';
     else if (ui.turnsSeen <= 2) t = '<b>Drag back</b> from your glowing unit and <b>let go</b> to fire. Further back = more power. Watch the wind.';
-    else if (ui.turnsSeen <= 4) t = 'Keys: <b>◀ ▶</b> walk · <b>▲ ▼</b> angle · <b>Q/E</b> power · <b>1 2 3</b> shots · <b>Space</b> fire.';
+    else if (ui.turnsSeen === 3) t = '<b>Turn delay:</b> every shot has a cost (⏱ on the buttons). Light shots bring your next turn sooner. The NEXT strip up top shows who plays next.';
+    else if (ui.turnsSeen <= 5) t = 'Keys: <b>◀ ▶</b> walk · <b>▲ ▼</b> angle · <b>Q/E</b> power · <b>1 2 3</b> shots · <b>Space</b> fire.';
     else if (ui.weapon === 'ss') t = `<b>SS ready: ${esc(WB.shotSpec(G, G.team, 'ss').name)}!</b> ${esc(WB.shotSpec(G, G.team, 'ss').desc)} It replaces Shot 1 until you use it.`;
     else if (ui.weapon === 'shot2') t = `<b>${esc(WB.shotSpec(G, G.team, 'shot2').name)}:</b> ${esc(WB.shotSpec(G, G.team, 'shot2').desc)} (${G.ammo[G.team].shot2} left this match)`;
     else if (ui.weapon === 'dud') t = 'A live dud lands and ticks for <b>3 turns</b>. Anyone close can lob it back, so drop it where they can\'t reach.';
@@ -334,38 +384,50 @@
     <p class="keys">Keys: ◀ ▶ / A D walk · ▲ ▼ / W S angle (Shift = fine) · Q E power · F flip · 1 2 3 shots · L lob · Space fire · X skip · Esc menu</p>`;
   function titleScreen() {
     ui.screen = 'title'; renderCtl(); coachLine();
-    show(`<div class="tag">JustAskJoe · Prototype 1 · local hotseat</div><h1>WORMSBOUND</h1>
-      <p>Two crews, one keyboard. Pick a character each, read the wind, blast the ground, and throw their own duds back at them. Best of three.</p>${HOW}
-      <div class="row"><button class="btn fire" type="button" data-act="start">PICK CHARACTERS</button></div>`);
+    show(`<div class="tag">JustAskJoe · Prototype 1</div><h1>WORMSBOUND</h1>
+      <p>Pick a character, read the wind, blast the ground, and throw their own duds back at them. Best of three.</p>${HOW}
+      <div class="row"><button class="btn fire" type="button" data-act="mode" data-mode="solo">1 PLAYER<small style="display:block;font-family:var(--body);font-size:12px">you vs 3 computers</small></button>
+      <button class="btn teal" type="button" data-act="mode" data-mode="duel">2 PLAYERS<small style="display:block;font-family:var(--body);font-size:12px">1v1 on one keyboard</small></button></div>`);
+  }
+  function levelScreen() {
+    ui.screen = 'level'; ui.G = null; renderHUD(); renderCtl(); coachLine();
+    show(`<div class="tag">1 Player · step 1 of 2</div><h2>How tough should the computers be?</h2>
+      <p>You against three of them, every side for itself. Last one standing takes the round.</p>
+      <div class="row lv">${Object.entries(LEVELS).map(([k, L], i) => `<button class="btn ${k === ui.level ? 'gold' : 'ghost'} lvl" type="button" data-act="level" data-level="${k}">${L.name}<small>${esc(L.blurb)}</small><span class="num">${i + 1}</span></button>`).join('')}</div>
+      <div class="row"><button class="btn ghost sm" type="button" data-act="quit">Back</button></div>`);
   }
   // ---------- character select: each crew picks one of five ----------
   function statBar(label, v, txt) { return `<div class="sb"><span>${label}</span><i><b style="width:${Math.round(clamp(v, 0.06, 1) * 100)}%"></b></i><em>${txt}</em></div>`; }
   function selectScreen(team) {
     ui.screen = 'select'; ui.pickTeam = team; ui.G = null; ui.paused = false;
     renderHUD(); renderCtl(); coachLine();
-    const T = TEAMS[team], other = team === 1 && ui.picks[0] ? `${TEAMS[0].name} picked <b style="color:${TEAMS[0].c}">${esc(WB.CHARS[ui.picks[0]].name)}</b>. ` : '';
+    const T = TEAMS[team], other = ui.mode === 'duel' && team === 1 && ui.picks[0] ? `Player 1 picked <b style="color:${TEAMS[0].c}">${esc(WB.CHARS[ui.picks[0]].name)}</b>. ` : '';
+    const mul = ui.mode === 'solo' ? WB.HP_MUL.ffa : WB.HP_MUL.duel;
     const cards = WB.CHAR_IDS.map((id, i) => {
       const C = WB.CHARS[id];
       return `<button class="char${i === ui.cursor ? ' cur' : ''}" type="button" data-act="pick" data-char="${id}" style="--tc:${T.c}" aria-label="${esc(C.name)}, ${esc(C.role)}">
         <img src="${portrait(id, team)}" alt="" width="150" height="110"><span class="num">${i + 1}</span>
         <b class="cn">${esc(C.name)}</b><span class="role">${esc(C.role)}</span>
-        ${statBar('Health', C.hp / 115, C.hp)}${statBar('Armour', (1 - C.armor) / 0.15 + 0.06, C.armor < 1 ? `−${Math.round((1 - C.armor) * 100)}%` : '–')}${statBar('Move', C.steps / 22, C.steps + ' steps')}${statBar('Wind grip', (2 - (C.shot1.wind || 1)) / 1.55, (C.shot1.wind || 1) < 1 ? 'steady' : (C.shot1.wind || 1) > 1 ? 'curvy' : 'normal')}
+        ${statBar('Health', C.hp / 115, Math.round(C.hp * mul))}${statBar('Armour', (1 - C.armor) / 0.15 + 0.06, C.armor < 1 ? `−${Math.round((1 - C.armor) * 100)}%` : '–')}${statBar('Move', C.steps / 22, C.steps + ' steps')}${statBar('Wind grip', (2 - (C.shot1.wind || 1)) / 1.55, (C.shot1.wind || 1) < 1 ? 'steady' : (C.shot1.wind || 1) > 1 ? 'curvy' : 'normal')}
         <span class="bl">${esc(C.blurb)}</span>
         <span class="sh"><b>1 · ${esc(C.shot1.name)}</b> ${esc(C.shot1.desc)}</span>
         <span class="sh two"><b>2 · ${esc(C.shot2.name)}</b> ${esc(C.shot2.desc)} <em>2 a match</em></span>
         <span class="sh ss"><b>SS · ${esc(C.ss.name)}</b> ${esc(C.ss.desc)} <em>every ${WB.SS_CHARGE} turns</em></span></button>`;
     }).join('');
     $('#screen').innerHTML = `<div class="screen"><div class="pick" role="dialog" aria-modal="true">
-      <div class="tag">Step ${team + 1} of 2 · everyone also carries 2 Live duds</div>
-      <h2 style="color:${T.c}">${esc(T.name)}, pick your character</h2>
-      <p class="sub">${other}Both of your crew will be this character.</p>
+      <div class="tag">${ui.mode === 'solo' ? `1 Player · ${LEVELS[ui.level].name} · step 2 of 2` : `2 Players · step ${team + 1} of 2`} · everyone also carries 2 Live duds</div>
+      <h2 style="color:${T.c}">${ui.mode === 'solo' ? 'Pick your character' : `Player ${team + 1}, pick your character`}</h2>
+      <p class="sub">${other}${ui.mode === 'solo' ? 'The three computers get random characters.' : 'Same pick as the other player is fine.'}</p>
       <div class="chars">${cards}</div>
       <div class="row"><button class="btn ghost sm" type="button" data-act="pickback">Back</button><span class="keys">← → choose · Enter to pick · or press 1–5</span></div></div></div>`;
   }
   function choose(id) {
     if (!WB.CHARS[id] || ui.screen !== 'select') return;
     ui.picks[ui.pickTeam] = id; SFX.click();
-    if (ui.pickTeam === 0) { ui.cursor = 2; selectScreen(1); } else startMatch();
+    if (ui.mode === 'solo') { // the computers take random characters, different from each other where possible
+      const rest = WB.CHAR_IDS.filter((c) => c !== id).sort(() => Math.random() - 0.5);
+      ui.picks = [id, rest[0], rest[1], rest[2]]; startMatch();
+    } else if (ui.pickTeam === 0) { ui.cursor = 2; selectScreen(1); } else startMatch();
   }
 
   function toggleMenu() {
@@ -381,14 +443,16 @@
     const G = ui.G, w = G.winner;
     if (w >= 0) ui.wins[w]++;
     const need = Math.ceil(BEST_OF / 2);
-    const done = ui.wins[0] >= need || ui.wins[1] >= need;
+    const done = ui.wins.some((x) => x >= need);
     ui.screen = done ? 'end' : 'round'; renderCtl(); coachLine(); renderHUD();
     if (done) SFX.win();
-    const head = w < 0 ? 'Draw!' : `${TEAMS[w].name} ${done ? 'wins the match!' : `takes round ${ui.round}`}`;
+    const you = ui.mode === 'solo' && w === 0;
+    const head = w < 0 ? 'Draw!' : you ? (done ? 'You win the match!' : `You take round ${ui.round}!`) : `${sideLabel(w)} ${done ? 'wins the match!' : `takes round ${ui.round}`}`;
     const col = w < 0 ? '#FFF3E0' : TEAMS[w].c;
     const st = G.stats;
-    ui.endHTML = `<div class="tag">${done ? 'Match over' : `Round ${ui.round} of ${BEST_OF}`}${ui.tester ? ' · TESTER' : ''}</div><h2 style="color:${col}">${esc(head)}</h2><p style="margin:0">${esc(TEAMS[0].name)} played <b>${esc(charName(0))}</b> · ${esc(TEAMS[1].name)} played <b>${esc(charName(1))}</b></p>
-      <div class="score"><span class="e">${ui.wins[0]}</span> – <span class="t">${ui.wins[1]}</span></div>
+    ui.endHTML = `<div class="tag">${done ? 'Match over' : `Round ${ui.round} of ${BEST_OF}`}${ui.tester ? ' · TESTER' : ''}</div><h2 style="color:${col}">${esc(head)}</h2>${ui.mode === 'solo' ? `<p style="margin:0">vs three ${LEVELS[ui.level].name} computers</p>` : ''}
+      <div class="score">${ui.wins.map((x, t) => `<span style="color:${TEAMS[t].c}" title="${esc(sideLabel(t))} · ${esc(charName(t))}">${x}</span>`).join(' – ')}</div>
+      <p style="margin:0;font-size:15px">${ui.wins.map((x, t) => `<b style="color:${TEAMS[t].c}">${esc(sideLabel(t))}</b> ${esc(charName(t))}`).join(' · ')}</p>
       <p>${done ? 'Last round: ' : ''}${G.turn} turns · ${st.shots} shots · ${st.lobs} lobs · ${st.dudBlasts} dud blasts${st.chains ? ` · ${st.chains} chain reaction${st.chains > 1 ? 's' : ''}` : ''}${st.drowned ? ` · ${st.drowned} splashed out` : ''}</p>
       <div class="row">${done
         ? `<button class="btn fire" type="button" data-act="rematch">REMATCH (R)</button><button class="btn gold" type="button" data-act="pickagain">New characters</button><button class="btn teal" type="button" data-act="feedback">Give feedback</button><button class="btn ghost" type="button" data-act="quit">Title</button>`
@@ -399,6 +463,8 @@
   // ---------- feedback (artifact db, then the site's feedback route, then copy) ----------
   const FQ = [
     { id: 'rematch', q: 'Did you want a rematch right away?', opts: ['Yes, right now', 'Maybe later', 'No'] },
+    { id: 'level', q: 'The computers (1 Player): how hard did they feel?', opts: ['Too easy', 'About right', 'Too hard', 'Played 1v1'] },
+    { id: 'delay', q: 'Turn delay (heavy shots make you wait longer): did it make sense?', opts: ['Yes, I used it', 'Sort of', "Didn't notice"] },
     { id: 'char', q: 'Which character was the most fun?', opts: WB.CHAR_IDS.map((c) => WB.CHARS[c].name) },
     { id: 'fair', q: 'Did any character feel too strong or too weak?', opts: ['All felt fair', 'One was too strong', 'One was too weak'] },
     { id: 'duds', q: 'Live duds: how did they feel?', opts: ['Loved them', 'Fine', "Didn't notice", 'Annoying'] },
@@ -416,11 +482,11 @@
   function feedbackText() {
     const F = ui.fb, G = ui.G;
     return ['Wormsbound P1 feedback', ...FQ.map((f) => `${f.q} ${F.q[f.id] || '–'}`), `Notes: ${F.text || '–'}`,
-      `From: ${F.nm || 'anonymous'} · ${ui.picks.join(' vs ')} · score ${ui.wins[0]}-${ui.wins[1]} · seed ${ui.matchSeed}${ui.tester ? ' · TESTER' : ''}${G ? ` · last round ${G.turn} turns, ${G.stats.lobs} lobs` : ''}`].join('\n');
+      `From: ${F.nm || 'anonymous'} · ${ui.mode === 'solo' ? '1 Player, ' + ui.level : '1v1'} · ${ui.picks.join(' vs ')} · score ${ui.wins.join('-')} · seed ${ui.matchSeed}${ui.tester ? ' · TESTER' : ''}${G ? ` · last round ${G.turn} turns, ${G.stats.lobs} lobs` : ''}`].join('\n');
   }
   async function sendFeedback() {
     const F = ui.fb; const t = $('#fbText'), n = $('#fbName'); if (t) F.text = t.value; if (n) F.nm = n.value;
-    const body = { answers: F.q, notes: F.text, name: F.nm, chars: ui.picks.slice(), score: ui.wins.slice(), seed: ui.matchSeed, tester: ui.tester, build: 'P1', at: new Date().toISOString() };
+    const body = { answers: F.q, notes: F.text, name: F.nm, mode: ui.mode, level: ui.mode === 'solo' ? ui.level : null, chars: ui.picks.slice(), score: ui.wins.slice(), seed: ui.matchSeed, tester: ui.tester, build: 'P1', at: new Date().toISOString() };
     try {
       const db = window.claude && window.claude.use ? await window.claude.use('db') : null;
       if (!db) throw new Error('no db');
@@ -434,17 +500,17 @@
 
   // ---------- match flow ----------
   function startRound() {
-    const first = (ui.round - 1) % 2;
-    ui.G = WB.newGame((ui.matchSeed + ui.round * 7919) >>> 0, { first, chars: ui.picks });
-    ui.aim = {}; ui.parts = []; ui.trails = {}; ui.scorch = []; ui.pops = []; ui.acc = 0; ui.slow = 0; ui.shake = 0; ui.overAt = 0; ui.paused = false;
+    const first = (ui.round - 1) % nSides();
+    ui.G = WB.newGame((ui.matchSeed + ui.round * 7919) >>> 0, { teams: nSides(), first, chars: ui.picks });
+    ui.aim = {}; ui.cpu = null; ui.parts = []; ui.trails = {}; ui.scorch = []; ui.pops = []; ui.acc = 0; ui.slow = 0; ui.shake = 0; ui.overAt = 0; ui.paused = false;
     bakeBackground(ui.G.seed); renderTerrain();
     ui.screen = 'game'; hide(); onTurn();
   }
   function startMatch() {
-    if (!ui.picks[0] || !ui.picks[1]) { ui.cursor = 2; selectScreen(0); return; }
+    if (ui.picks.length !== nSides() || ui.picks.some((c) => !c)) { ui.cursor = 2; selectScreen(0); return; }
     ui.matchSeed = (Date.now() ^ Math.floor(Math.random() * 1e9)) >>> 0;
     if (window.__WB_SEED != null) ui.matchSeed = window.__WB_SEED >>> 0; // tests pin the seed
-    ui.round = 1; ui.wins = [0, 0]; ui.tester = false; ui.fb = { q: {}, text: '', nm: '', saved: null };
+    ui.round = 1; ui.wins = new Array(nSides()).fill(0); ui.tester = false; ui.fb = { q: {}, text: '', nm: '', saved: null };
     startRound();
   }
   function botTurn() { if (!canAct() && !(ui.paused && ui.G && ui.G.phase === 'aim')) return; ui.tester = true; ui.paused = false; hide(); WB.botTurn(ui.G, 'smart'); renderCtl(); }
@@ -460,10 +526,12 @@
       lsSet('wb-' + k, ui[k === 'timer' ? 'timerOn' : k] ? 'on' : 'off'); ui.paused = false; toggleMenu(); renderHUD(); coachLine(); return;
     }
     switch (act) {
-      case 'start': case 'pickagain': ui.picks = [null, null]; ui.cursor = 2; selectScreen(0); break;
+      case 'mode': ui.mode = b.dataset.mode === 'solo' ? 'solo' : 'duel'; ui.picks = new Array(nSides()).fill(null); if (ui.mode === 'solo') levelScreen(); else { ui.cursor = 2; selectScreen(0); } break;
+      case 'level': ui.level = LEVELS[b.dataset.level] ? b.dataset.level : 'medium'; lsSet('wb-level', ui.level); ui.cursor = 2; selectScreen(0); break;
+      case 'start': case 'pickagain': ui.picks = new Array(nSides()).fill(null); ui.cursor = 2; selectScreen(0); break;
       case 'rematch': startMatch(); break;
       case 'pick': choose(b.dataset.char); break;
-      case 'pickback': if (ui.pickTeam === 1) { ui.picks[0] = null; selectScreen(0); } else titleScreen(); break;
+      case 'pickback': if (ui.mode === 'duel' && ui.pickTeam === 1) { ui.picks[0] = null; selectScreen(0); } else if (ui.mode === 'solo') levelScreen(); else titleScreen(); break;
       case 'next': ui.round += ui.G.winner >= 0 ? 1 : 0; startRound(); break;
       case 'fire': doFire(); break;
       case 'lob': toggleLob(); break;
@@ -649,7 +717,7 @@
     const cur = WB.current(G);
     for (const u of G.units) if (!u.alive) drawUnit(u, false, t);
     for (const u of G.units) if (u.alive) drawUnit(u, u === cur && G.phase === 'aim', t);
-    if (cur && G.phase === 'aim' && ui.screen === 'game' && !ui.paused) drawAim(cur, t);
+    if (cur && G.phase === 'aim' && ui.screen === 'game' && !ui.paused && (!isCPU(G.team) || (ui.cpu && ui.cpu.aimed))) drawAim(cur, t);
     for (const p of G.proj) drawProj(p, t);
     for (const id of Object.keys(ui.trails)) if (!G.proj.some((p) => String(p.id) === id)) delete ui.trails[id];
     for (const p of ui.parts) {
@@ -690,6 +758,9 @@
         ui.acc += dt * speed; let n = 0;
         while (ui.acc >= WB.TICK && G.phase === 'flight' && n++ < 400) { onFx(WB.step(G)); ui.acc -= WB.TICK; }
         if (G.phase !== 'flight') { ui.acc = 0; renderHUD(); renderCtl(); coachLine(); }
+      } else if (G.phase === 'aim' && isCPU(G.team)) {
+        if (!ui.cpu) cpuStart();
+        cpuStep(dt);
       } else if (G.phase === 'aim' && ui.timerOn) {
         const before = Math.ceil(ui.tLeft); ui.tLeft -= dt;
         if (Math.ceil(ui.tLeft) !== before && ui.tLeft <= 5 && ui.tLeft > 0) SFX.tick();
@@ -711,10 +782,11 @@
 
   // ---------- boot ----------
   window.WBUI = {
-    get G() { return ui.G; }, ui, startMatch, selectScreen, choose, startRound, roundOver, doFire, walk, pass, botTurn, renderAll: () => { renderHUD(); renderCtl(); coachLine(); },
+    get G() { return ui.G; }, ui, startMatch, levelScreen, selectScreen, choose, startRound, roundOver, doFire, walk, pass, botTurn, renderAll: () => { renderHUD(); renderCtl(); coachLine(); },
     aim: (angle, power) => { const u = WB.current(ui.G); const a = aimOf(u); a.angle = angle; a.power = power; },
   };
   fit(); addEventListener('resize', fit);
+  { const lv = lsGet('wb-level'); if (LEVELS[lv]) ui.level = lv; }
   bakeBackground(20261102); titleScreen();
   requestAnimationFrame(frame);
 })();
