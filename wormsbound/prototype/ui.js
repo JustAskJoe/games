@@ -36,7 +36,7 @@
 
   const ui = {
     screen: 'title', G: null, matchSeed: 0, round: 1, wins: [0, 0], aim: {}, weapon: 'shot1', lob: false, picks: [null, null], pickTeam: 0, cursor: 2,
-    mode: 'duel', level: 'medium', cpu: null,
+    mode: 'duel', level: 'medium', cpu: null, mapPick: WB.MAPS[lsGet('wb-map')] ? lsGet('wb-map') : 'shuffle',
     drag: null, acc: 0, last: 0, slow: 0, shake: 0, parts: [], trails: {}, scorch: [], clouds: [], dust: [], pops: [],
     tLeft: TURN_SECONDS, timerOn: lsGet('wb-timer') !== 'off', sound: lsGet('wb-sound') !== 'off', coach: lsGet('wb-coach') !== 'off',
     fast: false, tester: false, overAt: 0, turnsSeen: 0, paused: false, fb: { q: {}, text: '', nm: '', saved: null },
@@ -80,10 +80,22 @@
   };
 
   // ---------- background: sunset sky, sun, two parallax ridges (baked once per round) ----------
+  // Each map has its own sky, far ridges and ground colours (all drawn in code).
+  const THEMES = {
+    hills: { sky: ['#2B1E45', '#7A3B5E', '#FF8A3D', '#FFC37A'], ridges: ['rgba(107,58,91,.55)', 'rgba(70,40,78,.7)'],
+      shades: [['#A6DE62', '#93CF55'], ['#6FAE45', '#62A03C'], ['#D2834A', '#C47640'], ['#B2643A', '#A55B36'], ['#8C4C3A', '#7F4436'], ['#6A3E4A', '#5E3743']], tuft: '#B8EC74' },
+    isles: { sky: ['#3A6FB0', '#69A7DA', '#A9D8F0', '#E6F6FF'], ridges: ['rgba(120,160,200,.45)', 'rgba(90,130,180,.55)'], float: true,
+      shades: [['#9BE36A', '#88D45A'], ['#5FB04A', '#52A040'], ['#B9A27A', '#AC966F'], ['#8F7E66', '#84745D'], ['#6E6378', '#63596D'], ['#55506A', '#4B465E']], tuft: '#C6F58A' },
+    scrap: { sky: ['#3B2A28', '#7A4A30', '#C9773A', '#E8B070'], ridges: ['rgba(90,60,50,.55)', 'rgba(60,40,38,.75)'], blocky: true,
+      shades: [['#C98A4B', '#B97C42'], ['#9A6A44', '#8C5F3D'], ['#7C7A80', '#706E74'], ['#66646C', '#5C5A62'], ['#56484A', '#4C4042'], ['#42363A', '#3A3034']], tuft: '#E0A060' },
+    roofs: { sky: ['#0F1530', '#2A2A5A', '#5A3A78', '#C8608A'], ridges: ['rgba(40,40,80,.65)', 'rgba(25,25,55,.85)'], blocky: true, windows: true,
+      shades: [['#8A8FA8', '#7E8399'], ['#6C7088', '#62667C'], ['#B0604A', '#A35842'], ['#8E4C3E', '#834538'], ['#5E4048', '#543940'], ['#40303C', '#382A35']], tuft: '#FFD86A' },
+  };
+  const theme = () => THEMES[(ui.G && ui.G.map) || 'hills'] || THEMES.hills;
   function bakeBackground(seed) {
     let s = seed >>> 0; const r = () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
-    const g = bctx.createLinearGradient(0, 0, 0, H);
-    g.addColorStop(0, '#2B1E45'); g.addColorStop(0.42, '#7A3B5E'); g.addColorStop(0.7, '#FF8A3D'); g.addColorStop(1, '#FFC37A');
+    const TH = theme(), g = bctx.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, TH.sky[0]); g.addColorStop(0.42, TH.sky[1]); g.addColorStop(0.7, TH.sky[2]); g.addColorStop(1, TH.sky[3]);
     bctx.fillStyle = g; bctx.fillRect(0, 0, W, H);
     const sx = 260 + r() * 760, sy = 330 + r() * 60;
     const sg = bctx.createRadialGradient(sx, sy, 10, sx, sy, 170); sg.addColorStop(0, 'rgba(255,240,200,1)'); sg.addColorStop(0.25, 'rgba(255,214,140,.9)'); sg.addColorStop(1, 'rgba(255,170,90,0)');
@@ -92,18 +104,21 @@
     const ridge = (base, amp, col, k) => {
       bctx.fillStyle = col; bctx.beginPath(); bctx.moveTo(0, H);
       const p1 = r() * 6, p2 = r() * 6;
-      for (let x = 0; x <= W; x += 8) bctx.lineTo(x, base - amp * (0.6 * Math.sin(x / (180 * k) + p1) + 0.4 * Math.sin(x / (63 * k) + p2)));
+      if (TH.blocky) { // a skyline (or scrap heaps): flat-topped blocks instead of hills
+        for (let x = 0; x <= W;) { const w = 30 + r() * 70, y = base - amp * (0.3 + r() * 0.9); bctx.lineTo(x, y); bctx.lineTo(x + w, y); x += w; }
+      } else for (let x = 0; x <= W; x += 8) bctx.lineTo(x, base - amp * (0.6 * Math.sin(x / (180 * k) + p1) + 0.4 * Math.sin(x / (63 * k) + p2)));
       bctx.lineTo(W, H); bctx.closePath(); bctx.fill();
     };
-    ridge(470, 60, 'rgba(107,58,91,.55)', 1.4);
-    ridge(540, 45, 'rgba(70,40,78,.7)', 1);
+    if (TH.float) { // far-off floating rocks instead of ridges
+      for (let i = 0; i < 9; i++) { const x = r() * W, y = 300 + r() * 260, w = 40 + r() * 90; bctx.fillStyle = TH.ridges[i & 1]; bctx.beginPath(); bctx.moveTo(x - w / 2, y); bctx.lineTo(x + w / 2, y); bctx.lineTo(x + w * 0.1, y + w * 0.6); bctx.closePath(); bctx.fill(); }
+    } else { ridge(470, 60, TH.ridges[0], 1.4); ridge(540, 45, TH.ridges[1], 1); }
+    if (TH.windows) for (let i = 0; i < 90; i++) { bctx.fillStyle = `rgba(255,214,120,${0.25 + r() * 0.5})`; bctx.fillRect(r() * W, 430 + r() * 250, 3, 4); }
     ui.clouds = Array.from({ length: 6 }, () => ({ x: r() * W, y: 60 + r() * 220, s: 0.6 + r() * 0.9 }));
     ui.dust = Array.from({ length: reduced ? 0 : 46 }, () => ({ x: r() * W, y: 90 + r() * 560, z: 0.4 + r() * 0.8 }));
   }
 
   // ---------- terrain: chunky cells, coloured by depth below the surface, with scorch marks ----------
   const hash2 = (x, y) => { let h = (x * 374761393 + y * 668265263) >>> 0; h = (h ^ (h >>> 13)) * 1274126177 >>> 0; return (h >>> 16) & 255; };
-  const SHADES = [['#A6DE62', '#93CF55'], ['#6FAE45', '#62A03C'], ['#D2834A', '#C47640'], ['#B2643A', '#A55B36'], ['#8C4C3A', '#7F4436'], ['#6A3E4A', '#5E3743']];
   function shadeFor(depth) { return depth === 0 ? 0 : depth === 1 ? 1 : depth < 5 ? 2 : depth < 10 ? 3 : depth < 18 ? 4 : 5; }
   function renderTerrain() {
     const G = ui.G, T = G.T, C = WB.COLS, R = WB.ROWS;
@@ -113,7 +128,7 @@
       for (let y = 0; y < R; y++) {
         if (!T[y * C + x]) { depth = -1; continue; }
         depth++;
-        const pair = SHADES[shadeFor(depth)];
+        const pair = theme().shades[shadeFor(depth)];
         tctx.fillStyle = pair[hash2(x, y) & 1]; tctx.fillRect(x * CELL, y * CELL, CELL, CELL);
         if (depth > 3 && (hash2(x, y) & 31) === 0) { tctx.fillStyle = 'rgba(30,20,35,.25)'; tctx.fillRect(x * CELL + 2, y * CELL + 2, 3, 3); }
       }
@@ -133,7 +148,7 @@
       if (y < R - 1 && !T[(y + 1) * C + x]) tctx.fillRect(px, py + CELL - 2, CELL, 2);
       if (y > 0 && !T[(y - 1) * C + x]) {
         tctx.fillRect(px, py - 1, CELL, 2);
-        if ((hash2(x, y) & 3) === 0) { tctx.fillStyle = '#B8EC74'; tctx.fillRect(px + 2, py - 4, 2, 4); tctx.fillRect(px + 5, py - 3, 2, 3); tctx.fillStyle = '#2A1A2A'; }
+        if ((hash2(x, y) & 3) === 0) { tctx.fillStyle = theme().tuft; tctx.fillRect(px + 2, py - 4, 2, 4); tctx.fillRect(px + 5, py - 3, 2, 3); tctx.fillStyle = '#2A1A2A'; }
       }
     }
     ui.terrainDirty = false;
@@ -145,7 +160,7 @@
     for (let i = 0; i < lim; i++) {
       const a = Math.random() * Math.PI * 2, s = 60 + Math.random() * (kind === 'chunk' ? 360 : 160);
       ui.parts.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - (kind === 'chunk' ? 160 : 40), t: 0, life: kind === 'smoke' ? 1.4 + Math.random() : 0.7 + Math.random() * 0.7, kind,
-        c: kind === 'chunk' ? SHADES[2 + (i % 3)][i & 1] : kind === 'spark' ? (i & 1 ? '#FFD34D' : '#FF8A3D') : kind === 'drop' ? '#9FE8E0' : 'rgba(60,45,70,.5)', size: kind === 'smoke' ? 10 + Math.random() * 14 : 2 + Math.random() * 4 });
+        c: kind === 'chunk' ? theme().shades[2 + (i % 3)][i & 1] : kind === 'spark' ? (i & 1 ? '#FFD34D' : '#FF8A3D') : kind === 'drop' ? '#9FE8E0' : 'rgba(60,45,70,.5)', size: kind === 'smoke' ? 10 + Math.random() * 14 : 2 + Math.random() * 4 });
     }
   }
   function stepParts(dt) {
@@ -325,7 +340,7 @@
     const w = G.wind, arrows = Math.round(Math.abs(w) / WB.WIND_MAX * 4);
     const windTxt = Math.abs(w) < 0.2 ? 'calm' : `${w < 0 ? '◀'.repeat(Math.max(1, arrows)) : ''} ${Math.abs(w).toFixed(1)} ${w > 0 ? '▶'.repeat(Math.max(1, arrows)) : ''}`;
     const left = Array.from({ length: half }, (_, t) => side(t)).join(''), right = Array.from({ length: n - half }, (_, i) => side(n - 1 - i)).join('');
-    $('#hud').innerHTML = `<div class="sidegrp">${left}</div>` + `<div class="mid"><div class="timer${ui.timerOn ? '' : ' off'}" id="timer">${ui.timerOn ? Math.ceil(ui.tLeft) : '∞'}</div><div class="wind" aria-label="wind">WIND ${windTxt}</div><div class="wind" style="font-size:12px;opacity:.8">Round ${ui.round}${ui.mode === 'solo' ? ' · ' + LEVELS[ui.level].name : ''}${G.turn >= WB.suddenTurn(G) ? ' · <span style="color:#FF4D5E">SUDDEN DEATH: the water rises</span>' : ''}</div>${orderHTML()}</div><div class="sidegrp r">${right}</div>`;
+    $('#hud').innerHTML = `<div class="sidegrp">${left}</div>` + `<div class="mid"><div class="timer${ui.timerOn ? '' : ' off'}" id="timer">${ui.timerOn ? Math.ceil(ui.tLeft) : '∞'}</div><div class="wind" aria-label="wind">WIND ${windTxt}</div><div class="wind" style="font-size:12px;opacity:.8">Round ${ui.round} · ${esc(WB.MAPS[G.map].name)}${ui.mode === 'solo' ? ' · ' + LEVELS[ui.level].name : ''}${G.turn >= WB.suddenTurn(G) ? ' · <span style="color:#FF4D5E">SUDDEN DEATH: the water rises</span>' : ''}</div>${orderHTML()}</div><div class="sidegrp r">${right}</div>`;
   }
   // The next turns if everyone keeps firing their Shot 1, counting the current side's chosen shot: what the
   // turn delay means right now. Light shot: you may go again before them; heavy shot: they may go twice.
@@ -387,7 +402,15 @@
     show(`<div class="tag">JustAskJoe · Prototype 1</div><h1>WORMSBOUND</h1>
       <p>Pick a character, read the wind, blast the ground, and throw their own duds back at them. Best of three.</p>${HOW}
       <div class="row"><button class="btn fire" type="button" data-act="mode" data-mode="solo">1 PLAYER<small style="display:block;font-family:var(--body);font-size:12px">you vs 3 computers</small></button>
-      <button class="btn teal" type="button" data-act="mode" data-mode="duel">2 PLAYERS<small style="display:block;font-family:var(--body);font-size:12px">1v1 on one keyboard</small></button></div>`);
+      <button class="btn teal" type="button" data-act="mode" data-mode="duel">2 PLAYERS<small style="display:block;font-family:var(--body);font-size:12px">1v1 on one keyboard</small></button></div>
+      <div class="row maps"><span style="align-self:center;font-size:13px;opacity:.8">MAP</span>${['shuffle'].concat(WB.MAP_IDS).map((k) => `<button class="btn ${k === ui.mapPick ? 'gold' : 'ghost'} sm" type="button" data-act="map" data-map="${k}" title="${esc(k === 'shuffle' ? 'A different map every round' : WB.MAPS[k].blurb)}">${esc(k === 'shuffle' ? 'Shuffle' : WB.MAPS[k].name)}</button>`).join('')}</div>`);
+  }
+  // Shuffle: every map once (in a seeded order) before any repeats, so a best-of-3 shows three different maps.
+  function mapFor(round) {
+    if (ui.mapPick !== 'shuffle') return ui.mapPick;
+    let s = ui.matchSeed >>> 0; const r = () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
+    const ids = WB.MAP_IDS.slice(); for (let i = ids.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [ids[i], ids[j]] = [ids[j], ids[i]]; }
+    return ids[(round - 1) % ids.length];
   }
   function levelScreen() {
     ui.screen = 'level'; ui.G = null; renderHUD(); renderCtl(); coachLine();
@@ -501,7 +524,7 @@
   // ---------- match flow ----------
   function startRound() {
     const first = (ui.round - 1) % nSides();
-    ui.G = WB.newGame((ui.matchSeed + ui.round * 7919) >>> 0, { teams: nSides(), first, chars: ui.picks });
+    ui.G = WB.newGame((ui.matchSeed + ui.round * 7919) >>> 0, { teams: nSides(), first, chars: ui.picks, map: mapFor(ui.round) });
     ui.aim = {}; ui.cpu = null; ui.parts = []; ui.trails = {}; ui.scorch = []; ui.pops = []; ui.acc = 0; ui.slow = 0; ui.shake = 0; ui.overAt = 0; ui.paused = false;
     bakeBackground(ui.G.seed); renderTerrain();
     ui.screen = 'game'; hide(); onTurn();
@@ -530,6 +553,7 @@
       case 'level': ui.level = LEVELS[b.dataset.level] ? b.dataset.level : 'medium'; lsSet('wb-level', ui.level); ui.cursor = 2; selectScreen(0); break;
       case 'start': case 'pickagain': ui.picks = new Array(nSides()).fill(null); ui.cursor = 2; selectScreen(0); break;
       case 'rematch': startMatch(); break;
+      case 'map': ui.mapPick = b.dataset.map === 'shuffle' || WB.MAPS[b.dataset.map] ? b.dataset.map : 'shuffle'; lsSet('wb-map', ui.mapPick); titleScreen(); break;
       case 'pick': choose(b.dataset.char); break;
       case 'pickback': if (ui.mode === 'duel' && ui.pickTeam === 1) { ui.picks[0] = null; selectScreen(0); } else if (ui.mode === 'solo') levelScreen(); else titleScreen(); break;
       case 'next': ui.round += ui.G.winner >= 0 ? 1 : 0; startRound(); break;

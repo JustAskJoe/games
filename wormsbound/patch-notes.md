@@ -6,21 +6,31 @@ Newest on top. See the repo's CLAUDE.md for how patch notes work.
 
 ---
 
-## Weapons proposal · 2026-11-01 · Hunter (with Claude)
-Design only: nothing in the game changes.
+## Maps and weapons proposal · 2026-11-01 · Hunter (with Claude)
+Three new maps you can play now, and a design proposal for crate weapons.
 
 ### What's new
-- **A proposal for 35 crate weapons** (Normal guns, Melee, Explosive, Weird, Legendary, Goofy) and **in-match leveling** (Lv1 → Lv3, reset every match), in [`design/weapons.md`](design/weapons.md). Weapons would come from the supply crates the brief already plans, in a 4th shot slot next to each character's own shots.
+- **Three new maps**, from the brief's setting: **Sky Isles** (floating islands over open water, with low rocks that sometimes catch you), **Scrap Yard** (scrap towers and hollow car shells to bank shots off) and **Rooftops** (flat roofs at different heights, with alleys between them that flood first). The first map is now called **Crater Hills**.
+- **Pick a map on the title screen**, or leave it on **Shuffle** (the default): every map once before any repeats, so a best-of-3 shows three different maps. The map's name shows under the wind.
+- Each map has its own sky and ground: a blue daytime sky with far-off floating rocks, a smoggy orange junkyard, and a night skyline with lit windows.
+- **A proposal for 100 crate weapons** in six groups (Normal guns, Melee, Explosive, Weird, Legendary, Goofy), with **in-match leveling** (Lv1 → Lv3, reset every match) and a small deck of weapons drawn each match, in [`design/weapons.md`](design/weapons.md). Nothing from it is built yet.
+- Build and test: the sim plays 100 matches on every map, and `build-and-test.py` fails if any of them gets stuck or times out. The rule checks now also check every map spawns everyone on dry ground and replays exactly.
 
 ### Next up
-- [ ] @Louiemark: review `design/weapons.md`: crates in Prototype 2 or after the playtest, leveling option A (in-match) vs B (cosmetic mastery), and which weapons to cut from the pool.
-- [ ] Phase 1 once agreed: crates, the 4th slot, leveling, and the weapons that reuse existing shot fields.
+- [ ] @Louiemark: play each new map once. Does each feel different, and does any feel unfair?
+- [ ] @Louiemark: review `design/weapons.md`: crates in Prototype 2 or after the playtest, leveling option A (in-match) vs B (cosmetic mastery), the match-deck size, and which weapons to cut from the pool.
+- [ ] Phase 1 of the weapons once agreed: crates, the 4th slot, the match deck, leveling, and the weapons that reuse existing shot fields.
+- [ ] Art for the weapons and maps: a Lead Artist plan (`art/lead-plan.md`) comes first (studio rule). The maps' looks are code-drawn placeholders.
 
 ### Watch out
-- [ ] Persistent stat leveling (option C in the doc) would break the brief's "never pay-to-win / cosmetics only". Not proposed; listed so it's a conscious call.
-- [ ] Crates add randomness the balance sim doesn't model yet; the 40–60% character band has to be re-checked with crates on.
-- [ ] Weapon names and ideas are first-pass. Checked against the famous Worms weapons by memory only, not against GunBound, Pocket Tanks or ShellShock Live lists.
-- [ ] `build-and-test.py` not run for this change (docs only, no code touched).
+- [ ] **Rooftops runs long:** median 23 turns and half its matches reach sudden death (Crater Hills: 15 turns, 22%). The roofs block a lot of shots. Lower or fewer buildings would speed it up.
+- [ ] **Sky Isles is the knockback map:** median 13 turns, and about 3% of bot matches end by turn 1, from a knock into the water (Crater Hills: 1%). Gale wins the most there. The low rocks were added to stop one-shot drownings; watch whether it still feels too swingy.
+- [ ] The character band (40–60%) is still only measured on Crater Hills. Per-map win counts are printed but not judged; Gale wins the most on all four maps (25–27 of 100), and is at 55% in the Crater Hills round-robin.
+- [ ] Bots never walk, so on Sky Isles and Rooftops (where walking off an edge is deadly) people will play very differently from the sim.
+- [ ] The maps were checked in the bot sim and the headless browser test only. No person has seen them on screen (I couldn't open the build in a browser preview this session), so the colours and the title-screen map row haven't been looked at.
+- [ ] Persistent stat leveling (option C in the weapons doc) would break the brief's "never pay-to-win / cosmetics only". Not proposed; listed so it's a conscious call.
+- [ ] Crates add randomness the balance sim doesn't model yet; the character band has to be re-checked with crates on.
+- [ ] Weapon names and ideas are first-pass, checked against the famous Worms weapons from memory only, not against GunBound, Pocket Tanks or ShellShock Live lists.
 
 ## P1 modes · 2026-11-02 · Louiemark (with Claude)
 Turn delay, 1 Player vs 3 computers, and 1v1 with one character each. Full `build-and-test.py`: ALL GOOD.

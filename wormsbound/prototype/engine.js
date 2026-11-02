@@ -100,7 +100,73 @@
   const solidAt = (G, x, y) => { const cx = Math.floor(x), cy = Math.floor(y); if (cx < 0 || cx >= COLS || cy >= ROWS) return false; if (cy < 0) return false; return G.T[cy * COLS + cx] === 1; };
   function surfaceY(G, x) { const cx = clamp(Math.floor(x), 0, COLS - 1); for (let y = 0; y < ROWS; y++) if (G.T[y * COLS + cx]) return y; return ROWS; }
 
-  function genTerrain(G) {
+  // Maps (from the brief, W1: floating islands, junkyards and rooftops). Each builds G.T from the match seed.
+  const fillCol = (T, x, top, bottom = ROWS) => { for (let y = Math.max(0, Math.round(top)); y < Math.min(ROWS, bottom); y++) T[y * COLS + x] = 1; };
+  const MAPS = {
+    hills: { name: 'Crater Hills', blurb: 'Rolling hills, a valley in the middle and caves to bank shots off.', gen: genHills },
+    isles: { name: 'Sky Isles', blurb: 'Floating islands over open water. Miss the edge and you swim.', gen: genIsles },
+    scrap: { name: 'Scrap Yard', blurb: 'Low ground stacked with scrap towers and hollow car shells.', gen: genScrap },
+    roofs: { name: 'Rooftops', blurb: 'Flat roofs at every height, with alleys in between that flood first.', gen: genRoofs },
+  };
+  const MAP_IDS = Object.keys(MAPS);
+  function genTerrain(G) { MAPS[G.map].gen(G); }
+
+  function genIsles(G) {
+    const T = new Array(COLS * ROWS).fill(0), n = 3 + Math.floor(R(G) * 2);
+    for (let i = 0; i < n; i++) { // islands spread across the map with water between them
+      const cx = COLS * (i + 0.5) / n + (R(G) - 0.5) * 6, half = 17 + R(G) * 5, top = 44 + R(G) * 10, deep = 18 + R(G) * 8;
+      for (let x = Math.floor(cx - half); x <= Math.ceil(cx + half); x++) {
+        if (x < 0 || x >= COLS) continue;
+        const u = (x + 0.5 - cx) / half; if (Math.abs(u) > 1) continue;
+        const t = top + 3 * u * u + 1.2 * Math.sin(x * 0.9 + i), b = top + 2 + Math.max(8, deep * Math.sqrt(1 - u * u)); // flat-ish top, rounded rock underneath
+        fillCol(T, x, t, Math.round(b));
+      }
+    }
+    const ph = R(G) * 6; // low rocks just above the water: a knocked-off unit often lands there hurt instead of drowning
+    for (let x = 0; x < COLS; x++) if (Math.sin(x / 7 + ph) + 0.5 * Math.sin(x / 2.7 + ph * 2) > -0.3) fillCol(T, x, WATER0 - 3 - 2 * Math.sin(x / 3 + ph));
+    G.T = T;
+    for (let i = 0; i < 4; i++) { const cx = 8 + R(G) * (COLS - 16); carve(G, cx, surfaceY(G, cx) + 4 + R(G) * 3, 2 + R(G) * 1.5); } // a few holes to shoot through
+  }
+  function genScrap(G) {
+    const T = new Array(COLS * ROWS).fill(0), p = R(G) * 6;
+    for (let x = 0; x < COLS; x++) fillCol(T, x, ROWS - 18 - 3 * Math.sin(x / 11 + p) - 2 * Math.sin(x / 4.3 + p * 2));
+    G.T = T;
+    const piles = 6 + Math.floor(R(G) * 3);
+    for (let i = 0; i < piles; i++) { // scrap towers: stacked blocks, each a little narrower and shifted
+      let cx = COLS * (i + 0.5) / piles + (R(G) - 0.5) * 8, w = 10 + R(G) * 6, y = surfaceY(G, cx);
+      const blocks = 1 + Math.floor(R(G) * 3);
+      for (let b = 0; b < blocks && w > 3; b++) {
+        const h = 3 + Math.floor(R(G) * 4);
+        for (let x = Math.floor(cx - w / 2); x < cx + w / 2; x++) if (x >= 0 && x < COLS) fillCol(T, x, y - h, y + 1);
+        y -= h; w *= 0.65 + R(G) * 0.2; cx += (R(G) - 0.5) * 4;
+      }
+    }
+    for (let i = 0; i < 3; i++) { // hollow car shells: a box with the inside cut out
+      const cx = 14 + R(G) * (COLS - 28), y = surfaceY(G, cx), w = 9, h = 6;
+      for (let x = Math.floor(cx - w / 2); x < cx + w / 2; x++) fillCol(T, x, y - h, y);
+      for (let yy = y - h + 1; yy < y - 1; yy++) for (let x = Math.floor(cx - w / 2) + 1; x < cx + w / 2 - 1; x++) T[yy * COLS + x] = 0;
+    }
+  }
+  function genRoofs(G) {
+    const T = new Array(COLS * ROWS).fill(0);
+    for (let x = 0; x < COLS; x++) fillCol(T, x, WATER0 - 4); // the street: alleys flood first when the water rises
+    let x = 0;
+    while (x < COLS) {
+      const w = 12 + Math.floor(R(G) * 10), top = 52 + Math.floor(R(G) * 9), alley = 3 + Math.floor(R(G) * 3);
+      for (let i = x; i < Math.min(COLS, x + w); i++) fillCol(T, i, top);
+      for (let i = x + 1; i < Math.min(COLS, x + w); i++) if ((i - x) % 4 === 2) T[(top - 1) * COLS + i] = 1; // a parapet bump here and there
+      x += w + alley;
+    }
+    G.T = T;
+    for (let i = 0; i < 5; i++) { const cx = 8 + R(G) * (COLS - 16); carve(G, cx, surfaceY(G, cx) + 7 + R(G) * 10, 2 + R(G) * 2); } // broken windows
+  }
+  // Spawns go on dry ground: the nearest column (either side) with ground well above the water there and 6 cells each way.
+  function landNear(G, x) {
+    for (let d = 0; d < COLS; d++) for (const s of [x + d, x - d]) if (s >= 4 && s < COLS - 4 && [s - 6, s - 3, s, s + 3, s + 6].every((c) => surfaceY(G, c) < G.water - 4)) return s;
+    return x;
+  }
+
+  function genHills(G) {
     const T = new Array(COLS * ROWS).fill(0);
     const p = [R(G), R(G), R(G), R(G)].map((v) => v * Math.PI * 2);
     const base = 30 + R(G) * 6;
@@ -131,12 +197,12 @@
 
   // ---------- game state ----------
   // opts.teams: 2 (1v1) or 4 (free-for-all). opts.size: units per side (default 1). opts.first: which side shoots first.
-  // opts.chars: each side's character id (default Volt).
+  // opts.chars: each side's character id (default Volt). opts.map: a MAPS id (default Crater Hills).
   function newGame(seed, opts = {}) {
     const teams = opts.teams === 4 ? 4 : opts.teams === 3 ? 3 : 2, size = Math.max(1, Math.min(2, opts.size || UNITS_PER_TEAM));
     const chars = Array.from({ length: teams }, (_, t) => (opts.chars && CHARS[opts.chars[t]]) ? opts.chars[t] : 'volt');
     const G = {
-      v: 2, seed: seed >>> 0, _s: (seed >>> 0) || 1, _id: 0,
+      v: 2, seed: seed >>> 0, _s: (seed >>> 0) || 1, _id: 0, map: MAPS[opts.map] ? opts.map : 'hills',
       phase: 'aim', turn: 0, team: 0, teams, size, actor: 0, spent: 0, chars,
       wind: 0, water: WATER0, moves: 0, weapon: 'shot1',
       T: null, units: [], proj: [], duds: [], fx: [],
@@ -153,7 +219,7 @@
     const mul = opts.hpMul || (size > 1 ? HP_MUL.crew : teams > 2 ? HP_MUL.ffa : HP_MUL.duel);
     for (let k = 0; k < spots; k++) {
       const t = order[Math.floor(k / size)], C = CHARS[chars[t]], hp = Math.round(C.hp * mul);
-      const x = Math.round(COLS * (0.08 + 0.84 * (k + 0.3 + R(G) * 0.4) / spots));
+      const x = landNear(G, Math.round(COLS * (0.08 + 0.84 * (k + 0.3 + R(G) * 0.4) / spots)));
       G.units.push({ id: ++G._id, team: t, char: chars[t], x: x + 0.5, y: surfaceY(G, x), vx: 0, vy: 0, hp, maxHp: hp, alive: true, air: false, face: x < COLS / 2 ? 1 : -1, delay: 0 });
     }
     G.units.sort((a, b) => a.team - b.team || a.x - b.x); // ids stay as made; keep the list grouped by side
@@ -620,7 +686,7 @@
   // ---------- checksum and replay ----------
   function hash(G) {
     const r = (v) => Math.round(v * 100);
-    const parts = [G.turn, G.team, G.actor, G.spent, G.units.map((u) => u.delay).join(','), G.phase, r(G.wind), G.water, G.moves, G.winner, G.chars.join(','),
+    const parts = [G.map, G.turn, G.team, G.actor, G.spent, G.units.map((u) => u.delay).join(','), G.phase, r(G.wind), G.water, G.moves, G.winner, G.chars.join(','),
       G.units.map((u) => `${u.id}:${r(u.x)},${r(u.y)},${u.hp},${u.alive ? 1 : 0}`).join(';'),
       G.duds.map((d) => `${d.id}:${r(d.x)},${r(d.y)},${d.fuse}`).join(';'),
       G.ammo.map((a) => `${a.shot2},${a.dud}`).join(';'), G.ss.join(','), G.T.join('')];
@@ -637,7 +703,7 @@
   }
 
   const WB = { TICK, COLS, ROWS, WATER0, GRAV, VMAX, WIND_MAX, UNIT_R, UNITS_PER_TEAM, HP, MOVE_STEPS, LOB_RANGE, LOB_POWER, SUDDEN_ROUNDS, MAX_ROUNDS, suddenTurn, maxTurns, DMG_SPREAD, SS_CHARGE, DELAY, HP_MUL,
-    DUD, CHARS, CHAR_IDS, WEAPON_IDS, STYLES, newGame, act, step, resolve, current, teamUnits, charOf, shotSpec, ssReady, turnOrder, delayIf, solidAt, surfaceY, center, lobbable, canLob,
+    DUD, CHARS, CHAR_IDS, WEAPON_IDS, MAPS, MAP_IDS, STYLES, newGame, act, step, resolve, current, teamUnits, charOf, shotSpec, ssReady, turnOrder, delayIf, solidAt, surfaceY, center, lobbable, canLob,
     predict, blastScore, botTurn, playOut, hash, replay };
   if (typeof module !== 'undefined' && module.exports) module.exports = WB; else root.WB = WB;
 })(typeof window !== 'undefined' ? window : globalThis);

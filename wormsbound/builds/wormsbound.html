@@ -57,6 +57,7 @@ button { font: inherit; color: inherit; }
 .order b { min-width: 22px; padding: 1px 5px; border-radius: 99px; border: 2px solid var(--ink); color: var(--ink); text-shadow: none; text-align: center; font-size: 11px; }
 .cputag { font-family: var(--display); font-size: 22px; color: var(--tc); background: rgba(30,26,43,.85); border: 3px solid var(--tc); border-radius: 16px; padding: 10px 20px; }
 .card .row.lv { flex-wrap: nowrap; align-items: stretch; }
+.card .row.maps { gap: 6px; margin-top: 12px; }
 .btn.lvl { position: relative; flex-direction: column; flex: 1; min-width: 0; width: 180px; min-height: 110px; padding: 12px 14px; font-size: 28px; }
 .btn.lvl small { font-family: var(--body); font-weight: 800; font-size: 13px; line-height: 1.25; margin-top: 4px; }
 .btn.lvl .num { position: absolute; left: 8px; top: 6px; font-size: 13px; opacity: .6; }
@@ -258,7 +259,73 @@ button { font: inherit; color: inherit; }
   const solidAt = (G, x, y) => { const cx = Math.floor(x), cy = Math.floor(y); if (cx < 0 || cx >= COLS || cy >= ROWS) return false; if (cy < 0) return false; return G.T[cy * COLS + cx] === 1; };
   function surfaceY(G, x) { const cx = clamp(Math.floor(x), 0, COLS - 1); for (let y = 0; y < ROWS; y++) if (G.T[y * COLS + cx]) return y; return ROWS; }
 
-  function genTerrain(G) {
+  // Maps (from the brief, W1: floating islands, junkyards and rooftops). Each builds G.T from the match seed.
+  const fillCol = (T, x, top, bottom = ROWS) => { for (let y = Math.max(0, Math.round(top)); y < Math.min(ROWS, bottom); y++) T[y * COLS + x] = 1; };
+  const MAPS = {
+    hills: { name: 'Crater Hills', blurb: 'Rolling hills, a valley in the middle and caves to bank shots off.', gen: genHills },
+    isles: { name: 'Sky Isles', blurb: 'Floating islands over open water. Miss the edge and you swim.', gen: genIsles },
+    scrap: { name: 'Scrap Yard', blurb: 'Low ground stacked with scrap towers and hollow car shells.', gen: genScrap },
+    roofs: { name: 'Rooftops', blurb: 'Flat roofs at every height, with alleys in between that flood first.', gen: genRoofs },
+  };
+  const MAP_IDS = Object.keys(MAPS);
+  function genTerrain(G) { MAPS[G.map].gen(G); }
+
+  function genIsles(G) {
+    const T = new Array(COLS * ROWS).fill(0), n = 3 + Math.floor(R(G) * 2);
+    for (let i = 0; i < n; i++) { // islands spread across the map with water between them
+      const cx = COLS * (i + 0.5) / n + (R(G) - 0.5) * 6, half = 17 + R(G) * 5, top = 44 + R(G) * 10, deep = 18 + R(G) * 8;
+      for (let x = Math.floor(cx - half); x <= Math.ceil(cx + half); x++) {
+        if (x < 0 || x >= COLS) continue;
+        const u = (x + 0.5 - cx) / half; if (Math.abs(u) > 1) continue;
+        const t = top + 3 * u * u + 1.2 * Math.sin(x * 0.9 + i), b = top + 2 + Math.max(8, deep * Math.sqrt(1 - u * u)); // flat-ish top, rounded rock underneath
+        fillCol(T, x, t, Math.round(b));
+      }
+    }
+    const ph = R(G) * 6; // low rocks just above the water: a knocked-off unit often lands there hurt instead of drowning
+    for (let x = 0; x < COLS; x++) if (Math.sin(x / 7 + ph) + 0.5 * Math.sin(x / 2.7 + ph * 2) > -0.3) fillCol(T, x, WATER0 - 3 - 2 * Math.sin(x / 3 + ph));
+    G.T = T;
+    for (let i = 0; i < 4; i++) { const cx = 8 + R(G) * (COLS - 16); carve(G, cx, surfaceY(G, cx) + 4 + R(G) * 3, 2 + R(G) * 1.5); } // a few holes to shoot through
+  }
+  function genScrap(G) {
+    const T = new Array(COLS * ROWS).fill(0), p = R(G) * 6;
+    for (let x = 0; x < COLS; x++) fillCol(T, x, ROWS - 18 - 3 * Math.sin(x / 11 + p) - 2 * Math.sin(x / 4.3 + p * 2));
+    G.T = T;
+    const piles = 6 + Math.floor(R(G) * 3);
+    for (let i = 0; i < piles; i++) { // scrap towers: stacked blocks, each a little narrower and shifted
+      let cx = COLS * (i + 0.5) / piles + (R(G) - 0.5) * 8, w = 10 + R(G) * 6, y = surfaceY(G, cx);
+      const blocks = 1 + Math.floor(R(G) * 3);
+      for (let b = 0; b < blocks && w > 3; b++) {
+        const h = 3 + Math.floor(R(G) * 4);
+        for (let x = Math.floor(cx - w / 2); x < cx + w / 2; x++) if (x >= 0 && x < COLS) fillCol(T, x, y - h, y + 1);
+        y -= h; w *= 0.65 + R(G) * 0.2; cx += (R(G) - 0.5) * 4;
+      }
+    }
+    for (let i = 0; i < 3; i++) { // hollow car shells: a box with the inside cut out
+      const cx = 14 + R(G) * (COLS - 28), y = surfaceY(G, cx), w = 9, h = 6;
+      for (let x = Math.floor(cx - w / 2); x < cx + w / 2; x++) fillCol(T, x, y - h, y);
+      for (let yy = y - h + 1; yy < y - 1; yy++) for (let x = Math.floor(cx - w / 2) + 1; x < cx + w / 2 - 1; x++) T[yy * COLS + x] = 0;
+    }
+  }
+  function genRoofs(G) {
+    const T = new Array(COLS * ROWS).fill(0);
+    for (let x = 0; x < COLS; x++) fillCol(T, x, WATER0 - 4); // the street: alleys flood first when the water rises
+    let x = 0;
+    while (x < COLS) {
+      const w = 12 + Math.floor(R(G) * 10), top = 52 + Math.floor(R(G) * 9), alley = 3 + Math.floor(R(G) * 3);
+      for (let i = x; i < Math.min(COLS, x + w); i++) fillCol(T, i, top);
+      for (let i = x + 1; i < Math.min(COLS, x + w); i++) if ((i - x) % 4 === 2) T[(top - 1) * COLS + i] = 1; // a parapet bump here and there
+      x += w + alley;
+    }
+    G.T = T;
+    for (let i = 0; i < 5; i++) { const cx = 8 + R(G) * (COLS - 16); carve(G, cx, surfaceY(G, cx) + 7 + R(G) * 10, 2 + R(G) * 2); } // broken windows
+  }
+  // Spawns go on dry ground: the nearest column (either side) with ground well above the water there and 6 cells each way.
+  function landNear(G, x) {
+    for (let d = 0; d < COLS; d++) for (const s of [x + d, x - d]) if (s >= 4 && s < COLS - 4 && [s - 6, s - 3, s, s + 3, s + 6].every((c) => surfaceY(G, c) < G.water - 4)) return s;
+    return x;
+  }
+
+  function genHills(G) {
     const T = new Array(COLS * ROWS).fill(0);
     const p = [R(G), R(G), R(G), R(G)].map((v) => v * Math.PI * 2);
     const base = 30 + R(G) * 6;
@@ -289,12 +356,12 @@ button { font: inherit; color: inherit; }
 
   // ---------- game state ----------
   // opts.teams: 2 (1v1) or 4 (free-for-all). opts.size: units per side (default 1). opts.first: which side shoots first.
-  // opts.chars: each side's character id (default Volt).
+  // opts.chars: each side's character id (default Volt). opts.map: a MAPS id (default Crater Hills).
   function newGame(seed, opts = {}) {
     const teams = opts.teams === 4 ? 4 : opts.teams === 3 ? 3 : 2, size = Math.max(1, Math.min(2, opts.size || UNITS_PER_TEAM));
     const chars = Array.from({ length: teams }, (_, t) => (opts.chars && CHARS[opts.chars[t]]) ? opts.chars[t] : 'volt');
     const G = {
-      v: 2, seed: seed >>> 0, _s: (seed >>> 0) || 1, _id: 0,
+      v: 2, seed: seed >>> 0, _s: (seed >>> 0) || 1, _id: 0, map: MAPS[opts.map] ? opts.map : 'hills',
       phase: 'aim', turn: 0, team: 0, teams, size, actor: 0, spent: 0, chars,
       wind: 0, water: WATER0, moves: 0, weapon: 'shot1',
       T: null, units: [], proj: [], duds: [], fx: [],
@@ -311,7 +378,7 @@ button { font: inherit; color: inherit; }
     const mul = opts.hpMul || (size > 1 ? HP_MUL.crew : teams > 2 ? HP_MUL.ffa : HP_MUL.duel);
     for (let k = 0; k < spots; k++) {
       const t = order[Math.floor(k / size)], C = CHARS[chars[t]], hp = Math.round(C.hp * mul);
-      const x = Math.round(COLS * (0.08 + 0.84 * (k + 0.3 + R(G) * 0.4) / spots));
+      const x = landNear(G, Math.round(COLS * (0.08 + 0.84 * (k + 0.3 + R(G) * 0.4) / spots)));
       G.units.push({ id: ++G._id, team: t, char: chars[t], x: x + 0.5, y: surfaceY(G, x), vx: 0, vy: 0, hp, maxHp: hp, alive: true, air: false, face: x < COLS / 2 ? 1 : -1, delay: 0 });
     }
     G.units.sort((a, b) => a.team - b.team || a.x - b.x); // ids stay as made; keep the list grouped by side
@@ -778,7 +845,7 @@ button { font: inherit; color: inherit; }
   // ---------- checksum and replay ----------
   function hash(G) {
     const r = (v) => Math.round(v * 100);
-    const parts = [G.turn, G.team, G.actor, G.spent, G.units.map((u) => u.delay).join(','), G.phase, r(G.wind), G.water, G.moves, G.winner, G.chars.join(','),
+    const parts = [G.map, G.turn, G.team, G.actor, G.spent, G.units.map((u) => u.delay).join(','), G.phase, r(G.wind), G.water, G.moves, G.winner, G.chars.join(','),
       G.units.map((u) => `${u.id}:${r(u.x)},${r(u.y)},${u.hp},${u.alive ? 1 : 0}`).join(';'),
       G.duds.map((d) => `${d.id}:${r(d.x)},${r(d.y)},${d.fuse}`).join(';'),
       G.ammo.map((a) => `${a.shot2},${a.dud}`).join(';'), G.ss.join(','), G.T.join('')];
@@ -795,7 +862,7 @@ button { font: inherit; color: inherit; }
   }
 
   const WB = { TICK, COLS, ROWS, WATER0, GRAV, VMAX, WIND_MAX, UNIT_R, UNITS_PER_TEAM, HP, MOVE_STEPS, LOB_RANGE, LOB_POWER, SUDDEN_ROUNDS, MAX_ROUNDS, suddenTurn, maxTurns, DMG_SPREAD, SS_CHARGE, DELAY, HP_MUL,
-    DUD, CHARS, CHAR_IDS, WEAPON_IDS, STYLES, newGame, act, step, resolve, current, teamUnits, charOf, shotSpec, ssReady, turnOrder, delayIf, solidAt, surfaceY, center, lobbable, canLob,
+    DUD, CHARS, CHAR_IDS, WEAPON_IDS, MAPS, MAP_IDS, STYLES, newGame, act, step, resolve, current, teamUnits, charOf, shotSpec, ssReady, turnOrder, delayIf, solidAt, surfaceY, center, lobbable, canLob,
     predict, blastScore, botTurn, playOut, hash, replay };
   if (typeof module !== 'undefined' && module.exports) module.exports = WB; else root.WB = WB;
 })(typeof window !== 'undefined' ? window : globalThis);
@@ -840,7 +907,7 @@ button { font: inherit; color: inherit; }
 
   const ui = {
     screen: 'title', G: null, matchSeed: 0, round: 1, wins: [0, 0], aim: {}, weapon: 'shot1', lob: false, picks: [null, null], pickTeam: 0, cursor: 2,
-    mode: 'duel', level: 'medium', cpu: null,
+    mode: 'duel', level: 'medium', cpu: null, mapPick: WB.MAPS[lsGet('wb-map')] ? lsGet('wb-map') : 'shuffle',
     drag: null, acc: 0, last: 0, slow: 0, shake: 0, parts: [], trails: {}, scorch: [], clouds: [], dust: [], pops: [],
     tLeft: TURN_SECONDS, timerOn: lsGet('wb-timer') !== 'off', sound: lsGet('wb-sound') !== 'off', coach: lsGet('wb-coach') !== 'off',
     fast: false, tester: false, overAt: 0, turnsSeen: 0, paused: false, fb: { q: {}, text: '', nm: '', saved: null },
@@ -884,10 +951,22 @@ button { font: inherit; color: inherit; }
   };
 
   // ---------- background: sunset sky, sun, two parallax ridges (baked once per round) ----------
+  // Each map has its own sky, far ridges and ground colours (all drawn in code).
+  const THEMES = {
+    hills: { sky: ['#2B1E45', '#7A3B5E', '#FF8A3D', '#FFC37A'], ridges: ['rgba(107,58,91,.55)', 'rgba(70,40,78,.7)'],
+      shades: [['#A6DE62', '#93CF55'], ['#6FAE45', '#62A03C'], ['#D2834A', '#C47640'], ['#B2643A', '#A55B36'], ['#8C4C3A', '#7F4436'], ['#6A3E4A', '#5E3743']], tuft: '#B8EC74' },
+    isles: { sky: ['#3A6FB0', '#69A7DA', '#A9D8F0', '#E6F6FF'], ridges: ['rgba(120,160,200,.45)', 'rgba(90,130,180,.55)'], float: true,
+      shades: [['#9BE36A', '#88D45A'], ['#5FB04A', '#52A040'], ['#B9A27A', '#AC966F'], ['#8F7E66', '#84745D'], ['#6E6378', '#63596D'], ['#55506A', '#4B465E']], tuft: '#C6F58A' },
+    scrap: { sky: ['#3B2A28', '#7A4A30', '#C9773A', '#E8B070'], ridges: ['rgba(90,60,50,.55)', 'rgba(60,40,38,.75)'], blocky: true,
+      shades: [['#C98A4B', '#B97C42'], ['#9A6A44', '#8C5F3D'], ['#7C7A80', '#706E74'], ['#66646C', '#5C5A62'], ['#56484A', '#4C4042'], ['#42363A', '#3A3034']], tuft: '#E0A060' },
+    roofs: { sky: ['#0F1530', '#2A2A5A', '#5A3A78', '#C8608A'], ridges: ['rgba(40,40,80,.65)', 'rgba(25,25,55,.85)'], blocky: true, windows: true,
+      shades: [['#8A8FA8', '#7E8399'], ['#6C7088', '#62667C'], ['#B0604A', '#A35842'], ['#8E4C3E', '#834538'], ['#5E4048', '#543940'], ['#40303C', '#382A35']], tuft: '#FFD86A' },
+  };
+  const theme = () => THEMES[(ui.G && ui.G.map) || 'hills'] || THEMES.hills;
   function bakeBackground(seed) {
     let s = seed >>> 0; const r = () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
-    const g = bctx.createLinearGradient(0, 0, 0, H);
-    g.addColorStop(0, '#2B1E45'); g.addColorStop(0.42, '#7A3B5E'); g.addColorStop(0.7, '#FF8A3D'); g.addColorStop(1, '#FFC37A');
+    const TH = theme(), g = bctx.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, TH.sky[0]); g.addColorStop(0.42, TH.sky[1]); g.addColorStop(0.7, TH.sky[2]); g.addColorStop(1, TH.sky[3]);
     bctx.fillStyle = g; bctx.fillRect(0, 0, W, H);
     const sx = 260 + r() * 760, sy = 330 + r() * 60;
     const sg = bctx.createRadialGradient(sx, sy, 10, sx, sy, 170); sg.addColorStop(0, 'rgba(255,240,200,1)'); sg.addColorStop(0.25, 'rgba(255,214,140,.9)'); sg.addColorStop(1, 'rgba(255,170,90,0)');
@@ -896,18 +975,21 @@ button { font: inherit; color: inherit; }
     const ridge = (base, amp, col, k) => {
       bctx.fillStyle = col; bctx.beginPath(); bctx.moveTo(0, H);
       const p1 = r() * 6, p2 = r() * 6;
-      for (let x = 0; x <= W; x += 8) bctx.lineTo(x, base - amp * (0.6 * Math.sin(x / (180 * k) + p1) + 0.4 * Math.sin(x / (63 * k) + p2)));
+      if (TH.blocky) { // a skyline (or scrap heaps): flat-topped blocks instead of hills
+        for (let x = 0; x <= W;) { const w = 30 + r() * 70, y = base - amp * (0.3 + r() * 0.9); bctx.lineTo(x, y); bctx.lineTo(x + w, y); x += w; }
+      } else for (let x = 0; x <= W; x += 8) bctx.lineTo(x, base - amp * (0.6 * Math.sin(x / (180 * k) + p1) + 0.4 * Math.sin(x / (63 * k) + p2)));
       bctx.lineTo(W, H); bctx.closePath(); bctx.fill();
     };
-    ridge(470, 60, 'rgba(107,58,91,.55)', 1.4);
-    ridge(540, 45, 'rgba(70,40,78,.7)', 1);
+    if (TH.float) { // far-off floating rocks instead of ridges
+      for (let i = 0; i < 9; i++) { const x = r() * W, y = 300 + r() * 260, w = 40 + r() * 90; bctx.fillStyle = TH.ridges[i & 1]; bctx.beginPath(); bctx.moveTo(x - w / 2, y); bctx.lineTo(x + w / 2, y); bctx.lineTo(x + w * 0.1, y + w * 0.6); bctx.closePath(); bctx.fill(); }
+    } else { ridge(470, 60, TH.ridges[0], 1.4); ridge(540, 45, TH.ridges[1], 1); }
+    if (TH.windows) for (let i = 0; i < 90; i++) { bctx.fillStyle = `rgba(255,214,120,${0.25 + r() * 0.5})`; bctx.fillRect(r() * W, 430 + r() * 250, 3, 4); }
     ui.clouds = Array.from({ length: 6 }, () => ({ x: r() * W, y: 60 + r() * 220, s: 0.6 + r() * 0.9 }));
     ui.dust = Array.from({ length: reduced ? 0 : 46 }, () => ({ x: r() * W, y: 90 + r() * 560, z: 0.4 + r() * 0.8 }));
   }
 
   // ---------- terrain: chunky cells, coloured by depth below the surface, with scorch marks ----------
   const hash2 = (x, y) => { let h = (x * 374761393 + y * 668265263) >>> 0; h = (h ^ (h >>> 13)) * 1274126177 >>> 0; return (h >>> 16) & 255; };
-  const SHADES = [['#A6DE62', '#93CF55'], ['#6FAE45', '#62A03C'], ['#D2834A', '#C47640'], ['#B2643A', '#A55B36'], ['#8C4C3A', '#7F4436'], ['#6A3E4A', '#5E3743']];
   function shadeFor(depth) { return depth === 0 ? 0 : depth === 1 ? 1 : depth < 5 ? 2 : depth < 10 ? 3 : depth < 18 ? 4 : 5; }
   function renderTerrain() {
     const G = ui.G, T = G.T, C = WB.COLS, R = WB.ROWS;
@@ -917,7 +999,7 @@ button { font: inherit; color: inherit; }
       for (let y = 0; y < R; y++) {
         if (!T[y * C + x]) { depth = -1; continue; }
         depth++;
-        const pair = SHADES[shadeFor(depth)];
+        const pair = theme().shades[shadeFor(depth)];
         tctx.fillStyle = pair[hash2(x, y) & 1]; tctx.fillRect(x * CELL, y * CELL, CELL, CELL);
         if (depth > 3 && (hash2(x, y) & 31) === 0) { tctx.fillStyle = 'rgba(30,20,35,.25)'; tctx.fillRect(x * CELL + 2, y * CELL + 2, 3, 3); }
       }
@@ -937,7 +1019,7 @@ button { font: inherit; color: inherit; }
       if (y < R - 1 && !T[(y + 1) * C + x]) tctx.fillRect(px, py + CELL - 2, CELL, 2);
       if (y > 0 && !T[(y - 1) * C + x]) {
         tctx.fillRect(px, py - 1, CELL, 2);
-        if ((hash2(x, y) & 3) === 0) { tctx.fillStyle = '#B8EC74'; tctx.fillRect(px + 2, py - 4, 2, 4); tctx.fillRect(px + 5, py - 3, 2, 3); tctx.fillStyle = '#2A1A2A'; }
+        if ((hash2(x, y) & 3) === 0) { tctx.fillStyle = theme().tuft; tctx.fillRect(px + 2, py - 4, 2, 4); tctx.fillRect(px + 5, py - 3, 2, 3); tctx.fillStyle = '#2A1A2A'; }
       }
     }
     ui.terrainDirty = false;
@@ -949,7 +1031,7 @@ button { font: inherit; color: inherit; }
     for (let i = 0; i < lim; i++) {
       const a = Math.random() * Math.PI * 2, s = 60 + Math.random() * (kind === 'chunk' ? 360 : 160);
       ui.parts.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - (kind === 'chunk' ? 160 : 40), t: 0, life: kind === 'smoke' ? 1.4 + Math.random() : 0.7 + Math.random() * 0.7, kind,
-        c: kind === 'chunk' ? SHADES[2 + (i % 3)][i & 1] : kind === 'spark' ? (i & 1 ? '#FFD34D' : '#FF8A3D') : kind === 'drop' ? '#9FE8E0' : 'rgba(60,45,70,.5)', size: kind === 'smoke' ? 10 + Math.random() * 14 : 2 + Math.random() * 4 });
+        c: kind === 'chunk' ? theme().shades[2 + (i % 3)][i & 1] : kind === 'spark' ? (i & 1 ? '#FFD34D' : '#FF8A3D') : kind === 'drop' ? '#9FE8E0' : 'rgba(60,45,70,.5)', size: kind === 'smoke' ? 10 + Math.random() * 14 : 2 + Math.random() * 4 });
     }
   }
   function stepParts(dt) {
@@ -1129,7 +1211,7 @@ button { font: inherit; color: inherit; }
     const w = G.wind, arrows = Math.round(Math.abs(w) / WB.WIND_MAX * 4);
     const windTxt = Math.abs(w) < 0.2 ? 'calm' : `${w < 0 ? '◀'.repeat(Math.max(1, arrows)) : ''} ${Math.abs(w).toFixed(1)} ${w > 0 ? '▶'.repeat(Math.max(1, arrows)) : ''}`;
     const left = Array.from({ length: half }, (_, t) => side(t)).join(''), right = Array.from({ length: n - half }, (_, i) => side(n - 1 - i)).join('');
-    $('#hud').innerHTML = `<div class="sidegrp">${left}</div>` + `<div class="mid"><div class="timer${ui.timerOn ? '' : ' off'}" id="timer">${ui.timerOn ? Math.ceil(ui.tLeft) : '∞'}</div><div class="wind" aria-label="wind">WIND ${windTxt}</div><div class="wind" style="font-size:12px;opacity:.8">Round ${ui.round}${ui.mode === 'solo' ? ' · ' + LEVELS[ui.level].name : ''}${G.turn >= WB.suddenTurn(G) ? ' · <span style="color:#FF4D5E">SUDDEN DEATH: the water rises</span>' : ''}</div>${orderHTML()}</div><div class="sidegrp r">${right}</div>`;
+    $('#hud').innerHTML = `<div class="sidegrp">${left}</div>` + `<div class="mid"><div class="timer${ui.timerOn ? '' : ' off'}" id="timer">${ui.timerOn ? Math.ceil(ui.tLeft) : '∞'}</div><div class="wind" aria-label="wind">WIND ${windTxt}</div><div class="wind" style="font-size:12px;opacity:.8">Round ${ui.round} · ${esc(WB.MAPS[G.map].name)}${ui.mode === 'solo' ? ' · ' + LEVELS[ui.level].name : ''}${G.turn >= WB.suddenTurn(G) ? ' · <span style="color:#FF4D5E">SUDDEN DEATH: the water rises</span>' : ''}</div>${orderHTML()}</div><div class="sidegrp r">${right}</div>`;
   }
   // The next turns if everyone keeps firing their Shot 1, counting the current side's chosen shot: what the
   // turn delay means right now. Light shot: you may go again before them; heavy shot: they may go twice.
@@ -1191,7 +1273,15 @@ button { font: inherit; color: inherit; }
     show(`<div class="tag">JustAskJoe · Prototype 1</div><h1>WORMSBOUND</h1>
       <p>Pick a character, read the wind, blast the ground, and throw their own duds back at them. Best of three.</p>${HOW}
       <div class="row"><button class="btn fire" type="button" data-act="mode" data-mode="solo">1 PLAYER<small style="display:block;font-family:var(--body);font-size:12px">you vs 3 computers</small></button>
-      <button class="btn teal" type="button" data-act="mode" data-mode="duel">2 PLAYERS<small style="display:block;font-family:var(--body);font-size:12px">1v1 on one keyboard</small></button></div>`);
+      <button class="btn teal" type="button" data-act="mode" data-mode="duel">2 PLAYERS<small style="display:block;font-family:var(--body);font-size:12px">1v1 on one keyboard</small></button></div>
+      <div class="row maps"><span style="align-self:center;font-size:13px;opacity:.8">MAP</span>${['shuffle'].concat(WB.MAP_IDS).map((k) => `<button class="btn ${k === ui.mapPick ? 'gold' : 'ghost'} sm" type="button" data-act="map" data-map="${k}" title="${esc(k === 'shuffle' ? 'A different map every round' : WB.MAPS[k].blurb)}">${esc(k === 'shuffle' ? 'Shuffle' : WB.MAPS[k].name)}</button>`).join('')}</div>`);
+  }
+  // Shuffle: every map once (in a seeded order) before any repeats, so a best-of-3 shows three different maps.
+  function mapFor(round) {
+    if (ui.mapPick !== 'shuffle') return ui.mapPick;
+    let s = ui.matchSeed >>> 0; const r = () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
+    const ids = WB.MAP_IDS.slice(); for (let i = ids.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [ids[i], ids[j]] = [ids[j], ids[i]]; }
+    return ids[(round - 1) % ids.length];
   }
   function levelScreen() {
     ui.screen = 'level'; ui.G = null; renderHUD(); renderCtl(); coachLine();
@@ -1305,7 +1395,7 @@ button { font: inherit; color: inherit; }
   // ---------- match flow ----------
   function startRound() {
     const first = (ui.round - 1) % nSides();
-    ui.G = WB.newGame((ui.matchSeed + ui.round * 7919) >>> 0, { teams: nSides(), first, chars: ui.picks });
+    ui.G = WB.newGame((ui.matchSeed + ui.round * 7919) >>> 0, { teams: nSides(), first, chars: ui.picks, map: mapFor(ui.round) });
     ui.aim = {}; ui.cpu = null; ui.parts = []; ui.trails = {}; ui.scorch = []; ui.pops = []; ui.acc = 0; ui.slow = 0; ui.shake = 0; ui.overAt = 0; ui.paused = false;
     bakeBackground(ui.G.seed); renderTerrain();
     ui.screen = 'game'; hide(); onTurn();
@@ -1334,6 +1424,7 @@ button { font: inherit; color: inherit; }
       case 'level': ui.level = LEVELS[b.dataset.level] ? b.dataset.level : 'medium'; lsSet('wb-level', ui.level); ui.cursor = 2; selectScreen(0); break;
       case 'start': case 'pickagain': ui.picks = new Array(nSides()).fill(null); ui.cursor = 2; selectScreen(0); break;
       case 'rematch': startMatch(); break;
+      case 'map': ui.mapPick = b.dataset.map === 'shuffle' || WB.MAPS[b.dataset.map] ? b.dataset.map : 'shuffle'; lsSet('wb-map', ui.mapPick); titleScreen(); break;
       case 'pick': choose(b.dataset.char); break;
       case 'pickback': if (ui.mode === 'duel' && ui.pickTeam === 1) { ui.picks[0] = null; selectScreen(0); } else if (ui.mode === 'solo') levelScreen(); else titleScreen(); break;
       case 'next': ui.round += ui.G.winner >= 0 ? 1 : 0; startRound(); break;

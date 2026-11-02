@@ -20,6 +20,8 @@ Pass band (PROPOSED Nov 2, 2026: Louiemark to confirm; numbers recorded in desig
   - 1 Player difficulty (added Nov 2, 2026; a fair share of a 4-way is 25%): on Easy a new player (sloppy bot)
     wins 28%+ and a good one (smart) 45%+; on Medium a good player wins 25-45%; on Hard a good player wins
     12-35% and a new one 15% at most. Full run only (100 matches a line).
+  - every map finishes too (added Nov 1, 2026 with the maps): no stuck runs or timeouts on any map. Map match
+    length and win rates are printed, not judged yet.
 Never loosen these to get a pass; change the game, or agree a new band with the game's owner.
 (c) 2026 justaskjoe. All rights reserved.
 """
@@ -71,6 +73,10 @@ elif not quick:
     checks = [(('easy', 'sloppy'), 28, 100), (('easy', 'smart'), 45, 100), (('medium', 'smart'), 25, 45), (('hard', 'smart'), 12, 35), (('hard', 'sloppy'), 0, 15)]
     for key, lo, hi in checks:
         if not lo <= ffa[key] <= hi: fails.append(f'difficulty: {key[1]} player vs 3 {key[0]} computers wins {ffa[key]}% (band {lo}-{hi}%)')
+maps = {m[1]: (int(m[2]), int(m[3])) for m in re.finditer(r'^map (\w+)\s+turns.*?timeouts (\d+)\s+stuck (\d+)', out, re.M)}
+if len(maps) < 4: fails.append(f'sim output has {len(maps)} map lines, expected 4')
+for m, (to, st) in maps.items():  # every match on every map has to finish (the same rule as the mirror line)
+    if to or st: fails.append(f'maps: {m} had {to} timeouts and {st} stuck matches')
 if 'NaN' in (r.stdout + r.stderr): fails.append('balance: NaN in a unit')
 
 if not quick:

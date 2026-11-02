@@ -73,4 +73,18 @@ for (const level of ['easy', 'medium', 'hard']) for (const me of ['smart', 'slop
   }
   console.log(`ffa ${level.padEnd(6)} ${me.padEnd(6)} player wins ${pct(w, ffaN)}%  turns p50 ${q(turns, .5)}`);
 }
+// Maps: smart-vs-smart with random characters on every map, so a new map can't leave matches stuck or endless.
+const mapN = Math.max(20, Math.round(n / 2));
+console.log(`maps: ${mapN} smart-vs-smart matches per map, random characters`);
+for (const m of WB.MAP_IDS) {
+  const r = { turns: [], sudden: 0, timeouts: 0, stuck: 0, drowned: 0, wins: {} };
+  for (let k = 0; k < mapN; k++) {
+    const chars = [C[k % C.length], C[(k * 3 + 1) % C.length]];
+    let G; try { G = WB.playOut(WB.newGame(5555 + k * 7919, { map: m, chars, first: (k >> 1) % 2 }), ['smart', 'smart']).G; } catch (e) { r.stuck++; continue; }
+    r.turns.push(G.turn); if (G.turn >= WB.suddenTurn(G)) r.sudden++; if (G.timeout) r.timeouts++; r.drowned += G.stats.drowned;
+    if (G.winner >= 0) r.wins[chars[G.winner]] = (r.wins[chars[G.winner]] || 0) + 1;
+  }
+  const played = mapN - r.stuck;
+  console.log(`map ${m.padEnd(6)} turns p10 ${q(r.turns, .1)} p50 ${q(r.turns, .5)} p90 ${q(r.turns, .9)}  sudden death ${pct(r.sudden, played)}%  drowned ${(r.drowned / played).toFixed(1)}  timeouts ${r.timeouts}  stuck ${r.stuck}  most wins ${Object.entries(r.wins).sort((x, y) => y[1] - x[1]).map(([c, w]) => c + ' ' + w).slice(0, 2).join(', ')}`);
+}
 console.log(`done in ${((Date.now() - t0) / 1000).toFixed(1)}s`);

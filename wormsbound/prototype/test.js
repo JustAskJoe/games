@@ -230,5 +230,18 @@ const ssGame = (chars, seed = 11) => { const G = WB.newGame(seed, { chars }); G.
   ok(G.phase === 'over' && !G.timeout, `a match of passes ends by rising water (turn ${G.turn})`);
 }
 
+// 8. Maps: each one is seeded, spawns everyone on dry ground, and plays and replays a whole match.
+for (const m of WB.MAP_IDS) {
+  ok(WB.hash(WB.newGame(13, { map: m })) === WB.hash(WB.newGame(13, { map: m })), `${m}: same seed gives the same map`);
+  for (let s = 0; s < 20; s++) {
+    const G = WB.newGame(1000 + s * 31, { map: m, teams: s % 2 ? 4 : 2 });
+    if (!G.units.every((u) => u.y < G.water - 4 && WB.solidAt(G, u.x, u.y))) { ok(false, `${m} seed ${1000 + s * 31}: a unit spawned off the ground`); break; }
+    if (s === 19) ok(true, `${m}: 20 seeds spawn everyone on dry ground`);
+  }
+  const opts = { map: m, chars: ['gale', 'brick'] }, { G: F, log } = WB.playOut(WB.newGame(808, opts), ['smart', 'smart']);
+  ok(F.phase === 'over' && WB.hash(WB.replay(808, log, opts)) === WB.hash(F), `${m}: a bot match finishes and replays exactly (${F.turn} turns)`);
+}
+ok(WB.newGame(13).map === 'hills' && WB.newGame(13, { map: 'nope' }).map === 'hills', 'no map, or an unknown one, means Crater Hills');
+
 console.log(`${passes} passed, ${fails} failed`);
 process.exit(fails ? 1 : 0);
