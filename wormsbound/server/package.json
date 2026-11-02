@@ -7,10 +7,12 @@
   "main": "node-server.js",
   "scripts": {
     "start": "node node-server.js",
-    "test": "node test.js && node smoke.js"
+    "test": "node test.js && node smoke.js && node smoke.js --ffa 6"
   },
   "dependencies": {
     "ws": "^8.18.0"
   },
-  "engines": { "node": ">=18" }
+  "engines": {
+    "node": ">=18"
+  }
 }

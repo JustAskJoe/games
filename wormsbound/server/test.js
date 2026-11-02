@@ -4,7 +4,7 @@
 // © 2026 justaskjoe. All rights reserved.
 'use strict';
 const WB = require('../prototype/engine.js');
-const { Room, TURN_LIMIT_MS } = require('./room.js');
+const { Room, TURN_LIMIT_MS, GONE_LIMIT_MS } = require('./room.js');
 let fails = 0, passes = 0;
 const ok = (c, msg) => { if (c) passes++; else { fails++; console.log('FAIL', msg); } };
 
@@ -84,6 +84,79 @@ function botMove(P, style = 'smart') {
   const t0 = room.G.turn; room.tick(Date.now() + TURN_LIMIT_MS + 1);
   ok(room.G.turn === t0 + 1 || room.G.phase === 'over', 'a turn nobody plays is passed when the clock runs out');
   const Z = player(room, 'z'); Z.send({ t: 'create', name: 'z' }); ok(Z.errors.includes('code in use'), 'creating a room whose code is taken says so');
+}
+
+{ // free-for-all: up to 6 players, the host starts, one round, then back to the lobby
+  const room = new Room('FFA6', { seed: 4242 });
+  const names = ['Ana', 'Ben', 'Cy', 'Dee', 'Eli', 'Fay'], P = names.map((n) => player(room, n));
+  P[0].send({ t: 'create', name: 'Ana', mode: 'ffa' });
+  ok(room.mode === 'ffa' && room.max === 6, 'create with mode ffa makes a 6-seat free-for-all room');
+  for (const p of P.slice(1)) p.send({ t: 'join', name: p.name });
+  ok(P.map((p) => p.seat).join() === '0,1,2,3,4,5', 'six players take seats 0–5');
+  const G7 = player(room, 'Gus'); G7.send({ t: 'join', name: 'Gus' }); ok(G7.errors.includes('that room is full'), 'a seventh player is turned away');
+  P.forEach((p, i) => p.send({ t: 'pick', char: WB.CHAR_IDS[i % 5] }));
+  P[0].send({ t: 'start' }); ok(P[0].errors.includes('not everyone is ready'), 'the host can\'t start until everyone is ready');
+  P.forEach((p) => p.send({ t: 'ready', on: true }));
+  ok(room.phase === 'lobby', 'everyone ready doesn\'t start a free-for-all by itself');
+  P[3].send({ t: 'start' }); ok(P[3].errors.includes('only the room\'s host can start'), 'only the host can start');
+  P[0].send({ t: 'start' });
+  ok(room.phase === 'playing' && room.G.teams === 6 && P.every((p) => p.G && WB.hash(p.G) === WB.hash(room.G)), 'the host starts: a 6-way game, every copy matches the server');
+  ok(room.G.chars.join() === P.map((p, i) => WB.CHAR_IDS[i % 5]).join(), 'each side plays its pick');
+  const late = player(room, 'Late'); late.send({ t: 'join', name: 'Late' });
+  ok(late.errors.some((e) => /started/.test(e)), 'nobody can join a free-for-all once it has started');
+  const mover = P[room.seatOf(room.G.team)], notMe = P[room.seatOf((room.G.team + 1) % 6)];
+  notMe.send({ t: 'act', it: { k: 'pass' } }); ok(notMe.errors.includes('not your turn'), 'only the side whose turn it is can play');
+  mover.send({ t: 'aim', angle: 70, power: 0.6 });
+  ok(P.filter((p) => p !== mover).every((p) => p.aims.length === 1) && mover.aims.length === 0, 'your aim is shown to all five others, not you');
+
+  // a player who drops mid-match has their turns passed quickly
+  const goneSeat = room.seatOf(room.G.team), gone = P[goneSeat];
+  gone.conn.onClose();
+  const t0 = room.G.turn; room.tick(Date.now() + GONE_LIMIT_MS + 50);
+  ok(room.G.turn === t0 + 1 || room.G.phase === 'over', `a disconnected player's turn passes after ${GONE_LIMIT_MS / 1000} s, not 50`);
+  const back = player(room, 'back'); back.send({ t: 'rejoin', token: gone.token });
+  ok(back.seat === goneSeat && back.G && WB.hash(back.G) === WB.hash(room.G), 'they can rejoin mid-match and get the current game');
+  P[goneSeat] = back;
+
+  let guard = 0;
+  while (room.phase === 'playing' && guard++ < 2000) botMove(P[room.seatOf(room.G.team)]);
+  ok(room.phase === 'lobby', `the game ends (${room.G.turn} turns, winner side ${room.G.winner}) and the room goes back to the lobby`);
+  ok(P.every((p) => p.desyncs === 0), `no checksum ever disagrees on any of the six copies (${P[0].inbox.filter((m) => m.t === 'applied').length} moves)`);
+  ok(P.every((p) => p.inbox.some((m) => m.t === 'roundover' && m.match)), 'all six hear the result');
+  ok(room.seats.every((x) => x && !x.ready), 'everyone has to ready up again');
+
+  // between games: someone leaves, someone new joins, then a 3-way with gaps in the seats
+  for (const i of [2, 4, 5]) P[i].conn.onClose();
+  const H = player(room, 'Hal'); H.send({ t: 'join', name: 'Hal' });
+  ok(H.seat === 2, 'a newcomer takes the seat of someone who left');
+  H.send({ t: 'pick', char: 'gale' });
+  for (const p of [P[0], P[1], H]) p.send({ t: 'ready', on: true });
+  P[0].send({ t: 'start' }); ok(P[0].errors.includes('not everyone is ready'), 'a connected player who isn\'t ready blocks the start');
+  P[3].send({ t: 'ready', on: true }); P[0].send({ t: 'start' });
+  ok(room.phase === 'playing' && room.G.teams === 4 && room.teamSeat.join() === '0,1,2,3', 'it starts with the 4 who are here; the 2 who left lose their seats');
+  ok(room.seats[4] === null && room.seats[5] === null, 'seats of players who left are free again');
+  ok(H.G && WB.hash(H.G) === WB.hash(room.G), 'the newcomer gets the game too');
+}
+
+{ // free-for-all host handover, and a 2-player minimum
+  const room = new Room('HOST'); const A = player(room, 'A'), B = player(room, 'B'), C = player(room, 'C');
+  A.send({ t: 'create', name: 'A', mode: 'ffa' }); B.send({ t: 'join', name: 'B' });
+  B.send({ t: 'pick', char: 'zip' }); B.send({ t: 'ready', on: true });
+  A.conn.onClose(); ok(room.host() === 1, 'if the host leaves, the next player becomes host');
+  B.send({ t: 'start' }); ok(B.errors.includes('needs at least 2 players'), 'a free-for-all needs at least 2 players');
+  C.send({ t: 'join', name: 'C' }); C.send({ t: 'pick', char: 'volt' }); C.send({ t: 'ready', on: true }); B.send({ t: 'start' });
+  ok(room.phase === 'playing' && room.G.teams === 2 && room.teamSeat.join() === '1,2', 'two players can play a free-for-all; side 0 is seat 1');
+  const side = room.G.team, mover = side === 0 ? B : C; botMove(mover);
+  const got = C.inbox.filter((m) => m.t === 'applied');
+  ok(B.desyncs === 0 && C.desyncs === 0 && got.length > 0 && got.every((m) => m.by === side), 'moves reach both, labelled by side (not seat)');
+  const old = player(room, 'old'); old.send({ t: 'create', name: 'x', mode: 'duel' });
+  ok(old.errors.includes('code in use') && room.mode === 'ffa', 'nobody can turn a room in use into another kind');
+}
+
+{ // a 1v1 room is unchanged by any of this
+  const room = new Room('DUEL'); const A = player(room, 'A'); A.send({ t: 'create', name: 'A' });
+  ok(room.mode === 'duel' && room.max === 2, 'create without a mode still makes a 1v1 room');
+  A.send({ t: 'start' }); ok(A.errors.some((e) => /1v1/.test(e)), 'start is only for free-for-alls');
 }
 
 { // join before anyone created the room
