@@ -70,6 +70,8 @@ function portrait(who, cls) {
 }
 function badgeFor(c) {
   if (c.know.fake) return 'FAKE';
+  if (c.consign) return 'ORRIN\'S';
+  if (CT.contractWants(UI.G, c)) return 'WANTED';
   if (c.graded) return null;
   if (c.trim && c.know.loupe) return 'TRIM';
   if (c.know.loupe) { const r = CT.gradeRange(c); return r ? 'G' + r[0] + '–' + r[1] : null; }
@@ -115,6 +117,10 @@ function hint() {
   if (v.role === 'distract') return v.tellsShown >= 2 ? 'Two tells. Going to the back leaves the floor to their "friend". Watch them first, or say no.' : 'They want something from the back. Fetching costs patience, and leaves the floor alone. Read them first.';
   if (v.role === 'browse') return v.showing ? 'They found this on your floor. A fair tag sells; ask the full tag if it\'s already fair.' : 'Nothing on your floor caught their eye.';
   if (v.role === 'sealedc') return 'Sealed collectors pay market for sealed product in good shape. Fetching from the shelves costs patience.';
+  if (v.role === 'contract') return 'A contract gives the next three days a target. Cards you already own count. Only the last one needs a grade 8+ card, and Bijou checks.';
+  if (v.role === 'deliver') return 'Tap a card on Bijou\'s list to hand it over. Each pays half again over market. Missing ones just don\'t get paid.';
+  if (v.role === 'consign') return 'Free vintage on your floor, but it takes case and binder space from your own stock, and if one is stolen or worn, you owe him.';
+  if (v.role === 'consignBack') return 'Anything you liked and didn\'t sell? Buy it now at 90% of market, or let him take it home.';
   if (v.role === 'stranger') return 'Sunglasses indoors, checking the door... but the packs are real, and free is free. This is how a vintage habit starts.';
   if (v.role === 'vintage') return 'Vintage sealed is rare. Displayed (with a riser) it lifts your rating; graded sealed proves it was never opened. Resealed vintage exists.';
   if (v.caught) return v.hard === 'kid' ? 'A kid. A light lesson (call the parent) usually beats security, and people are watching.' : v.hard === 'drifter' ? 'Hard times. Security, let it go, or give him a reason not to steal.' : 'Caught in the act: security pays a bounty and puts them on your board.';
@@ -213,6 +219,7 @@ function morningScreen() {
     <div class="h" style="font-size:14px;margin:6px 0">TODAY'S DEMAND</div>${demandBars(G.demand)}
     <div class="h" style="font-size:14px;margin:12px 0 6px">HOT LIST · +50%</div><div class="row">${hot}${rumor}</div>
     <div style="margin-top:8px;font-size:13px">Rent due at close: <b>${money(D.rent)}</b>${G.dayIdx < G.week.length - 1 ? ' · <b>After Hours</b> event tonight' : ' · <b>Grade Day</b> tonight'}</div>
+    ${spineMorningHTML(G)}
   </div>
   ${G.rating ? `<div class="panel" style="left:40px;top:470px;width:560px;padding:10px 14px"><div class="h" style="font-size:16px">STORE RATING ${starsTxt(G)} <small style="font-family:var(--body)">(${G.rating.n} reviews${G.rating.last ? ', ' + (G.rating.last > 0 ? '+' : '') + G.rating.last + ' yesterday' : ''})</small></div>${(G.rating.reviews || []).map(t => `<div style="font-size:13px;font-style:italic">"${esc(t)}"</div>`).join('')}${G.rating.last != null ? `<div style="font-size:12.5px;margin-top:4px"><b>Why:</b> ${(G.rating.lastWhy || []).length ? G.rating.lastWhy.map(([d, w]) => `<span class="chip" style="background:${d > 0 ? 'var(--lime)' : 'var(--coral)'}">${d > 0 ? '+' : ''}${d.toFixed(2)} ${esc(w)}</span>`).join(' ') : 'nothing big: just how the reviews fell'}</div>` : ''}</div>` : ''}
   ${ev ? `<div class="panel tilt-r" style="left:640px;top:96px;width:600px;padding:14px"><div class="h" style="font-size:22px">OVERNIGHT</div><div class="row" style="margin-top:10px;gap:18px">${ev}</div></div>` : ''}
@@ -221,6 +228,12 @@ function morningScreen() {
   ${dj(hint())}`;
 }
 
+function spineMorningHTML(G) {
+  const K = CT.contractStatus(G), C = G.consign, out = [];
+  if (K && !K.closed) out.push(`<div style="margin-top:8px;font-size:13px"><b>Bijou's list</b> (due day ${CT.CONTRACT_DUE + 1}): ${K.list.map(w => w.got ? '✔ ' + esc(w.name) : w.have ? '🟢 ' + esc(w.name) + ' (have it)' : '⬜ ' + esc(w.name) + (w.grade ? ' (grade ' + w.grade + '+)' : '')).join(' · ')}</div>`);
+  if (C && !C.done) out.push(`<div style="font-size:13px"><b>Orrin's cards:</b> ${C.sold} of 5 sold · back on day ${CT.CONSIGN_BACK + 1}${C.owed ? ' · you owe him ' + money(C.owed) : ''}</div>`);
+  return out.join('');
+}
 function shopScreen() {
   const G = UI.G, v = G.visit;
   let html = `${hud()}${bg('shop')}`;
@@ -417,6 +430,8 @@ function closeScreen() {
     ${next ? `<div style="margin:6px 0">${next.ships.map(s => `<span class="chip" style="background:${SP_COLOR[s]}">${CT.SPECIES[s].name}</span>`).join(' ')}</div>` + demandBars(next.demand) + (next.release && G.pump ? `<div class="chip rumor down" style="margin-top:6px">Wave 3 reprints: ${esc(CT.tmpl(G.pump.t).name)}</div>` : '') + `<div class="h" style="font-size:15px;margin:10px 0 6px">RESTOCK · box of ${CT.BOX.packs} for ${CT.BOX.cost}₵</div>
       <div style="font-size:12px;margin-bottom:6px">Boxes arrive in tomorrow morning's crate. Restock tomorrow's hottest game for a chance at a promo topper.</div>
       ${Object.keys(CT.GAMES).map(g => `<div class="row" style="align-items:center;margin-bottom:6px"><span class="chip" style="background:${GAME_COLOR[g]};flex:1">${CT.GAMES[g].name} · have ${G.packs[g]}</span><button class="btn sm" data-act="restock" data-game="${g}" ${G.cash >= CT.BOX.cost ? '' : 'disabled'}>ORDER BOX</button></div>`).join('')}<div class="row" style="margin-top:6px"><button class="btn cyan" data-act="catalog">📒 CATALOG${G.store.orders.length ? ' (' + G.store.orders.length + ' ordered)' : ''}</button><button class="btn white" data-act="room">BACK ROOM</button></div>` : '<div style="margin:10px 0">No tomorrow: sell-off is over. Grade anything worth slabbing, then end the night.'}
+    ${G.store && G.dayIdx === CT.SHOW_DAY ? `<div class="est" style="margin-top:10px"><b>Regional show tonight.</b> A table is ${money(CT.SHOW_FEE)}: bring up to ${CT.SHOW_MAX} items and the crowd bids on each. Slabs and vintage do best. It replaces tonight's After Hours.
+      <div class="row" style="margin-top:6px"><button class="btn sm pink" data-act="bookShow" ${G.show || G.cash < CT.SHOW_FEE ? 'disabled' : ''}>${G.show ? 'TABLE BOOKED' : 'BOOK A TABLE'}</button></div></div>` : ''}
     <div style="position:absolute;left:14px;right:14px;bottom:14px"><button class="btn big pink" style="width:100%" data-act="endDay">${next ? 'PAY RENT → AFTER HOURS' : 'PAY RENT → GRADE DAY'}</button></div>
   </div>
   ${dj(hint())}`;
@@ -430,9 +445,31 @@ function nightScreen() {
     return `${hud()}${bg('cardnight', .55)}<div class="fe-h" style="top:76px">AFTER HOURS</div><div class="flyers">${posters}</div>
       <button class="btn white" style="position:absolute;right:30px;bottom:92px;z-index:6" data-act="nextMorning">SKIP TONIGHT</button>${dj(hint())}`;
   }
-  const body = { cardnight: nightCardNightHTML, tourney: nightTourneyHTML, auction: nightAuctionHTML, dig: nightDigHTML, swap: nightSwapHTML }[N.pick]();
-  return `${hud()}${bg(N.pick, .3)}<div class="panel tilt-r night" style="left:120px;top:84px;width:1040px;max-height:560px;overflow:auto;padding:18px">${body}
+  const body = { show: nightShowHTML, cardnight: nightCardNightHTML, tourney: nightTourneyHTML, auction: nightAuctionHTML, dig: nightDigHTML, swap: nightSwapHTML }[N.pick]();
+  return `${hud()}${bg(N.pick === 'show' ? 'cardnight' : N.pick, .3)}<div class="panel tilt-r night" style="left:120px;top:84px;width:1040px;max-height:560px;overflow:auto;padding:18px">${body}
     <div class="row" style="margin-top:12px;justify-content:flex-end"><button class="btn ${N.done ? 'big pink' : 'white'}" data-act="nextMorning">${N.done ? 'NEXT MORNING ▶' : 'SKIP TO MORNING'}</button></div></div>${dj(hint())}`;
+}
+function nightShowHTML() {
+  const G = UI.G, S = G.night.show, val = o => o.t ? CT.estimate(G, o).value : CT.goodValue(G, o);
+  const name = o => o.t ? CT.tmpl(o.t).name : CT.GOODS[o.type].name + (o.game ? ' (' + CT.GAMES[o.game].name + ')' : '');
+  // raw cards as cards; slabs and sealed as compact tiles (a full slab is too big for this table)
+  const thumb = (o, a) => { const on = UI.showPick && UI.showPick.indexOf(o.uid) >= 0;
+    if (o.t && !o.graded) return card(o, { size: 'xs', act: a, cls: on ? 'sel' : '' });
+    return `<button class="btn sm ${on ? 'pink' : 'white'}" data-act="${a}" data-uid="${o.uid}" style="width:96px;min-height:72px;white-space:normal;font-size:11px;line-height:1.2">${o.t ? '🏷 ' + esc(CT.GRADERS[o.graded.co].name.split(' ')[0]) + ' ' + o.graded.grade + '<br>' : '📦 '}${esc(name(o))}</button>`; };
+  if (!S.bids) {
+    UI.showPick = UI.showPick || [];
+    const pool = G.stock.filter(c => !c.know.fake).concat(G.goods.filter(o => o.type !== 'repack')).sort((a, b) => val(b) - val(a)).slice(0, 16);
+    return `<div class="h" style="font-size:24px">REGIONAL SHOW · PICK YOUR TABLE</div>
+    <div style="margin:6px 0">Bring up to <b>${CT.SHOW_MAX}</b> items. The crowd bids on each: usually around market, more for slabs and vintage, and some things get no bid. Raw cards can pick up a little wear on the trip. Orrin's cards still split 80/20.</div>
+    <div class="row" style="flex-wrap:wrap">${pool.map(o => `<div style="text-align:center">${thumb(o, 'showPick')}<div style="font-size:11px;font-weight:800">${o.t ? estText(o) : money(val(o))}</div></div>`).join('')}</div>
+    <div class="row" style="margin-top:10px"><button class="btn big pink" data-act="showBring" ${UI.showPick.length ? '' : 'disabled'}>BRING ${UI.showPick.length} TO THE SHOW</button></div>`;
+  }
+  return `<div class="h" style="font-size:24px">REGIONAL SHOW · THE CROWD'S BIDS</div>
+    <div class="row" style="flex-wrap:wrap;margin-top:8px">${S.bids.map(b => { const o = CT.findThing(G, b.uid);
+      if (!o) return b.sold ? '' : '';
+      return `<div style="text-align:center">${thumb(o, 'loupe')}<div style="font-size:11px;font-weight:800">worth ${o.t ? estText(o) : money(val(o))}</div>${b.bid ? `<button class="btn sm lime" data-act="showSell" data-uid="${o.uid}">SELL ${money(b.bid)}</button>` : '<div class="chip">no bid</div>'}</div>`; }).join('')}</div>
+    ${S.bids.some(b => b.sold) ? `<div style="margin-top:8px">Sold ${S.bids.filter(b => b.sold).length} at the show.</div>` : ''}
+    <div style="font-size:12.5px;margin-top:6px">Anything you don't sell comes home with you.</div>`;
 }
 function nightCardNightHTML() {
   const G = UI.G, done = G.events.find(e => e.t === 'cardNight');
@@ -756,8 +793,34 @@ function fakeDecisionHTML(v) {
     <div class="row" style="gap:6px;margin-top:6px"><button class="btn sm" data-act="security">REPORT (SECURITY)</button><button class="btn sm cyan" data-act="inform">INFORM THEM</button></div>
     <div style="font-size:11px">Schemers know it's fake: report them. Victims got burned: tell them, kindly. Reporting a victim costs rep.</div></div>`;
 }
+function wantRow(w) { return `<div class="chip" style="background:${GAME_COLOR[w.game || CT.tmpl(w.t).game]}">${w.got ? '✔ ' : ''}${esc(CT.tmpl(w.t).name)} <small>(${CT.RARITY_NAME[CT.tmpl(w.t).rarity]}${w.grade ? ', grade ' + w.grade + '+' : ''})</small></div>`; }
+function spineDealHTML(v) {
+  const G = UI.G;
+  if (v.role === 'contract') return `<div class="h" style="font-size:20px">BIJOU'S WANT LIST</div>
+    <div>Three cards by <b>day ${CT.CONTRACT_DUE + 1}</b>. Each pays <b>half again over market</b>; all three add a <b>${money(CT.CONTRACT_BONUS)}</b> bonus.</div>
+    <div class="row" style="flex-wrap:wrap;margin:6px 0">${v.list.map(wantRow).join('')}</div>
+    <div class="est">Cards you already own count. Watch the sellers this week: matching cards get a WANTED badge. Taking it and delivering nothing costs a little rep.</div>
+    <div class="row"><button class="btn lime" data-act="accept">TAKE THE CONTRACT</button><button class="btn white" data-act="pass">NO THANKS</button></div>`;
+  if (v.role === 'deliver') { const K = CT.contractStatus(G), open = K.list.filter(w => !w.got);
+    const mine = G.stock.filter(c => !c.consign && !c.know.fake && open.some(w => w.t === c.t));
+    return `<div class="h" style="font-size:20px">BIJOU IS BACK</div>
+    <div class="row" style="flex-wrap:wrap;margin:6px 0">${K.list.map(wantRow).join('')}</div>
+    ${mine.length ? `<div style="font-size:13px">Tap a card to hand it over (${CT.CONTRACT_PAY}× market):</div><div class="row" style="flex-wrap:wrap">${mine.map(c => `<div style="text-align:center">${card(c, { size: 'xs', act: 'deliver' })}<div style="font-size:11px;font-weight:800">${estText(c)}</div></div>`).join('')}</div>` : '<div class="est">None of the cards on the list are in your stock.</div>'}
+    <div class="row"><button class="btn white" data-act="pass">THAT'S ALL I HAVE</button></div>`; }
+  if (v.role === 'consign') return `<div class="h" style="font-size:20px">OLD ORRIN'S COLLECTION</div>
+    <div>Five vintage singles to sell for him. <b>He keeps 80%</b> of each sale, <b>you keep 20%</b>. He's back on <b>day ${CT.CONSIGN_BACK + 1}</b>.</div>
+    <div class="row" style="flex-wrap:wrap;margin:6px 0">${v.lot.map(c => `<div style="text-align:center">${card(c, { size: 'xs' })}<div style="font-size:11px;font-weight:800">min ${money(c.minPrice)}</div></div>`).join('')}</div>
+    <div class="est">They go in your case and counter binder (taking that space), tagged at his minimums. Selling under a minimum comes out of your 20%. Stolen or worn while you hold them: you owe him.</div>
+    <div class="row"><button class="btn lime" data-act="accept">TAKE THEM ON</button><button class="btn white" data-act="pass">NO THANKS</button></div>`;
+  if (v.role === 'consignBack') return `<div class="h" style="font-size:20px">ORRIN'S BACK</div>
+    <div>Sold <b>${v.sold} of 5</b> · his share ${money(v.cut)}${v.owed ? ` · you paid ${money(v.owed)} for lost or worn cards` : ''}${v.sold >= 3 ? ' · <b>rep up</b>' : ''}</div>
+    ${v.unsold.length ? `<div style="font-size:13px;margin-top:6px">The rest go home with him, unless you buy them (90% of market):</div><div class="row" style="flex-wrap:wrap">${v.unsold.map(o => { const c = G.stock.find(x => x.uid === o.uid); return c ? `<div style="text-align:center">${card(c, { size: 'xs' })}<button class="btn sm lime" data-act="buyConsign" data-uid="${c.uid}" ${o.bought || !c.consign || G.cash < o.price ? 'disabled' : ''}>${o.bought || !c.consign ? 'BOUGHT' : 'BUY ' + money(o.price)}</button></div>` : ''; }).join('')}</div>` : ''}
+    <div class="row"><button class="btn white" data-act="accept">GOODBYE, ORRIN</button></div>`;
+  return null;
+}
 function v3DealHTML(v) {
   const G = UI.G, P = CT.PEOPLE[v.who];
+  const sp = spineDealHTML(v); if (sp) return sp;
   if (v.role === 'stranger') return `<div class="h" style="font-size:20px">A STRANGER WITH OLD PACKS</div>
     <div>Three vintage packs, wrappers scuffed and creased. He wants nothing for them.</div>
     <div class="est">Beat-up wrappers sell for little sealed (about ${money(CT.goodValue(G, v.gift[0]))} each), but the cards inside are real and old. Rip them, sell them, or keep some for later. A pack scale (at close) tells heavy packs from light ones.</div>
@@ -837,6 +900,12 @@ const V3_EVENT_TEXT = {
   repackHit: () => '🎉 Someone pulled a hit from your repack!',
   repackScam: () => '⚠ Word is your repacks don\'t match their sign.',
   switched: () => null,
+  contract: () => '📋 You took Bijou\'s contract.',
+  contractDone: e => '🏆 Bijou\'s run is complete: ' + money(e.paid) + ' paid in all.',
+  contractClosed: e => e.paid ? '📋 Bijou paid ' + money(e.paid) + ' for the cards you found.' : '📋 Bijou left with nothing. Rep took a small hit.',
+  consign: e => '🗂 Orrin\'s ' + e.n + ' vintage singles are in your shop' + (e.floor < e.n ? ' (' + (e.n - e.floor) + ' waiting in the inbox: no room on the floor)' : '') + '.',
+  consignSold: e => '🗂 Sold one of Orrin\'s cards for ' + money(e.price) + ': ' + money(e.price - e.cut) + ' is yours.',
+  consignBack: e => '🗂 Orrin took his cards home. ' + e.sold + ' of 5 sold.',
 };
 function v3EventsHTML(evts) { return evts.filter(e => V3_EVENT_TEXT[e.t] && V3_EVENT_TEXT[e.t](e)).map(e => `<div class="chip" style="background:${['crate', 'release', 'grateful', 'board', 'repackHit'].indexOf(e.t) >= 0 ? 'var(--lime)' : 'var(--coral)'}">${esc(V3_EVENT_TEXT[e.t](e))}</div>`).join(''); }
 function roomClick(a, el, uid) {
@@ -976,6 +1045,12 @@ function onClick(e) {
     case 'flaw': { const target = el.dataset.uid || (v && (v.cards.find(c => c.know.loupe && !c.flawUsed && (flawSeen(c) || c.know.fake)) || {}).uid); r = act({ t: 'flaw', uid: target }); UI.sel = null; if (r.ok) UI.react = 'wobble'; break; }
     case 'offer': r = act({ t: 'offer', price: UI.offer }); break;
     case 'accept': r = act({ t: 'accept' }); break;
+    case 'deliver': r = act({ t: 'deliver', uid }); if (r.ok) { sting('deal'); toast('Bijou paid ' + money(r.pay) + (r.done ? ' + the set bonus!' : '')); } break;
+    case 'buyConsign': r = act({ t: 'buyConsign', uid }); if (r.ok) sting('deal'); break;
+    case 'bookShow': r = act({ t: 'bookShow' }); if (r.ok) toast('Table booked for tonight\'s show'); break;
+    case 'showPick': { const p = UI.showPick = UI.showPick || [], i = p.indexOf(uid); if (i >= 0) p.splice(i, 1); else if (p.length < CT.SHOW_MAX) p.push(uid); else toast('Your table fits ' + CT.SHOW_MAX + ' items'); break; }
+    case 'showBring': r = act({ t: 'showBring', uids: UI.showPick }); UI.showPick = null; break;
+    case 'showSell': r = act({ t: 'showSell', uid }); if (r.ok) sting('deal'); break;
     case 'pass': r = act({ t: 'pass' }); break;
     case 'show': r = act({ t: 'show', uid }); UI.offer = 0; break;
     case 'showPacks': r = act({ t: 'showPacks' }); UI.offer = 0; break;

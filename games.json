@@ -15,7 +15,7 @@
       "blurb": "Cyberpunk runner shooter on a house beat: steer your squad through gates, shoot the street clear, melt the boss on the drop. Menu has tester jumps." },
     { "slug": "rogue-shooter", "name": "Rogue Shooter", "kind": "Auto-shooter", "build": "P1", "dir": "rogue-shooter", "file": "rogue-shooter.html",
       "blurb": "Isometric rogue-like auto-shooter: pick a class, collect and evolve weapons, unlock synergies, survive 10 waves and a boss." },
-    { "slug": "card-trader", "name": "Intergalactic Card Trader", "kind": "Card shop sim", "build": "v3.1", "dir": "card-trader", "file": "card-trader.html", "img": true,
+    { "slug": "card-trader", "name": "Intergalactic Card Trader", "kind": "Card shop sim", "build": "v3.2", "dir": "card-trader", "file": "card-trader.html", "img": true,
       "blurb": "Happy space Akihabara: a 10-day run growing a new card shop. Stock the floor and the back room, read cards with your eye and loupe, grade, haggle, rip sealed and vintage packs, and spot thieves and fake sellers to build your star rating. Desktop landscape." },
     { "slug": "lightkeeper", "name": "Lightkeeper", "kind": "Night sea puzzle", "build": "v1", "dir": "lightkeeper", "file": "lightkeeper.html",
       "blurb": "One-thumb lighthouse puzzle: sweep the beam and every boat in your light turns for home, every boat in the dark holds her course. Six nights: reefs, crossings, a current, fog and a storm." },
