@@ -4,8 +4,9 @@
     python3 wormsbound/build-and-test.py           build + engine rule checks + balance sim (200 matches per pairing) + browser test
     python3 wormsbound/build-and-test.py --quick   build + rule checks + sim at 60 matches per pairing (no browser; rougher numbers)
 
-Online 1v1: the room server's rule checks and socket test (server/: npm test), and prototype/test-online.py, where two
-real browser pages play a whole match through the local server. (`npm install` in server/ once; the script does it.)
+Online: the room server's rule checks and socket tests (server/: npm test: a 1v1 and a 6-player free-for-all),
+prototype/test-online.py, where two real browser pages play a whole 1v1 through the local server, and
+prototype/test-online-ffa.py, where six pages play a whole free-for-all. (`npm install` in server/ once; the script does it.)
 
 The browser test (prototype/test.py, Playwright) plays the hotseat build at 1280x720: keyboard walking, a real
 drag-and-release shot, the turn timer, a lob, a whole best-of-3 by bots, feedback and rematch. Then it loads at
@@ -86,6 +87,7 @@ if not quick:
         for width, got in re.findall(r'scrollWidth(\d+) (\d+)', r.stdout):
             if int(got) > int(width): fails.append(f'horizontal scroll at {width}px')
         run('online 1v1 in two browser pages (local server)', [sys.executable, 'test-online.py'], proto)
+        run('online free-for-all in six browser pages (local server)', [sys.executable, 'test-online-ffa.py'], proto)
     except ImportError:
         print('\n!! Playwright missing: pip install playwright && python -m playwright install chromium'); fails.append('playwright')
 

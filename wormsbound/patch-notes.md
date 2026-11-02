@@ -7,7 +7,7 @@ Newest on top. See the repo's CLAUDE.md for how patch notes work.
 ---
 
 ## P1 online · 2026-11-02 · Louiemark (with Claude)
-Online 1v1: play a friend on another computer. The room server is live on Cloudflare (`wss://wormsbound-rooms.louiemark-ambata.workers.dev`) and the game uses it.
+Online 1v1 and an online free-for-all for up to 6 players. The room server is live on Cloudflare (`wss://wormsbound-rooms.louiemark-ambata.workers.dev`) and the game uses it.
 
 ### What's new
 - **ONLINE 1v1** on the title screen. Make a room and read out the 4-letter code, or join with one. Each of you picks a character and presses Ready; then it's a normal best-of-three 1v1, with turn delay, SS and live duds.
@@ -16,11 +16,16 @@ Online 1v1: play a friend on another computer. The room server is live on Cloudf
 - **Dropped connection?** The game reconnects by itself and puts you back in your seat. A player who vanishes has their turn passed after 50 seconds.
 - Rematch from the end screen when both of you ask (R works too).
 - **It's live:** ONLINE 1v1 on the Lab now connects to the room server on Cloudflare, no setup needed.
+- **Online free-for-all, 2 to 6 players.** Title screen → ONLINE → MAKE A FREE-FOR-ALL, and everyone else joins with the code. Pick, press Ready, and whoever made the room presses START. One round a game, last one standing wins; then BACK TO THE ROOM and ready up for the next. Friends can join between games.
+- Two new side colours for players 5 and 6: **Rose** and **Sky**. With 5 or 6 players the health bars at the top get slimmer so all six fit.
+- If someone drops out mid-game, their turns pass after 8 seconds instead of 50, so the others aren't stuck waiting. They can come back and carry on.
 
 ### Next up
 - [x] @Louiemark: deploy it. (Louiemark, Nov 2: deployed to `https://wormsbound-rooms.louiemark-ambata.workers.dev`, `ONLINE_SERVER` set.) Open a **new session** (so it sees `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`) and say "deploy the Wormsbound room server". Steps in `wormsbound/server/README.md`: `npx wrangler@3 deploy`, then put the address in `ONLINE_SERVER` and merge.
 - [ ] @Louiemark: play an online match with a friend on two computers and fill in the feedback form.
 - [ ] Decide whether rooms should be crew-only (behind the Lab's sign-in) or open to anyone with a code.
+- [ ] @Louiemark: play a free-for-all with 3 or more friends on their own computers and fill in the feedback form. Is one round a game right, or should it be best of 3?
+- [ ] Free-for-all ideas not built: fill empty seats with computer players, show placings (who went out when), and a spectator view for people who join mid-game.
 
 ### Watch out
 - [x] **Not deployed:** (Louiemark, Nov 2: deployed and set.) Until `ONLINE_SERVER` is set, ONLINE 1v1 on the Lab says the server isn't set up (on your own machine it uses the local test server). `?server=wss://…` on the build's address overrides it for testing.
@@ -33,6 +38,13 @@ Online 1v1: play a friend on another computer. The room server is live on Cloudf
 - [x] The `CLOUDFLARE_ACCOUNT_ID` in the cloud environment was one character short (31 of 32) at deploy time; the deploy used the full ID read from the API for the token's only account. Louiemark updated it afterwards, but this session couldn't see the new value. Check the next deploy works without the workaround. (Louiemark, Nov 2: fixed in the environment; now the full 32 characters and matches the token's account exactly, checked against the Cloudflare API. Not redeployed to test.)
 - [ ] Deployed with wrangler 3 (it warns it's out of date; wrangler 4 is current). Fine for now; the README still says `wrangler@3`.
 - [ ] Not checked: two real people on two computers or phones over the internet, through the live server.
+- [ ] **Free-for-all needs the server redeployed.** It works once the new `room.js` is on Cloudflare. Until then the live server makes every room a 1v1 (the page copes, but MAKE A FREE-FOR-ALL gives a 1v1 room). Deploy before or with merging; check with `node smoke.js <live address> --ffa 6`.
+- [ ] Free-for-all was tested with six headless pages on one machine (`test-online-ffa.py`) and in-process and socket tests (`npm test`), not with real people. A 6-way game took 39–43 turns in those runs, about 7 per player. With people taking 15–20 s a turn, that's 10–14 minutes; check that it doesn't drag.
+- [ ] Free-for-all health uses the 4-way's × 1.8. A 60-game bot check: median 30 turns in a 6-way (5 per player, same as the 4-way's 5.5); seat wins 7–15 of 60 at × 1.8 (expected 10, noisy). Lower health (× 1.5) made it 26 turns. Not added to `sim.js`'s pass bands.
+- [ ] Six sides spawn about 22 cells apart on the same 160-cell map, so the first shots can reach someone without much aiming. Watch whether the early game feels crowded.
+- [ ] Sides 5 and 6 (Rose, Sky) only appear online; Rose and Ember (orange) are the closest pair of colours. Check with a colour-blind player.
+- [ ] With 5 or 6 sides the HUD hides the character names and round pips, and long player names are cut to fit. Checked at 1280×720 and the lobby at 390 px wide; the in-game HUD with 6 sides wasn't checked on a real phone.
+- [ ] Nobody can join a free-for-all once a game has started; they get "join when it ends". There's no spectating yet.
 - [ ] Cloud sessions don't have Python Playwright: `build-and-test.py` printed "Playwright missing" until `pip install playwright==1.63.0` (matches the preinstalled Chromium, no browser download). After that: ALL GOOD, including the two-page online test.
 
 ## P1 modes · 2026-11-02 · Louiemark (with Claude)

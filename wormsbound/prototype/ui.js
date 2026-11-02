@@ -2,8 +2,8 @@
    Draws the engine (window.WB) on one 1280×720 canvas and turns mouse, touch and keyboard into act() intents.
    The UI never changes the game itself: it only calls WB.act() and steps WB.step() on the clock.
    Two modes: 1 Player (you against 3 computer opponents in a 4-way free-for-all, Easy / Medium / Hard) and
-   2 Players (1v1 on one keyboard), and Online 1v1 (two computers, through the room server in ../server/: the server
-   referees every move and this page replays what it says was played). Each side picks one of five characters (WB.CHARS); best of 3 rounds, with the
+   2 Players (1v1 on one keyboard), and Online (through the room server in ../server/: a 1v1, or a free-for-all for
+   2 to 6 players; the server referees every move and this page replays what it says was played). Each side picks one of five characters (WB.CHARS); best of 3 rounds, with the
    first turn rotating. Turn order follows the engine's turn delay.
    Placeholder art, all drawn in code. */
 (function () {
@@ -23,6 +23,8 @@
     { name: 'Tide', key: 'tide', c: '#22C3B5', c2: '#0E7C7B' },
     { name: 'Plum', key: 'plum', c: '#B57BFF', c2: '#7A4BC9' },
     { name: 'Sun', key: 'sun', c: '#FFD34D', c2: '#C99A1A' },
+    { name: 'Rose', key: 'rose', c: '#FF6FB5', c2: '#C23F86' },   // sides 5 and 6: online free-for-all only
+    { name: 'Sky', key: 'sky', c: '#5AA9FF', c2: '#2C6FC9' },
   ];
   const LEVELS = {
     easy: { name: 'Easy', blurb: 'Shaky aim, few tricks. Good for learning the ropes.' },
@@ -48,7 +50,10 @@
   const nSides = () => (ui.mode === 'solo' ? 4 : 2);
   const isCPU = (t) => ui.mode === 'solo' && t !== 0;
   const online = () => ui.mode === 'online';
-  const roomSeat = (t) => (ui.net && ui.net.room && ui.net.room.seats[t]) || null;
+  // in a match, side t sits in seat teamSeat[t] (free-for-all seats can have gaps); the lobby works in seats
+  const roomSeat = (t) => { const R = ui.net && ui.net.room; if (!R) return null; const ts = R.teamSeat && R.teamSeat.length ? R.teamSeat : null; return R.seats[ts ? ts[t] : t] || null; };
+  const ffaRoom = () => !!(online() && ui.net && ui.net.room && ui.net.room.mode === 'ffa');
+  const needWins = () => (online() && ui.net && ui.net.room && ui.net.room.need) || Math.ceil(BEST_OF / 2);
   // what a side is called: "You" and "Tide CPU" in 1 Player, "Player 1" and "Player 2" in 1v1
   const sideLabel = (t) => ui.mode === 'solo' ? (t === 0 ? 'You' : `${TEAMS[t].name} CPU`) : online() ? (t === ui.you ? 'You' : (roomSeat(t) && roomSeat(t).name) || 'Opponent') : `Player ${t + 1}`;
   const unitName = (u) => sideLabel(u.team);
@@ -300,7 +305,7 @@
   addEventListener('keydown', (e) => {
     if (e.target && /INPUT|TEXTAREA/.test(e.target.tagName)) return;
     const k = e.key;
-    if (ui.screen === 'end' && (k === 'r' || k === 'R')) { if (online()) { if (ui.net) { ui.net.send({ t: 'rematch' }); ui.net.rematchAsked = true; roundOverAgain(); } } else startMatch(); return; }
+    if (ui.screen === 'end' && (k === 'r' || k === 'R')) { if (ffaRoom()) lobbyScreen(); else if (online()) { if (ui.net) { ui.net.send({ t: 'rematch' }); ui.net.rematchAsked = true; roundOverAgain(); } } else startMatch(); return; }
     if (ui.screen === 'level') { if (/^[1-3]$/.test(k)) { ui.level = Object.keys(LEVELS)[+k - 1]; ui.cursor = 2; selectScreen(0); } return; }
     if (ui.screen === 'select') {
       const n = WB.CHAR_IDS.length;
@@ -337,9 +342,9 @@
     const side = (t) => {
       const us = G.units.filter((u) => u.team === t), hp = us.reduce((a, u) => a + Math.max(0, u.hp), 0), max = us.reduce((a, u) => a + u.maxHp, 0);
       const out = !us.some((u) => u.alive), cur = t === G.team && G.phase !== 'over';
-      return `<div class="team ${TEAMS[t].key}${t >= half ? ' r' : ''}${n > 2 ? ' sm' : ''}${out ? ' out' : ''}${cur ? ' cur' : ''}"><div><div class="nm">${esc(sideLabel(t))} <span class="cn">· ${esc(charName(t))}</span></div><div class="bar"><i style="width:${(100 * hp / max).toFixed(1)}%"></i></div></div>
+      return `<div class="team ${TEAMS[t].key}${t >= half ? ' r' : ''}${n > 2 ? ' sm' : ''}${n > 4 ? ' xs' : ''}${out ? ' out' : ''}${cur ? ' cur' : ''}"><div><div class="nm">${esc(sideLabel(t))} <span class="cn">· ${esc(charName(t))}</span></div><div class="bar"><i style="width:${(100 * hp / max).toFixed(1)}%"></i></div></div>
         <div class="ssm${WB.ssReady(G, t) ? ' on' : ''}" title="SS charge: ready every ${WB.SS_CHARGE} turns"><span>SS</span>${Array.from({ length: WB.SS_CHARGE }, (_, i) => `<b class="${G.ss[t] > i ? 'f' : ''}"></b>`).join('')}</div>
-        <div class="pips" title="rounds won">${Array.from({ length: Math.ceil(BEST_OF / 2) }, (_, i) => `<b class="${ui.wins[t] > i ? 'on' : ''}"></b>`).join('')}</div></div>`;
+        <div class="pips" title="rounds won">${Array.from({ length: needWins() }, (_, i) => `<b class="${ui.wins[t] > i ? 'on' : ''}"></b>`).join('')}</div></div>`;
     };
     const w = G.wind, arrows = Math.round(Math.abs(w) / WB.WIND_MAX * 4);
     const windTxt = Math.abs(w) < 0.2 ? 'calm' : `${w < 0 ? '◀'.repeat(Math.max(1, arrows)) : ''} ${Math.abs(w).toFixed(1)} ${w > 0 ? '▶'.repeat(Math.max(1, arrows)) : ''}`;
@@ -408,7 +413,7 @@
       <p>Pick a character, read the wind, blast the ground, and throw their own duds back at them. Best of three.</p>${HOW}
       <div class="row"><button class="btn fire" type="button" data-act="mode" data-mode="solo">1 PLAYER<small style="display:block;font-family:var(--body);font-size:12px">you vs 3 computers</small></button>
       <button class="btn teal" type="button" data-act="mode" data-mode="duel">2 PLAYERS<small style="display:block;font-family:var(--body);font-size:12px">1v1 on one keyboard</small></button>
-      <button class="btn gold" type="button" data-act="online">ONLINE 1v1<small style="display:block;font-family:var(--body);font-size:12px">play a friend anywhere</small></button></div>`);
+      <button class="btn gold" type="button" data-act="online">ONLINE<small style="display:block;font-family:var(--body);font-size:12px">1v1 or up to 6 players</small></button></div>`);
   }
   function levelScreen() {
     ui.screen = 'level'; ui.G = null; renderHUD(); renderCtl(); coachLine();
@@ -467,20 +472,21 @@
   }
   function roundOverShow() {
     const G = ui.G, w = G.winner;
-    const need = Math.ceil(BEST_OF / 2);
-    const done = ui.wins.some((x) => x >= need);
+    const need = needWins(), ffa = ffaRoom();
+    const done = ffa || ui.wins.some((x) => x >= need);
     ui.screen = done ? 'end' : 'round'; renderCtl(); coachLine(); renderHUD();
     if (done && ui.lastWinSound !== ui.round + '/' + G.seed) { ui.lastWinSound = ui.round + '/' + G.seed; SFX.win(); }
     const you = (ui.mode === 'solo' || online()) && w === (online() ? ui.you : 0);
-    const head = w < 0 ? 'Draw!' : you ? (done ? 'You win the match!' : `You take round ${ui.round}!`) : `${sideLabel(w)} ${done ? 'wins the match!' : `takes round ${ui.round}`}`;
+    const head = w < 0 ? 'Draw!' : you ? (done ? (ffa ? 'You win!' : 'You win the match!') : `You take round ${ui.round}!`) : `${sideLabel(w)} ${done ? (ffa ? 'wins!' : 'wins the match!') : `takes round ${ui.round}`}`;
     const col = w < 0 ? '#FFF3E0' : TEAMS[w].c;
     const st = G.stats;
-    ui.endHTML = `<div class="tag">${done ? 'Match over' : `Round ${ui.round} of ${BEST_OF}`}${ui.tester ? ' · TESTER' : ''}</div><h2 style="color:${col}">${esc(head)}</h2>${ui.mode === 'solo' ? `<p style="margin:0">vs three ${LEVELS[ui.level].name} computers</p>` : ''}
-      <div class="score">${ui.wins.map((x, t) => `<span style="color:${TEAMS[t].c}" title="${esc(sideLabel(t))} · ${esc(charName(t))}">${x}</span>`).join(' – ')}</div>
-      <p style="margin:0;font-size:15px">${ui.wins.map((x, t) => `<b style="color:${TEAMS[t].c}">${esc(sideLabel(t))}</b> ${esc(charName(t))}`).join(' · ')}</p>
-      <p>${done ? 'Last round: ' : ''}${G.turn} turns · ${st.shots} shots · ${st.lobs} lobs · ${st.dudBlasts} dud blasts${st.chains ? ` · ${st.chains} chain reaction${st.chains > 1 ? 's' : ''}` : ''}${st.drowned ? ` · ${st.drowned} splashed out` : ''}</p>
+    ui.endHTML = `<div class="tag">${ffa ? `${G.teams}-player free-for-all` : done ? 'Match over' : `Round ${ui.round} of ${BEST_OF}`}${ui.tester ? ' · TESTER' : ''}</div><h2 style="color:${col}">${esc(head)}</h2>${ui.mode === 'solo' ? `<p style="margin:0">vs three ${LEVELS[ui.level].name} computers</p>` : ''}
+      ${ffa ? '' : `<div class="score">`}${ffa ? '' : ui.wins.map((x, t) => `<span style="color:${TEAMS[t].c}" title="${esc(sideLabel(t))} · ${esc(charName(t))}">${x}</span>`).join(' – ')}${ffa ? '' : '</div>'}
+      <p style="margin:0;font-size:15px">${ui.wins.map((x, t) => `<b style="color:${TEAMS[t].c}${ffa && t !== w ? ';opacity:.6' : ''}">${esc(sideLabel(t))}</b> ${esc(charName(t))}`).join(' · ')}</p>
+      <p>${done && !ffa ? 'Last round: ' : ''}${G.turn} turns · ${st.shots} shots · ${st.lobs} lobs · ${st.dudBlasts} dud blasts${st.chains ? ` · ${st.chains} chain reaction${st.chains > 1 ? 's' : ''}` : ''}${st.drowned ? ` · ${st.drowned} splashed out` : ''}</p>
       <div class="row">${done
-        ? online() ? `<button class="btn fire" type="button" data-act="rematch">${ui.net && ui.net.rematchAsked ? 'WAITING FOR THEM…' : 'REMATCH'}</button><button class="btn teal" type="button" data-act="feedback">Give feedback</button><button class="btn ghost" type="button" data-act="leave">Leave</button>`
+        ? ffa ? `<button class="btn fire" type="button" data-act="olobby">BACK TO THE ROOM (R)</button><button class="btn teal" type="button" data-act="feedback">Give feedback</button><button class="btn ghost" type="button" data-act="leave">Leave</button>`
+        : online() ? `<button class="btn fire" type="button" data-act="rematch">${ui.net && ui.net.rematchAsked ? 'WAITING FOR THEM…' : 'REMATCH'}</button><button class="btn teal" type="button" data-act="feedback">Give feedback</button><button class="btn ghost" type="button" data-act="leave">Leave</button>`
         : `<button class="btn fire" type="button" data-act="rematch">REMATCH (R)</button><button class="btn gold" type="button" data-act="pickagain">New characters</button><button class="btn teal" type="button" data-act="feedback">Give feedback</button><button class="btn ghost" type="button" data-act="quit">Title</button>`
         : `<button class="btn fire" type="button" data-act="next">${online() && ui.net && ui.net.nextAsked ? 'WAITING FOR THEM…' : w < 0 ? 'REPLAY ROUND' : 'NEXT ROUND'}</button>`}</div>`;
     show(ui.endHTML);
@@ -533,16 +539,16 @@
   function onlineScreen(msg) {
     ui.screen = 'online'; ui.G = null; renderHUD(); renderCtl(); coachLine();
     const srv = serverURL();
-    show(`<div class="tag">Online 1v1 · beta</div><h2>Play a friend online</h2>
-      <p>One of you makes a room and reads out the 4-letter code; the other joins with it.</p>
+    show(`<div class="tag">Online · beta</div><h2>Play friends online</h2>
+      <p>One of you makes a room and reads out the 4-letter code; everyone else joins with it.</p>
       <div class="fq"><label for="oName">Your name</label><input id="oName" maxlength="16" value="${esc(lsGet('wb-name') || '')}" placeholder="Player"></div>
-      <div class="row"><button class="btn fire" type="button" data-act="ocreate" ${srv ? '' : 'disabled'}>MAKE A ROOM</button></div>
+      <div class="row"><button class="btn fire" type="button" data-act="ocreate" ${srv ? '' : 'disabled'}>MAKE A 1v1 ROOM</button><button class="btn gold" type="button" data-act="ocreateffa" ${srv ? '' : 'disabled'}>MAKE A FREE-FOR-ALL<small style="display:block;font-family:var(--body);font-size:12px">2 to 6 players</small></button></div>
       <div class="fq" style="display:flex;gap:10px;align-items:end"><div style="flex:1"><label for="oCode">Or join with a code</label><input id="oCode" maxlength="4" style="text-transform:uppercase;letter-spacing:6px;font-size:22px" placeholder="ABCD"></div><button class="btn teal" type="button" data-act="ojoin" ${srv ? '' : 'disabled'}>JOIN</button></div>
       ${srv ? `<p class="keys">Server: ${esc(srv)}</p>` : '<p style="color:#FF4D5E">The online server isn\'t set up yet. (Crew: see wormsbound/server/README.md.)</p>'}
       ${msg ? `<p style="color:#FF4D5E">${esc(msg)}</p>` : ''}
       <div class="row"><button class="btn ghost sm" type="button" data-act="quit">Back</button></div>`);
   }
-  async function netStart(kind) {
+  async function netStart(kind, mode) {
     const name = ($('#oName') && $('#oName').value.trim()) || 'Player'; lsSet('wb-name', name);
     const srv = serverURL(); if (!srv) return onlineScreen('No server address.');
     let code = (($('#oCode') && $('#oCode').value) || '').trim().toUpperCase();
@@ -550,12 +556,12 @@
       try { const r = await fetch(srv.replace(/^ws/, 'http') + '/new'); code = (await r.json()).code; }
       catch (e) { return onlineScreen("Couldn't reach the online server. Is it running?"); }
     } else if (!/^[A-Z]{4}$/.test(code)) return onlineScreen('Room codes are 4 letters.');
-    netOpen(srv, code, kind === 'create' ? { t: 'create', name } : { t: 'join', name });
+    netOpen(srv, code, kind === 'create' ? { t: 'create', name, mode: mode === 'ffa' ? 'ffa' : 'duel' } : { t: 'join', name });
   }
   function netOpen(srv, code, hello) {
     netLeave(true);
     ui.mode = 'online';
-    const net = ui.net = { srv, code, queue: [], room: null, ws: null, token: null, waiting: false, retries: 0, closed: false, expect: null };
+    const net = ui.net = { srv, code, hello, queue: [], room: null, ws: null, token: null, waiting: false, retries: 0, closed: false, expect: null };
     const connect = () => {
       let ws; try { ws = new WebSocket(`${srv}/room/${code}`); } catch (e) { return onlineScreen("Couldn't open a connection to the server."); }
       net.ws = ws;
@@ -605,8 +611,9 @@
   }
   function onNet(m) {
     const net = ui.net; if (!net) return;
-    if (m.t === 'joined') { ui.you = m.seat; net.token = m.token; return; }
-    if (m.t === 'error') { if (/code in use/.test(m.error)) return netStart('create'); banner('Server', m.error); if (net.waiting) net.waiting = false; renderCtl(); return; }
+    if (m.t === 'joined') { ui.seat = ui.you = m.seat; net.token = m.token; return; }
+    if (m.t === 'error') { if (/code in use/.test(m.error)) return netStart('create', net.hello && net.hello.mode); banner('Server', m.error); if (net.waiting) net.waiting = false; renderCtl(); return; }
+    if (m.t === 'room' || m.t === 'state' || m.t === 'round') sideFrom(m.teamSeat);
     if (m.t === 'room') { net.room = m; net.wins = m.wins; if (ui.screen === 'lobby') lobbyScreen(); if (ui.screen === 'game') renderHUD(); if (m.phase === 'matchover' && ui.screen === 'end') roundOverAgain(); return; }
     if (m.t === 'state') { net.room = m; if (m.G) { onlineRound(m.G, m.wins, m.round); } else lobbyScreen(); return; }
     if (m.t === 'round') { net.nextAsked = false; net.rematchAsked = false; onlineRound(WB.newGame(m.seed, m.opts), m.wins, m.round); return; }
@@ -614,6 +621,8 @@
     if (m.t === 'aim') { ui.remoteAim = { angle: m.angle, power: m.power, at: performance.now() }; return; }
     if (m.t === 'roundover') { net.wins = m.wins; if (ui.screen === 'round' || ui.screen === 'end') { ui.wins = m.wins.slice(); roundOverShow(); } return; }
   }
+  // which side of the game this page plays: the side sitting in our seat
+  function sideFrom(teamSeat) { if (!teamSeat || !teamSeat.length) return; const i = teamSeat.indexOf(ui.seat); if (i >= 0) ui.you = i; }
   function onlineRound(G, wins, round) {
     const net = ui.net; net.queue = []; net.expect = null; net.waiting = false;
     ui.G = G; ui.wins = wins.slice(); ui.round = round; ui.picks = G.chars.slice();
@@ -623,15 +632,20 @@
   }
   function lobbyScreen(status) {
     ui.screen = 'lobby'; renderCtl(); coachLine();
-    const net = ui.net, R = net && net.room, me = R && R.seats[ui.you], them = R && R.seats[1 - ui.you];
-    const seat = (s, t) => s ? `<div class="toggle-row"><span><b style="color:${TEAMS[t].c}">${esc(t === ui.you ? 'You' : s.name)}</b>${s.char ? ` · ${esc(WB.CHARS[s.char].name)}` : ' · picking…'}${s.connected ? '' : ' <span style="color:#FF4D5E">(disconnected)</span>'}</span><span>${s.ready ? '<b style="color:#7BE07A">READY</b>' : 'not ready'}</span></div>`
-      : `<div class="toggle-row"><span style="color:var(--muted)">Waiting for a friend to join with the code…</span></div>`;
-    const picks = WB.CHAR_IDS.map((id) => `<button class="btn sm ${me && me.char === id ? 'gold' : 'ghost'}" type="button" data-act="opick" data-char="${id}" title="${esc(WB.CHARS[id].blurb)}"><img src="${portrait(id, ui.you)}" alt="" width="54" height="40" style="border-radius:8px">${esc(WB.CHARS[id].name)}</button>`).join('');
-    show(`<div class="tag">Online 1v1 · room</div><h2 style="font-size:64px;letter-spacing:10px;color:var(--gold)">${esc(net ? net.code : '····')}</h2>
-      <p>${status ? esc(status) : 'Tell your friend this code. Pick a character, then press Ready.'}</p>
-      ${R ? seat(R.seats[ui.you], ui.you) + seat(them, 1 - ui.you) : ''}
+    const net = ui.net, R = net && net.room, me = R && R.seats[ui.seat], ffa = !!(R && R.mode === 'ffa');
+    const seat = (s, j) => `<div class="toggle-row"><span><b style="color:${TEAMS[j].c}">${esc(j === ui.seat ? 'You' : s.name)}</b>${j === (R && R.host) && ffa ? ' <span class="keys">(host)</span>' : ''}${s.char ? ` · ${esc(WB.CHARS[s.char].name)}` : ' · picking…'}${s.connected ? '' : ' <span style="color:#FF4D5E">(disconnected)</span>'}</span><span>${s.ready ? '<b style="color:#7BE07A">READY</b>' : 'not ready'}</span></div>`;
+    const seated = R ? R.seats.map((s, j) => (s ? seat(s, j) : '')).join('') : '';
+    const here = R ? R.seats.filter((s) => s && s.connected) : [];
+    const waiting = !R ? '' : ffa ? (here.length < R.max ? `<div class="toggle-row"><span style="color:var(--muted)">${here.length} of ${R.max} here · more can join with the code</span></div>` : '')
+      : R.seats.filter(Boolean).length < 2 ? `<div class="toggle-row"><span style="color:var(--muted)">Waiting for a friend to join with the code…</span></div>` : '';
+    const allReady = here.length >= 2 && here.every((s) => s.char && s.ready), host = R && R.host === ui.seat, hostSeat = R && R.seats[R.host];
+    const picks = WB.CHAR_IDS.map((id) => `<button class="btn sm ${me && me.char === id ? 'gold' : 'ghost'}" type="button" data-act="opick" data-char="${id}" title="${esc(WB.CHARS[id].blurb)}"><img src="${portrait(id, Math.max(0, ui.seat || 0))}" alt="" width="54" height="40" style="border-radius:8px">${esc(WB.CHARS[id].name)}</button>`).join('');
+    const tip = status || (ffa ? (host ? 'Tell your friends this code. When everyone has picked and is ready, press Start.' : `Pick a character and press Ready. ${hostSeat ? esc(hostSeat.name) : 'The host'} starts the game.`) : 'Tell your friend this code. Pick a character, then press Ready.');
+    show(`<div class="tag">${ffa ? 'Online free-for-all · room' : 'Online 1v1 · room'}</div><h2 style="font-size:64px;letter-spacing:10px;color:var(--gold)">${esc(net ? net.code : '····')}</h2>
+      <p>${esc(tip)}</p>
+      ${seated}${waiting}
       <div class="row" style="flex-wrap:wrap">${picks}</div>
-      <div class="row"><button class="btn fire" type="button" data-act="oready" ${me && me.char ? '' : 'disabled'}>${me && me.ready ? 'NOT READY' : 'READY'}</button><button class="btn ghost sm" type="button" data-act="leave">Leave</button></div>`);
+      <div class="row"><button class="btn ${ffa ? 'teal' : 'fire'}" type="button" data-act="oready" ${me && me.char ? '' : 'disabled'}>${me && me.ready ? 'NOT READY' : 'READY'}</button>${ffa && host ? `<button class="btn fire" type="button" data-act="ostart" ${allReady ? '' : 'disabled'}>START${here.length >= 2 ? ` (${here.length} PLAYERS)` : ''}</button>` : ''}<button class="btn ghost sm" type="button" data-act="leave">Leave</button></div>`);
   }
   function roundOverAgain() { if (ui.screen === 'round' || ui.screen === 'end') { const w = ui.wins.slice(); ui.endHTML = null; ui.wins = w; roundOverShow(); } }
 
@@ -671,10 +685,13 @@
       case 'pickback': if (ui.mode === 'duel' && ui.pickTeam === 1) { ui.picks[0] = null; selectScreen(0); } else if (ui.mode === 'solo') levelScreen(); else titleScreen(); break;
       case 'next': if (online()) { ui.net.send({ t: 'next' }); ui.net.nextAsked = true; roundOverAgain(); } else { ui.round += ui.G.winner >= 0 ? 1 : 0; startRound(); } break;
       case 'online': onlineScreen(); break;
-      case 'ocreate': netStart('create'); break;
+      case 'ocreate': netStart('create', 'duel'); break;
+      case 'ocreateffa': netStart('create', 'ffa'); break;
+      case 'ostart': if (ui.net) ui.net.send({ t: 'start' }); break;
+      case 'olobby': if (ui.net) lobbyScreen(); break;
       case 'ojoin': netStart('join'); break;
       case 'opick': if (ui.net) ui.net.send({ t: 'pick', char: b.dataset.char }); break;
-      case 'oready': if (ui.net) { const me = roomSeat(ui.you); ui.net.send({ t: 'ready', on: !(me && me.ready) }); } break;
+      case 'oready': if (ui.net) { const R = ui.net.room, me = R && R.seats[ui.seat]; ui.net.send({ t: 'ready', on: !(me && me.ready) }); } break;
       case 'leave': netLeave(); titleScreen(); break;
       case 'fire': doFire(); break;
       case 'lob': toggleLob(); break;

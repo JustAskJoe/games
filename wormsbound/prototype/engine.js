@@ -31,6 +31,7 @@
   const VMAX = 60;              // launch speed at full power, cells / s
   const WIND_MAX = 7;           // strongest wind push, cells / s² sideways
   const UNIT_R = 1.5;           // unit body radius, cells
+  const MAX_TEAMS = 6;          // online free-for-all takes up to 6 players
   const UNITS_PER_TEAM = 1;     // default side size: 1v1 and the 4-way free-for-all both use one unit a side
   const HP = 100;               // a "standard" unit; characters scale from it
   const MOVE_STEPS = 14;        // default steps a turn (characters override)
@@ -133,7 +134,7 @@
   // opts.teams: 2 (1v1) or 4 (free-for-all). opts.size: units per side (default 1). opts.first: which side shoots first.
   // opts.chars: each side's character id (default Volt).
   function newGame(seed, opts = {}) {
-    const teams = opts.teams === 4 ? 4 : opts.teams === 3 ? 3 : 2, size = Math.max(1, Math.min(2, opts.size || UNITS_PER_TEAM));
+    const teams = Math.max(2, Math.min(MAX_TEAMS, opts.teams | 0)), size = Math.max(1, Math.min(2, opts.size || UNITS_PER_TEAM));
     const chars = Array.from({ length: teams }, (_, t) => (opts.chars && CHARS[opts.chars[t]]) ? opts.chars[t] : 'volt');
     const G = {
       v: 2, seed: seed >>> 0, _s: (seed >>> 0) || 1, _id: 0,
