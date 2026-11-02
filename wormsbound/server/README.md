@@ -10,23 +10,30 @@ The server for **Online 1v1** (title screen → ONLINE 1v1). One player makes a 
 | `node-server.js` | The local server for testing (`npm start` → `ws://localhost:8431`). |
 | `worker.js` + `wrangler.toml` | The same room on **Cloudflare**: a Worker plus one Durable Object per room code. |
 | `test.js` | Room rules with two in-process players (25 checks: a full best-of-3 with matching checksums, cheating attempts, rejoin, the clock, rematch). |
-| `smoke.js` | Two real WebSocket players play a whole match against the local server. |
+| `smoke.js` | Two real WebSocket players play a whole match against the local server, or a deployed one: `node smoke.js https://…workers.dev`. |
 | `../prototype/test-online.py` | Two real browser pages play a whole match through the local server (run by `../build-and-test.py`). |
 
 ## Play it on your own machine
 ```bash
 cd wormsbound/server && npm install && npm start
 ```
-Then open `wormsbound/builds/wormsbound.html` in two browser windows. On a file or localhost page the game uses `ws://localhost:8431` by itself. Choose ONLINE 1v1, make a room in one window and join with the code in the other.
+Then open `wormsbound/builds/wormsbound.html?server=ws://localhost:8431` in two browser windows (without `?server=` the game uses the live server below). Choose ONLINE 1v1, make a room in one window and join with the code in the other.
 
-## Deploy to Cloudflare
+## Live server
+**Deployed 2026-11-02:** `https://wormsbound-rooms.louiemark-ambata.workers.dev` (WebSockets: `wss://wormsbound-rooms.louiemark-ambata.workers.dev/room/ABCD`). The game's `ONLINE_SERVER` points here.
+
+Check it any time: `curl https://wormsbound-rooms.louiemark-ambata.workers.dev/new` returns a code, and `node smoke.js https://wormsbound-rooms.louiemark-ambata.workers.dev` plays a whole match on it with two WebSocket clients (each live check leaves one finished room behind).
+
+## Deploy to Cloudflare (again)
 Needs, in the environment (never in the repo or chat): `CLOUDFLARE_API_TOKEN` (a token with **Account → Workers Scripts → Edit**, for one account only) and `CLOUDFLARE_ACCOUNT_ID`.
 ```bash
 cd wormsbound/server && npx wrangler@3 deploy
 ```
 Wrangler prints the address, like `https://wormsbound-rooms.<subdomain>.workers.dev`. Then:
 1. Put it in `ONLINE_SERVER` at the top of `../prototype/ui.js` as `wss://wormsbound-rooms.<subdomain>.workers.dev`, rebuild, and open a pull request. Until then anyone can still try it with `?server=wss://…` on the build's address.
-2. Check: `curl https://wormsbound-rooms.<subdomain>.workers.dev/new` returns a code.
+2. Check: `curl https://wormsbound-rooms.<subdomain>.workers.dev/new` returns a code, then `node smoke.js https://wormsbound-rooms.<subdomain>.workers.dev`.
+
+First deploy on a new Cloudflare account: the account needs a `workers.dev` subdomain first (error 10063). Open **Workers & Pages** in the dashboard once to create it. `CLOUDFLARE_ACCOUNT_ID` must be the full 32 characters (error 7003 means it's wrong).
 
 **Hosting today:** Louiemark's own Cloudflare account (free plan), kept apart from the studio's Studio HQ / Forge / Lab on Hunter's account. See `ARCHITECTURE.md`.
 

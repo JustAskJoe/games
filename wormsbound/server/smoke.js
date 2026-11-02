@@ -1,11 +1,14 @@
-// node smoke.js: two real WebSocket clients play a whole online match against the local server.
+// node smoke.js [https://live-host]: two real WebSocket clients play a whole online match against the local
+// server, or against a deployed one when an address is given (e.g. https://wormsbound-rooms.<sub>.workers.dev).
 // © 2026 justaskjoe. All rights reserved.
 'use strict';
 const WebSocket = require('ws');
 const WB = require('../prototype/engine.js');
 const { serve } = require('./node-server.js');
 
-const s = serve(0), port = s.server.address().port, url = `ws://localhost:${port}`;
+const LIVE = (process.argv[2] || '').replace(/\/+$/, '');
+const s = LIVE ? { close: async () => {} } : serve(0);
+const http = LIVE || `http://localhost:${s.server.address().port}`, url = http.replace(/^http/, 'ws');
 const fail = (m) => { console.log('FAIL', m); s.close().then(() => process.exit(1)); };
 setTimeout(() => fail('timed out'), 120000).unref();
 
@@ -40,6 +43,6 @@ function finish() {
   console.log('smoke test passed'); s.close().then(() => process.exit(0));
 }
 (async () => {
-  const r = await fetch(`http://localhost:${port}/new`); code = (await r.json()).code;
+  const r = await fetch(`${http}/new`); code = (await r.json()).code;
   A = await client('Ana', true); B = await client('Ben', false);
 })();

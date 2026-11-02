@@ -833,9 +833,9 @@ button { font: inherit; color: inherit; }
     medium: { name: 'Medium', blurb: 'Decent aim. Uses duds, lobs them back and saves its SS.' },
     hard: { name: 'Hard', blurb: 'Sharp aim and every trick. Beating three of them is a real win.' },
   };
-  // Online 1v1: the room server's address. ?server=wss://… in the page address overrides it; on your own machine
-  // (file:// or localhost) it defaults to the local test server (cd wormsbound/server && npm start).
-  const ONLINE_SERVER = '';
+  // Online 1v1: the live room server (Louiemark's Cloudflare, deployed 2026-11-02). ?server=wss://… overrides it; on your own machine
+  // it takes priority over the local test server, so add ?server=ws://localhost:8431 to test against `npm start` in wormsbound/server.
+  const ONLINE_SERVER = 'wss://wormsbound-rooms.louiemark-ambata.workers.dev';
   const FONT = (px) => `${px}px "Lilita One", "Arial Black", system-ui, sans-serif`;
 
   const cv = $('#map'), ctx = cv.getContext('2d');
