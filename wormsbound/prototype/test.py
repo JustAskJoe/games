@@ -29,7 +29,13 @@ with sync_playwright() as p:
     pg.add_init_script('window.__WB_SEED = 20261102;')
     pg.goto(build.as_uri()); pg.wait_for_timeout(700)
     pg.screenshot(path=str(shots / 'd1_title.png'))
-    pg.click('[data-act=start]'); pg.wait_for_timeout(1700)
+    pg.click('[data-act=start]'); pg.wait_for_timeout(300)
+    assert pg.evaluate('() => WBUI.ui.screen') == 'select', 'START should open character select'
+    pg.screenshot(path=str(shots / 'd1b_select_ember.png'))
+    pg.keyboard.press('1'); pg.wait_for_timeout(200)          # Ember picks Brick with the keyboard
+    pg.screenshot(path=str(shots / 'd1c_select_tide.png'))
+    pg.click('[data-char=volt]'); pg.wait_for_timeout(1700)    # Tide picks Volt with the mouse
+    chars = pg.evaluate('() => WBUI.G.chars'); print('picked', chars); assert chars == ['brick', 'volt'], chars
     pg.screenshot(path=str(shots / 'd2_turn1.png'))
     st = pg.evaluate("() => ({ screen: WBUI.ui.screen, phase: WBUI.G.phase, team: WBUI.G.team, round: WBUI.ui.round })")
     assert st == {'screen': 'game', 'phase': 'aim', 'team': 0, 'round': 1}, st
@@ -54,7 +60,10 @@ with sync_playwright() as p:
 
     # weapon picker and lob button state
     pg.click('[data-w=dud]'); assert pg.evaluate('() => WBUI.ui.weapon') == 'dud'
-    pg.keyboard.press('1'); assert pg.evaluate('() => WBUI.ui.weapon') == 'shell'
+    pg.keyboard.press('2'); assert pg.evaluate('() => WBUI.ui.weapon') == 'shot2'
+    names = pg.eval_on_selector_all('[data-w]', 'els => els.map(e => e.innerText.split("\\n")[0])'); print('Tide (Volt) shots:', names)
+    assert names[:2] == ['Arc Ball', 'Thunderstrike'], names
+    pg.keyboard.press('1'); assert pg.evaluate('() => WBUI.ui.weapon') == 'shot1'
 
     # menu: Esc opens it, the timer toggles, resume closes it
     pg.keyboard.press('Escape'); pg.wait_for_timeout(150); pg.screenshot(path=str(shots / 'd6_menu.png'))
@@ -96,8 +105,17 @@ with sync_playwright() as p:
     pg.screenshot(path=str(shots / 'd10_feedback.png')); print('feedback saved:', pg.evaluate('() => WBUI.ui.fb.saved'))
     assert pg.evaluate('() => WBUI.ui.fb.saved') in (True, 'copy')
     pg.click('[data-act=fbback]'); pg.keyboard.press('r'); pg.wait_for_timeout(300)
-    re = pg.evaluate("() => ({ screen: WBUI.ui.screen, wins: WBUI.ui.wins, round: WBUI.ui.round, tester: WBUI.ui.tester })"); print('rematch:', re)
-    assert re == {'screen': 'game', 'wins': [0, 0], 'round': 1, 'tester': False}, re
+    re = pg.evaluate("() => ({ screen: WBUI.ui.screen, wins: WBUI.ui.wins, round: WBUI.ui.round, tester: WBUI.ui.tester, chars: WBUI.G.chars })"); print('rematch:', re)
+    assert re == {'screen': 'game', 'wins': [0, 0], 'round': 1, 'tester': False, 'chars': ['brick', 'volt']}, re
+    # every character can be picked and fires its Shot 2 in a real game
+    for c in ['zip', 'digger', 'gale']:
+        pg.evaluate(f"() => {{ WBUI.ui.picks = ['{c}', 'brick']; WBUI.startMatch(); WBUI.ui.fast = true; }}"); pg.wait_for_timeout(150)
+        pg.keyboard.press('2'); pg.evaluate('() => WBUI.aim(55, 0.7)'); pg.keyboard.press('Space'); pg.wait_for_timeout(250)
+        if c == 'zip': pg.screenshot(path=str(shots / 'd11_zip_double.png'))
+        wait_aim(pg); used = pg.evaluate('() => WBUI.G.stats.shot2'); print(c, 'Shot 2 fired:', used); assert used == 1, c
+    pg.evaluate("() => { WBUI.ui.fast = false; }")
+    pg.keyboard.press('Escape'); pg.click('[data-act=quit]'); pg.click('[data-act=start]')
+    assert pg.evaluate('() => WBUI.ui.screen') == 'select'
     print('scrollWidth1280', pg.evaluate('document.documentElement.scrollWidth'))
     pg.close()
 
@@ -105,7 +123,8 @@ with sync_playwright() as p:
     for w, h in ((390, 844), (320, 640), (844, 390)):
         q = b.new_page(viewport={'width': w, 'height': h}, has_touch=True); watch(q)
         q.add_init_script('window.__WB_SEED = 7;'); q.goto(build.as_uri()); q.wait_for_timeout(500)
-        q.click('[data-act=start]'); q.wait_for_timeout(400)
+        q.click('[data-act=start]'); q.wait_for_timeout(200); q.screenshot(path=str(shots / f'p_{w}x{h}_select.png'))
+        q.click('[data-char=gale]'); q.click('[data-char=digger]'); q.wait_for_timeout(400)
         q.evaluate('() => { WBUI.aim(60, 0.7); WBUI.doFire(); WBUI.ui.fast = true; }'); wait_aim(q)
         q.screenshot(path=str(shots / f'p_{w}x{h}.png'))
         sw = q.evaluate('document.documentElement.scrollWidth'); print(f'scrollWidth{w} {sw}')

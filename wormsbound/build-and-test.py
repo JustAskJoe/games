@@ -15,6 +15,8 @@ Pass band (PROPOSED Nov 2, 2026: Louiemark to confirm; numbers recorded in desig
   - matches are short: median 10-24 turns (about 5-10 minutes at 20-30 seconds a turn)
   - live duds pull their weight but don't take over: smart (uses duds) beats nodud 48%+,
     and duder (dud-happy) beats smart no more than 65%
+  - no character is too strong or too weak: each of the five wins 40-60% of a smart-vs-smart round-robin
+    (added Nov 2, 2026 with the characters)
 Never loosen these to get a pass; change the game, or agree a new band with the game's owner.
 (c) 2026 justaskjoe. All rights reserved.
 """
@@ -54,6 +56,12 @@ if all(rows.values()):
     if not 10 <= rows['mirror']['p50'] <= 24: fails.append(f"balance: median match is {rows['mirror']['p50']} turns (band 10-24)")
     if rows['dud value']['a'] < 48: fails.append(f"balance: duds aren't worth using (smart vs nodud {rows['dud value']['a']}%, band 48%+)")
     if rows['dud spam']['a'] > 65: fails.append(f"balance: dud spam wins {rows['dud spam']['a']}% (band 65% at most)")
+chars = {m[1]: int(m[2]) for m in re.finditer(r'^char (\w+)\s+wins (\d+)%', out, re.M)}
+if len(chars) != 5: fails.append(f'sim output has {len(chars)} character lines, expected 5')
+for c, w in chars.items():  # only judged on the full run: 30 matches a pair (--quick) is too rough to call
+    if not 40 <= w <= 60:
+        if quick: print(f'(quick run: {c} wins {w}% of the round-robin; the full run checks the 40-60% band)')
+        else: fails.append(f'balance: {c} wins {w}% of the round-robin (band 40-60%)')
 if 'NaN' in (r.stdout + r.stderr): fails.append('balance: NaN in a unit')
 
 if not quick:

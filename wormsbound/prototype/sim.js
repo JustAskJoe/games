@@ -31,9 +31,28 @@ function line(label, a, b, r) {
 }
 
 const t0 = Date.now();
-console.log(`Wormsbound P1 sim: ${n} matches per pairing, seeds 1234 + i×7919, seats swapped every other match`);
+console.log(`Wormsbound P1 sim: ${n} matches per pairing (Volt vs Volt), seeds 1234 + i×7919, seats swapped every other match`);
 line('mirror', 'smart', 'smart', series('smart', 'smart'));
 line('skill', 'smart', 'sloppy', series('smart', 'sloppy'));
 line('dud value', 'smart', 'nodud', series('smart', 'nodud'));
 line('dud spam', 'duder', 'smart', series('duder', 'smart'));
+
+// Characters: a round-robin of smart-vs-smart matches between every pair (seats and first turn swap every
+// other match). One line per character with its overall win rate, so no character can hide behind its matchups.
+const per = Math.max(10, Math.round(n / 2)), C = WB.CHAR_IDS, tally = {}, vs = {};
+for (const c of C) tally[c] = { m: 0, w: 0, d: 0, turns: [], shot2: 0 };
+for (let i = 0; i < C.length; i++) for (let j = i + 1; j < C.length; j++) {
+  const a = C[i], b = C[j]; vs[a + ' v ' + b] = 0;
+  for (let k = 0; k < per; k++) {
+    const swap = k % 2 === 1, chars = swap ? [b, a] : [a, b];
+    const G = WB.playOut(WB.newGame(4321 + k * 7919 + i * 131 + j * 17, { chars, first: (k >> 1) % 2 }), ['smart', 'smart']).G;
+    for (let t = 0; t < 2; t++) { const c = chars[t]; tally[c].m++; tally[c].turns.push(G.turn); if (G.winner === t) tally[c].w++; if (G.winner === -1) tally[c].d++; }
+    if (G.winner >= 0 && chars[G.winner] === a) vs[a + ' v ' + b]++;
+    for (const u of G.units) if (!Number.isFinite(u.hp)) throw new Error('NaN hp');
+    tally[chars[0]].shot2 += G.stats.shot2 / 2; tally[chars[1]].shot2 += G.stats.shot2 / 2;
+  }
+}
+console.log(`characters: round-robin, ${per} smart-vs-smart matches per pair`);
+for (const c of C) { const t = tally[c]; console.log(`char ${c.padEnd(7)} wins ${pct(t.w, t.m)}%  draws ${pct(t.d, t.m)}%  matches ${t.m}  turns p50 ${q(t.turns, .5)}`); }
+console.log('head to head (first named wins): ' + Object.entries(vs).map(([k, v]) => `${k} ${pct(v, per)}%`).join(' · '));
 console.log(`done in ${((Date.now() - t0) / 1000).toFixed(1)}s`);
