@@ -10,12 +10,14 @@ const pct = (k, of) => Math.round(100 * k / of);
 function series(a, b) {
   const out = { aWins: 0, bWins: 0, draws: 0, firstWins: 0, turns: [], timeouts: 0, sudden: 0, dudBlasts: 0, chains: 0, lobs: 0, drowned: 0, selfDmg: 0, dmg: 0, stuck: 0 };
   for (let i = 0; i < n; i++) {
-    const swap = i % 2 === 1, styles = swap ? [b, a] : [a, b];
+    // seats swap every match and the first turn every two, so "first-turn wins" measures going first,
+    // not "going first from the left side of the map" (they were tangled together before Nov 2)
+    const swap = i % 2 === 1, styles = swap ? [b, a] : [a, b], first = (i >> 1) % 2;
     let G;
-    try { G = WB.playOut(WB.newGame(1234 + i * 7919), styles).G; } catch (e) { out.stuck++; continue; }
+    try { G = WB.playOut(WB.newGame(1234 + i * 7919, { first }), styles).G; } catch (e) { out.stuck++; continue; }
     const aTeam = swap ? 1 : 0;
     if (G.winner === -1) out.draws++; else if (G.winner === aTeam) out.aWins++; else out.bWins++;
-    if (G.winner === 0) out.firstWins++;
+    if (G.winner === G.first) out.firstWins++;
     out.turns.push(G.turn); if (G.timeout) out.timeouts++; if (G.turn >= WB.SUDDEN_TURN) out.sudden++;
     const s = G.stats; out.dudBlasts += s.dudBlasts; out.chains += s.chains; out.lobs += s.lobs; out.drowned += s.drowned;
     out.selfDmg += s.selfDmg[0] + s.selfDmg[1]; out.dmg += s.dmg[0] + s.dmg[1];
@@ -31,7 +33,7 @@ function line(label, a, b, r) {
 }
 
 const t0 = Date.now();
-console.log(`Wormsbound P1 sim: ${n} matches per pairing (Volt vs Volt), seeds 1234 + i×7919, seats swapped every other match`);
+console.log(`Wormsbound P1 sim: ${n} matches per pairing (Volt vs Volt), seeds 1234 + i×7919, seats swapped every match, first turn every two`);
 line('mirror', 'smart', 'smart', series('smart', 'smart'));
 line('skill', 'smart', 'sloppy', series('smart', 'sloppy'));
 line('dud value', 'smart', 'nodud', series('smart', 'nodud'));

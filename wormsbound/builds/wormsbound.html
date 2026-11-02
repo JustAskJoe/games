@@ -59,6 +59,13 @@ button { font: inherit; color: inherit; }
 .btn.sm { min-height: 40px; font-size: 16px; padding: 4px 12px; }
 .btn[aria-pressed="true"] { background: var(--gold); box-shadow: 0 5px 0 var(--ink), 0 0 16px var(--gold); }
 .wpn { flex-direction: column; gap: 0; line-height: 1; min-width: 104px; }
+.btn.ss { background: linear-gradient(180deg, #FFE27A, #FF8A3D); box-shadow: 0 5px 0 var(--ink), 0 0 22px rgba(255,211,77,.8); animation: ssglow 1.2s ease-in-out infinite alternate; }
+.btn.ss.dim { animation: none; opacity: .8; box-shadow: 0 5px 0 var(--ink); }
+@keyframes ssglow { from { box-shadow: 0 5px 0 var(--ink), 0 0 10px rgba(255,211,77,.5); } to { box-shadow: 0 5px 0 var(--ink), 0 0 26px rgba(255,211,77,1); } }
+.ssm { display: flex; align-items: center; gap: 3px; font-weight: 900; font-size: 11px; letter-spacing: 1px; color: var(--muted); }
+.ssm b { width: 10px; height: 10px; border-radius: 3px; border: 2px solid var(--ink); background: rgba(0,0,0,.35); }
+.ssm b.f { background: var(--sun); } .ssm.on { color: var(--gold); } .ssm.on b { background: var(--gold); box-shadow: 0 0 8px var(--gold); }
+.char .sh.ss { background: linear-gradient(90deg, rgba(255,211,77,.18), var(--ink-2)); } .char .sh.ss b { color: var(--gold); }
 .wpn small { font-family: var(--body); font-weight: 900; font-size: 12px; opacity: .75; }
 .steps { font-weight: 900; font-size: 14px; color: var(--cream); text-shadow: 0 2px 0 rgba(0,0,0,.5); min-width: 70px; text-align: center; }
 .menu-btn { position: absolute; right: 16px; bottom: 14px; z-index: 6; }
@@ -102,20 +109,20 @@ button { font: inherit; color: inherit; }
 .pick .sub { margin: 4px 0 12px; font-weight: 800; color: var(--cream-2); }
 .pick .row { display: flex; gap: 16px; justify-content: center; align-items: center; margin-top: 12px; }
 .chars { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
-.char { position: relative; display: flex; flex-direction: column; align-items: stretch; gap: 4px; text-align: left; background: var(--ink); color: var(--cream); border: 3px solid var(--ink-2); border-radius: 18px; padding: 8px 10px 10px; cursor: pointer; box-shadow: 0 6px 0 rgba(0,0,0,.45); font-family: var(--body); font-size: 12.5px; line-height: 1.3; }
+.char { position: relative; display: flex; flex-direction: column; align-items: stretch; gap: 3px; text-align: left; background: var(--ink); color: var(--cream); border: 3px solid var(--ink-2); border-radius: 18px; padding: 8px 10px 10px; cursor: pointer; box-shadow: 0 6px 0 rgba(0,0,0,.45); font-family: var(--body); font-size: 12.5px; line-height: 1.3; }
 .char:hover, .char.cur { border-color: var(--tc); box-shadow: 0 6px 0 rgba(0,0,0,.45), 0 0 22px color-mix(in srgb, var(--tc) 55%, transparent); transform: translateY(-4px); }
 .char:focus-visible { outline: 4px solid var(--gold); outline-offset: 2px; }
-.char img { width: 100%; height: 110px; object-fit: cover; border-radius: 12px; border: 2px solid var(--ink-2); }
+.char img { width: 100%; height: 92px; object-fit: cover; border-radius: 12px; border: 2px solid var(--ink-2); }
 .char .num { position: absolute; left: 14px; top: 12px; width: 24px; height: 24px; border-radius: 50%; background: var(--ink); border: 2px solid var(--cream); font-family: var(--display); font-size: 14px; display: grid; place-items: center; }
 .char .cn { font-family: var(--display); font-weight: 400; font-size: 26px; line-height: 1; color: var(--tc); margin-top: 2px; }
 .char .role { font-weight: 900; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 2px; }
 .sb { display: grid; grid-template-columns: 62px 1fr 52px; align-items: center; gap: 6px; font-weight: 800; font-size: 11px; }
 .sb i { height: 8px; border-radius: 99px; background: var(--ink-2); overflow: hidden; } .sb i b { display: block; height: 100%; background: var(--tc); border-radius: 99px; }
 .sb em { font-style: normal; text-align: right; color: var(--cream-2); }
-.char .bl { color: var(--cream-2); font-weight: 700; margin: 4px 0 2px; min-height: 48px; }
+.char .bl { color: var(--cream-2); font-weight: 700; margin: 2px 0 1px; min-height: 44px; font-size: 12px; }
 .char .sh { background: var(--ink-2); border-radius: 10px; padding: 5px 7px; font-weight: 700; }
 .char .sh b { color: var(--gold); } .char .sh.two b { color: var(--tc); } .char .sh em { font-style: normal; color: var(--muted); font-weight: 800; }
-@media (prefers-reduced-motion: reduce) { .banner { animation: none; } .btn:active { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .banner, .btn.ss { animation: none; } .btn:active { transform: none; } }
 </style>
 </head>
 <body>
@@ -144,7 +151,8 @@ button { font: inherit; color: inherit; }
    - Fixed-step physics at 60 ticks a second while anything is flying or falling (phase 'flight').
 
    Each team picks one of five characters (CHARS) before the match. A character sets its units' health, armour,
-   walking and climbing, and its two shots: Shot 1 (unlimited) and Shot 2 (its ability, 2 a match). Every
+   walking and climbing, and its shots: Shot 1 (unlimited), Shot 2 (its ability, 2 a match) and its SS (Special
+   Shot): a big ultimate that charges one notch per turn of yours and is ready every SS_CHARGE turns. Every
    character also carries the Live dud. The idea of characters with their own shots comes from GunBound;
    the characters, names and shots here are our own.
 
@@ -175,6 +183,7 @@ button { font: inherit; color: inherit; }
   const SUDDEN_RISE = 2;        // rows per turn
   const MAX_TURNS = 80;         // hard stop (the rising water should end it well before this)
   const DMG_SPREAD = 1.6;       // damage falls off to 0 at r × 1.6
+  const SS_CHARGE = 4;          // the SS is ready on your 4th turn, then every 4th turn after you use it
 
   // The Live dud: every character has 2. Lands without exploding, ticks down 3 turns, anyone near can lob it.
   const DUD = { name: 'Live dud', ammo: 2, r: 6, dmg: 60, fuse: 3, desc: 'Lands without exploding and ticks for 3 turns. Anyone close can lob it on.' };
@@ -182,31 +191,38 @@ button { font: inherit; color: inherit; }
   // Shot fields: r crater, dmg centre damage, wind (× wind push), speed (× launch speed), knock (× knockback),
   // bounce (bounces off the ground first), drill (cells it tunnels through), strike (lightning: {w, dmg}),
   // double (a second shot follows), ammo (-1 = unlimited).
-  // Numbers tuned Nov 2, 2026 so every character wins 40-60% of smart-bot matches across the roster (sim.js).
+  // SS-only fields: rain (a fan of darts), storm (three lightning strikes), quake (hits every enemy on the ground),
+  // tornado (flings everyone within reach).
+  // Numbers tuned Nov 2, 2026 (with SS) so every character wins 40-60% of smart-bot matches across the roster (sim.js).
   const CHARS = {
-    brick: { name: 'Brick', role: 'Tank', hp: 115, armor: 0.85, steps: 10, climb: 2,
-      blurb: 'Big, tough and slow. Takes 15% less damage. His heavy shots barely feel the wind.',
-      shot1: { name: 'Slug', ammo: -1, r: 3.5, dmg: 42, wind: 0.45, desc: 'A heavy shell. Wind hardly moves it.' },
-      shot2: { name: 'Wrecking Ball', ammo: 2, r: 5, dmg: 56, wind: 0.45, bounce: 1, desc: 'Bounces once, then a big blast.' } },
+    brick: { name: 'Brick', role: 'Tank', hp: 110, armor: 0.88, steps: 10, climb: 2,
+      blurb: 'Big, tough and slow. Takes 12% less damage. His heavy shots barely feel the wind.',
+      shot1: { name: 'Slug', ammo: -1, r: 3.5, dmg: 40, wind: 0.45, desc: 'A heavy shell. Wind hardly moves it.' },
+      shot2: { name: 'Wrecking Ball', ammo: 2, r: 5, dmg: 56, wind: 0.45, bounce: 1, desc: 'Bounces once, then a big blast.' },
+      ss: { name: 'Meteor Slam', r: 6, dmg: 56, wind: 0.3, speed: 0.95, desc: 'A huge, heavy shell: the biggest crater in the game.' } },
     zip: { name: 'Zip', role: 'Scout', hp: 105, armor: 1, steps: 22, climb: 3,
       blurb: 'Quick on her feet. Walks twice as far as most and climbs higher ledges.',
-      shot1: { name: 'Dart', ammo: -1, r: 3, dmg: 44, speed: 1.15, wind: 0.8, desc: 'Fast and flat, with a small blast.' },
-      shot2: { name: 'Double Tap', ammo: 2, r: 3, dmg: 38, speed: 1.15, wind: 0.8, double: true, desc: 'Two darts, one right after the other.' } },
+      shot1: { name: 'Dart', ammo: -1, r: 3, dmg: 46, speed: 1.15, wind: 0.8, desc: 'Fast and flat, with a small blast.' },
+      shot2: { name: 'Double Tap', ammo: 2, r: 3, dmg: 38, speed: 1.15, wind: 0.8, double: true, desc: 'Two darts, one right after the other.' },
+      ss: { name: 'Bullet Rain', r: 3.2, dmg: 36, speed: 1.15, wind: 0.8, rain: { n: 5, spread: 4 }, desc: 'Five darts fanned out in a quick burst.' } },
     volt: { name: 'Volt', role: 'All-rounder', hp: 100, armor: 1, steps: 14, climb: 2,
       blurb: 'Steady and simple. Calls lightning down on anyone hiding under cover.',
-      shot1: { name: 'Arc Ball', ammo: -1, r: 3.2, dmg: 44, desc: 'A plain, reliable shell.' },
-      shot2: { name: 'Thunderstrike', ammo: 2, r: 3, dmg: 26, strike: { w: 2.2, dmg: 34 }, desc: 'Where it lands, lightning hits everyone close by, cover or not.' } },
+      shot1: { name: 'Arc Ball', ammo: -1, r: 3.2, dmg: 46, desc: 'A plain, reliable shell.' },
+      shot2: { name: 'Thunderstrike', ammo: 2, r: 3, dmg: 26, strike: { w: 2.2, dmg: 34 }, desc: 'Where it lands, lightning hits everyone close by, cover or not.' },
+      ss: { name: 'Storm Call', r: 3, dmg: 24, storm: { gap: 7, w: 2.4, dmg: 42 }, desc: 'Three lightning bolts: where it lands and 7 cells to each side.' } },
     digger: { name: 'Digger', role: 'Miner', hp: 110, armor: 0.95, steps: 12, climb: 2,
       blurb: 'Sturdy. Can tunnel straight through hills to reach someone dug in.',
       shot1: { name: 'Pick Shell', ammo: -1, r: 4, dmg: 40, desc: 'Digs a wide crater.' },
-      shot2: { name: 'Drill', ammo: 2, r: 4, dmg: 48, drill: 14, desc: 'Bores through up to 14 cells of ground, then explodes.' } },
+      shot2: { name: 'Drill', ammo: 2, r: 4, dmg: 48, drill: 14, desc: 'Bores through up to 14 cells of ground, then explodes.' },
+      ss: { name: 'Earthquake', r: 5, dmg: 40, quake: { dmg: 20 }, desc: 'A big blast, then a quake that hits every enemy standing on the ground.' } },
     gale: { name: 'Gale', role: 'Wind-rider', hp: 95, armor: 1, steps: 16, climb: 2,
       blurb: 'Rides the wind. Her shots curve hard, and her Gust throws people into the water.',
       shot1: { name: 'Kite Bomb', ammo: -1, r: 4, dmg: 42, wind: 1.7, desc: 'Strong, but the wind pushes it a lot.' },
-      shot2: { name: 'Gust Bomb', ammo: 2, r: 4.5, dmg: 24, wind: 1.7, knock: 2.6, desc: 'Weak blast, huge knockback.' } },
+      shot2: { name: 'Gust Bomb', ammo: 2, r: 4.5, dmg: 24, wind: 1.7, knock: 2.6, desc: 'Weak blast, huge knockback.' },
+      ss: { name: 'Tornado', r: 3, dmg: 20, wind: 1.3, tornado: { reach: 12, dmg: 18, push: 34 }, desc: 'Flings everyone within 12 cells away from it, your own crew too.' } },
   };
   const CHAR_IDS = Object.keys(CHARS);
-  const WEAPON_IDS = ['shot1', 'shot2', 'dud'];
+  const WEAPON_IDS = ['shot1', 'shot2', 'dud', 'ss'];
 
   // ---------- seeded RNG (state in G._s) ----------
   function R(G) { G._s = (G._s + 0x6D2B79F5) >>> 0; let t = G._s; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }
@@ -254,8 +270,8 @@ button { font: inherit; color: inherit; }
       phase: 'aim', turn: 0, team: 0, teams: 2, unitIdx: [0, 0], chars,
       wind: 0, water: WATER0, moves: 0, weapon: 'shot1',
       T: null, units: [], proj: [], duds: [], fx: [],
-      ammo: [], fused: false, winner: null,
-      stats: { shots: 0, shot2: 0, lobs: 0, dudBlasts: 0, chains: 0, strikes: 0, drowned: 0, fallKOs: 0, selfDmg: [0, 0], dmg: [0, 0] },
+      ammo: [], ss: [0, 0], fused: false, winner: null,
+      stats: { shots: 0, shot2: 0, ss: 0, lobs: 0, dudBlasts: 0, chains: 0, strikes: 0, drowned: 0, fallKOs: 0, selfDmg: [0, 0], dmg: [0, 0] },
     };
     genTerrain(G);
     for (let t = 0; t < G.teams; t++) { const C = CHARS[chars[t]]; G.ammo.push({ shot1: C.shot1.ammo, shot2: C.shot2.ammo, dud: DUD.ammo }); }
@@ -268,9 +284,14 @@ button { font: inherit; color: inherit; }
     // who shoots first (a best-of-3 alternates it, since going first is worth a few points)
     G.team = G.first = opts.first === 1 ? 1 : 0;
     G.moves = CHARS[chars[G.team]].steps;
+    chargeSS(G);
+    G.ss[1 - G.team] = 1; // the team that shoots second gets a one-notch SS head start (first turn wins 58% → 51% in the sim)
     G.wind = rollWind(G);
     return G;
   }
+  // One notch of SS charge at the start of each of your turns.
+  function chargeSS(G) { G.ss[G.team] = Math.min(SS_CHARGE, G.ss[G.team] + 1); }
+  const ssReady = (G, t = G.team) => G.ss[t] >= SS_CHARGE;
   const rollWind = (G) => Math.round((R(G) * 2 - 1) * WIND_MAX * 10) / 10;
   const teamUnits = (G, t) => G.units.filter((u) => u.team === t && u.alive);
   function current(G) { const us = teamUnits(G, G.team); if (!us.length) return null; return us[G.unitIdx[G.team] % us.length]; }
@@ -278,7 +299,7 @@ button { font: inherit; color: inherit; }
   const charOf = (G, t) => CHARS[G.chars[t]];
   // The full spec of a team's weapon: { name, r, dmg, wind, speed, ... } with defaults filled in.
   function shotSpec(G, team, w) {
-    const s = w === 'dud' ? DUD : charOf(G, team)[w];
+    const s = w === 'dud' ? DUD : charOf(G, team)[w];  // shot1 | shot2 | ss
     return Object.assign({ wind: 1, speed: 1, knock: 1 }, s);
   }
 
@@ -420,8 +441,24 @@ button { font: inherit; color: inherit; }
       return;
     }
     const s = shotSpec(G, p.team, p.w);
-    explode(G, p.x, p.y, s.r, s.dmg, p.team, p.w === 'shot2' ? G.chars[p.team] : 'shot', s.knock);
+    explode(G, p.x, p.y, s.r, s.dmg, p.team, p.w === 'ss' ? 'ss' : p.w === 'shot2' ? G.chars[p.team] : 'shot', s.knock);
     if (s.strike) strike(G, p.x, s.strike.w, s.strike.dmg, p.team);
+    if (s.storm) for (const dx of [0, -s.storm.gap, s.storm.gap]) strike(G, p.x + dx, s.storm.w, s.storm.dmg, p.team);
+    if (s.quake) { // every enemy standing on the ground takes damage and is bounced up a little
+      const hits = [];
+      for (const u of G.units) if (u.alive && u.team !== p.team && !u.air) { hurt(G, u, Math.round(s.quake.dmg * CHARS[u.char].armor), p.team); u.vy = -9; u.air = true; hits.push(u.id); }
+      G.fx.push({ k: 'quake', x: p.x, hits });
+    }
+    if (s.tornado) { // fling everyone in reach away from the centre (own crew too)
+      const T = s.tornado, hits = [];
+      for (const u of G.units) {
+        if (!u.alive) continue; const [cx, cy] = center(u), d = Math.hypot(cx - p.x, cy - p.y); if (d > T.reach) continue;
+        const k = 1 - d / T.reach, dir = cx >= p.x ? 1 : -1;
+        hurt(G, u, Math.round(T.dmg * k * CHARS[u.char].armor), p.team);
+        u.vx += dir * (T.push * k + 8); u.vy -= 26 * k + 10; u.air = true; hits.push(u.id);
+      }
+      G.fx.push({ k: 'tornado', x: p.x, y: p.y, hits });
+    }
   }
   function blowDud(G, d) { d.gone = true; G.stats.dudBlasts++; explode(G, d.x, d.y, DUD.r, DUD.dmg, null, 'dud'); }
   function unitPhysics(G, u) {
@@ -475,6 +512,7 @@ button { font: inherit; color: inherit; }
       G.phase = 'over'; G.winner = hp[0] === hp[1] ? -1 : hp[0] > hp[1] ? 0 : 1; G.timeout = true; return;
     }
     G.phase = 'aim'; G.moves = charOf(G, G.team).steps; G.fused = false; G.weapon = 'shot1';
+    chargeSS(G);
     G.wind = rollWind(G);
     G.fx.push({ k: 'turn', team: G.team, turn: G.turn });
   }
@@ -512,14 +550,21 @@ button { font: inherit; color: inherit; }
         return true;
       }
       case 'weapon': {
-        if (WEAPON_IDS.indexOf(it.w) < 0 || G.ammo[G.team][it.w] === 0) return false;
+        if (WEAPON_IDS.indexOf(it.w) < 0) return false;
+        if (it.w === 'ss' ? !ssReady(G) : G.ammo[G.team][it.w] === 0) return false;
         G.weapon = it.w; return true;
       }
       case 'fire': {
         if (!Number.isFinite(it.angle) || !Number.isFinite(it.power)) return false;
         const w = G.weapon, am = G.ammo[G.team];
-        if (am[w] === 0) return false;
-        if (am[w] > 0) am[w]--;
+        if (w === 'ss') { if (!ssReady(G)) return false; G.ss[G.team] = 0; G.stats.ss++; }
+        else { if (am[w] === 0) return false; if (am[w] > 0) am[w]--; }
+        const sp = shotSpec(G, G.team, w);
+        if (sp.rain) { // Bullet Rain: a fan of darts, one after another
+          const n = sp.rain.n;
+          for (let i = 0; i < n; i++) { const q = newShot(G, u, w, it.angle + (i - (n - 1) / 2) * sp.rain.spread, it.power * (1 - 0.015 * i), G.team); q.wait = i * 7; G.proj.push(q); }
+          G.stats.shots++; u.face = Math.cos(it.angle * Math.PI / 180) >= 0 ? 1 : -1; G.phase = 'flight'; return true;
+        }
         const p = newShot(G, u, w, it.angle, it.power, G.team);
         G.proj.push(p); G.stats.shots++; if (w === 'shot2') G.stats.shot2++;
         if (shotSpec(G, G.team, w).double) { // Double Tap: a second dart a third of a second later
@@ -599,6 +644,14 @@ button { font: inherit; color: inherit; }
       if (!u.alive) continue; const [cx, cy] = center(u); if (Math.hypot(cx - land.x, cy - land.y) > S.r * DMG_SPREAD) continue;
       if (G.water - u.y < 14 || u.x < 10 || u.x > COLS - 10) sc += (u.team === team ? -1.4 : 1) * 0.6 * u.hp;
     }
+    if (S.rain) sc *= 3.2;
+    if (S.storm) for (const dx of [0, -S.storm.gap, S.storm.gap]) for (const u of G.units) if (u.alive && Math.abs(u.x - land.x - dx) <= S.storm.w) sc += (u.team === team ? -1.4 : 1) * Math.min(u.hp, S.storm.dmg * CHARS[u.char].armor);
+    if (S.quake) for (const u of G.units) if (u.alive && u.team !== team) sc += Math.min(u.hp, S.quake.dmg * CHARS[u.char].armor);
+    if (S.tornado) for (const u of G.units) {
+      if (!u.alive) continue; const [cx, cy] = center(u), d = Math.hypot(cx - land.x, cy - land.y); if (d > S.tornado.reach) continue;
+      const k = 1 - d / S.tornado.reach, risky = G.water - u.y < 16 || u.x < 14 || u.x > COLS - 14;
+      sc += (u.team === team ? -1.4 : 1) * (Math.min(u.hp, S.tornado.dmg * k) + (risky ? 0.7 * u.hp * k : 0));
+    }
     if (land.unit && G.units.find((x) => x.id === land.unit).team !== team) sc += 4;
     return sc;
   }
@@ -631,6 +684,7 @@ button { font: inherit; color: inherit; }
     }
     const opts = [];
     const s1 = bestShot(G, u, 'shot1', st, rnd, 0); opts.push({ w: 'shot1', ...s1 });
+    if (ssReady(G)) { const x = bestShot(G, u, 'ss', st, rnd, 0); opts.push({ w: 'ss', ...x }); }
     if (G.ammo[u.team].shot2 !== 0) { const c = bestShot(G, u, 'shot2', st, rnd, 0); opts.push({ w: 'shot2', ...c, score: c.score * 1.05 }); }
     if (st.dud && G.ammo[u.team].dud !== 0) { const d = bestShot(G, u, 'dud', st, rnd, DUD.fuse); opts.push({ w: 'dud', ...d, score: d.score * st.dud }); }
     if (st.lob) for (const d of lobbable(G)) {
@@ -665,7 +719,7 @@ button { font: inherit; color: inherit; }
     const parts = [G.turn, G.team, G.phase, r(G.wind), G.water, G.moves, G.winner, G.chars.join(','),
       G.units.map((u) => `${u.id}:${r(u.x)},${r(u.y)},${u.hp},${u.alive ? 1 : 0}`).join(';'),
       G.duds.map((d) => `${d.id}:${r(d.x)},${r(d.y)},${d.fuse}`).join(';'),
-      G.ammo.map((a) => `${a.shot2},${a.dud}`).join(';'), G.T.join('')];
+      G.ammo.map((a) => `${a.shot2},${a.dud}`).join(';'), G.ss.join(','), G.T.join('')];
     let h = 2166136261; const s = parts.join('|');
     for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
     return h.toString(16);
@@ -678,8 +732,8 @@ button { font: inherit; color: inherit; }
     return G;
   }
 
-  const WB = { TICK, COLS, ROWS, WATER0, GRAV, VMAX, WIND_MAX, UNIT_R, UNITS_PER_TEAM, HP, MOVE_STEPS, LOB_RANGE, LOB_POWER, SUDDEN_TURN, MAX_TURNS, DMG_SPREAD,
-    DUD, CHARS, CHAR_IDS, WEAPON_IDS, STYLES, newGame, act, step, resolve, current, teamUnits, charOf, shotSpec, solidAt, surfaceY, center, lobbable, canLob,
+  const WB = { TICK, COLS, ROWS, WATER0, GRAV, VMAX, WIND_MAX, UNIT_R, UNITS_PER_TEAM, HP, MOVE_STEPS, LOB_RANGE, LOB_POWER, SUDDEN_TURN, MAX_TURNS, DMG_SPREAD, SS_CHARGE,
+    DUD, CHARS, CHAR_IDS, WEAPON_IDS, STYLES, newGame, act, step, resolve, current, teamUnits, charOf, shotSpec, ssReady, solidAt, surfaceY, center, lobbable, canLob,
     predict, blastScore, botTurn, playOut, hash, replay };
   if (typeof module !== 'undefined' && module.exports) module.exports = WB; else root.WB = WB;
 })(typeof window !== 'undefined' ? window : globalThis);
@@ -852,6 +906,17 @@ button { font: inherit; color: inherit; }
         noise(0.35, 6000, 800, 0.3); tone(1800, 200, 0.25, 0.12, 'sawtooth');
         for (const id of e.hits) { const u = ui.G.units.find((v) => v.id === id); if (u) ui.pops.push({ x: u.x * CELL, y: u.y * CELL - 50, t: 0, text: 'ZAP!', c: '#8FD8FF' }); }
       }
+      else if (e.k === 'quake') {
+        if (!reduced) ui.shake = Math.min(34, ui.shake + 22);
+        noise(1.1, 300, 40, 0.5); tone(55, 30, 0.9, 0.4);
+        for (let x = 40; x < W; x += 80) burst(x, WB.surfaceY(ui.G, x / CELL) * CELL, 3, 'chunk');
+        for (const id of e.hits) { const u = ui.G.units.find((v) => v.id === id); if (u) { burst(u.x * CELL, u.y * CELL, 10, 'smoke'); ui.pops.push({ x: u.x * CELL, y: u.y * CELL - 50, t: 0, text: 'QUAKE!', c: '#FFB86B' }); } }
+      }
+      else if (e.k === 'tornado') {
+        ui.parts.push({ x: e.x * CELL, y: e.y * CELL, t: 0, life: 1.1, kind: 'swirl' });
+        noise(1.0, 2500, 300, 0.3); if (!reduced) ui.shake = Math.min(26, ui.shake + 10);
+        ui.pops.push({ x: e.x * CELL, y: e.y * CELL - 60, t: 0, text: 'TORNADO!', c: '#7BE07A' });
+      }
       else if (e.k === 'dud') { SFX.thunk(); ui.pops.push({ x: e.x * CELL, y: e.y * CELL - 22, t: 0, text: 'LIVE DUD!', c: '#FFD34D' }); }
       else if (e.k === 'ko') {
         const u = ui.G.units.find((x) => x.id === e.id);
@@ -863,8 +928,10 @@ button { font: inherit; color: inherit; }
   }
   function onTurn() {
     const G = ui.G, u = WB.current(G); if (!u) return;
-    ui.tLeft = TURN_SECONDS; ui.lob = false; ui.weapon = 'shot1'; ui.turnsSeen++;
-    banner(`${TEAMS[G.team].name}`, `${unitName(u)} · ${charName(G.team)}`);
+    const ss = WB.ssReady(G);
+    ui.tLeft = TURN_SECONDS; ui.lob = false; ui.weapon = ss ? 'ss' : 'shot1'; ui.turnsSeen++;
+    banner(`${TEAMS[G.team].name}`, `${unitName(u)} · ${charName(G.team)}${ss ? ' · SS READY!' : ''}`);
+    if (ss) tone(660, 990, 0.25, 0.12, 'triangle');
     renderHUD(); renderCtl(); coachLine();
   }
   function banner(big, small) {
@@ -943,12 +1010,13 @@ button { font: inherit; color: inherit; }
     else if (k === 'q' || k === 'Q') a.power = clamp(Math.round((a.power - 0.02) * 100) / 100, 0.05, 1);
     else if (k === 'e' || k === 'E') a.power = clamp(Math.round((a.power + 0.02) * 100) / 100, 0.05, 1);
     else if (k === 'f' || k === 'F') { a.angle = 180 - a.angle; }
-    else if (k === '1' || k === '2' || k === '3') pickWeapon(WB.WEAPON_IDS[+k - 1]);
+    else if (k === '1') pickWeapon(WB.ssReady(ui.G) ? 'ss' : 'shot1');
+    else if (k === '2' || k === '3') pickWeapon(WB.WEAPON_IDS[+k - 1]);
     else if (k === 'l' || k === 'L') toggleLob();
     else if (k === ' ' || k === 'Enter') { e.preventDefault(); doFire(); }
     else if (k === 'x' || k === 'X') pass();
   });
-  function pickWeapon(w) { if (!canAct() || ui.G.ammo[ui.G.team][w] === 0) return; ui.weapon = w; ui.lob = false; SFX.click(); renderCtl(); coachLine(); }
+  function pickWeapon(w) { if (!canAct() || (w === 'ss' ? !WB.ssReady(ui.G) : ui.G.ammo[ui.G.team][w] === 0)) return; ui.weapon = w; ui.lob = false; SFX.click(); renderCtl(); coachLine(); }
   function toggleLob() { if (!canAct() || !WB.lobbable(ui.G).length) return; ui.lob = !ui.lob; SFX.click(); renderCtl(); coachLine(); }
 
   // ---------- HUD and controls (DOM) ----------
@@ -957,6 +1025,7 @@ button { font: inherit; color: inherit; }
     const side = (t) => {
       const us = G.units.filter((u) => u.team === t), hp = us.reduce((a, u) => a + Math.max(0, u.hp), 0), max = us.reduce((a, u) => a + u.maxHp, 0);
       return `<div class="team ${TEAMS[t].key}${t ? ' r' : ''}"><div><div class="nm">${TEAMS[t].name} <span style="font-size:17px;opacity:.85">· ${esc(charName(t))}</span></div><div class="bar"><i style="width:${(100 * hp / max).toFixed(1)}%"></i></div></div>
+        <div class="ssm${WB.ssReady(G, t) ? ' on' : ''}" title="SS charge: ready every ${WB.SS_CHARGE} turns"><span>SS</span>${Array.from({ length: WB.SS_CHARGE }, (_, i) => `<b class="${G.ss[t] > i ? 'f' : ''}"></b>`).join('')}</div>
         <div class="pips" title="rounds won">${Array.from({ length: Math.ceil(BEST_OF / 2) }, (_, i) => `<b class="${ui.wins[t] > i ? 'on' : ''}"></b>`).join('')}</div></div>`;
     };
     const w = G.wind, arrows = Math.round(Math.abs(w) / WB.WIND_MAX * 4);
@@ -972,7 +1041,7 @@ button { font: inherit; color: inherit; }
     $('#ctl').innerHTML = `<button class="btn ghost" type="button" data-walk="-1" aria-label="Walk left" ${aim && G.moves ? '' : 'disabled'}>◀</button>
       <span class="steps">${G.moves} steps</span>
       <button class="btn ghost" type="button" data-walk="1" aria-label="Walk right" ${aim && G.moves ? '' : 'disabled'}>▶</button>
-      ${wb('shot1', '1')}${wb('shot2', '2')}${wb('dud', '3')}
+      ${WB.ssReady(G) ? `<button class="btn wpn ss${ui.weapon === 'ss' && !ui.lob ? '' : ' dim'}" type="button" data-w="ss" aria-pressed="${ui.weapon === 'ss' && !ui.lob}" title="${esc(WB.shotSpec(G, G.team, 'ss').desc)}" ${aim ? '' : 'disabled'}>SS · ${esc(WB.shotSpec(G, G.team, 'ss').name)}<small>1 · ready</small></button>` : wb('shot1', '1')}${wb('shot2', '2')}${wb('dud', '3')}
       <button class="btn teal" type="button" data-act="lob" aria-pressed="${ui.lob}" ${aim && lob ? '' : 'disabled'} title="Pick up a live dud in reach (L)">LOB</button>
       <button class="btn fire" type="button" data-act="fire" ${aim ? '' : 'disabled'}>FIRE</button>
       <button class="btn ghost sm" type="button" data-act="pass" ${aim ? '' : 'disabled'} title="End your turn (X)">Skip</button>`;
@@ -988,6 +1057,7 @@ button { font: inherit; color: inherit; }
     else if (WB.lobbable(G).length) t = 'A <b>live dud</b> is in reach. Tap <b>LOB</b> (L) to throw it at them instead of firing.';
     else if (ui.turnsSeen <= 2) t = '<b>Drag back</b> from your glowing unit and <b>let go</b> to fire. Further back = more power. Watch the wind.';
     else if (ui.turnsSeen <= 4) t = 'Keys: <b>◀ ▶</b> walk · <b>▲ ▼</b> angle · <b>Q/E</b> power · <b>1 2 3</b> shots · <b>Space</b> fire.';
+    else if (ui.weapon === 'ss') t = `<b>SS ready: ${esc(WB.shotSpec(G, G.team, 'ss').name)}!</b> ${esc(WB.shotSpec(G, G.team, 'ss').desc)} It replaces Shot 1 until you use it.`;
     else if (ui.weapon === 'shot2') t = `<b>${esc(WB.shotSpec(G, G.team, 'shot2').name)}:</b> ${esc(WB.shotSpec(G, G.team, 'shot2').desc)} (${G.ammo[G.team].shot2} left this match)`;
     else if (ui.weapon === 'dud') t = 'A live dud lands and ticks for <b>3 turns</b>. Anyone close can lob it back, so drop it where they can\'t reach.';
     else t = '';
@@ -1001,7 +1071,8 @@ button { font: inherit; color: inherit; }
     <div><b>1 · Aim</b>Drag back from your glowing unit and let go. Further back is more power.</div>
     <div><b>2 · Wind</b>The arrow up top pushes every shot. It changes each turn.</div>
     <div><b>3 · Ground</b>Blasts carve the map. Knock them into the water or off a cliff.</div>
-    <div><b>4 · Live duds</b>A dud ticks for 3 turns. Walk up to one and LOB it back.</div></div>
+    <div><b>4 · Live duds</b>A dud ticks for 3 turns. Walk up to one and LOB it back.</div>
+    <div style="grid-column:1/-1"><b>5 · SS (Special Shot)</b>Your character's ultimate. It charges one notch a turn (the SS meter up top) and takes over Shot 1 when it's full. Using it starts the charge again.</div></div>
     <p class="keys">Keys: ◀ ▶ / A D walk · ▲ ▼ / W S angle (Shift = fine) · Q E power · F flip · 1 2 3 shots · L lob · Space fire · X skip · Esc menu</p>`;
   function titleScreen() {
     ui.screen = 'title'; renderCtl(); coachLine();
@@ -1023,7 +1094,8 @@ button { font: inherit; color: inherit; }
         ${statBar('Health', C.hp / 115, C.hp)}${statBar('Armour', (1 - C.armor) / 0.15 + 0.06, C.armor < 1 ? `−${Math.round((1 - C.armor) * 100)}%` : '–')}${statBar('Move', C.steps / 22, C.steps + ' steps')}${statBar('Wind grip', (2 - (C.shot1.wind || 1)) / 1.55, (C.shot1.wind || 1) < 1 ? 'steady' : (C.shot1.wind || 1) > 1 ? 'curvy' : 'normal')}
         <span class="bl">${esc(C.blurb)}</span>
         <span class="sh"><b>1 · ${esc(C.shot1.name)}</b> ${esc(C.shot1.desc)}</span>
-        <span class="sh two"><b>2 · ${esc(C.shot2.name)}</b> ${esc(C.shot2.desc)} <em>2 a match</em></span></button>`;
+        <span class="sh two"><b>2 · ${esc(C.shot2.name)}</b> ${esc(C.shot2.desc)} <em>2 a match</em></span>
+        <span class="sh ss"><b>SS · ${esc(C.ss.name)}</b> ${esc(C.ss.desc)} <em>every ${WB.SS_CHARGE} turns</em></span></button>`;
     }).join('');
     $('#screen').innerHTML = `<div class="screen"><div class="pick" role="dialog" aria-modal="true">
       <div class="tag">Step ${team + 1} of 2 · everyone also carries 2 Live duds</div>
@@ -1255,7 +1327,8 @@ button { font: inherit; color: inherit; }
     ctx.lineCap = 'round';
     for (let i = 1; i < tr.length; i++) { ctx.strokeStyle = `rgba(255,243,224,${i / tr.length * 0.5})`; ctx.lineWidth = (i / tr.length) * (p.w === 'bomblet' ? 3 : 5); ctx.beginPath(); ctx.moveTo(tr[i - 1][0], tr[i - 1][1]); ctx.lineTo(tr[i][0], tr[i][1]); ctx.stroke(); }
     if (p.w === 'dud') { drawDud({ x: p.x, y: p.y + 5 / CELL, fuse: p.fuse }, t, true); return; }
-    const ch = ui.G.chars[p.team], big = p.w === 'shot2', ang = Math.atan2(p.vy, p.vx);
+    const ch = ui.G.chars[p.team], big = p.w === 'shot2' || p.w === 'ss', ang = Math.atan2(p.vy, p.vx);
+    if (p.w === 'ss') { const g = ctx.createRadialGradient(x, y, 2, x, y, 24); g.addColorStop(0, 'rgba(255,211,77,.8)'); g.addColorStop(1, 'rgba(255,138,61,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, 24, 0, 7); ctx.fill(); }
     ctx.strokeStyle = '#1E1A2B'; ctx.lineWidth = 2;
     if (ch === 'zip' || (ch === 'digger' && big)) { // darts and drills point where they fly
       ctx.save(); ctx.translate(x, y); ctx.rotate(ang);
@@ -1263,7 +1336,7 @@ button { font: inherit; color: inherit; }
       else { ctx.fillStyle = '#9A9CA3'; ctx.beginPath(); ctx.moveTo(12, 0); ctx.lineTo(-5, -6); ctx.lineTo(-5, 6); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.strokeStyle = '#4A4D58'; for (let i = 0; i < 3; i++) { const sx = 6 - i * 4 - (t * 40 % 4); ctx.beginPath(); ctx.moveTo(sx, -4 + i); ctx.lineTo(sx - 2, 4 - i); ctx.stroke(); } }
       ctx.restore(); return;
     }
-    const look = { brick: ['#5A5F6E', big ? 8 : 6], volt: ['#4FB3FF', big ? 6.5 : 5.5], digger: ['#B2643A', 6], gale: ['#7BE07A', big ? 6.5 : 5.5] }[ch] || ['#3A3150', 5.5];
+    const look = { brick: ['#5A5F6E', p.w === 'ss' ? 10 : big ? 8 : 6], volt: ['#4FB3FF', big ? 6.5 : 5.5], digger: ['#B2643A', 6], gale: ['#7BE07A', big ? 6.5 : 5.5] }[ch] || ['#3A3150', 5.5];
     if (ch === 'volt') { const g = ctx.createRadialGradient(x, y, 1, x, y, 16); g.addColorStop(0, 'rgba(143,216,255,.7)'); g.addColorStop(1, 'rgba(143,216,255,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, 16, 0, 7); ctx.fill(); }
     if (ch === 'gale') { ctx.strokeStyle = '#FFF3E0'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x, y); ctx.quadraticCurveTo(x - p.vx * 0.4 + 4 * Math.sin(t * 20), y - p.vy * 0.4, x - p.vx * 0.7, y - p.vy * 0.7); ctx.stroke(); ctx.strokeStyle = '#1E1A2B'; }
     ctx.fillStyle = look[0]; ctx.beginPath(); ctx.arc(x, y, look[1], 0, 7); ctx.fill(); ctx.stroke();
@@ -1327,6 +1400,11 @@ button { font: inherit; color: inherit; }
         let s = p.seed; const rnd = () => { s = (s * 9301 + 49297) % 233280; return s / 233280; };
         const pts = [[p.x, 0]]; for (let yy = 40; yy < p.y; yy += 40) pts.push([p.x + (rnd() - 0.5) * 34, yy]); pts.push([p.x, p.y]);
         for (const [w, col] of [[10, `rgba(143,216,255,${k * 0.5})`], [4, `rgba(255,255,255,${k})`]]) { ctx.strokeStyle = col; ctx.lineWidth = w; ctx.beginPath(); pts.forEach(([a, b], i) => (i ? ctx.lineTo(a, b) : ctx.moveTo(a, b))); ctx.stroke(); }
+        continue;
+      }
+      if (p.kind === 'swirl') { // tornado: rising rings that spin out
+        for (let i = 0; i < 9; i++) { const yy = p.y - i * 18 - p.t * 60, rr = 10 + i * 9 * (0.6 + p.t), a = t * 12 + i;
+          ctx.strokeStyle = `rgba(200,255,220,${k * (0.75 - i * 0.06)})`; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(p.x + Math.sin(a) * 6, yy, rr, rr * 0.28, 0, 0, 7); ctx.stroke(); }
         continue;
       }
       if (p.kind === 'flash') { const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size); g.addColorStop(0, `rgba(255,250,220,${k})`); g.addColorStop(0.4, `rgba(255,180,80,${k * 0.8})`); g.addColorStop(1, 'rgba(255,120,60,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, 7); ctx.fill(); continue; }

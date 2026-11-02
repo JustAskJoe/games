@@ -8,7 +8,8 @@
    - Fixed-step physics at 60 ticks a second while anything is flying or falling (phase 'flight').
 
    Each team picks one of five characters (CHARS) before the match. A character sets its units' health, armour,
-   walking and climbing, and its two shots: Shot 1 (unlimited) and Shot 2 (its ability, 2 a match). Every
+   walking and climbing, and its shots: Shot 1 (unlimited), Shot 2 (its ability, 2 a match) and its SS (Special
+   Shot): a big ultimate that charges one notch per turn of yours and is ready every SS_CHARGE turns. Every
    character also carries the Live dud. The idea of characters with their own shots comes from GunBound;
    the characters, names and shots here are our own.
 
@@ -39,6 +40,7 @@
   const SUDDEN_RISE = 2;        // rows per turn
   const MAX_TURNS = 80;         // hard stop (the rising water should end it well before this)
   const DMG_SPREAD = 1.6;       // damage falls off to 0 at r × 1.6
+  const SS_CHARGE = 4;          // the SS is ready on your 4th turn, then every 4th turn after you use it
 
   // The Live dud: every character has 2. Lands without exploding, ticks down 3 turns, anyone near can lob it.
   const DUD = { name: 'Live dud', ammo: 2, r: 6, dmg: 60, fuse: 3, desc: 'Lands without exploding and ticks for 3 turns. Anyone close can lob it on.' };
@@ -46,31 +48,38 @@
   // Shot fields: r crater, dmg centre damage, wind (× wind push), speed (× launch speed), knock (× knockback),
   // bounce (bounces off the ground first), drill (cells it tunnels through), strike (lightning: {w, dmg}),
   // double (a second shot follows), ammo (-1 = unlimited).
-  // Numbers tuned Nov 2, 2026 so every character wins 40-60% of smart-bot matches across the roster (sim.js).
+  // SS-only fields: rain (a fan of darts), storm (three lightning strikes), quake (hits every enemy on the ground),
+  // tornado (flings everyone within reach).
+  // Numbers tuned Nov 2, 2026 (with SS) so every character wins 40-60% of smart-bot matches across the roster (sim.js).
   const CHARS = {
-    brick: { name: 'Brick', role: 'Tank', hp: 115, armor: 0.85, steps: 10, climb: 2,
-      blurb: 'Big, tough and slow. Takes 15% less damage. His heavy shots barely feel the wind.',
-      shot1: { name: 'Slug', ammo: -1, r: 3.5, dmg: 42, wind: 0.45, desc: 'A heavy shell. Wind hardly moves it.' },
-      shot2: { name: 'Wrecking Ball', ammo: 2, r: 5, dmg: 56, wind: 0.45, bounce: 1, desc: 'Bounces once, then a big blast.' } },
+    brick: { name: 'Brick', role: 'Tank', hp: 110, armor: 0.88, steps: 10, climb: 2,
+      blurb: 'Big, tough and slow. Takes 12% less damage. His heavy shots barely feel the wind.',
+      shot1: { name: 'Slug', ammo: -1, r: 3.5, dmg: 40, wind: 0.45, desc: 'A heavy shell. Wind hardly moves it.' },
+      shot2: { name: 'Wrecking Ball', ammo: 2, r: 5, dmg: 56, wind: 0.45, bounce: 1, desc: 'Bounces once, then a big blast.' },
+      ss: { name: 'Meteor Slam', r: 6, dmg: 56, wind: 0.3, speed: 0.95, desc: 'A huge, heavy shell: the biggest crater in the game.' } },
     zip: { name: 'Zip', role: 'Scout', hp: 105, armor: 1, steps: 22, climb: 3,
       blurb: 'Quick on her feet. Walks twice as far as most and climbs higher ledges.',
-      shot1: { name: 'Dart', ammo: -1, r: 3, dmg: 44, speed: 1.15, wind: 0.8, desc: 'Fast and flat, with a small blast.' },
-      shot2: { name: 'Double Tap', ammo: 2, r: 3, dmg: 38, speed: 1.15, wind: 0.8, double: true, desc: 'Two darts, one right after the other.' } },
+      shot1: { name: 'Dart', ammo: -1, r: 3, dmg: 46, speed: 1.15, wind: 0.8, desc: 'Fast and flat, with a small blast.' },
+      shot2: { name: 'Double Tap', ammo: 2, r: 3, dmg: 38, speed: 1.15, wind: 0.8, double: true, desc: 'Two darts, one right after the other.' },
+      ss: { name: 'Bullet Rain', r: 3.2, dmg: 36, speed: 1.15, wind: 0.8, rain: { n: 5, spread: 4 }, desc: 'Five darts fanned out in a quick burst.' } },
     volt: { name: 'Volt', role: 'All-rounder', hp: 100, armor: 1, steps: 14, climb: 2,
       blurb: 'Steady and simple. Calls lightning down on anyone hiding under cover.',
-      shot1: { name: 'Arc Ball', ammo: -1, r: 3.2, dmg: 44, desc: 'A plain, reliable shell.' },
-      shot2: { name: 'Thunderstrike', ammo: 2, r: 3, dmg: 26, strike: { w: 2.2, dmg: 34 }, desc: 'Where it lands, lightning hits everyone close by, cover or not.' } },
+      shot1: { name: 'Arc Ball', ammo: -1, r: 3.2, dmg: 46, desc: 'A plain, reliable shell.' },
+      shot2: { name: 'Thunderstrike', ammo: 2, r: 3, dmg: 26, strike: { w: 2.2, dmg: 34 }, desc: 'Where it lands, lightning hits everyone close by, cover or not.' },
+      ss: { name: 'Storm Call', r: 3, dmg: 24, storm: { gap: 7, w: 2.4, dmg: 42 }, desc: 'Three lightning bolts: where it lands and 7 cells to each side.' } },
     digger: { name: 'Digger', role: 'Miner', hp: 110, armor: 0.95, steps: 12, climb: 2,
       blurb: 'Sturdy. Can tunnel straight through hills to reach someone dug in.',
       shot1: { name: 'Pick Shell', ammo: -1, r: 4, dmg: 40, desc: 'Digs a wide crater.' },
-      shot2: { name: 'Drill', ammo: 2, r: 4, dmg: 48, drill: 14, desc: 'Bores through up to 14 cells of ground, then explodes.' } },
+      shot2: { name: 'Drill', ammo: 2, r: 4, dmg: 48, drill: 14, desc: 'Bores through up to 14 cells of ground, then explodes.' },
+      ss: { name: 'Earthquake', r: 5, dmg: 40, quake: { dmg: 20 }, desc: 'A big blast, then a quake that hits every enemy standing on the ground.' } },
     gale: { name: 'Gale', role: 'Wind-rider', hp: 95, armor: 1, steps: 16, climb: 2,
       blurb: 'Rides the wind. Her shots curve hard, and her Gust throws people into the water.',
       shot1: { name: 'Kite Bomb', ammo: -1, r: 4, dmg: 42, wind: 1.7, desc: 'Strong, but the wind pushes it a lot.' },
-      shot2: { name: 'Gust Bomb', ammo: 2, r: 4.5, dmg: 24, wind: 1.7, knock: 2.6, desc: 'Weak blast, huge knockback.' } },
+      shot2: { name: 'Gust Bomb', ammo: 2, r: 4.5, dmg: 24, wind: 1.7, knock: 2.6, desc: 'Weak blast, huge knockback.' },
+      ss: { name: 'Tornado', r: 3, dmg: 20, wind: 1.3, tornado: { reach: 12, dmg: 18, push: 34 }, desc: 'Flings everyone within 12 cells away from it, your own crew too.' } },
   };
   const CHAR_IDS = Object.keys(CHARS);
-  const WEAPON_IDS = ['shot1', 'shot2', 'dud'];
+  const WEAPON_IDS = ['shot1', 'shot2', 'dud', 'ss'];
 
   // ---------- seeded RNG (state in G._s) ----------
   function R(G) { G._s = (G._s + 0x6D2B79F5) >>> 0; let t = G._s; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }
@@ -118,8 +127,8 @@
       phase: 'aim', turn: 0, team: 0, teams: 2, unitIdx: [0, 0], chars,
       wind: 0, water: WATER0, moves: 0, weapon: 'shot1',
       T: null, units: [], proj: [], duds: [], fx: [],
-      ammo: [], fused: false, winner: null,
-      stats: { shots: 0, shot2: 0, lobs: 0, dudBlasts: 0, chains: 0, strikes: 0, drowned: 0, fallKOs: 0, selfDmg: [0, 0], dmg: [0, 0] },
+      ammo: [], ss: [0, 0], fused: false, winner: null,
+      stats: { shots: 0, shot2: 0, ss: 0, lobs: 0, dudBlasts: 0, chains: 0, strikes: 0, drowned: 0, fallKOs: 0, selfDmg: [0, 0], dmg: [0, 0] },
     };
     genTerrain(G);
     for (let t = 0; t < G.teams; t++) { const C = CHARS[chars[t]]; G.ammo.push({ shot1: C.shot1.ammo, shot2: C.shot2.ammo, dud: DUD.ammo }); }
@@ -132,9 +141,14 @@
     // who shoots first (a best-of-3 alternates it, since going first is worth a few points)
     G.team = G.first = opts.first === 1 ? 1 : 0;
     G.moves = CHARS[chars[G.team]].steps;
+    chargeSS(G);
+    G.ss[1 - G.team] = 1; // the team that shoots second gets a one-notch SS head start (first turn wins 58% → 51% in the sim)
     G.wind = rollWind(G);
     return G;
   }
+  // One notch of SS charge at the start of each of your turns.
+  function chargeSS(G) { G.ss[G.team] = Math.min(SS_CHARGE, G.ss[G.team] + 1); }
+  const ssReady = (G, t = G.team) => G.ss[t] >= SS_CHARGE;
   const rollWind = (G) => Math.round((R(G) * 2 - 1) * WIND_MAX * 10) / 10;
   const teamUnits = (G, t) => G.units.filter((u) => u.team === t && u.alive);
   function current(G) { const us = teamUnits(G, G.team); if (!us.length) return null; return us[G.unitIdx[G.team] % us.length]; }
@@ -142,7 +156,7 @@
   const charOf = (G, t) => CHARS[G.chars[t]];
   // The full spec of a team's weapon: { name, r, dmg, wind, speed, ... } with defaults filled in.
   function shotSpec(G, team, w) {
-    const s = w === 'dud' ? DUD : charOf(G, team)[w];
+    const s = w === 'dud' ? DUD : charOf(G, team)[w];  // shot1 | shot2 | ss
     return Object.assign({ wind: 1, speed: 1, knock: 1 }, s);
   }
 
@@ -284,8 +298,24 @@
       return;
     }
     const s = shotSpec(G, p.team, p.w);
-    explode(G, p.x, p.y, s.r, s.dmg, p.team, p.w === 'shot2' ? G.chars[p.team] : 'shot', s.knock);
+    explode(G, p.x, p.y, s.r, s.dmg, p.team, p.w === 'ss' ? 'ss' : p.w === 'shot2' ? G.chars[p.team] : 'shot', s.knock);
     if (s.strike) strike(G, p.x, s.strike.w, s.strike.dmg, p.team);
+    if (s.storm) for (const dx of [0, -s.storm.gap, s.storm.gap]) strike(G, p.x + dx, s.storm.w, s.storm.dmg, p.team);
+    if (s.quake) { // every enemy standing on the ground takes damage and is bounced up a little
+      const hits = [];
+      for (const u of G.units) if (u.alive && u.team !== p.team && !u.air) { hurt(G, u, Math.round(s.quake.dmg * CHARS[u.char].armor), p.team); u.vy = -9; u.air = true; hits.push(u.id); }
+      G.fx.push({ k: 'quake', x: p.x, hits });
+    }
+    if (s.tornado) { // fling everyone in reach away from the centre (own crew too)
+      const T = s.tornado, hits = [];
+      for (const u of G.units) {
+        if (!u.alive) continue; const [cx, cy] = center(u), d = Math.hypot(cx - p.x, cy - p.y); if (d > T.reach) continue;
+        const k = 1 - d / T.reach, dir = cx >= p.x ? 1 : -1;
+        hurt(G, u, Math.round(T.dmg * k * CHARS[u.char].armor), p.team);
+        u.vx += dir * (T.push * k + 8); u.vy -= 26 * k + 10; u.air = true; hits.push(u.id);
+      }
+      G.fx.push({ k: 'tornado', x: p.x, y: p.y, hits });
+    }
   }
   function blowDud(G, d) { d.gone = true; G.stats.dudBlasts++; explode(G, d.x, d.y, DUD.r, DUD.dmg, null, 'dud'); }
   function unitPhysics(G, u) {
@@ -339,6 +369,7 @@
       G.phase = 'over'; G.winner = hp[0] === hp[1] ? -1 : hp[0] > hp[1] ? 0 : 1; G.timeout = true; return;
     }
     G.phase = 'aim'; G.moves = charOf(G, G.team).steps; G.fused = false; G.weapon = 'shot1';
+    chargeSS(G);
     G.wind = rollWind(G);
     G.fx.push({ k: 'turn', team: G.team, turn: G.turn });
   }
@@ -376,14 +407,21 @@
         return true;
       }
       case 'weapon': {
-        if (WEAPON_IDS.indexOf(it.w) < 0 || G.ammo[G.team][it.w] === 0) return false;
+        if (WEAPON_IDS.indexOf(it.w) < 0) return false;
+        if (it.w === 'ss' ? !ssReady(G) : G.ammo[G.team][it.w] === 0) return false;
         G.weapon = it.w; return true;
       }
       case 'fire': {
         if (!Number.isFinite(it.angle) || !Number.isFinite(it.power)) return false;
         const w = G.weapon, am = G.ammo[G.team];
-        if (am[w] === 0) return false;
-        if (am[w] > 0) am[w]--;
+        if (w === 'ss') { if (!ssReady(G)) return false; G.ss[G.team] = 0; G.stats.ss++; }
+        else { if (am[w] === 0) return false; if (am[w] > 0) am[w]--; }
+        const sp = shotSpec(G, G.team, w);
+        if (sp.rain) { // Bullet Rain: a fan of darts, one after another
+          const n = sp.rain.n;
+          for (let i = 0; i < n; i++) { const q = newShot(G, u, w, it.angle + (i - (n - 1) / 2) * sp.rain.spread, it.power * (1 - 0.015 * i), G.team); q.wait = i * 7; G.proj.push(q); }
+          G.stats.shots++; u.face = Math.cos(it.angle * Math.PI / 180) >= 0 ? 1 : -1; G.phase = 'flight'; return true;
+        }
         const p = newShot(G, u, w, it.angle, it.power, G.team);
         G.proj.push(p); G.stats.shots++; if (w === 'shot2') G.stats.shot2++;
         if (shotSpec(G, G.team, w).double) { // Double Tap: a second dart a third of a second later
@@ -463,6 +501,14 @@
       if (!u.alive) continue; const [cx, cy] = center(u); if (Math.hypot(cx - land.x, cy - land.y) > S.r * DMG_SPREAD) continue;
       if (G.water - u.y < 14 || u.x < 10 || u.x > COLS - 10) sc += (u.team === team ? -1.4 : 1) * 0.6 * u.hp;
     }
+    if (S.rain) sc *= 3.2;
+    if (S.storm) for (const dx of [0, -S.storm.gap, S.storm.gap]) for (const u of G.units) if (u.alive && Math.abs(u.x - land.x - dx) <= S.storm.w) sc += (u.team === team ? -1.4 : 1) * Math.min(u.hp, S.storm.dmg * CHARS[u.char].armor);
+    if (S.quake) for (const u of G.units) if (u.alive && u.team !== team) sc += Math.min(u.hp, S.quake.dmg * CHARS[u.char].armor);
+    if (S.tornado) for (const u of G.units) {
+      if (!u.alive) continue; const [cx, cy] = center(u), d = Math.hypot(cx - land.x, cy - land.y); if (d > S.tornado.reach) continue;
+      const k = 1 - d / S.tornado.reach, risky = G.water - u.y < 16 || u.x < 14 || u.x > COLS - 14;
+      sc += (u.team === team ? -1.4 : 1) * (Math.min(u.hp, S.tornado.dmg * k) + (risky ? 0.7 * u.hp * k : 0));
+    }
     if (land.unit && G.units.find((x) => x.id === land.unit).team !== team) sc += 4;
     return sc;
   }
@@ -495,6 +541,7 @@
     }
     const opts = [];
     const s1 = bestShot(G, u, 'shot1', st, rnd, 0); opts.push({ w: 'shot1', ...s1 });
+    if (ssReady(G)) { const x = bestShot(G, u, 'ss', st, rnd, 0); opts.push({ w: 'ss', ...x }); }
     if (G.ammo[u.team].shot2 !== 0) { const c = bestShot(G, u, 'shot2', st, rnd, 0); opts.push({ w: 'shot2', ...c, score: c.score * 1.05 }); }
     if (st.dud && G.ammo[u.team].dud !== 0) { const d = bestShot(G, u, 'dud', st, rnd, DUD.fuse); opts.push({ w: 'dud', ...d, score: d.score * st.dud }); }
     if (st.lob) for (const d of lobbable(G)) {
@@ -529,7 +576,7 @@
     const parts = [G.turn, G.team, G.phase, r(G.wind), G.water, G.moves, G.winner, G.chars.join(','),
       G.units.map((u) => `${u.id}:${r(u.x)},${r(u.y)},${u.hp},${u.alive ? 1 : 0}`).join(';'),
       G.duds.map((d) => `${d.id}:${r(d.x)},${r(d.y)},${d.fuse}`).join(';'),
-      G.ammo.map((a) => `${a.shot2},${a.dud}`).join(';'), G.T.join('')];
+      G.ammo.map((a) => `${a.shot2},${a.dud}`).join(';'), G.ss.join(','), G.T.join('')];
     let h = 2166136261; const s = parts.join('|');
     for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
     return h.toString(16);
@@ -542,8 +589,8 @@
     return G;
   }
 
-  const WB = { TICK, COLS, ROWS, WATER0, GRAV, VMAX, WIND_MAX, UNIT_R, UNITS_PER_TEAM, HP, MOVE_STEPS, LOB_RANGE, LOB_POWER, SUDDEN_TURN, MAX_TURNS, DMG_SPREAD,
-    DUD, CHARS, CHAR_IDS, WEAPON_IDS, STYLES, newGame, act, step, resolve, current, teamUnits, charOf, shotSpec, solidAt, surfaceY, center, lobbable, canLob,
+  const WB = { TICK, COLS, ROWS, WATER0, GRAV, VMAX, WIND_MAX, UNIT_R, UNITS_PER_TEAM, HP, MOVE_STEPS, LOB_RANGE, LOB_POWER, SUDDEN_TURN, MAX_TURNS, DMG_SPREAD, SS_CHARGE,
+    DUD, CHARS, CHAR_IDS, WEAPON_IDS, STYLES, newGame, act, step, resolve, current, teamUnits, charOf, shotSpec, ssReady, solidAt, surfaceY, center, lobbable, canLob,
     predict, blastScore, botTurn, playOut, hash, replay };
   if (typeof module !== 'undefined' && module.exports) module.exports = WB; else root.WB = WB;
 })(typeof window !== 'undefined' ? window : globalThis);

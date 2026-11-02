@@ -7,7 +7,7 @@ Newest on top. See the repo's CLAUDE.md for how patch notes work.
 ---
 
 ## P1 characters · 2026-11-02 · Louiemark (with Claude)
-Five characters to pick from, in the spirit of GunBound's mobiles (our own characters, names and shots).
+Five characters to pick from, each with an SS (Special Shot), in the spirit of GunBound's mobiles (our own characters, names and shots).
 
 ### What's new
 - **Pick a character before every match.** Ember Crew picks first, then Tide Crew (the same one is allowed). Both of your crew are that character. Click a card, or use ← → and Enter, or press 1–5.
@@ -21,7 +21,13 @@ Five characters to pick from, in the spirit of GunBound's mobiles (our own chara
 - Each character has its own look: Brick's steel helmet, Zip's cap and scarf, Volt's lightning rod, Digger's hard hat and lamp, Gale's aviator cap and kite. Your team colour stays on the body, so you can always tell the sides apart.
 - Each character's shots look different in the air, and Thunderstrike draws a lightning bolt.
 - After a match: **New characters** goes back to the pick screen; **Rematch** keeps your picks. The feedback form asks which character was most fun and whether any felt too strong.
-- **Balance:** every character wins 40–60% of a smart-bot round-robin (Brick 58, Zip 44, Volt 44, Digger 51, Gale 51). `build-and-test.py` now checks that band. Full run: ALL GOOD.
+- **SS (Special Shot):** every character has an ultimate. It charges one notch each of your turns (the SS meter by your team name) and is ready on your 4th turn. When it's ready, it **takes over the Shot 1 button** (glowing gold, key 1) until you use it; then it charges again. The team that goes second starts with one notch, so it isn't always behind.
+  - **Brick · Meteor Slam:** a huge, heavy shell, the biggest crater in the game.
+  - **Zip · Bullet Rain:** five darts fanned out in a quick burst.
+  - **Volt · Storm Call:** three lightning bolts, where it lands and 7 cells to each side, through cover.
+  - **Digger · Earthquake:** a big blast, then a quake that hits every enemy standing on the ground.
+  - **Gale · Tornado:** flings everyone within 12 cells away from it, your own crew too.
+- **Balance (with SS):** every character wins 40–60% of a smart-bot round-robin (Brick 57, Zip 40, Volt 48, Digger 57, Gale 48). `build-and-test.py` now checks that band. Full run: ALL GOOD.
 
 ### Next up
 - [ ] @Louiemark: play each character at least once with a friend. Which one feels best, and does any feel unfair? The feedback form asks both.
@@ -30,7 +36,12 @@ Five characters to pick from, in the spirit of GunBound's mobiles (our own chara
 
 ### Watch out
 - [ ] **Bots never walk,** so Zip's long walk and Brick's short one count for nothing in the sim. With people, Zip will likely be stronger and Brick weaker than the numbers say.
-- [ ] **Brick beats Zip 66% and Volt 67% head to head** even though every overall number is inside the band.
+- [ ] **Brick beats Zip 61% and Volt 60%, and Digger beats Zip 65%, head to head,** even though every overall number is inside the band. **Zip is right on the 40% floor**: a small change could push her out.
+- [ ] **The SS makes matches shorter** (median 12–14 turns, was 15–17) and sudden death rarer. Fine for the 5–10 minute target, but watch whether rounds feel decided by whoever lands their SS.
+- [ ] **Earthquake hits every enemy on the ground anywhere on the map** (20 each), and Thunderstrike and Storm Call go through cover. Strong by design; check it doesn't feel unfair.
+- [ ] Tornado can throw your own crew; the bots avoid that, people may not. Its coach tip says so.
+- [ ] The sim now alternates who goes first (seats and first turn are separate). Its "first-turn wins" number before today also counted starting on the left side of the map, so old and new numbers don't compare directly. The pass band itself is unchanged.
+- [ ] Going first: 51% in a 300-match check, 58% in the sim's 200-match mirror line. Probably mid 50s; a bigger run would settle it.
 - [ ] The character band is only checked on the full run; `--quick` (30 matches a pair) just prints the numbers, because it's too rough to call (about ±9 points).
 - [ ] Thunderstrike hits through any amount of ground; that's the point, but it could feel unfair against someone well dug in. Watch for it in playtests.
 - [ ] Gust Bomb's value depends on the map: on this map's high hills it rarely throws anyone into the water. A map with more water near the crews would make it much stronger.

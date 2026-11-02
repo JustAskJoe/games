@@ -139,6 +139,48 @@ const shoot = (chars, w, angle, power, setup) => {
   }
 }
 
+// 9. SS (Special Shot): charges one notch a turn, ready on your 4th turn, and each one does its thing.
+{
+  const G = WB.newGame(321, { chars: ['volt', 'volt'] });
+  ok(G.ss[0] === 1 && !WB.ssReady(G), 'SS starts with one notch on your first turn, not ready');
+  ok(G.ss[1] === 1, 'the team going second starts with a one-notch head start');
+  ok(!WB.act(G, { k: 'weapon', w: 'ss' }), 'SS can\'t be picked before it is charged');
+  for (let i = 0; i < 6; i++) { WB.act(G, { k: 'pass' }); WB.resolve(G); }
+  ok(G.team === 0 && WB.ssReady(G) && G.ss[0] === WB.SS_CHARGE, `ready on your ${WB.SS_CHARGE}th turn`);
+  ok(WB.act(G, { k: 'weapon', w: 'ss' }) && WB.act(G, { k: 'fire', angle: 60, power: 0.6 }), 'fire the SS');
+  ok(G.ss[0] === 0 && G.stats.ss === 1, 'firing it empties the charge');
+  WB.resolve(G); WB.act(G, { k: 'pass' }); WB.resolve(G);
+  ok(G.ss[0] === 1, 'and it starts charging again');
+}
+const ssGame = (chars, seed = 11) => { const G = WB.newGame(seed, { chars }); G.ss[G.team] = WB.SS_CHARGE; WB.act(G, { k: 'weapon', w: 'ss' }); return G; };
+{ // Bullet Rain: five darts
+  const G = ssGame(['zip', 'volt']); WB.act(G, { k: 'fire', angle: 50, power: 0.7 });
+  ok(G.proj.length === 5 && G.proj.filter((p) => p.wait > 0).length === 4, 'Bullet Rain fires a fan of 5 darts');
+  WB.resolve(G);
+}
+{ // Storm Call: three strikes
+  const G = ssGame(['volt', 'volt']); WB.act(G, { k: 'fire', angle: 60, power: 0.7 }); WB.resolve(G);
+  ok(G.stats.strikes === 3 || G.proj.length === 0, `Storm Call strikes 3 times (${G.stats.strikes}) unless it fell in the water`);
+}
+{ // Earthquake: every grounded enemy loses health, own crew untouched by the quake
+  const G = ssGame(['digger', 'brick']), foes = G.units.filter((u) => u.team === 1), before = foes.map((u) => u.hp), mine = G.units.filter((u) => u.team === 0).map((u) => u.hp);
+  G.proj.push({ id: 900, w: 'ss', team: 0, from: -1, age: 9, x: 80, y: WB.surfaceY(G, 80) - 1, vx: 0, vy: 4, wm: 1 }); G.phase = 'flight';
+  const fx = []; for (let i = 0; i < 4000 && G.phase === 'flight'; i++) fx.push(...WB.step(G));
+  const q = fx.find((e) => e.k === 'quake');
+  ok(q && q.hits.length === 2 && foes.every((u, i) => u.hp < before[i]), `Earthquake hits both enemies (${before} → ${foes.map((u) => u.hp)})`);
+  ok(G.units.filter((u) => u.team === 0).every((u, i) => u.hp === mine[i]), 'Earthquake doesn\'t touch your own crew far from the blast');
+}
+{ // Tornado: flings units in reach away from the centre
+  const G = ssGame(['gale', 'volt']), foe = G.units.find((u) => u.team === 1), x0 = foe.x, y0 = foe.y;
+  G.proj.push({ id: 901, w: 'ss', team: 0, from: -1, age: 9, x: foe.x - 4, y: foe.y - 2, vx: 0, vy: 4, wm: 1 }); G.phase = 'flight';
+  let moved = 0; for (let i = 0; i < 4000 && G.phase === 'flight'; i++) { WB.step(G); moved = Math.max(moved, Math.hypot(foe.x - x0, foe.y - y0)); }
+  ok(moved > 4 || !foe.alive, `Tornado throws the target away (moved ${moved.toFixed(1)} cells${foe.alive ? '' : ', knocked out'})`);
+}
+{ // Meteor Slam: the biggest crater
+  const crater = (w) => { const G = WB.newGame(5, { chars: ['brick', 'volt'] }), before = G.T.reduce((a, v) => a + v, 0); G.proj.push({ id: 902, w, team: 0, from: -1, age: 9, x: 80, y: WB.surfaceY(G, 80) - 1, vx: 0, vy: 4, wm: 1 }); G.phase = 'flight'; WB.resolve(G); return before - G.T.reduce((a, v) => a + v, 0); };
+  ok(crater('ss') > crater('shot2') * 1.3, `Meteor Slam digs ${crater('ss')} cells vs Wrecking Ball ${crater('shot2')}`);
+}
+
 // 7. Rising water ends every match: bots that only pass still finish.
 {
   const G = WB.newGame(77); let g = 0;

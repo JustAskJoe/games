@@ -6,6 +6,6 @@ For Steam's AI disclosure. One row per file or batch, newest on top. Add your ow
 
 | Date | File(s) | Made with | Status | Issue / PR |
 | --- | --- | --- | --- | --- |
-| Nov 2, 2026 | `prototype/ui.js`: the five characters' looks and portraits (`drawBody`, `portrait`), their shots and the lightning bolt (all drawn in code) | Claude (code-drawn, no image model) | Placeholder | P1 characters |
+| Nov 2, 2026 | `prototype/ui.js`: the five characters' looks and portraits (`drawBody`, `portrait`), their shots, SS effects (lightning, quake, tornado) and the lightning bolt (all drawn in code) | Claude (code-drawn, no image model) | Placeholder | P1 characters |
 | Nov 2, 2026 | `prototype/ui.js`: the sky, ridges, terrain look, crews, duds, explosions and screens (all drawn in code) | Claude (code-drawn, no image model) | Placeholder | P1 hotseat |
 | Nov 2, 2026 | `prototype/ui.js`: sound effects (synthesized in code with Web Audio) | Claude (code) | Placeholder | P1 hotseat |
