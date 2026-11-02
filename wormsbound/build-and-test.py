@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """One command for everything before you push. Run from anywhere:
 
-    python3 wormsbound/build-and-test.py           engine rule checks + balance sim (200 matches per pairing)
-    python3 wormsbound/build-and-test.py --quick   the same, with 60 matches per pairing (rougher numbers, faster)
+    python3 wormsbound/build-and-test.py           build + engine rule checks + balance sim (200 matches per pairing) + browser test
+    python3 wormsbound/build-and-test.py --quick   build + rule checks + sim at 60 matches per pairing (no browser; rougher numbers)
 
-Prototype 1 has no screens yet, so there is no build or phone test. They join this script with the local
-hotseat UI (builds/wormsbound.html, Playwright at 390 and 320 wide), the same way Tower Defense does it.
+The browser test (prototype/test.py, Playwright) plays the hotseat build at 1280x720: keyboard walking, a real
+drag-and-release shot, the turn timer, a lob, a whole best-of-3 by bots, feedback and rematch. Then it loads at
+phone widths (390, 320 and 844x390). It fails on any JavaScript error or sideways scrolling.
 
 Pass band (PROPOSED Nov 2, 2026: Louiemark to confirm; numbers recorded in design/handoff.md):
   - every match finishes: no stuck runs, no NaN, no turn-cap timeouts (rising water must end it)
@@ -34,6 +35,7 @@ def run(label, cmd, cwd):
 if not shutil.which('node'):
     print('!! node not found: install Node 18+ to run the tests and the sim'); sys.exit(1)
 
+run('build', [sys.executable, 'build.py'], proto)
 run('engine rule checks', ['node', 'test.js'], proto)
 n = '60' if quick else '200'
 r = run(f'balance sim ({n} matches per pairing)', ['node', 'sim.js', n], proto)
@@ -53,6 +55,15 @@ if all(rows.values()):
     if rows['dud value']['a'] < 48: fails.append(f"balance: duds aren't worth using (smart vs nodud {rows['dud value']['a']}%, band 48%+)")
     if rows['dud spam']['a'] > 65: fails.append(f"balance: dud spam wins {rows['dud spam']['a']}% (band 65% at most)")
 if 'NaN' in (r.stdout + r.stderr): fails.append('balance: NaN in a unit')
+
+if not quick:
+    try:
+        import playwright  # noqa: F401
+        r = run('browser test (Playwright: 1280x720, then 390, 320 and 844x390)', [sys.executable, 'test.py'], proto)
+        for width, got in re.findall(r'scrollWidth(\d+) (\d+)', r.stdout):
+            if int(got) > int(width): fails.append(f'horizontal scroll at {width}px')
+    except ImportError:
+        print('\n!! Playwright missing: pip install playwright && python -m playwright install chromium'); fails.append('playwright')
 
 print('\n' + ('ALL GOOD' if not fails else 'FAILED: ' + ', '.join(fails)))
 sys.exit(1 if fails else 0)

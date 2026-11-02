@@ -102,6 +102,8 @@
       const [a, b] = slots[t]; const x = Math.round(COLS * (a + (b - a) * (i + 0.2 + R(G) * 0.6) / UNITS_PER_TEAM));
       G.units.push({ id: ++G._id, team: t, x: x + 0.5, y: surfaceY(G, x), vx: 0, vy: 0, hp: HP, alive: true, air: false, face: t === 0 ? 1 : -1 });
     }
+    // who shoots first (a best-of-3 alternates it, since going first is worth a few points)
+    G.team = G.first = opts.first === 1 ? 1 : 0;
     G.wind = rollWind(G);
     return G;
   }

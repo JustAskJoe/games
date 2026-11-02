@@ -5,7 +5,7 @@
 The one page to read before touching this game: what's decided, what's built, and what's next. The approved brief is in [`../pitch/brief.md`](../pitch/brief.md). This doc is the working version and wins if the two disagree.
 
 **Team:** Louiemark (direction, design, art direction), with Claude (code). Hours a week: not set yet.
-**Status (Nov 2, 2026):** Prototype 1 engine and bot sim built and passing. No screens yet.
+**Status (Nov 2, 2026):** Prototype 1 playable as a local hotseat (`builds/wormsbound.html`). Bot-tested and checked in a headless browser; nobody has played it yet.
 
 ## The game in one line
 A turn-based artillery brawler for 2 to 4 friends on one screen: aim, read the wind, and lob shells across ground that blows apart. The twist is **live duds**: shells that land without exploding keep ticking, and anyone close enough can lob them on.
@@ -19,7 +19,10 @@ A turn-based artillery brawler for 2 to 4 friends on one screen: aim, read the w
 | Turn | Walk up to 14 steps, pick a weapon, then fire, lob a live dud, or pass. New wind every turn. | Claude's first pass; Louiemark to confirm |
 | Live duds | Fuse of 3 turns, ticking once at the end of every turn (yours included). Lob range 5 cells; a lob tops out at 65% of full power and keeps the fuse. A blast next to a dud sets it off (chain reaction). | Claude's first pass; Louiemark to confirm |
 | Ending | Last team standing wins the round. From turn 24 the water rises 2 rows a turn, so every match ends. Hard cap at 80 turns (never reached in the sim). | Claude's first pass; Louiemark to confirm |
-| Best-of-3, rematch, turn timer | UI work, next pull request. The engine's `pass` intent is what a timer sends. | Brief (T12) |
+| Best-of-3, rematch, turn timer | Built: best of three with the first turn alternating each round, one-button rematch (R), a 30-second timer that sends `pass` (can be switched off in the menu). | Brief (T12); Louiemark, Nov 2 |
+| Teams | Ember Crew (orange: Rook, Blaze) and Tide Crew (teal: Pip, Marlo). Placeholder names. | Claude's first pass |
+| Controls | Drag back from your unit and let go (slingshot), plus keys: ◀ ▶ walk, ▲ ▼ angle, Q/E power, 1 2 3 weapons, L lob, Space fire, X skip, Esc menu. The aim preview shows the start of the arc without wind. | Claude's first pass; Louiemark to confirm |
+| Screen | One 1280×720 stage that scales to fit; the whole map is always on screen (no following camera yet). | Claude's first pass |
 
 ### The numbers (top of `prototype/engine.js`)
 | What | Value |
@@ -53,8 +56,8 @@ Four bots: **smart** (good aim, uses everything), **sloppy** (few tries, shaky h
 - **Matches run 9–28 turns** (p10–p90): about 5–10 minutes at 20–30 seconds a turn, as the brief wants.
 
 ## Next, in order
-1. **The local hotseat screen** (Prototype 1 UI): canvas renderer for the terrain and units, drag-to-aim with angle and power, wind arrow, weapon wheel, the live-dud countdown, turn timer (sends `pass`), win screen and one-button rematch, best-of-3. Then `build.py`, `builds/wormsbound.html`, a Playwright test and a `games.json` build entry so it plays in the Lab.
-2. **Playtest** with friends. Pass bar (brief): everyone asks for a rematch without being prompted.
+1. **Playtest** the hotseat with friends. Pass bar (brief): everyone asks for a rematch without being prompted. Answers go in through the feedback form after a match.
+2. **Tune from what people do:** the live-dud numbers first (see Balance).
 3. **A Lead Artist plan** (`art/lead-plan.md`) before any art is generated. Studio rule.
 4. **The crew deck** from the brief (patch notes item), with screenshots from the prototype.
 
