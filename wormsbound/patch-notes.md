@@ -7,7 +7,7 @@ Newest on top. See the repo's CLAUDE.md for how patch notes work.
 ---
 
 ## P1 online · 2026-11-02 · Louiemark (with Claude)
-Online 1v1: play a friend on another computer. Built and tested on a local server; the Cloudflare server isn't deployed yet.
+Online 1v1: play a friend on another computer. The room server is live on Cloudflare (`wss://wormsbound-rooms.louiemark-ambata.workers.dev`) and the game uses it.
 
 ### What's new
 - **ONLINE 1v1** on the title screen. Make a room and read out the 4-letter code, or join with one. Each of you picks a character and presses Ready; then it's a normal best-of-three 1v1, with turn delay, SS and live duds.
@@ -15,18 +15,25 @@ Online 1v1: play a friend on another computer. Built and tested on a local serve
 - You **see the other player's aim live** while they drag. On their turn your controls are replaced by "Ana (Brick) is aiming…".
 - **Dropped connection?** The game reconnects by itself and puts you back in your seat. A player who vanishes has their turn passed after 50 seconds.
 - Rematch from the end screen when both of you ask (R works too).
+- **It's live:** ONLINE 1v1 on the Lab now connects to the room server on Cloudflare, no setup needed.
 
 ### Next up
-- [ ] @Louiemark: deploy it. Open a **new session** (so it sees `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`) and say "deploy the Wormsbound room server". Steps in `wormsbound/server/README.md`: `npx wrangler@3 deploy`, then put the address in `ONLINE_SERVER` and merge.
+- [x] @Louiemark: deploy it. (Louiemark, Nov 2: deployed to `https://wormsbound-rooms.louiemark-ambata.workers.dev`, `ONLINE_SERVER` set.) Open a **new session** (so it sees `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`) and say "deploy the Wormsbound room server". Steps in `wormsbound/server/README.md`: `npx wrangler@3 deploy`, then put the address in `ONLINE_SERVER` and merge.
 - [ ] @Louiemark: play an online match with a friend on two computers and fill in the feedback form.
 - [ ] Decide whether rooms should be crew-only (behind the Lab's sign-in) or open to anyone with a code.
 
 ### Watch out
-- [ ] **Not deployed:** until `ONLINE_SERVER` is set, ONLINE 1v1 on the Lab says the server isn't set up (on your own machine it uses the local test server). `?server=wss://…` on the build's address overrides it for testing.
-- [ ] **Not tested on Cloudflare itself:** the Worker bundles and loads (checked with esbuild, the bundler Wrangler uses), and the room logic is the same file the local server runs, but no real Durable Object has run it yet.
+- [x] **Not deployed:** (Louiemark, Nov 2: deployed and set.) Until `ONLINE_SERVER` is set, ONLINE 1v1 on the Lab says the server isn't set up (on your own machine it uses the local test server). `?server=wss://…` on the build's address overrides it for testing.
+- [x] **Not tested on Cloudflare itself:** (Louiemark, Nov 2: `curl …/new` returns a code, and `node smoke.js <live address>` played a whole best-of-3 on the live Durable Object, 42 moves, every checksum matching on both clients. Still not two browsers on two computers.) the Worker bundles and loads (checked with esbuild, the bundler Wrangler uses), and the room logic is the same file the local server runs, but no real Durable Object has run it yet.
 - [ ] Rooms are in memory: if both players leave and Cloudflare evicts the room, it's gone. Anyone with the code can join; there's no sign-in.
 - [ ] Tested with two headless browser pages on one machine, not two real computers over the internet; no lag or flaky-connection testing beyond one forced drop and reconnect.
 - [ ] The server lives on Louiemark's own Cloudflare account (documented in `ARCHITECTURE.md`).
+- [ ] **Local testing changed:** with `ONLINE_SERVER` set, a build opened from a file or localhost now connects to the **live** server too. To use the local test server add `?server=ws://localhost:8431` (`test-online.py` already does).
+- [ ] Live checks leave real rooms on the server: each `node smoke.js <live address>` run, plus the `curl …/new` checks, made a few rooms on the free plan. They're tiny and get evicted, but don't loop the live smoke test.
+- [ ] The `CLOUDFLARE_ACCOUNT_ID` in the cloud environment was one character short (31 of 32) at deploy time; the deploy used the full ID read from the API for the token's only account. Louiemark updated it afterwards, but this session couldn't see the new value. Check the next deploy works without the workaround.
+- [ ] Deployed with wrangler 3 (it warns it's out of date; wrangler 4 is current). Fine for now; the README still says `wrangler@3`.
+- [ ] Not checked: two real people on two computers or phones over the internet, through the live server.
+- [ ] Cloud sessions don't have Python Playwright: `build-and-test.py` printed "Playwright missing" until `pip install playwright==1.63.0` (matches the preinstalled Chromium, no browser download). After that: ALL GOOD, including the two-page online test.
 
 ## P1 modes · 2026-11-02 · Louiemark (with Claude)
 Turn delay, 1 Player vs 3 computers, and 1v1 with one character each. Full `build-and-test.py`: ALL GOOD.
