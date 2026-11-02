@@ -6,6 +6,11 @@ Newest on top. See the repo's CLAUDE.md for how patch notes work.
 
 ---
 
+## v3.1 labels · 2026-11-02 · Hunter (with Claude)
+No game change.
+- The Arcade card now says v3.1 and describes the 10-day shop, not v2's 5-day stall.
+- The README status describes v3.1.
+
 ## v3.1 floor, tutorial and vintage · 2026-11-01 · Hunter (with Claude)
 Built on the grading rework (PR #74). Hunter's answers to the v3.1 plan's Q5–Q10 are in `design/handoff.md`.
 
