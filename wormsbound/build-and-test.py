@@ -4,6 +4,9 @@
     python3 wormsbound/build-and-test.py           build + engine rule checks + balance sim (200 matches per pairing) + browser test
     python3 wormsbound/build-and-test.py --quick   build + rule checks + sim at 60 matches per pairing (no browser; rougher numbers)
 
+Online 1v1: the room server's rule checks and socket test (server/: npm test), and prototype/test-online.py, where two
+real browser pages play a whole match through the local server. (`npm install` in server/ once; the script does it.)
+
 The browser test (prototype/test.py, Playwright) plays the hotseat build at 1280x720: keyboard walking, a real
 drag-and-release shot, the turn timer, a lob, a whole best-of-3 by bots, feedback and rematch. Then it loads at
 phone widths (390, 320 and 844x390). It fails on any JavaScript error or sideways scrolling.
@@ -42,6 +45,9 @@ if not shutil.which('node'):
 
 run('build', [sys.executable, 'build.py'], proto)
 run('engine rule checks', ['node', 'test.js'], proto)
+server = here / 'server'
+if not (server / 'node_modules').exists(): run('server install', ['npm', 'install', '--no-audit', '--no-fund'], server)
+run('online room server tests', ['npm', 'test'], server)
 n = '60' if quick else '200'
 r = run(f'balance sim ({n} matches per pairing)', ['node', 'sim.js', n], proto)
 out = r.stdout
@@ -79,6 +85,7 @@ if not quick:
         r = run('browser test (Playwright: 1280x720, then 390, 320 and 844x390)', [sys.executable, 'test.py'], proto)
         for width, got in re.findall(r'scrollWidth(\d+) (\d+)', r.stdout):
             if int(got) > int(width): fails.append(f'horizontal scroll at {width}px')
+        run('online 1v1 in two browser pages (local server)', [sys.executable, 'test-online.py'], proto)
     except ImportError:
         print('\n!! Playwright missing: pip install playwright && python -m playwright install chromium'); fails.append('playwright')
 

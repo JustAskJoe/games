@@ -1,0 +1,15 @@
+# Wormsbound online room server on Cloudflare (Worker + Durable Objects). © 2026 justaskjoe. All rights reserved.
+# Deploys to the account in CLOUDFLARE_ACCOUNT_ID with the token in CLOUDFLARE_API_TOKEN (never put either in this file).
+# Address after deploy: https://wormsbound-rooms.<your-subdomain>.workers.dev  (WebSockets: wss://…/room/ABCD)
+name = "wormsbound-rooms"
+main = "worker.js"
+compatibility_date = "2026-10-01"
+
+[[durable_objects.bindings]]
+name = "ROOMS"
+class_name = "RoomObject"
+
+# SQLite-backed Durable Objects are the kind the free plan offers (the rooms don't use storage beyond the alarm).
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["RoomObject"]

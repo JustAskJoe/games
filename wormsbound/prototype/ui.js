@@ -2,7 +2,8 @@
    Draws the engine (window.WB) on one 1280×720 canvas and turns mouse, touch and keyboard into act() intents.
    The UI never changes the game itself: it only calls WB.act() and steps WB.step() on the clock.
    Two modes: 1 Player (you against 3 computer opponents in a 4-way free-for-all, Easy / Medium / Hard) and
-   2 Players (1v1 on one keyboard). Each side picks one of five characters (WB.CHARS); best of 3 rounds, with the
+   2 Players (1v1 on one keyboard), and Online 1v1 (two computers, through the room server in ../server/: the server
+   referees every move and this page replays what it says was played). Each side picks one of five characters (WB.CHARS); best of 3 rounds, with the
    first turn rotating. Turn order follows the engine's turn delay.
    Placeholder art, all drawn in code. */
 (function () {
@@ -28,6 +29,9 @@
     medium: { name: 'Medium', blurb: 'Decent aim. Uses duds, lobs them back and saves its SS.' },
     hard: { name: 'Hard', blurb: 'Sharp aim and every trick. Beating three of them is a real win.' },
   };
+  // Online 1v1: the room server's address. ?server=wss://… in the page address overrides it; on your own machine
+  // (file:// or localhost) it defaults to the local test server (cd wormsbound/server && npm start).
+  const ONLINE_SERVER = '';
   const FONT = (px) => `${px}px "Lilita One", "Arial Black", system-ui, sans-serif`;
 
   const cv = $('#map'), ctx = cv.getContext('2d');
@@ -36,15 +40,17 @@
 
   const ui = {
     screen: 'title', G: null, matchSeed: 0, round: 1, wins: [0, 0], aim: {}, weapon: 'shot1', lob: false, picks: [null, null], pickTeam: 0, cursor: 2,
-    mode: 'duel', level: 'medium', cpu: null,
+    mode: 'duel', level: 'medium', cpu: null, net: null, you: 0, remoteAim: null,
     drag: null, acc: 0, last: 0, slow: 0, shake: 0, parts: [], trails: {}, scorch: [], clouds: [], dust: [], pops: [],
     tLeft: TURN_SECONDS, timerOn: lsGet('wb-timer') !== 'off', sound: lsGet('wb-sound') !== 'off', coach: lsGet('wb-coach') !== 'off',
     fast: false, tester: false, overAt: 0, turnsSeen: 0, paused: false, fb: { q: {}, text: '', nm: '', saved: null },
   };
   const nSides = () => (ui.mode === 'solo' ? 4 : 2);
   const isCPU = (t) => ui.mode === 'solo' && t !== 0;
+  const online = () => ui.mode === 'online';
+  const roomSeat = (t) => (ui.net && ui.net.room && ui.net.room.seats[t]) || null;
   // what a side is called: "You" and "Tide CPU" in 1 Player, "Player 1" and "Player 2" in 1v1
-  const sideLabel = (t) => ui.mode === 'solo' ? (t === 0 ? 'You' : `${TEAMS[t].name} CPU`) : `Player ${t + 1}`;
+  const sideLabel = (t) => ui.mode === 'solo' ? (t === 0 ? 'You' : `${TEAMS[t].name} CPU`) : online() ? (t === ui.you ? 'You' : (roomSeat(t) && roomSeat(t).name) || 'Opponent') : `Player ${t + 1}`;
   const unitName = (u) => sideLabel(u.team);
   const charName = (t) => WB.CHARS[ui.G.chars[t]].name;
 
@@ -203,7 +209,7 @@
     const ss = WB.ssReady(G);
     ui.tLeft = TURN_SECONDS; ui.lob = false; ui.weapon = ss ? 'ss' : 'shot1'; ui.cpu = null;
     if (!isCPU(G.team)) ui.turnsSeen++;
-    banner(sideLabel(G.team), `${charName(G.team)}${ss ? ' · SS READY!' : ''}${isCPU(G.team) ? '' : ui.mode === 'solo' ? ' · your turn' : ''}`, TEAMS[G.team].c);
+    banner(sideLabel(G.team), `${charName(G.team)}${ss ? ' · SS READY!' : ''}${isCPU(G.team) ? '' : ui.mode === 'solo' || (online() && G.team === ui.you) ? ' · your turn' : ''}`, TEAMS[G.team].c);
     if (ss) tone(660, 990, 0.25, 0.12, 'triangle');
     renderHUD(); renderCtl(); coachLine();
   }
@@ -218,7 +224,18 @@
     if (!ui.aim[u.id]) ui.aim[u.id] = { angle: u.x < WB.COLS / 2 ? 50 : 130, power: 0.62 };
     return ui.aim[u.id];
   }
-  function canAct() { return ui.screen === 'game' && !ui.paused && ui.G && ui.G.phase === 'aim' && !isCPU(ui.G.team); }
+  function canAct() {
+    if (online()) return ui.screen === 'game' && ui.G && ui.G.phase === 'aim' && ui.G.team === ui.you && ui.net && ui.net.queue.length === 0 && !ui.net.waiting;
+    return ui.screen === 'game' && !ui.paused && ui.G && ui.G.phase === 'aim' && !isCPU(ui.G.team);
+  }
+  // Every move goes through here. Offline it changes the game at once; online it goes to the server, and the game
+  // changes when the server sends it back (net.onApplied), on both screens the same way.
+  function play(it) {
+    if (!online()) return WB.act(ui.G, it);
+    ui.net.send({ t: 'act', it });
+    if (it.k !== 'move' && it.k !== 'weapon') ui.net.waiting = true; // don't let a double-click send a second shot
+    return true;
+  }
 
   // ---------- computer turns (1 Player) ----------
   // The bot decides on a copy of the game (same seed and state, so the same choice), then the moves are played on
@@ -244,17 +261,17 @@
     if (ui.lob) {
       const ds = WB.lobbable(G); if (!ds.length) { ui.lob = false; renderCtl(); return false; }
       const [cx, cy] = WB.center(u); ds.sort((p, q) => Math.hypot(p.x - cx, p.y - cy) - Math.hypot(q.x - cx, q.y - cy));
-      ok = WB.act(G, { k: 'lob', dud: ds[0].id, angle: a.angle, power: a.power });
+      ok = play({ k: 'lob', dud: ds[0].id, angle: a.angle, power: a.power });
     } else {
-      if (G.weapon !== ui.weapon) WB.act(G, { k: 'weapon', w: ui.weapon });
-      ok = WB.act(G, { k: 'fire', angle: a.angle, power: a.power });
+      if (G.weapon !== ui.weapon) play({ k: 'weapon', w: ui.weapon });
+      ok = play({ k: 'fire', angle: a.angle, power: a.power });
     }
-    if (ok) { SFX.fire(); burst(...muzzle(u, a), 8, 'spark'); renderCtl(); coachLine(); }
+    if (ok && !online()) { SFX.fire(); burst(...muzzle(u, a), 8, 'spark'); renderCtl(); coachLine(); }
     return ok;
   }
   function muzzle(u, a) { const [cx, cy] = WB.center(u), r = a.angle * Math.PI / 180; return [(cx + Math.cos(r) * 2.2) * CELL, (cy - Math.sin(r) * 2.2) * CELL]; }
-  function walk(dir) { if (!canAct()) return; if (WB.act(ui.G, { k: 'move', dir })) { SFX.click(); renderCtl(); coachLine(); } }
-  function pass() { if (canAct()) { WB.act(ui.G, { k: 'pass' }); renderCtl(); } }
+  function walk(dir) { if (!canAct()) return; if (play({ k: 'move', dir }) && !online()) { SFX.click(); renderCtl(); coachLine(); } }
+  function pass() { if (canAct()) { play({ k: 'pass' }); renderCtl(); } }
 
   function stagePoint(e) { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) * W / r.width, (e.clientY - r.top) * H / r.height]; }
   cv.addEventListener('pointerdown', (e) => {
@@ -271,6 +288,7 @@
     a.angle = Math.round(((Math.atan2(-dy, dx) * 180 / Math.PI) + 360) % 360 * 10) / 10;
     if (a.angle > 180) a.angle = a.angle > 270 ? 0 : 180; // aim at the sky, never into the ground
     a.power = Math.round(clamp(len / DRAG_FULL, 0.05, 1) * 100) / 100;
+    shareAim(a);
   });
   const endDrag = (e) => {
     if (!ui.drag || e.pointerId !== ui.drag.id) return;
@@ -282,7 +300,7 @@
   addEventListener('keydown', (e) => {
     if (e.target && /INPUT|TEXTAREA/.test(e.target.tagName)) return;
     const k = e.key;
-    if (ui.screen === 'end' && (k === 'r' || k === 'R')) { startMatch(); return; }
+    if (ui.screen === 'end' && (k === 'r' || k === 'R')) { if (online()) { if (ui.net) { ui.net.send({ t: 'rematch' }); ui.net.rematchAsked = true; roundOverAgain(); } } else startMatch(); return; }
     if (ui.screen === 'level') { if (/^[1-3]$/.test(k)) { ui.level = Object.keys(LEVELS)[+k - 1]; ui.cursor = 2; selectScreen(0); } return; }
     if (ui.screen === 'select') {
       const n = WB.CHAR_IDS.length;
@@ -306,6 +324,7 @@
     else if (k === '2' || k === '3') pickWeapon(WB.WEAPON_IDS[+k - 1]);
     else if (k === 'l' || k === 'L') toggleLob();
     else if (k === ' ' || k === 'Enter') { e.preventDefault(); doFire(); }
+    if (/^(Arrow(Up|Down)|[wWsSqQeEfF])$/.test(k)) shareAim(a);
     else if (k === 'x' || k === 'X') pass();
   });
   function pickWeapon(w) { if (!canAct() || (w === 'ss' ? !WB.ssReady(ui.G) : ui.G.ammo[ui.G.team][w] === 0)) return; ui.weapon = w; ui.lob = false; SFX.click(); renderCtl(); coachLine(); }
@@ -334,13 +353,14 @@
     const w = ui.lob ? 'lob' : ui.weapon, d = G.units.filter((u) => u.alive).map((u) => ({ u, d: u.id === G.actor ? WB.delayIf(G, w) : u.delay }));
     const seq = [];
     for (let i = 0; i < 6 && d.length; i++) { d.sort((a, b) => a.d - b.d || a.u.id - b.u.id); const x = d[0]; seq.push(x.u.team); x.d += WB.shotSpec(G, x.u.team, 'shot1').delay; }
-    return `<div class="order" title="Who plays next, if everyone fires their Shot 1 after this">NEXT ${seq.map((t) => `<b style="background:${TEAMS[t].c}">${esc(sideLabel(t) === 'You' ? 'You' : ui.mode === 'solo' ? TEAMS[t].name[0] : 'P' + (t + 1))}</b>`).join('')}</div>`;
+    return `<div class="order" title="Who plays next, if everyone fires their Shot 1 after this">NEXT ${seq.map((t) => `<b style="background:${TEAMS[t].c}">${esc(sideLabel(t) === 'You' ? 'You' : ui.mode === 'solo' ? TEAMS[t].name[0] : online() ? sideLabel(t).slice(0, 6) : 'P' + (t + 1))}</b>`).join('')}</div>`;
   }
   function renderCtl() {
     const G = ui.G; $('#bMenu').hidden = !G || ui.screen !== 'game';
     if (!G || ui.screen !== 'game') { $('#ctl').innerHTML = ''; return; }
     const o = $('.order'); if (o) o.outerHTML = orderHTML();
     if (isCPU(G.team) && G.phase === 'aim') { $('#ctl').innerHTML = `<span class="cputag" style="--tc:${TEAMS[G.team].c}">${esc(sideLabel(G.team))} (${esc(charName(G.team))}) is taking its turn…</span>`; return; }
+    if (online() && G.team !== ui.you && G.phase === 'aim') { const s = roomSeat(G.team); $('#ctl').innerHTML = `<span class="cputag" style="--tc:${TEAMS[G.team].c}">${esc(sideLabel(G.team))} (${esc(charName(G.team))}) is aiming…${s && !s.connected ? ' (disconnected: their turn passes soon)' : ''}</span>`; return; }
     const aim = G.phase === 'aim', am = G.ammo[G.team], lob = WB.lobbable(G).length > 0;
     const wb = (w, key) => { const S = WB.shotSpec(G, G.team, w);
       return `<button class="btn wpn${ui.weapon === w && !ui.lob ? '' : ' ghost'}" type="button" data-w="${w}" aria-pressed="${ui.weapon === w && !ui.lob}" title="${esc(S.desc)} Turn delay +${S.delay}." ${!aim || am[w] === 0 ? 'disabled' : ''}>${esc(S.name)}<small>${key} · ${am[w] < 0 ? '∞' : am[w] + ' left'} · ⏱${S.delay}</small></button>`; };
@@ -355,7 +375,7 @@
   function coachLine() {
     const el = $('#coach'); if (!ui.coach || ui.screen !== 'game' || !ui.G) { el.innerHTML = ''; return; }
     const G = ui.G, u = WB.current(G); if (!u || G.phase !== 'aim') { el.innerHTML = ''; return; }
-    if (isCPU(G.team)) { el.innerHTML = ''; return; }
+    if (isCPU(G.team) || (online() && G.team !== ui.you)) { el.innerHTML = ''; return; }
     const danger = G.duds.find((d) => d.fuse <= 1 && Math.hypot(d.x - u.x, d.y - u.y) < WB.DUD.r * WB.DMG_SPREAD);
     let t;
     if (danger && WB.lobbable(G).includes(danger)) t = '<b>That dud blows at the end of this turn!</b> Tap LOB (L), then drag to throw it away.';
@@ -387,7 +407,8 @@
     show(`<div class="tag">JustAskJoe · Prototype 1</div><h1>WORMSBOUND</h1>
       <p>Pick a character, read the wind, blast the ground, and throw their own duds back at them. Best of three.</p>${HOW}
       <div class="row"><button class="btn fire" type="button" data-act="mode" data-mode="solo">1 PLAYER<small style="display:block;font-family:var(--body);font-size:12px">you vs 3 computers</small></button>
-      <button class="btn teal" type="button" data-act="mode" data-mode="duel">2 PLAYERS<small style="display:block;font-family:var(--body);font-size:12px">1v1 on one keyboard</small></button></div>`);
+      <button class="btn teal" type="button" data-act="mode" data-mode="duel">2 PLAYERS<small style="display:block;font-family:var(--body);font-size:12px">1v1 on one keyboard</small></button>
+      <button class="btn gold" type="button" data-act="online">ONLINE 1v1<small style="display:block;font-family:var(--body);font-size:12px">play a friend anywhere</small></button></div>`);
   }
   function levelScreen() {
     ui.screen = 'level'; ui.G = null; renderHUD(); renderCtl(); coachLine();
@@ -441,12 +462,16 @@
   }
   function roundOver() {
     const G = ui.G, w = G.winner;
-    if (w >= 0) ui.wins[w]++;
+    if (online()) { if (ui.net && ui.net.wins) ui.wins = ui.net.wins.slice(); } else if (w >= 0) ui.wins[w]++;
+    roundOverShow();
+  }
+  function roundOverShow() {
+    const G = ui.G, w = G.winner;
     const need = Math.ceil(BEST_OF / 2);
     const done = ui.wins.some((x) => x >= need);
     ui.screen = done ? 'end' : 'round'; renderCtl(); coachLine(); renderHUD();
-    if (done) SFX.win();
-    const you = ui.mode === 'solo' && w === 0;
+    if (done && ui.lastWinSound !== ui.round + '/' + G.seed) { ui.lastWinSound = ui.round + '/' + G.seed; SFX.win(); }
+    const you = (ui.mode === 'solo' || online()) && w === (online() ? ui.you : 0);
     const head = w < 0 ? 'Draw!' : you ? (done ? 'You win the match!' : `You take round ${ui.round}!`) : `${sideLabel(w)} ${done ? 'wins the match!' : `takes round ${ui.round}`}`;
     const col = w < 0 ? '#FFF3E0' : TEAMS[w].c;
     const st = G.stats;
@@ -455,8 +480,9 @@
       <p style="margin:0;font-size:15px">${ui.wins.map((x, t) => `<b style="color:${TEAMS[t].c}">${esc(sideLabel(t))}</b> ${esc(charName(t))}`).join(' · ')}</p>
       <p>${done ? 'Last round: ' : ''}${G.turn} turns · ${st.shots} shots · ${st.lobs} lobs · ${st.dudBlasts} dud blasts${st.chains ? ` · ${st.chains} chain reaction${st.chains > 1 ? 's' : ''}` : ''}${st.drowned ? ` · ${st.drowned} splashed out` : ''}</p>
       <div class="row">${done
-        ? `<button class="btn fire" type="button" data-act="rematch">REMATCH (R)</button><button class="btn gold" type="button" data-act="pickagain">New characters</button><button class="btn teal" type="button" data-act="feedback">Give feedback</button><button class="btn ghost" type="button" data-act="quit">Title</button>`
-        : `<button class="btn fire" type="button" data-act="next">${w < 0 ? 'REPLAY ROUND' : 'NEXT ROUND'}</button>`}</div>`;
+        ? online() ? `<button class="btn fire" type="button" data-act="rematch">${ui.net && ui.net.rematchAsked ? 'WAITING FOR THEM…' : 'REMATCH'}</button><button class="btn teal" type="button" data-act="feedback">Give feedback</button><button class="btn ghost" type="button" data-act="leave">Leave</button>`
+        : `<button class="btn fire" type="button" data-act="rematch">REMATCH (R)</button><button class="btn gold" type="button" data-act="pickagain">New characters</button><button class="btn teal" type="button" data-act="feedback">Give feedback</button><button class="btn ghost" type="button" data-act="quit">Title</button>`
+        : `<button class="btn fire" type="button" data-act="next">${online() && ui.net && ui.net.nextAsked ? 'WAITING FOR THEM…' : w < 0 ? 'REPLAY ROUND' : 'NEXT ROUND'}</button>`}</div>`;
     show(ui.endHTML);
   }
 
@@ -498,6 +524,117 @@
     feedbackScreen();
   }
 
+  // ---------- online 1v1 ----------
+  function serverURL() {
+    let q = null; try { q = new URLSearchParams(location.search).get('server'); } catch (e) { /* no query */ }
+    const local = location.protocol === 'file:' || /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
+    return (q || window.WB_SERVER || ONLINE_SERVER || (local ? 'ws://localhost:8431' : '')).replace(/\/+$/, '');
+  }
+  function onlineScreen(msg) {
+    ui.screen = 'online'; ui.G = null; renderHUD(); renderCtl(); coachLine();
+    const srv = serverURL();
+    show(`<div class="tag">Online 1v1 · beta</div><h2>Play a friend online</h2>
+      <p>One of you makes a room and reads out the 4-letter code; the other joins with it.</p>
+      <div class="fq"><label for="oName">Your name</label><input id="oName" maxlength="16" value="${esc(lsGet('wb-name') || '')}" placeholder="Player"></div>
+      <div class="row"><button class="btn fire" type="button" data-act="ocreate" ${srv ? '' : 'disabled'}>MAKE A ROOM</button></div>
+      <div class="fq" style="display:flex;gap:10px;align-items:end"><div style="flex:1"><label for="oCode">Or join with a code</label><input id="oCode" maxlength="4" style="text-transform:uppercase;letter-spacing:6px;font-size:22px" placeholder="ABCD"></div><button class="btn teal" type="button" data-act="ojoin" ${srv ? '' : 'disabled'}>JOIN</button></div>
+      ${srv ? `<p class="keys">Server: ${esc(srv)}</p>` : '<p style="color:#FF4D5E">The online server isn\'t set up yet. (Crew: see wormsbound/server/README.md.)</p>'}
+      ${msg ? `<p style="color:#FF4D5E">${esc(msg)}</p>` : ''}
+      <div class="row"><button class="btn ghost sm" type="button" data-act="quit">Back</button></div>`);
+  }
+  async function netStart(kind) {
+    const name = ($('#oName') && $('#oName').value.trim()) || 'Player'; lsSet('wb-name', name);
+    const srv = serverURL(); if (!srv) return onlineScreen('No server address.');
+    let code = (($('#oCode') && $('#oCode').value) || '').trim().toUpperCase();
+    if (kind === 'create') {
+      try { const r = await fetch(srv.replace(/^ws/, 'http') + '/new'); code = (await r.json()).code; }
+      catch (e) { return onlineScreen("Couldn't reach the online server. Is it running?"); }
+    } else if (!/^[A-Z]{4}$/.test(code)) return onlineScreen('Room codes are 4 letters.');
+    netOpen(srv, code, kind === 'create' ? { t: 'create', name } : { t: 'join', name });
+  }
+  function netOpen(srv, code, hello) {
+    netLeave(true);
+    ui.mode = 'online';
+    const net = ui.net = { srv, code, queue: [], room: null, ws: null, token: null, waiting: false, retries: 0, closed: false, expect: null };
+    const connect = () => {
+      let ws; try { ws = new WebSocket(`${srv}/room/${code}`); } catch (e) { return onlineScreen("Couldn't open a connection to the server."); }
+      net.ws = ws;
+      ws.onopen = () => { net.retries = 0; ws.send(JSON.stringify(net.token ? { t: 'rejoin', token: net.token } : hello)); };
+      ws.onmessage = (ev) => { let m; try { m = JSON.parse(ev.data); } catch (e) { return; } onNet(m); };
+      ws.onclose = () => {
+        if (net.closed || ui.net !== net) return;
+        if (!net.token) return onlineScreen("Couldn't join that room.");
+        if (net.retries++ < 10) { banner('Connection lost', 'reconnecting…'); setTimeout(connect, 1500); }
+        else { netLeave(); onlineScreen('Lost the connection to the room.'); }
+      };
+    };
+    net.send = (m) => { if (net.ws && net.ws.readyState === 1) net.ws.send(JSON.stringify(m)); };
+    // moves from the server are played in order, each only once the last shot has landed on this screen
+    net.drain = () => {
+      while (net.queue.length && ui.G && ui.G.phase !== 'flight' && !net.expect) {
+        const m = net.queue.shift(), G = ui.G, u = WB.current(G);
+        if (!WB.act(G, m.it)) { net.send({ t: 'sync' }); net.queue = []; return; }
+        if (m.it.k === 'weapon' && m.by === ui.you) ui.weapon = m.it.w;
+        if ((m.it.k === 'fire' || m.it.k === 'lob') && u) { SFX.fire(); burst(...muzzle(u, aimOf(u)), 8, 'spark'); }
+        if (m.it.k === 'move') SFX.click();
+        if (m.by === ui.you && m.it.k !== 'move' && m.it.k !== 'weapon') net.waiting = false;
+        net.expect = m.hash;
+        if (G.phase !== 'flight') net.settled();
+        renderHUD(); renderCtl(); coachLine();
+      }
+    };
+    // after a move has fully played out here, this copy must match the server's
+    net.settled = () => {
+      if (!net.expect || !ui.G) return;
+      if (WB.hash(ui.G) !== net.expect) { net.send({ t: 'sync' }); net.queue = []; }
+      net.expect = null;
+    };
+    connect();
+    lobbyScreen('Connecting…');
+  }
+  function netLeave(quiet) {
+    const net = ui.net; if (!net) return;
+    net.closed = true; try { net.ws && net.ws.close(); } catch (e) { /* already closed */ }
+    ui.net = null; if (!quiet) ui.mode = 'duel';
+  }
+  let aimSent = 0;
+  function shareAim(a) {
+    if (!online() || !ui.net || !ui.G || ui.G.team !== ui.you) return;
+    const now = performance.now(); if (now - aimSent < 90) return; aimSent = now;
+    ui.net.send({ t: 'aim', angle: a.angle, power: a.power });
+  }
+  function onNet(m) {
+    const net = ui.net; if (!net) return;
+    if (m.t === 'joined') { ui.you = m.seat; net.token = m.token; return; }
+    if (m.t === 'error') { if (/code in use/.test(m.error)) return netStart('create'); banner('Server', m.error); if (net.waiting) net.waiting = false; renderCtl(); return; }
+    if (m.t === 'room') { net.room = m; net.wins = m.wins; if (ui.screen === 'lobby') lobbyScreen(); if (ui.screen === 'game') renderHUD(); if (m.phase === 'matchover' && ui.screen === 'end') roundOverAgain(); return; }
+    if (m.t === 'state') { net.room = m; if (m.G) { onlineRound(m.G, m.wins, m.round); } else lobbyScreen(); return; }
+    if (m.t === 'round') { net.nextAsked = false; net.rematchAsked = false; onlineRound(WB.newGame(m.seed, m.opts), m.wins, m.round); return; }
+    if (m.t === 'applied') { net.queue.push(m); return; }
+    if (m.t === 'aim') { ui.remoteAim = { angle: m.angle, power: m.power, at: performance.now() }; return; }
+    if (m.t === 'roundover') { net.wins = m.wins; if (ui.screen === 'round' || ui.screen === 'end') { ui.wins = m.wins.slice(); roundOverShow(); } return; }
+  }
+  function onlineRound(G, wins, round) {
+    const net = ui.net; net.queue = []; net.expect = null; net.waiting = false;
+    ui.G = G; ui.wins = wins.slice(); ui.round = round; ui.picks = G.chars.slice();
+    ui.aim = {}; ui.cpu = null; ui.parts = []; ui.trails = {}; ui.scorch = []; ui.pops = []; ui.acc = 0; ui.slow = 0; ui.shake = 0; ui.overAt = 0; ui.paused = false; ui.remoteAim = null;
+    bakeBackground(G.seed); renderTerrain();
+    ui.screen = 'game'; hide(); onTurn();
+  }
+  function lobbyScreen(status) {
+    ui.screen = 'lobby'; renderCtl(); coachLine();
+    const net = ui.net, R = net && net.room, me = R && R.seats[ui.you], them = R && R.seats[1 - ui.you];
+    const seat = (s, t) => s ? `<div class="toggle-row"><span><b style="color:${TEAMS[t].c}">${esc(t === ui.you ? 'You' : s.name)}</b>${s.char ? ` · ${esc(WB.CHARS[s.char].name)}` : ' · picking…'}${s.connected ? '' : ' <span style="color:#FF4D5E">(disconnected)</span>'}</span><span>${s.ready ? '<b style="color:#7BE07A">READY</b>' : 'not ready'}</span></div>`
+      : `<div class="toggle-row"><span style="color:var(--muted)">Waiting for a friend to join with the code…</span></div>`;
+    const picks = WB.CHAR_IDS.map((id) => `<button class="btn sm ${me && me.char === id ? 'gold' : 'ghost'}" type="button" data-act="opick" data-char="${id}" title="${esc(WB.CHARS[id].blurb)}"><img src="${portrait(id, ui.you)}" alt="" width="54" height="40" style="border-radius:8px">${esc(WB.CHARS[id].name)}</button>`).join('');
+    show(`<div class="tag">Online 1v1 · room</div><h2 style="font-size:64px;letter-spacing:10px;color:var(--gold)">${esc(net ? net.code : '····')}</h2>
+      <p>${status ? esc(status) : 'Tell your friend this code. Pick a character, then press Ready.'}</p>
+      ${R ? seat(R.seats[ui.you], ui.you) + seat(them, 1 - ui.you) : ''}
+      <div class="row" style="flex-wrap:wrap">${picks}</div>
+      <div class="row"><button class="btn fire" type="button" data-act="oready" ${me && me.char ? '' : 'disabled'}>${me && me.ready ? 'NOT READY' : 'READY'}</button><button class="btn ghost sm" type="button" data-act="leave">Leave</button></div>`);
+  }
+  function roundOverAgain() { if (ui.screen === 'round' || ui.screen === 'end') { const w = ui.wins.slice(); ui.endHTML = null; ui.wins = w; roundOverShow(); } }
+
   // ---------- match flow ----------
   function startRound() {
     const first = (ui.round - 1) % nSides();
@@ -513,7 +650,7 @@
     ui.round = 1; ui.wins = new Array(nSides()).fill(0); ui.tester = false; ui.fb = { q: {}, text: '', nm: '', saved: null };
     startRound();
   }
-  function botTurn() { if (!canAct() && !(ui.paused && ui.G && ui.G.phase === 'aim')) return; ui.tester = true; ui.paused = false; hide(); WB.botTurn(ui.G, 'smart'); renderCtl(); }
+  function botTurn() { if (online()) return; if (!canAct() && !(ui.paused && ui.G && ui.G.phase === 'aim')) return; ui.tester = true; ui.paused = false; hide(); WB.botTurn(ui.G, 'smart'); renderCtl(); }
 
   document.addEventListener('click', (e) => {
     const b = e.target.closest('button'); if (!b) return; audio();
@@ -529,10 +666,16 @@
       case 'mode': ui.mode = b.dataset.mode === 'solo' ? 'solo' : 'duel'; ui.picks = new Array(nSides()).fill(null); if (ui.mode === 'solo') levelScreen(); else { ui.cursor = 2; selectScreen(0); } break;
       case 'level': ui.level = LEVELS[b.dataset.level] ? b.dataset.level : 'medium'; lsSet('wb-level', ui.level); ui.cursor = 2; selectScreen(0); break;
       case 'start': case 'pickagain': ui.picks = new Array(nSides()).fill(null); ui.cursor = 2; selectScreen(0); break;
-      case 'rematch': startMatch(); break;
+      case 'rematch': if (online()) { ui.net.send({ t: 'rematch' }); ui.net.rematchAsked = true; roundOverAgain(); } else startMatch(); break;
       case 'pick': choose(b.dataset.char); break;
       case 'pickback': if (ui.mode === 'duel' && ui.pickTeam === 1) { ui.picks[0] = null; selectScreen(0); } else if (ui.mode === 'solo') levelScreen(); else titleScreen(); break;
-      case 'next': ui.round += ui.G.winner >= 0 ? 1 : 0; startRound(); break;
+      case 'next': if (online()) { ui.net.send({ t: 'next' }); ui.net.nextAsked = true; roundOverAgain(); } else { ui.round += ui.G.winner >= 0 ? 1 : 0; startRound(); } break;
+      case 'online': onlineScreen(); break;
+      case 'ocreate': netStart('create'); break;
+      case 'ojoin': netStart('join'); break;
+      case 'opick': if (ui.net) ui.net.send({ t: 'pick', char: b.dataset.char }); break;
+      case 'oready': if (ui.net) { const me = roomSeat(ui.you); ui.net.send({ t: 'ready', on: !(me && me.ready) }); } break;
+      case 'leave': netLeave(); titleScreen(); break;
       case 'fire': doFire(); break;
       case 'lob': toggleLob(); break;
       case 'pass': pass(); break;
@@ -540,7 +683,7 @@
       case 'resume': ui.paused = false; hide(); break;
       case 'how': show(`<h2>How to play</h2>${HOW}<div class="row"><button class="btn fire" type="button" data-act="resume">BACK TO THE FIGHT</button></div>`, true); break;
       case 'restart': ui.paused = false; startRound(); break;
-      case 'quit': ui.paused = false; ui.G = null; renderHUD(); titleScreen(); break;
+      case 'quit': ui.paused = false; if (online()) netLeave(); ui.G = null; renderHUD(); titleScreen(); break;
       case 'botturn': botTurn(); break;
       case 'feedback': feedbackScreen(); break;
       case 'fbsend': sendFeedback(); break;
@@ -717,7 +860,8 @@
     const cur = WB.current(G);
     for (const u of G.units) if (!u.alive) drawUnit(u, false, t);
     for (const u of G.units) if (u.alive) drawUnit(u, u === cur && G.phase === 'aim', t);
-    if (cur && G.phase === 'aim' && ui.screen === 'game' && !ui.paused && (!isCPU(G.team) || (ui.cpu && ui.cpu.aimed))) drawAim(cur, t);
+    if (online() && cur && G.phase === 'aim' && G.team !== ui.you) { if (ui.remoteAim && performance.now() - ui.remoteAim.at < 4000) { const a = aimOf(cur); a.angle = ui.remoteAim.angle; a.power = ui.remoteAim.power; drawAim(cur, t); } }
+    else if (cur && G.phase === 'aim' && ui.screen === 'game' && !ui.paused && (!isCPU(G.team) || (ui.cpu && ui.cpu.aimed))) drawAim(cur, t);
     for (const p of G.proj) drawProj(p, t);
     for (const id of Object.keys(ui.trails)) if (!G.proj.some((p) => String(p.id) === id)) delete ui.trails[id];
     for (const p of ui.parts) {
@@ -757,11 +901,13 @@
         const speed = (ui.fast ? 8 : 1) * (ui.slow > 0 ? 0.3 : 1);
         ui.acc += dt * speed; let n = 0;
         while (ui.acc >= WB.TICK && G.phase === 'flight' && n++ < 400) { onFx(WB.step(G)); ui.acc -= WB.TICK; }
-        if (G.phase !== 'flight') { ui.acc = 0; renderHUD(); renderCtl(); coachLine(); }
+        if (G.phase !== 'flight') { ui.acc = 0; if (online() && ui.net) ui.net.settled(); renderHUD(); renderCtl(); coachLine(); }
+      } else if (online() && ui.net && ui.net.queue.length) {
+        ui.net.drain();
       } else if (G.phase === 'aim' && isCPU(G.team)) {
         if (!ui.cpu) cpuStart();
         cpuStep(dt);
-      } else if (G.phase === 'aim' && ui.timerOn) {
+      } else if (G.phase === 'aim' && ui.timerOn && (!online() || G.team === ui.you)) {
         const before = Math.ceil(ui.tLeft); ui.tLeft -= dt;
         if (Math.ceil(ui.tLeft) !== before && ui.tLeft <= 5 && ui.tLeft > 0) SFX.tick();
         if (ui.tLeft <= 0) { ui.tLeft = 0; pass(); }
@@ -782,7 +928,7 @@
 
   // ---------- boot ----------
   window.WBUI = {
-    get G() { return ui.G; }, ui, startMatch, levelScreen, selectScreen, choose, startRound, roundOver, doFire, walk, pass, botTurn, renderAll: () => { renderHUD(); renderCtl(); coachLine(); },
+    get G() { return ui.G; }, ui, startMatch, levelScreen, onlineScreen, netStart, play, selectScreen, choose, startRound, roundOver, doFire, walk, pass, botTurn, renderAll: () => { renderHUD(); renderCtl(); coachLine(); },
     aim: (angle, power) => { const u = WB.current(ui.G); const a = aimOf(u); a.angle = angle; a.power = power; },
   };
   fit(); addEventListener('resize', fit);

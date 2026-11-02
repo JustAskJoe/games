@@ -39,6 +39,7 @@ These pull requests change what's described below. When one merges, move its lin
 | **XR repo** | The studio's XR apps (headset apps), their design docs and its own copies of the Engineers' crew. Confidential: nothing from it is copied into this public repo | a private repo in the JustAskJoe org (crew access by invite) | GitHub, JustAskJoe org |
 | **Private repo** | Notes and agreements that shouldn't be public, the legal reviewer, and the studio-crew plugin (in review) | github.com/JustAskJoe/studio-private (private, owners only; others added by name) | GitHub, JustAskJoe org |
 | **Projects board** | Cross-repo to-do board | https://github.com/orgs/JustAskJoe/projects/1 | GitHub |
+| **Wormsbound room server** | Online 1v1 for Wormsbound: one room per 4-letter code; the server runs the game engine and referees every move (`wormsbound/server/`) | Cloudflare Worker `wormsbound-rooms` + one Durable Object per room, on **Louiemark's own Cloudflare account** (free plan), apart from Hunter's. Not deployed yet (Nov 2, 2026): the game's Online 1v1 says so until `ONLINE_SERVER` in `wormsbound/prototype/ui.js` is set | Cloudflare (Louiemark) |
 | **Org settings file** | Which org, links and ownership line Claude should use | `studio.json` in this repo | read by Claude, skills, agents |
 
 One Fifty Labs (Hunter's own company) keeps its own website, its own Pitch Forge at onefiftylabs.co/forge, its own Lab and its own Studio HQ. Those are separate and are not part of this setup. The One Fifty Labs Lab also reads builds from this repo, so it still works, but the crew uses the JustAskJoe Lab.
@@ -161,6 +162,7 @@ sequenceDiagram
 | claude.ai | Hunter's personal account | Both Artist tasks, the skills |
 | Canva, PixelLab | Hunter | Art credits (ask before spending) |
 | Everyone's own Claude | Each person | Day-to-day work in this repo |
+| Cloudflare (a second account) | Louiemark | The `wormsbound-rooms` Worker (Wormsbound's online 1v1 rooms), deployed with a token scoped to Workers Scripts only. Kept separate so it can't touch Studio HQ, Forge or the Lab |
 
 This is fine for now ("Where do the shared accounts live?" in HOW-WE-WORK). It matters if Hunter is unavailable, for who pays, and before a game is sold.
 
@@ -176,6 +178,7 @@ This is fine for now ("Where do the shared accounts live?" in HOW-WE-WORK). It m
 
 - **Single owner outside GitHub.** Cloudflare, claude.ai and art credits are Hunter's personal accounts (section 6). GitHub now has two owners.
 - **GitHub suspensions happen.** Hunter's account (created Oct 19) was suspended by GitHub's automated abuse detection Oct 28-30, 2026, right after a burst of automated setup (org transfer, teams, invites, rules, many branches and PRs). GitHub gave no specific reason and cleared it on appeal. While suspended, his PRs were hidden and Forge's `GITHUB_TOKEN` (made on his account) stopped working, so Approve could not open PRs. To lower the risk: spread bulk GitHub changes out, turn on two-factor sign-in, and move Forge to a GitHub App owned by the org instead of a personal token.
+- **Wormsbound's online rooms live on a second personal account** (Louiemark's Cloudflare, Nov 2, 2026). Same single-owner risk as above; rooms are in memory only and open to anyone with a 4-letter code (no sign-in). Moving to a shared studio Cloudflare account is part of "Where do the shared accounts live?" in HOW-WE-WORK.
 - **Forge doesn't auto-deploy.** Merging a Forge PR changes nothing live until someone runs `npx wrangler deploy`.
 - **The Lab's game list is hardcoded in two places:** `GAMES` in `forge/src/lab.js` (+ a card in `lab.html`) and the `LAB` map in this repo's `checks.yml` (preview links). They can drift.
 - **Free painted roughs** are live since Nov 1, 2026: the `ART_KEY` Actions secret is set, and the Art roughs workflow calls the endpoint on the One Fifty Labs website (Flux Schnell; no reference images yet).
