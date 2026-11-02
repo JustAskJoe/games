@@ -70,6 +70,7 @@ Every prototype has a one-file **build** (the parts are joined into `builds/<gam
 | Neon Surf | `cd neon-surf/prototype/v1 && python3 build.py && python3 test.py` |
 | Cyberpunk Gate Runner | `cd cyberpunk-gate-runner/prototype/v2 && python3 build.py && node sim.js && python3 test.py` |
 | Intergalactic Card Trader | `python3 card-trader/build-and-test.py` (`--quick` skips the browser) |
+| Wormsbound | `python3 wormsbound/build-and-test.py` (engine checks + sim; `--quick` runs fewer matches) |
 
 What the checks cover:
 - **Balance sims** (`node sim.js`) play hundreds of games with bots. If you touch numbers (towers, enemies, cards, levels), run the sim and put the before and after win rates in your PR.
