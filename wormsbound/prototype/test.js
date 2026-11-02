@@ -71,6 +71,14 @@ for (const seed of [11, 222, 3333]) {
   ok(H.stats.lobs === 1 && H.proj.length === 1 && H.proj[0].fuse === 2, 'the lobbed dud keeps its fuse');
 }
 
+// 6b. The second team can go first (best-of-3 alternates it).
+{
+  const G = WB.newGame(31, { first: 1 });
+  ok(G.team === 1 && WB.current(G).team === 1, 'opts.first = 1 hands the first turn to team 1');
+  WB.act(G, { k: 'pass' }); WB.resolve(G);
+  ok(G.team === 0, 'then team 0 plays');
+}
+
 // 7. Rising water ends every match: bots that only pass still finish.
 {
   const G = WB.newGame(77); let g = 0;

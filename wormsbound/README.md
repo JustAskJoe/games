@@ -2,12 +2,13 @@
 
 Other · team pitch · approved in Forge on 2026-11-02 by Louiemark
 
-**Status:** Prototype 1 engine and bot sim (Nov 2, 2026). No screens yet. **Next:** the local hotseat screen, so two people can play it on one computer. Current decisions: [design/handoff.md](design/handoff.md).
+**Status:** Prototype 1, local hotseat (Nov 2, 2026): two people on one computer, best of three. **Next:** play it with a friend and fill in the feedback form. Current decisions: [design/handoff.md](design/handoff.md).
 
 A turn-based artillery brawler for 2 to 4 friends on one screen: aim, read the wind, and lob shells across ground that blows apart. Shells that land without exploding stay live, and anyone close enough can lob them on.
 
-- **Build and test:** `python3 wormsbound/build-and-test.py` (`--quick` runs fewer sim matches)
-- **Code:** `prototype/engine.js` (pure rules: seeded, every action through `act()`, `hash()` checksum, bots), `prototype/sim.js` (bot balance run), `prototype/test.js` (rule checks)
+- **Play:** download [`builds/wormsbound.html`](builds/wormsbound.html) and open it in a browser on a computer, or play it in the JustAskJoe Lab. Drag back from your unit and let go to fire; the title screen lists the keys.
+- **Build and test:** `python3 wormsbound/build-and-test.py` (build, rule checks, sim, browser test; `--quick` skips the browser and runs fewer sim matches)
+- **Code:** `prototype/engine.js` (pure rules: seeded, every action through `act()`, `hash()` checksum, bots), `ui.js` (canvas renderer, input, screens), `head.html` / `body.html` (styles and page), `build.py` (joins them into `builds/wormsbound.html`), `sim.js` (bot balance run), `test.js` (rule checks), `test.py` (Playwright browser test)
 
 ### Adding things
 - **A weapon:** add it to `WEAPONS` in `engine.js` (ammo, crater `r`, `dmg`), handle it in `land()`, and give the bots a way to score it in `scoreLanding()` so the sim uses it.
