@@ -6,6 +6,22 @@ Newest on top. See the repo's CLAUDE.md for how patch notes work.
 
 ---
 
+## Weapons proposal · 2026-11-01 · Hunter (with Claude)
+Design only: nothing in the game changes.
+
+### What's new
+- **A proposal for 35 crate weapons** (Normal guns, Melee, Explosive, Weird, Legendary, Goofy) and **in-match leveling** (Lv1 → Lv3, reset every match), in [`design/weapons.md`](design/weapons.md). Weapons would come from the supply crates the brief already plans, in a 4th shot slot next to each character's own shots.
+
+### Next up
+- [ ] @Louiemark: review `design/weapons.md`: crates in Prototype 2 or after the playtest, leveling option A (in-match) vs B (cosmetic mastery), and which weapons to cut from the pool.
+- [ ] Phase 1 once agreed: crates, the 4th slot, leveling, and the weapons that reuse existing shot fields.
+
+### Watch out
+- [ ] Persistent stat leveling (option C in the doc) would break the brief's "never pay-to-win / cosmetics only". Not proposed; listed so it's a conscious call.
+- [ ] Crates add randomness the balance sim doesn't model yet; the 40–60% character band has to be re-checked with crates on.
+- [ ] Weapon names and ideas are first-pass. Checked against the famous Worms weapons by memory only, not against GunBound, Pocket Tanks or ShellShock Live lists.
+- [ ] `build-and-test.py` not run for this change (docs only, no code touched).
+
 ## P1 modes · 2026-11-02 · Louiemark (with Claude)
 Turn delay, 1 Player vs 3 computers, and 1v1 with one character each. Full `build-and-test.py`: ALL GOOD.
 

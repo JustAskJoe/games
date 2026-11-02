@@ -87,3 +87,4 @@ The first four lines are Volt vs Volt:
 - **Engine for Steam:** keep the web build (wrap with Electron or Tauri) or rebuild in Godot? Decide before Prototype 2.
 - **Price model:** the brief says free-to-play with cosmetic purchases; the studio's other games are premium. The crew will want to talk about it.
 - **Units per team and the 3–4 player setup** (2v2 teams or free-for-all).
+- **Crate weapons and leveling:** Hunter's proposal (35 crate weapons, leveling inside a match only) is in [`weapons.md`](weapons.md). Not decided.
