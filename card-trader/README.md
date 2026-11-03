@@ -4,7 +4,7 @@ Working title. A cozy card shop on a market station where the galaxy's trade lan
 
 Other · solo pitch · approved in Forge on 2026-10-31 by Hunter
 
-**Status:** Prototype v3.1: a 10-day run where stock lives on the floor or in the back and selling uses both, with 3 eras, sealed and vintage sealed product, card reads as ranges with a grader box, a guided first morning, a store rating that says why it moved and a known-offenders board (desktop landscape). Repacks are off in v3.1. Art is placeholder (code-drawn, $0) until Hunter OKs the Gemini shot list. Next: crew and agent playtests through the playtest questionnaire, then tuning.
+**Status:** Prototype v3.2: a 10-day run where stock lives on the floor or in the back and selling uses both, with 3 eras, sealed and vintage sealed product, card reads as ranges with a grader box, a guided first morning, a store rating that says why it moved and a known-offenders board (desktop landscape). v3.2 adds a mid-run spine: Bijou's contract (day 4), Old Orrin's vintage consignment (day 6) and the regional show (day 6 night); see [design/midrun-spine.md](design/midrun-spine.md). Repacks are off. Art is placeholder (code-drawn, $0) until Hunter OKs the Gemini shot list. Next: crew and agent playtests through the playtest questionnaire, then tuning.
 
 - **Play:** [`builds/card-trader.html`](builds/card-trader.html) (keep its `img/` folder next to it), or in the Lab.
 - **Build and test:** `python3 card-trader/build-and-test.py` (`--quick` skips the browser).
