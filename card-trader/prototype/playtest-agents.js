@@ -447,7 +447,7 @@ function playerFor(P, seed) {
     if (P.sleeve === 'all' && S.gear.penny < 20 && spare(10)) a(G, { t: 'order', item: 'penny' });
     if (P.hints && S.gear.hard < 4 && spare(10)) a(G, { t: 'order', item: 'hard' });   // the drawer count is on screen
     if (P.hints && S.gear.penny < 10 && spare(10)) a(G, { t: 'order', item: 'penny' });
-    if (G.dayIdx === CT.SHOW_DAY && !G.show && (P.hints || P.taste === 'thrills') && spare(CT.SHOW_FEE + 30)) a(G, { t: 'bookShow' });
+    if (G.dayIdx === CT.SHOW_DAY && !G.show && (P.hints || P.taste === 'thrills')) a(G, { t: 'bookShow' });
     if (next && P.ups !== 'none' && P.ups !== 'sealed' && spare(CT.BOX.cost + 10)) a(G, { t: 'restock', game: hotGame(G) });
     if (next && P.ups === 'none' && CT.packTotal(G) + CT.backPackTotal(G) < 4 && spare(CT.BOX.cost)) a(G, { t: 'restock', game: GAMES3[r(3)] });
     return a(G, { t: 'endDay' });

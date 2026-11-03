@@ -52,12 +52,13 @@ Old Orrin (Mollu) heard your shop is legit and brings 5 vintage singles for you 
   - Selling 3+ of the 5 earns rep and a rating bump ("trusted with a collection").
 
 ## 3. The regional show (day 6 night)
-At day 6 close, DJ Vee has a flyer: book a table for **40₵**. If you book, tonight's After Hours is the show instead of the usual two flyers.
+At day 6 close, DJ Vee has a flyer: book a table for **40₵**. Since v3.2.1 nothing is paid up front: the fee comes out of your show sales, and never more than you make there. If you book, tonight's After Hours is the show instead of the usual two flyers.
 
 - **Bring up to 6 items** from your stock: singles, slabs, sealed, including Orrin's consigned cards. Consigned sales still split 80/20.
 - **The crowd:** about a quarter of items draw no bid. The rest get 0.9–1.3× market, plus 0.1 for slabs and 0.1 for vintage. (First tuning was 1.1–1.4× with every item bid on: about 50 points of easy growth.)
 - **For each bid:** sell, or keep it and take it home.
 - **Small risk:** each raw card you bring rolls show wear (as when you show a card at the counter).
+- **The crowd checks for fakes:** fakes and trims draw no bid (v3.2.1).
 - **No booking:** the usual After Hours night.
 
 ## 4. Decisions made for Hunter (change any of these)

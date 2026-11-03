@@ -6,6 +6,28 @@ Newest on top. See the repo's CLAUDE.md for how patch notes work.
 
 ---
 
+## v3.2.1 · 2026-11-03 · Hunter (with Claude)
+Fix for the agent playtest's top finding: shops were too broke on day 6 to book the regional show. Results: `playtests/agents-2026-11-03-showfix.md` (same seeds; the v3.2 tables stay in `agents-2026-11-03.md`).
+
+### What's new
+- **The regional show costs nothing up front.** Booking is free. The organizer takes the 40₵ table fee out of your show sales, and never more than you make there. The close screen and the show screen both say so.
+- **Show buyers check for fakes.** Fakes and trimmed cards draw no bid at the show, the same as at the counter. Before this, the crowd bid on a fake you hadn't spotted as if it were real.
+
+### Results (v3.2 → v3.2.1, free personas, 24 runs)
+- **Show:** booked in 24 of 24 runs (was 10). 92 items sold, and the full fee was paid in every run. "Remove the show" votes: 14 → 0.
+- **"A safer way to cover rent mid-run":** 20 → 17 of 24 runs. Still the top ask after the fake reminder.
+- **Median drag day:** 6 → 6.5 (beta gate: 7). **"Play again":** avg 2.6 → 2.9.
+- **Consignment:** unchanged, 96 of 105 of Orrin's cards sold. Raising his minimum to 95% of market didn't change that, so it was reverted (still 85%).
+
+### Next up
+- [ ] @Hunter: pick a fix for consignment being near-free money (finding 2): keep his cards out of the show, have him take 1-2 back early if they sit in the back, or leave it as an easy win.
+- [ ] The real mid-run cash floor (v3.1 plan section 6): the show helped, but 18 of 24 runs still have under 100₵ after day 6's rent.
+
+### Watch out
+- [ ] The careful sim bot no longer buys Loupe gear after day 6. With the show's cash it was buying eye upgrades on days 7-9 that can't pay back, which dropped the upgrade band from +14 to -8. Gated, it's +11 (passes). It's a bot rule, but it's also a real trap for players: late gear looks like an upgrade and isn't.
+- [ ] The sim bots also keep grading candidates out of the show now.
+- [ ] Not checked by a human in the browser: the new fee lines on the close screen and the show screen. The Playwright walkthrough books and sells at the show (passes).
+
 ## v3.2 agent playtest · 2026-11-03 · Hunter (with Claude)
 No game change. The free persona playtests re-ran on v3.2 (8 personas × 3 runs, same seeds as Nov 1). Findings: `playtests/findings-2026-11-03.md`. Tables: `playtests/agents-2026-11-03.md`.
 
@@ -26,7 +48,7 @@ No game change. The free persona playtests re-ran on v3.2 (8 personas × 3 runs,
 - **Show:** booked in only 10 of 24 runs, because most shops have under 100₵ after day 6's rent.
 
 ### Next up
-- [ ] Take the show's table fee out of its sales instead of up front (finding 1), and look at consignment selling too easily (finding 2). Then re-run this round (free).
+- [x] Take the show's table fee out of its sales instead of up front (finding 1), and look at consignment selling too easily (finding 2). Then re-run this round (free). (Claude, Nov 3, v3.2.1: fee fixed; consignment left for Hunter)
 - [ ] Teach the personas to use auto-sleeve and Stock the floor. Their "sleeves unfun" and "add auto-sleeve" answers come partly from their own hand-sleeving habit.
 - [ ] Push `agents-2026-11-03-batch.json` to the questionnaire artifact (needs Hunter's OK). The page's results tab may not show the three new systems yet.
 

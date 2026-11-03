@@ -101,7 +101,7 @@ Full scope in `midrun-spine.md`.
   - The cards take your floor space, and you owe him for any stolen or worn.
   - He's back on day 9 and offers the unsold ones at 90% of market.
   - Moved from day 5 to day 6 (Estate Season) so it lands with the estates and the show.
-- **Day 6 night, the regional show:** a 40₵ table, up to 6 items. About a quarter get no bid; the rest get 0.9–1.3× market, more for slabs and vintage.
+- **Day 6 night, the regional show:** a 40₵ table, up to 6 items. v3.2.1 (Hunter: "Fix and re-run", Nov 3): the fee comes out of show sales, never more than you make there, so a broke shop can still book. Fakes and trims draw no bid. About a quarter get no bid; the rest get 0.9–1.3× market, more for slabs and vintage.
 
 ## Still open
 - Final title (Intergalactic Card Trader is a working title).

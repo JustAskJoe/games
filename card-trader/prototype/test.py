@@ -72,7 +72,7 @@ BOT = """() => {
   if (G.phase === 'close' && G.dayIdx === 2 && !CTUI.board && !window._bd) { window._bd = 1; return click('#hud [data-act=board]'); }
   if (CTUI.board) return click('#loupe [data-act=board]');
   // day 6 close: this bot plays badly, so top it up for the table and the show screens get exercised
-  if (G.phase === 'close') { if (G.dayIdx === 5 && !G.show) { if (G.cash < CT.SHOW_FEE) G.cash += CT.SHOW_FEE; CT.act(G, { t: 'bookShow' }); } click('[data-act=grade][data-co=halo]'); if (G.dayIdx === 0) click('[data-act=upgrade][data-k=lens]'); if (G.dayIdx === 1) click('[data-act=policy]'); return click('[data-act=endDay]'); }
+  if (G.phase === 'close') { if (G.dayIdx === 5 && !G.show) { CT.act(G, { t: 'bookShow' }); } click('[data-act=grade][data-co=halo]'); if (G.dayIdx === 0) click('[data-act=upgrade][data-k=lens]'); if (G.dayIdx === 1) click('[data-act=policy]'); return click('[data-act=endDay]'); }
   if (G.phase === 'night') {
     const N = G.night;
     if (!N.pick) { for (const b of document.querySelectorAll('[data-act=pickNight]')) { b.click(); if (CTUI.G.night && CTUI.G.night.pick) return true; } return click('[data-act=nextMorning]'); }

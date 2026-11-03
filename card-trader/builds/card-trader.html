@@ -2397,7 +2397,7 @@ function closeShop(G) {
   const next = G.week[G.dayIdx + 1];
   let msg = next ? 'Closing time! Tomorrow: ' + next.name + '. ' + Object.keys(next.demand).map(g => GAMES[g].name + ' ×' + next.demand[g]).join(', ') + '.' : 'Last close! Send anything to the graders: tonight is Grade Day and every slab comes home.';
   // the pump card's reprint only lands on the first release day; later release eves have nothing to say about it
-  if (G.store && G.dayIdx === SHOW_DAY && !G.show) msg += ' Flyer on the board: a regional show tonight. Book a table for ' + SHOW_FEE + '₵ and bring up to ' + SHOW_MAX + ' items. The crowd pays well for slabs and vintage.';
+  if (G.store && G.dayIdx === SHOW_DAY && !G.show) msg += ' Flyer on the board: a regional show tonight. Book a table (' + SHOW_FEE + '₵, taken from your show sales) and bring up to ' + SHOW_MAX + ' items. The crowd pays well for slabs and vintage.';
   if (next && next.release && G.pump && !G.week.slice(0, G.dayIdx + 1).some(D => D.release)) msg += ' ' + next.name.replace(/ Release Day$/, '') + ' reprint list is out: ' + tmpl(G.pump.t).name + ' is on it.';
   say(G, 'vee', msg);
 }
@@ -3235,6 +3235,8 @@ function showBring(G, uids) {
     if (o.t && !o.graded) wearRoll(G, o, WEAR_SHOW);
     const val = o.t ? lookValue(G, o) : goodValue(G, o), vint = o.t ? o.era === 'vintage' : !!GOODS[o.type].vintage;
     // a crowd, not a guaranteed buyer: about a quarter of items draw no bid; the rest 0.9-1.3x market, more for slabs and vintage
+    // the crowd checks too: fakes and trims draw no bid, same as buyers at the counter (v3.2.1)
+    if (o.t && (o.fake || o.trim)) return { uid: o.uid, bid: 0, sold: false };
     if (R(G) < 0.25) return { uid: o.uid, bid: 0, sold: false };
     return { uid: o.uid, bid: Math.max(1, Math.round(val * (0.9 + R(G) * 0.4 + (o.t && o.graded ? 0.1 : 0) + (vint ? 0.1 : 0)))), sold: false };
   });
@@ -3243,7 +3245,8 @@ function showBring(G, uids) {
 function showSell(G, uid) {
   const N = G.night; if (G.phase !== 'night' || !N || N.pick !== 'show' || !N.show.bids) return err('not now');
   const b = N.show.bids.find(x => x.uid === uid && !x.sold && x.bid > 0), o = b && findThing(G, uid); if (!o) return err('no bid for that');
-  sellThing(G, o, b.bid, 'a show buyer'); b.sold = true; G.store.stats.showSales = (G.store.stats.showSales || 0) + 1; return ok();
+  const before = G.cash; sellThing(G, o, b.bid, 'a show buyer'); b.sold = true;
+  const fee = Math.min(G.show.feeLeft || 0, Math.max(0, G.cash - before)); if (fee) { money(G, -fee, 'fee', 'Regional show table'); G.show.feeLeft -= fee; } G.store.stats.showSales = (G.store.stats.showSales || 0) + 1; return ok();
 }
 function v3Spawn(G, v, spec) {
   if (SPINE_ROLES.indexOf(v.role) >= 0) { v.tells = []; v.tellsShown = 0;
@@ -3336,8 +3339,8 @@ function v3Act(G, it) {
     case 'buyConsign': return buyConsign(G, it.uid);
     case 'bookShow': {
       if (G.phase !== 'close' || G.dayIdx !== SHOW_DAY) return err('the show is on day ' + (SHOW_DAY + 1));
-      if (G.show) return err('already booked'); if (G.cash < SHOW_FEE) return err('not enough cash');
-      money(G, -SHOW_FEE, 'fee', 'Regional show table'); G.show = { booked: true, done: false }; return ok();
+      // v3.2.1: no money up front; the organizer takes the table fee out of your show sales (never more than you make there)
+      if (G.show) return err('already booked'); G.show = { booked: true, done: false, feeLeft: SHOW_FEE }; return ok();
     }
     case 'showBring': return showBring(G, it.uids);
     case 'showSell': return showSell(G, it.uid);
@@ -4262,8 +4265,8 @@ function closeScreen() {
     ${next ? `<div style="margin:6px 0">${next.ships.map(s => `<span class="chip" style="background:${SP_COLOR[s]}">${CT.SPECIES[s].name}</span>`).join(' ')}</div>` + demandBars(next.demand) + (next.release && G.pump ? `<div class="chip rumor down" style="margin-top:6px">Wave 3 reprints: ${esc(CT.tmpl(G.pump.t).name)}</div>` : '') + `<div class="h" style="font-size:15px;margin:10px 0 6px">RESTOCK · box of ${CT.BOX.packs} for ${CT.BOX.cost}₵</div>
       <div style="font-size:12px;margin-bottom:6px">Boxes arrive in tomorrow morning's crate. Restock tomorrow's hottest game for a chance at a promo topper.</div>
       ${Object.keys(CT.GAMES).map(g => `<div class="row" style="align-items:center;margin-bottom:6px"><span class="chip" style="background:${GAME_COLOR[g]};flex:1">${CT.GAMES[g].name} · have ${G.packs[g]}</span><button class="btn sm" data-act="restock" data-game="${g}" ${G.cash >= CT.BOX.cost ? '' : 'disabled'}>ORDER BOX</button></div>`).join('')}<div class="row" style="margin-top:6px"><button class="btn cyan" data-act="catalog">📒 CATALOG${G.store.orders.length ? ' (' + G.store.orders.length + ' ordered)' : ''}</button><button class="btn white" data-act="room">BACK ROOM</button></div>` : '<div style="margin:10px 0">No tomorrow: sell-off is over. Grade anything worth slabbing, then end the night.'}
-    ${G.store && G.dayIdx === CT.SHOW_DAY ? `<div class="est" style="margin-top:10px"><b>Regional show tonight.</b> A table is ${money(CT.SHOW_FEE)}: bring up to ${CT.SHOW_MAX} items and the crowd bids on each. Slabs and vintage do best. It replaces tonight's After Hours.
-      <div class="row" style="margin-top:6px"><button class="btn sm pink" data-act="bookShow" ${G.show || G.cash < CT.SHOW_FEE ? 'disabled' : ''}>${G.show ? 'TABLE BOOKED' : 'BOOK A TABLE'}</button></div></div>` : ''}
+    ${G.store && G.dayIdx === CT.SHOW_DAY ? `<div class="est" style="margin-top:10px"><b>Regional show tonight.</b> A table is ${money(CT.SHOW_FEE)}, taken out of what you sell there (never more than you make): bring up to ${CT.SHOW_MAX} items and the crowd bids on each. Slabs and vintage do best. It replaces tonight's After Hours.
+      <div class="row" style="margin-top:6px"><button class="btn sm pink" data-act="bookShow" ${G.show ? 'disabled' : ''}>${G.show ? 'TABLE BOOKED' : 'BOOK A TABLE'}</button></div></div>` : ''}
     <div style="position:absolute;left:14px;right:14px;bottom:14px"><button class="btn big pink" style="width:100%" data-act="endDay">${next ? 'PAY RENT → AFTER HOURS' : 'PAY RENT → GRADE DAY'}</button></div>
   </div>
   ${dj(hint())}`;
@@ -4300,7 +4303,7 @@ function nightShowHTML() {
     <div class="row" style="flex-wrap:wrap;margin-top:8px">${S.bids.map(b => { const o = CT.findThing(G, b.uid);
       if (!o) return b.sold ? '' : '';
       return `<div style="text-align:center">${thumb(o, 'loupe')}<div style="font-size:11px;font-weight:800">worth ${o.t ? estText(o) : money(val(o))}</div>${b.bid ? `<button class="btn sm lime" data-act="showSell" data-uid="${o.uid}">SELL ${money(b.bid)}</button>` : '<div class="chip">no bid</div>'}</div>`; }).join('')}</div>
-    ${S.bids.some(b => b.sold) ? `<div style="margin-top:8px">Sold ${S.bids.filter(b => b.sold).length} at the show.</div>` : ''}
+    ${S.bids.some(b => b.sold) ? `<div style="margin-top:8px">Sold ${S.bids.filter(b => b.sold).length} at the show. Table fee paid: ${money(CT.SHOW_FEE - (G.show.feeLeft || 0))} of ${money(CT.SHOW_FEE)}.</div>` : `<div style="margin-top:8px">The ${money(CT.SHOW_FEE)} table fee comes out of what you sell here.</div>`}
     <div style="font-size:12.5px;margin-top:6px">Anything you don't sell comes home with you.</div>`;
 }
 function nightCardNightHTML() {

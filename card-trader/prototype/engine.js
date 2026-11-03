@@ -907,7 +907,7 @@ function closeShop(G) {
   const next = G.week[G.dayIdx + 1];
   let msg = next ? 'Closing time! Tomorrow: ' + next.name + '. ' + Object.keys(next.demand).map(g => GAMES[g].name + ' ×' + next.demand[g]).join(', ') + '.' : 'Last close! Send anything to the graders: tonight is Grade Day and every slab comes home.';
   // the pump card's reprint only lands on the first release day; later release eves have nothing to say about it
-  if (G.store && G.dayIdx === SHOW_DAY && !G.show) msg += ' Flyer on the board: a regional show tonight. Book a table for ' + SHOW_FEE + '₵ and bring up to ' + SHOW_MAX + ' items. The crowd pays well for slabs and vintage.';
+  if (G.store && G.dayIdx === SHOW_DAY && !G.show) msg += ' Flyer on the board: a regional show tonight. Book a table (' + SHOW_FEE + '₵, taken from your show sales) and bring up to ' + SHOW_MAX + ' items. The crowd pays well for slabs and vintage.';
   if (next && next.release && G.pump && !G.week.slice(0, G.dayIdx + 1).some(D => D.release)) msg += ' ' + next.name.replace(/ Release Day$/, '') + ' reprint list is out: ' + tmpl(G.pump.t).name + ' is on it.';
   say(G, 'vee', msg);
 }
@@ -1745,6 +1745,8 @@ function showBring(G, uids) {
     if (o.t && !o.graded) wearRoll(G, o, WEAR_SHOW);
     const val = o.t ? lookValue(G, o) : goodValue(G, o), vint = o.t ? o.era === 'vintage' : !!GOODS[o.type].vintage;
     // a crowd, not a guaranteed buyer: about a quarter of items draw no bid; the rest 0.9-1.3x market, more for slabs and vintage
+    // the crowd checks too: fakes and trims draw no bid, same as buyers at the counter (v3.2.1)
+    if (o.t && (o.fake || o.trim)) return { uid: o.uid, bid: 0, sold: false };
     if (R(G) < 0.25) return { uid: o.uid, bid: 0, sold: false };
     return { uid: o.uid, bid: Math.max(1, Math.round(val * (0.9 + R(G) * 0.4 + (o.t && o.graded ? 0.1 : 0) + (vint ? 0.1 : 0)))), sold: false };
   });
@@ -1753,7 +1755,8 @@ function showBring(G, uids) {
 function showSell(G, uid) {
   const N = G.night; if (G.phase !== 'night' || !N || N.pick !== 'show' || !N.show.bids) return err('not now');
   const b = N.show.bids.find(x => x.uid === uid && !x.sold && x.bid > 0), o = b && findThing(G, uid); if (!o) return err('no bid for that');
-  sellThing(G, o, b.bid, 'a show buyer'); b.sold = true; G.store.stats.showSales = (G.store.stats.showSales || 0) + 1; return ok();
+  const before = G.cash; sellThing(G, o, b.bid, 'a show buyer'); b.sold = true;
+  const fee = Math.min(G.show.feeLeft || 0, Math.max(0, G.cash - before)); if (fee) { money(G, -fee, 'fee', 'Regional show table'); G.show.feeLeft -= fee; } G.store.stats.showSales = (G.store.stats.showSales || 0) + 1; return ok();
 }
 function v3Spawn(G, v, spec) {
   if (SPINE_ROLES.indexOf(v.role) >= 0) { v.tells = []; v.tellsShown = 0;
@@ -1846,8 +1849,8 @@ function v3Act(G, it) {
     case 'buyConsign': return buyConsign(G, it.uid);
     case 'bookShow': {
       if (G.phase !== 'close' || G.dayIdx !== SHOW_DAY) return err('the show is on day ' + (SHOW_DAY + 1));
-      if (G.show) return err('already booked'); if (G.cash < SHOW_FEE) return err('not enough cash');
-      money(G, -SHOW_FEE, 'fee', 'Regional show table'); G.show = { booked: true, done: false }; return ok();
+      // v3.2.1: no money up front; the organizer takes the table fee out of your show sales (never more than you make there)
+      if (G.show) return err('already booked'); G.show = { booked: true, done: false, feeLeft: SHOW_FEE }; return ok();
     }
     case 'showBring': return showBring(G, it.uids);
     case 'showSell': return showSell(G, it.uid);
