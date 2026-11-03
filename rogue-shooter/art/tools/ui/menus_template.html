@@ -1,0 +1,201 @@
+<title>Rogue Shooter Menus</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Rajdhani:wght@500;600;700&display=swap">
+<style>
+/* Layout: each screen is a real 1280x800 game frame (UI in screen px, art at 3x), scaled to fit the page. Notes sit above each frame. */
+@font-face { font-family: 'PS2P Fallback'; src: local('Courier New'), local('DejaVu Sans Mono'), local('Liberation Mono'), local('Menlo'); size-adjust: 166%; ascent-override: 75%; descent-override: 10%; }
+:root {
+  --bg: #1a1612; --panel: #2a2218; --panel-2: #231c14; --wood: #6b4c22; --wood-hi: #b08a50; --wood-lo: #2e1e0e; --ink: #2b1d14;
+  --fg: #f0e4c8; --dim: #b4a27e; --gold: #ffcc44; --gold-deep: #5a3a00;
+  --hp: #c0402f; --hp-hi: #df6448; --xp: #2fa894; --xp-hi: #5fe0c8;
+  --common: #a08050; --rare: #4a86e8; --epic: #a060e0; --legend: #ffcc44;
+  --display: 'Press Start 2P', 'PS2P Fallback', monospace;
+  --body: 'Rajdhani', 'Segoe UI', system-ui, sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { background: var(--bg); color: var(--fg); }
+body { font-family: var(--body); font-size: 16px; line-height: 1.45; margin: 0; }
+.wrap { max-width: 1340px; margin: 0 auto; padding-block: 28px 56px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 26px; }
+header.top { display: grid; gap: 10px; }
+.eyebrow { font-family: var(--display); font-size: 9px; letter-spacing: 2px; color: var(--dim); text-transform: uppercase; }
+h1 { font-family: var(--display); font-size: clamp(18px, 3.4vw, 28px); color: var(--gold); text-shadow: 2px 2px 0 var(--gold-deep); margin: 0; letter-spacing: 1px; line-height: 1.4; }
+.lede { max-width: 80ch; color: var(--dim); font-weight: 600; margin: 0; }
+nav.controls { display: flex; flex-wrap: wrap; gap: 8px; position: sticky; top: 0; z-index: 5; background: var(--bg); padding: 8px 0; border-bottom: 2px solid var(--panel); }
+.chip { font-family: var(--display); font-size: 9px; letter-spacing: 1px; color: var(--fg); background: var(--panel); border: 2px solid var(--wood); padding: 8px 10px; text-decoration: none; }
+.chip:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+section.screen { display: grid; gap: 10px; scroll-margin-top: 60px; }
+section.screen > header { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: baseline; }
+h2 { font-family: var(--display); font-size: 14px; color: var(--gold); margin: 0; text-shadow: 1px 1px 0 var(--gold-deep); letter-spacing: 1px; }
+.notes { margin: 0; color: var(--dim); font-weight: 600; max-width: 100ch; }
+.stagewrap { width: 100%; aspect-ratio: 1280 / 800; position: relative; overflow: hidden; border: 2px solid var(--wood); background: #000; }
+.stage { position: absolute; left: 0; top: 0; width: 1280px; height: 800px; transform-origin: 0 0; overflow: hidden; font-family: var(--display); color: var(--fg); }
+.stage img, .stage canvas { image-rendering: pixelated; }
+.stage .bg { position: absolute; left: 0; top: 0; width: 1281px; height: 801px; }
+.stage .shade { position: absolute; inset: 0; background: rgba(12, 8, 6, var(--a, 0.5)); }
+.stage .vig { position: absolute; inset: 0; background: radial-gradient(ellipse at center, transparent 0 66%, rgba(8,6,4,.18) 66% 80%, rgba(8,6,4,.36) 80% 92%, rgba(8,6,4,.55) 92%); }
+.abs { position: absolute; }
+
+/* ---------- the in-game UI kit (screen px; 3 px = one art pixel) ---------- */
+.panel { background: repeating-linear-gradient(180deg, #34281a 0 21px, #2c2216 21px 24px); border: 3px solid var(--ink);
+         box-shadow: inset 0 3px 0 0 var(--wood-hi), inset 0 0 0 3px #7a5a2c, 0 6px 0 0 rgba(0,0,0,.35); }
+.plank { background: #4a3418; border: 3px solid var(--ink); box-shadow: inset 0 3px 0 0 var(--wood-hi), inset 0 -3px 0 0 var(--wood-lo); }
+.t8 { font-size: 8px; line-height: 12px; } .t16 { font-size: 16px; line-height: 24px; } .t24 { font-size: 24px; line-height: 30px; } .t32 { font-size: 32px; line-height: 39px; } .t48 { font-size: 48px; line-height: 57px; }
+.gold { color: var(--gold); text-shadow: 3px 3px 0 var(--gold-deep); } .dim { color: var(--dim); } .cream { color: var(--fg); text-shadow: 3px 3px 0 var(--ink); }
+.btn { display: flex; align-items: center; gap: 12px; font-family: var(--display); font-size: 16px; line-height: 24px; color: var(--fg); background: #4a3418; border: 3px solid var(--ink);
+       box-shadow: inset 0 3px 0 0 var(--wood-hi), inset 0 -3px 0 0 var(--wood-lo); padding: 12px 18px; text-shadow: 3px 3px 0 var(--ink); }
+.btn.sel { background: #6b4c22; color: var(--gold); box-shadow: inset 0 3px 0 0 #e0b870, inset 0 -3px 0 0 var(--wood-lo), 0 0 0 3px var(--gold); }
+.btn.sel::before { content: ''; width: 12px; height: 18px; background: var(--gold); clip-path: polygon(0 0, 100% 50%, 0 100%); flex: none; }
+.btn .sub { font-size: 8px; color: var(--dim); margin-left: auto; text-shadow: none; }
+.btn.primary { background: #8e2c22; box-shadow: inset 0 3px 0 0 #df6448, inset 0 -3px 0 0 #4e140e, 0 0 0 3px var(--gold); color: #fff3d0; }
+.key { text-shadow: none; display: inline-block; font-family: var(--display); font-size: 8px; line-height: 12px; color: var(--ink); background: var(--fg); border: 3px solid var(--ink); box-shadow: inset 0 -3px 0 0 #b4a27e; padding: 3px 6px 6px; min-width: 24px; text-align: center; }
+.hint { font-size: 8px; line-height: 24px; color: var(--fg); display: flex; gap: 9px; align-items: center; text-shadow: 3px 3px 0 var(--ink); }
+.icon { width: 48px; height: 48px; image-rendering: pixelated; display: block; flex: none; }
+.icon.s32 { width: 32px; height: 32px; } .icon.s64 { width: 64px; height: 64px; } .icon.s24 { width: 32px; height: 32px; }
+.slot { width: 60px; height: 60px; display: grid; place-items: center; background: #1a120a; border: 3px solid var(--ink); box-shadow: inset 0 0 0 3px #5a4020, inset 0 3px 0 3px #3a2a14; position: relative; flex: none; }
+.bar { height: 24px; border: 3px solid var(--ink); background: #1a120a; position: relative; }
+.bar > i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--c); box-shadow: inset 0 3px 0 0 var(--hi), inset 0 -3px 0 0 rgba(0,0,0,.25); }
+.bar > b { position: absolute; inset: 0; font-size: 8px; line-height: 18px; text-align: center; font-weight: 400; color: #fff; text-shadow: 3px 3px 0 var(--ink); }
+.seg { display: flex; gap: 3px; } .seg > i { width: 9px; height: 12px; background: #1a120a; box-shadow: inset 0 0 0 3px #3a2a14; } .seg > i.on { background: var(--c, var(--gold)); box-shadow: inset 0 3px 0 0 rgba(255,255,255,.35); }
+.notch { clip-path: polygon(6px 0, calc(100% - 6px) 0, 100% 6px, 100% calc(100% - 6px), calc(100% - 6px) 100%, 6px 100%, 0 calc(100% - 6px), 0 6px); }
+
+/* ---------- 1 title ---------- */
+.logo { left: 50%; top: 66px; transform: translateX(-50%); text-align: center; }
+.logo .word { display: block; margin-bottom: 15px; font-size: 48px; line-height: 57px; color: var(--gold); text-shadow: 3px 3px 0 #c89220, 6px 6px 0 var(--gold-deep), 9px 9px 0 rgba(0,0,0,.4); letter-spacing: 3px; }
+.logo .word.two { font-size: 64px; line-height: 72px; color: #fff3d0; text-shadow: 3px 3px 0 #c0402f, 6px 6px 0 #4e140e, 9px 9px 0 rgba(0,0,0,.4); }
+.logo .tag { margin-top: 18px; font-size: 16px; color: var(--fg); text-shadow: 3px 3px 0 var(--ink); letter-spacing: 3px; }
+.mainmenu { left: 50%; top: 318px; transform: translateX(-50%); width: 420px; padding: 21px; display: grid; gap: 12px; }
+.lineup { left: 0; right: 0; bottom: 36px; display: flex; justify-content: center; gap: 48px; }
+.lineup canvas { width: 96px; height: 132px; }
+.corner { font-size: 8px; color: var(--dim); text-shadow: 3px 3px 0 var(--ink); }
+
+/* ---------- 2 class select ---------- */
+.cs-title { left: 0; right: 0; top: 30px; text-align: center; }
+.cs-row { left: 34px; right: 34px; top: 96px; display: flex; gap: 18px; align-items: flex-start; }
+.ccard { width: 228px; padding: 15px; display: grid; gap: 12px; }
+.ccard.sel { transform: translateY(-12px); box-shadow: inset 0 3px 0 0 #e0b870, inset 0 0 0 3px #b08a50, 0 0 0 3px var(--gold), 0 12px 0 0 rgba(0,0,0,.4); }
+.ccard .pic { height: 150px; display: grid; place-items: end center; background: #5ea23c; border: 3px solid var(--ink); position: relative; overflow: hidden; }
+.ccard .pic::after { content: ''; position: absolute; left: 50%; bottom: 9px; width: 66px; height: 12px; margin-left: -30px; background: rgba(20,30,70,.3); z-index: 0; }
+.ccard .pic canvas { width: 96px; height: 132px; position: relative; z-index: 1; margin-bottom: 3px; }
+.ccard .nm { font-size: 16px; line-height: 24px; color: var(--fg); text-shadow: 3px 3px 0 var(--ink); }
+.ccard.sel .nm { color: var(--gold); }
+.ccard .ep { font-size: 8px; line-height: 12px; color: var(--dim); margin-top: 6px; }
+.stats { display: grid; grid-template-columns: 36px 1fr 36px; gap: 6px 6px; align-items: center; font-size: 8px; }
+.stats .v { text-align: right; color: var(--fg); }
+.kit { display: grid; gap: 9px; }
+.kit .k { display: flex; gap: 9px; align-items: center; }
+.kit .k .icon { width: 48px; height: 48px; background: #1a120a; border: 3px solid var(--ink); box-sizing: content-box; padding: 3px; }
+.kit .k div { display: grid; gap: 6px; font-size: 8px; line-height: 12px; }
+.kit .k small { font-size: 8px; color: var(--dim); }
+.trait { font-family: var(--body); font-size: 16px; line-height: 18px; font-weight: 600; color: var(--fg); }
+.trait.minus { color: #e8a090; }
+.trait b { font-family: var(--display); font-size: 8px; font-weight: 400; margin-right: 6px; }
+.cs-foot { left: 0; right: 0; bottom: 24px; display: flex; justify-content: center; gap: 30px; }
+
+/* ---------- 3 battle map ---------- */
+.mapbox { left: 36px; top: 36px; width: 762px; height: 728px; padding: 21px; }
+.mapbox .ground { position: absolute; left: 21px; right: 21px; top: 84px; bottom: 21px; border: 3px solid var(--ink); background-size: 288px 288px; image-rendering: pixelated; filter: brightness(.8); }
+.node { position: absolute; width: 84px; height: 84px; display: grid; place-items: center; font-size: 16px; color: var(--fg); background: #4a3418; border: 3px solid var(--ink); box-shadow: inset 0 3px 0 0 var(--wood-hi), inset 0 -3px 0 0 var(--wood-lo); text-shadow: 3px 3px 0 var(--ink); }
+.nlabel { position: absolute; font-size: 8px; line-height: 12px; white-space: nowrap; color: var(--fg); text-shadow: 3px 3px 0 var(--ink); transform: translateX(-50%); }
+.node.done { background: #3a5a28; box-shadow: inset 0 3px 0 0 #6cb046, inset 0 -3px 0 0 #1e3412; }
+.check { position: absolute; width: 30px; height: 30px; background: var(--gold); clip-path: polygon(0 55%, 18% 37%, 40% 60%, 82% 8%, 100% 26%, 40% 94%); filter: drop-shadow(3px 3px 0 #2b1d14); }
+.node.cur { background: #6b4c22; box-shadow: inset 0 3px 0 0 #e0b870, inset 0 -3px 0 0 var(--wood-lo), 0 0 0 3px var(--gold), 0 0 0 9px rgba(255,204,68,.25), 0 0 0 15px rgba(255,204,68,.12); color: var(--gold); }
+.node.boss { width: 108px; height: 108px; background: #3a1840; box-shadow: inset 0 3px 0 0 #b066dc, inset 0 -3px 0 0 #1a0820, 0 0 0 3px #b066dc, 0 0 0 12px rgba(176,102,220,.2); }
+.node.lock { filter: saturate(.3) brightness(.7); }
+.hero-pin { position: absolute; width: 48px; height: 66px; }
+.deco { position: absolute; image-rendering: pixelated; }
+.info { left: 822px; top: 36px; width: 422px; height: 728px; padding: 24px; display: flex; flex-direction: column; gap: 18px; }
+.info h3 { margin: 0; font-weight: 400; }
+.portraits { display: flex; gap: 9px; flex-wrap: wrap; }
+.portraits .slot { width: 84px; height: 84px; }
+.portraits .slot img { width: 66px; height: 66px; object-fit: contain; }
+.pips { display: flex; gap: 6px; align-items: center; }
+.info .rule { height: 3px; background: #6b4c22; box-shadow: 0 3px 0 0 #1a120a; }
+.info .btns { margin-top: auto; display: grid; gap: 12px; }
+
+/* ---------- 4 combat HUD ---------- */
+.hud-tl { left: 18px; top: 18px; display: flex; gap: 12px; align-items: flex-start; }
+.portrait { width: 84px; height: 84px; background: #3a6a8a; border: 3px solid var(--ink); box-shadow: inset 0 0 0 3px #a08050; display: grid; place-items: center; overflow: hidden; position: relative; }
+.portrait img { width: 60px; height: 60px; }
+.lvl { position: absolute; left: 66px; top: 66px; font-size: 8px; padding: 3px 6px 6px; background: var(--gold); color: var(--ink); border: 3px solid var(--ink); }
+.hud-bars { display: grid; gap: 6px; width: 330px; padding-top: 3px; }
+.hud-bars .bar.hp { height: 30px; } .hud-bars .bar.hp > b { line-height: 24px; font-size: 8px; }
+.hud-top { left: 50%; top: 18px; transform: translateX(-50%); display: grid; justify-items: center; gap: 9px; }
+.roundplank { padding: 9px 18px; display: flex; gap: 18px; align-items: center; font-size: 16px; }
+.phase { font-size: 8px; color: #ffd27a; text-shadow: 3px 3px 0 var(--ink); letter-spacing: 3px; }
+.bossbar { width: 480px; display: grid; gap: 6px; justify-items: center; }
+.bossbar .bar { width: 100%; height: 24px; }
+.hud-tr { right: 18px; top: 18px; display: grid; gap: 6px; justify-items: end; }
+.cnt { display: flex; gap: 9px; align-items: center; font-size: 16px; padding: 6px 12px 6px 9px; }
+.cnt .icon { width: 32px; height: 32px; }
+.mats { display: flex; gap: 6px; }
+.mats .cnt { font-size: 8px; padding: 3px 9px 3px 6px; gap: 6px; } .mats .cnt .icon { width: 32px; height: 32px; }
+.hud-bl { left: 18px; bottom: 18px; display: flex; gap: 9px; align-items: flex-end; }
+.wslot { display: grid; gap: 6px; justify-items: center; font-size: 8px; text-shadow: 3px 3px 0 var(--ink); }
+.wslot .slot { width: 72px; height: 72px; } .wslot .lvpips { display: flex; gap: 3px; } .wslot .lvpips i { width: 9px; height: 9px; background: #1a120a; border: 3px solid var(--ink); box-sizing: content-box; } .wslot .lvpips i.on { background: var(--gold); }
+.wslot.empty .slot { opacity: .7; font-size: 8px; color: var(--dim); }
+.hud-bc { left: 50%; bottom: 18px; transform: translateX(-50%); display: flex; gap: 12px; align-items: flex-end; }
+.ability { position: relative; } .ability .slot { width: 96px; height: 96px; overflow: hidden; } .ability .icon { width: 64px; height: 64px; }
+.cool { position: absolute; inset: 3px; background: conic-gradient(transparent 0 112.5deg, rgba(10,8,20,.7) 112.5deg 360deg); }
+.cool b { position: absolute; inset: 0; display: grid; place-items: center; font-size: 16px; font-weight: 400; color: #fff; text-shadow: 3px 3px 0 var(--ink); }
+.keytag { position: absolute; left: 50%; bottom: -15px; transform: translateX(-50%); }
+.belt { display: flex; gap: 9px; padding: 9px; }
+.belt .slot { width: 66px; height: 66px; } .belt .n { position: absolute; right: 3px; bottom: 0; font-size: 8px; color: #fff; text-shadow: 3px 3px 0 var(--ink); } .belt .key { position: absolute; left: -9px; top: -12px; }
+.dmg { position: absolute; font-size: 16px; color: #fff; text-shadow: 3px 3px 0 var(--ink); }
+.dmg.crit { font-size: 24px; color: var(--gold); text-shadow: 3px 3px 0 #8e2c22; }
+.toast { right: 18px; bottom: 18px; padding: 12px 15px; font-size: 8px; line-height: 15px; display: flex; gap: 12px; align-items: center; }
+
+/* ---------- 5 level up ---------- */
+.lu-title { left: 0; right: 0; top: 66px; text-align: center; display: grid; gap: 12px; justify-items: center; }
+.lu-row { left: 0; right: 0; top: 204px; display: flex; justify-content: center; gap: 36px; }
+.card { width: 282px; height: 396px; padding: 18px; display: flex; flex-direction: column; align-items: center; gap: 15px; position: relative; text-align: center;
+        background: repeating-linear-gradient(180deg, #34281a 0 21px, #2c2216 21px 24px); border: 3px solid var(--ink);
+        box-shadow: inset 0 0 0 6px var(--r), inset 0 9px 0 6px color-mix(in srgb, var(--r) 60%, white), 0 9px 0 0 rgba(0,0,0,.4); }
+.card .rar { font-size: 8px; padding: 6px 9px; background: var(--r); color: var(--ink); margin-top: -3px; }
+.card .art { width: 108px; height: 108px; display: grid; place-items: center; background: #1a120a; border: 3px solid var(--ink); box-shadow: inset 0 0 0 3px var(--r); }
+.card .art img { width: 64px; height: 64px; image-rendering: pixelated; }
+.card .cn { font-size: 16px; line-height: 24px; color: var(--fg); text-shadow: 3px 3px 0 var(--ink); }
+.card .val { font-size: 24px; line-height: 30px; color: var(--r); text-shadow: 3px 3px 0 var(--ink); }
+.card .desc { font-family: var(--body); font-size: 18px; line-height: 20px; font-weight: 600; color: var(--dim); }
+.card .now { font-size: 8px; color: var(--dim); margin-top: auto; }
+.card .pref { position: absolute; top: -18px; right: -12px; font-size: 8px; padding: 6px 9px; background: #3a6a3a; border: 3px solid var(--ink); color: #dfffd0; transform: rotate(4deg); }
+.card .num { position: absolute; left: -15px; top: -15px; }
+.card.sel { transform: translateY(-15px); box-shadow: inset 0 0 0 6px var(--r), inset 0 9px 0 6px color-mix(in srgb, var(--r) 60%, white), 0 0 0 3px #fff, 0 9px 0 3px rgba(0,0,0,.4); }
+.card.legend::before { content: ''; position: absolute; inset: 6px; pointer-events: none; background: linear-gradient(115deg, transparent 0 40%, rgba(255,240,180,.18) 40% 46%, transparent 46% 100%); background-size: 300% 100%; animation: shine 2.4s steps(12) infinite; }
+@keyframes shine { from { background-position: 100% 0; } to { background-position: -50% 0; } }
+@media (prefers-reduced-motion: reduce) { .card.legend::before { animation: none; } }
+.lu-foot { left: 0; right: 0; bottom: 42px; display: flex; justify-content: center; gap: 30px; }
+.lu-side { right: 30px; top: 204px; width: 210px; padding: 15px; display: grid; gap: 9px; font-size: 8px; line-height: 12px; }
+.lu-side .r { display: flex; justify-content: space-between; }
+footer { color: var(--dim); font-size: 13px; font-weight: 600; }
+</style>
+<div class="wrap">
+  <header class="top">
+    <div class="eyebrow">Rogue Shooter v2 · Menus · first pass</div>
+    <h1>Menus and the combat HUD</h1>
+    <p class="lede">Five screens in the farm-hub style: title, class select, battle map, the combat HUD and the level-up pick. Each frame is a real 1280×800 game window: the art is 3× pixels, the menus are page elements like the game's current HUD (wood panels, square corners, Press Start 2P at multiples of 8 px, one 3 px border = one art pixel), so they can move into the build almost as-is. Every icon is a new 16×16 pixel icon, always at a whole-number size: 2× on small counters, 3× in lists, 4× as card art and in the ability slot.</p>
+  </header>
+  <nav class="controls" aria-label="Screens">{{NAV}}</nav>
+  {{SCREENS}}
+  <footer>Drawn and laid out by Claude (art/tools/ui). Icons in art/sprites/ui. © 2026 justaskjoe. All rights reserved.</footer>
+</div>
+<script>
+const SHEETS = {{SHEETS}};
+// Fit each 1280x800 frame to its box.
+const fit = () => { for (const w of document.querySelectorAll('.stagewrap')) w.firstElementChild.style.transform = `scale(${w.clientWidth / 1280})`; };
+addEventListener('resize', fit); fit();
+// Animated hero sprites: <canvas data-hero data-view data-anim="walk|idle">
+const imgs = {}; for (const [k, src] of Object.entries(SHEETS)) { const i = new Image(); i.src = src; imgs[k] = i; }
+const VIEWS = ['front', 'side', 'back'];
+const cvs = [...document.querySelectorAll('canvas[data-hero]')].map(c => { c.width = 32; c.height = 44; const x = c.getContext('2d'); x.imageSmoothingEnabled = false; return { c, x, hero: c.dataset.hero, row: VIEWS.indexOf(c.dataset.view || 'front'), anim: c.dataset.anim || 'walk', off: +(c.dataset.off || 0) }; });
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+function draw(now) {
+  for (const o of cvs) {
+    const im = imgs[o.hero]; if (!im.complete) continue;
+    const col = o.anim === 'walk' && !reduce ? 1 + Math.floor((now + o.off) / 150) % 4 : 0;
+    o.x.clearRect(0, 0, 32, 44); o.x.drawImage(im, col * 32, o.row * 44, 32, 44, 0, 0, 32, 44);
+  }
+  if (!reduce) requestAnimationFrame(draw);
+}
+Promise.all(Object.values(imgs).map(i => i.decode().catch(() => {}))).then(() => requestAnimationFrame(draw));
+</script>

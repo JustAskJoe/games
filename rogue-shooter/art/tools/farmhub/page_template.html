@@ -1,0 +1,142 @@
+<title>Farm Hub Sketches</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Rajdhani:wght@500;600;700&display=swap">
+<style>
+/* Layout: wooden field journal. The current layout as one large plate with toggleable labels, then building close-ups, the crop field, and earlier rounds folded away. */
+:root {
+  --bg: #1a1612; --panel: #2a2218; --panel-2: #231c14; --wood: #6b4c22; --wood-light: #a08050;
+  --fg: #f0e4c8; --dim: #b4a27e; --gold: #ffcc44; --gold-deep: #5a3a00; --red: #e06655; --sprout: #93cf63;
+  --display: 'Press Start 2P', 'Courier New', monospace;
+  --body: 'Rajdhani', 'Segoe UI', system-ui, sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { background: var(--bg); color: var(--fg); }
+body { font-family: var(--body); font-size: 16px; line-height: 1.45; margin: 0; }
+.wrap { max-width: 1400px; margin: 0 auto; padding-block: 28px 56px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 26px; }
+header { display: grid; gap: 10px; }
+.eyebrow { font-family: var(--display); font-size: 9px; letter-spacing: 2px; color: var(--dim); text-transform: uppercase; }
+h1 { font-family: var(--display); font-size: clamp(18px, 3.4vw, 28px); color: var(--gold); text-shadow: 2px 2px 0 var(--gold-deep); margin: 0; letter-spacing: 1px; line-height: 1.4; text-wrap: balance; }
+.lede { max-width: 70ch; color: var(--dim); font-weight: 600; margin: 0; }
+.stamp { justify-self: start; font-family: var(--display); font-size: 9px; letter-spacing: 1.5px; color: var(--red); border: 2px solid var(--red); padding: 6px 10px; transform: rotate(-1.5deg); }
+.controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.controls span { font-family: var(--display); font-size: 9px; color: var(--dim); letter-spacing: 1px; margin-right: 4px; }
+.chip { font-family: var(--display); font-size: 9px; letter-spacing: 1px; color: var(--fg); background: var(--panel); border: 2px solid var(--wood); padding: 8px 10px; cursor: pointer; }
+.chip[aria-pressed="true"] { border-color: var(--gold); color: var(--gold); }
+.chip:focus-visible, summary:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+section.sheet { background: var(--panel-2); border: 2px solid var(--wood); box-shadow: inset 0 1px 0 rgba(255,255,255,0.04), 0 4px 16px rgba(0,0,0,0.4); padding: 18px; display: grid; gap: 14px; min-width: 0; }
+.sheet-head { display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: baseline; justify-content: space-between; }
+h2 { font-family: var(--display); font-size: 12px; color: var(--gold); letter-spacing: 1.5px; margin: 0; text-shadow: 1px 1px 0 var(--gold-deep); line-height: 1.6; }
+h3 { font-family: var(--display); font-size: 10px; color: var(--fg); letter-spacing: 1px; margin: 0; font-weight: 400; }
+.sheet-head p { margin: 0; color: var(--dim); font-weight: 600; font-size: 15px; max-width: 66ch; }
+.changes { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.changes li { font-weight: 700; font-size: 14px; color: var(--fg); background: var(--panel); border: 1px solid var(--wood); padding: 4px 10px; }
+.changes li::before { content: "+ "; color: var(--sprout); }
+.map { position: relative; border: 2px solid var(--wood); line-height: 0; }
+.map img { width: 100%; height: auto; image-rendering: pixelated; display: block; }
+.layer { position: absolute; inset: 0; pointer-events: none; }
+.tag { position: absolute; transform: translate(-50%, -50%); font-family: var(--display); font-size: clamp(6px, 0.8vw, 10px); line-height: 1; letter-spacing: 0.5px; color: var(--fg); background: rgba(26,22,18,0.86); border: 2px solid var(--wood-light); padding: 5px 7px; white-space: nowrap; }
+.plot { position: absolute; transform: translate(-50%, -50%); font-family: var(--display); font-size: clamp(5px, 0.55vw, 8px); line-height: 1; color: #1a1612; background: var(--sprout); padding: 3px; min-width: 2.2em; text-align: center; font-variant-numeric: tabular-nums; }
+.bgrid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+@media (max-width: 1080px) { .bgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 520px) { .bgrid { grid-template-columns: 1fr; } section.sheet { padding: 12px; } }
+.bcard { margin: 0; background: var(--panel); border: 2px solid var(--wood); display: grid; grid-template-rows: auto 1fr; min-width: 0; }
+.bimg { border-bottom: 2px solid var(--wood); line-height: 0; }
+.bimg img { width: 100%; height: auto; image-rendering: pixelated; }
+.bcard figcaption { padding: 10px 12px 12px; display: grid; gap: 4px; align-content: start; }
+.bcard b { font-family: var(--display); font-size: 10px; font-weight: 400; letter-spacing: 0.5px; color: var(--fg); line-height: 1.5; }
+.bcard span { color: var(--dim); font-weight: 600; font-size: 14px; }
+.fieldrow { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 18px; align-items: start; }
+@media (max-width: 760px) { .fieldrow { grid-template-columns: 1fr; } }
+.fieldrow img { width: 100%; height: auto; image-rendering: pixelated; border: 2px solid var(--wood); display: block; }
+.legend { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.legend li { display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 10px; align-items: baseline; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 6px; }
+.legend b { font-family: var(--display); font-size: 9px; font-weight: 400; color: var(--gold); }
+.legend span { color: var(--dim); font-weight: 600; }
+details.sheet summary { cursor: pointer; list-style: none; display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: baseline; justify-content: space-between; }
+details.sheet summary::-webkit-details-marker { display: none; }
+details.sheet summary h2::before { content: "▸ "; }
+details.sheet[open] summary h2::before { content: "▾ "; }
+details.sheet summary p { margin: 0; color: var(--dim); font-weight: 600; font-size: 15px; }
+.old { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-top: 14px; }
+@media (max-width: 760px) { .old { grid-template-columns: 1fr; } }
+.old > div { display: grid; gap: 8px; min-width: 0; }
+.igrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+@media (max-width: 860px) { .igrid { grid-template-columns: 1fr; } }
+.icard { margin: 0; display: grid; gap: 8px; min-width: 0; }
+.icard.wide { grid-column: 1 / -1; }
+.icard figcaption { display: grid; gap: 2px; }
+.icard figcaption b { font-family: var(--display); font-size: 10px; font-weight: 400; color: var(--gold); letter-spacing: 0.5px; line-height: 1.6; }
+.icard figcaption span { color: var(--dim); font-weight: 600; font-size: 14px; max-width: 72ch; }
+footer { color: var(--dim); font-size: 13px; font-weight: 600; display: grid; gap: 6px; }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Farm hub · Pixel sketches · Round 3 · Nov 2, 2026</div>
+    <h1>Riverside farm</h1>
+    <p class="lede">Layout B, made bigger and roomier. The farm grows from 640×448 to 880×620 pixels. A cliff ridge with a waterfall now holds the arena, forge, alchemy lab and shrine, and a log cabin sits on its own knoll. Trees, rocks, tall grass and flowers fill the space between buildings. Every building now has an interior, including a farmer in the barn and a warrior in the arena. All the art is original and drawn in code.</p>
+    <div class="stamp">SKETCH · NOT FINAL ART</div>
+  </header>
+
+  <div class="controls" role="group" aria-label="Map overlays">
+    <span>SHOW</span>
+    <button class="chip" id="t-tags" aria-pressed="true">Building labels</button>
+    <button class="chip" id="t-plots" aria-pressed="false">Plot numbers 1–30</button>
+  </div>
+
+  <section class="sheet" aria-labelledby="h-main">
+    <div class="sheet-head"><h2 id="h-main">Layout B · Riverside, round 2</h2><p>Workshops on the north ridge, reached by stone stairs. The road crosses the stream on a bridge below the falls. Farm life fills the lower meadow.</p></div>
+    <ul class="changes" aria-label="What changed from round 1">
+      <li>Log cabin on a raised knoll</li><li>37% wider, 38% taller map</li><li>North cliff ridge with 3 stairways</li><li>Waterfall</li><li>Cabin knoll and orchard mesa</li><li>Orchard pond</li><li>Tall grass, logs, mushrooms, boulders</li>
+    </ul>
+    {{MAIN}}
+  </section>
+
+  <section class="sheet" aria-labelledby="h-in">
+    <div class="sheet-head"><h2 id="h-in">Interiors</h2><p>What each building looks like inside, at 3× pixel size. The shrine, training grounds and arena are closer, more detailed versions of the outdoor spaces, with room to walk around.</p></div>
+    <div class="igrid">{{INTERIORS}}</div>
+  </section>
+
+  <section class="sheet" aria-labelledby="h-b">
+    <div class="sheet-head"><h2 id="h-b">Buildings and terrain</h2><p>Close-ups at 3× pixel size, with the props that sit around each one on the farm.</p></div>
+    <div class="bgrid">{{CARDS}}</div>
+  </section>
+
+  <section class="sheet" aria-labelledby="h-f">
+    <div class="sheet-head"><h2 id="h-f">Crop field · 6 × 5</h2><p>30 raised beds in six columns and five rows, each one plot location. Empty beds show bare tilled soil.</p></div>
+    <div class="fieldrow">
+      <img src="{{FIELD}}" alt="Close-up of the 6 by 5 crop field">
+      <ul class="legend">
+        <li><b>Bed</b><span>18 px wood-framed bed with a 6 px grass gap. Plots are numbered left to right, top to bottom.</span></li>
+        <li><b>Stages</b><span>Bare soil, sprout, leafy, then ripe.</span></li>
+        <li><b>Crops shown</b><span>Tomato, pumpkin, wheat, cabbage, blueberry, lavender herb.</span></li>
+        <li><b>Around it</b><span>Low wooden fence with a gate where the path comes in, and a scarecrow beside it.</span></li>
+      </ul>
+    </div>
+  </section>
+
+  <details class="sheet">
+    <summary><h2>Round 1</h2><p>The first two layouts, for comparison.</p></summary>
+    <div class="old">
+      <div><h3>Layout A · Crossroads</h3>{{OLDA}}</div>
+      <div><h3>Layout B · Riverside</h3>{{OLDB}}</div>
+    </div>
+  </details>
+
+  <footer>
+    <div>Maps are shown at 2× pixel size. Buildings use the same pixel scale everywhere.</div>
+    <div>© 2026 justaskjoe. All rights reserved.</div>
+  </footer>
+</div>
+<script>
+function toggle(id, sel) {
+  const b = document.getElementById(id);
+  b.addEventListener('click', () => {
+    const on = b.getAttribute('aria-pressed') !== 'true';
+    b.setAttribute('aria-pressed', on);
+    document.querySelectorAll(sel).forEach(el => el.hidden = !on);
+  });
+}
+toggle('t-tags', '.layer.tags'); toggle('t-plots', '.layer.plots');
+</script>

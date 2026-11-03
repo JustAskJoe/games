@@ -1,0 +1,805 @@
+{
+ "note": "Side views face right; flip for left. Frame sizes are in art pixels (the game draws them at 3x).",
+ "enemies": {
+  "guardian": {
+   "name": "Meadow Guardian",
+   "zone": "meadow",
+   "file": "guardian.png",
+   "frame": [
+    96,
+    102
+   ],
+   "rows": [
+    "front",
+    "back"
+   ],
+   "columns": [
+    "m0",
+    "m1",
+    "m2",
+    "m3",
+    "a0",
+    "a1",
+    "a2"
+   ],
+   "move_frames": 4,
+   "attack_frames": 3,
+   "timing_ms": {
+    "move": 260,
+    "attack": [
+     480,
+     220,
+     520
+    ]
+   },
+   "floats": false,
+   "tier": "major",
+   "attack": "Root Slam: one branch arm rises, crashes down, and roots burst out of the ground.",
+   "extras": {
+    "Root spikes": {
+     "file": "guardian_root_spikes.png",
+     "frame": [
+      96,
+      40
+     ],
+     "count": 3,
+     "note": "Roots burst out in a line from the slam; points right, rotate to aim."
+    }
+   }
+  },
+  "forest_witch": {
+   "name": "Forest Witch",
+   "zone": "forest",
+   "file": "forest_witch.png",
+   "frame": [
+    100,
+    90
+   ],
+   "rows": [
+    "front"
+   ],
+   "columns": [
+    "m0",
+    "m1",
+    "m2",
+    "m3",
+    "a0",
+    "a1",
+    "a2"
+   ],
+   "move_frames": 4,
+   "attack_frames": 3,
+   "timing_ms": {
+    "move": 150,
+    "attack": [
+     320,
+     240,
+     420
+    ]
+   },
+   "floats": false,
+   "tier": "major",
+   "attack": "Web and Venom: spins a web ball, throws it, then raises two venom orbs for poison rain.",
+   "extras": {
+    "Web ball": {
+     "file": "forest_witch_web_ball.png",
+     "frame": [
+      16,
+      16
+     ],
+     "count": 2,
+     "note": "Thrown at you; a hit slows you. Points right, rotate to aim."
+    },
+    "Poison rain": {
+     "file": "forest_witch_poison_rain.png",
+     "frame": [
+      24,
+      32
+     ],
+     "count": 3,
+     "note": "Drops fall on marked spots and leave a green puddle."
+    }
+   }
+  },
+  "cavern_wyrm": {
+   "name": "Cavern Wyrm",
+   "zone": "caverns",
+   "file": "cavern_wyrm.png",
+   "frame": [
+    112,
+    94
+   ],
+   "rows": [
+    "front",
+    "side"
+   ],
+   "columns": [
+    "m0",
+    "m1",
+    "m2",
+    "m3",
+    "a0",
+    "a1",
+    "a2"
+   ],
+   "move_frames": 4,
+   "attack_frames": 3,
+   "timing_ms": {
+    "move": 200,
+    "attack": [
+     420,
+     300,
+     520
+    ]
+   },
+   "floats": false,
+   "tier": "major",
+   "attack": "Crystal Breath: rears up, the jaw opens on cyan light, then it breathes a cone of shards.",
+   "extras": {
+    "Crystal breath": {
+     "file": "cavern_wyrm_crystal_breath.png",
+     "frame": [
+      56,
+      80
+     ],
+     "count": 3,
+     "note": "A cone of crystal shards from the open jaw; points down, rotate to aim."
+    }
+   }
+  },
+  "volcano_lord": {
+   "name": "Volcano Lord",
+   "zone": "volcanic",
+   "file": "volcano_lord.png",
+   "frame": [
+    104,
+    102
+   ],
+   "rows": [
+    "front"
+   ],
+   "columns": [
+    "m0",
+    "m1",
+    "m2",
+    "m3",
+    "a0",
+    "a1",
+    "a2"
+   ],
+   "move_frames": 4,
+   "attack_frames": 3,
+   "timing_ms": {
+    "move": 260,
+    "attack": [
+     480,
+     220,
+     420
+    ]
+   },
+   "floats": false,
+   "tier": "major",
+   "attack": "Boulder Throw: heaves a molten boulder overhead, hurls it, then stomps to set off geysers.",
+   "extras": {
+    "Boulder": {
+     "file": "volcano_lord_boulder.png",
+     "frame": [
+      22,
+      22
+     ],
+     "count": 2,
+     "note": "Thrown molten boulder; spins as it flies."
+    },
+    "Geyser": {
+     "file": "volcano_lord_geyser.png",
+     "frame": [
+      32,
+      56
+     ],
+     "count": 3,
+     "note": "Frame 1 is the bubbling warning, then the eruption."
+    }
+   }
+  },
+  "sovereign": {
+   "name": "Shadow Sovereign",
+   "zone": "shadow",
+   "file": "sovereign.png",
+   "frame": [
+    96,
+    102
+   ],
+   "rows": [
+    "front"
+   ],
+   "columns": [
+    "m0",
+    "m1",
+    "m2",
+    "m3",
+    "a0",
+    "a1",
+    "a2"
+   ],
+   "move_frames": 4,
+   "attack_frames": 3,
+   "timing_ms": {
+    "move": 220,
+    "attack": [
+     380,
+     380,
+     420
+    ]
+   },
+   "floats": true,
+   "tier": "major",
+   "attack": "Eclipse: the cloak spreads wide, the Sovereign fades into the dark, then hurls a darkness orb.",
+   "extras": {
+    "Darkness zone": {
+     "file": "sovereign_darkness_zone.png",
+     "frame": [
+      96,
+      64
+     ],
+     "count": 3,
+     "note": "Where the orb lands; inside it you can only see a small circle around you."
+    }
+   }
+  },
+  "emperor": {
+   "name": "Void Emperor",
+   "zone": "void",
+   "file": "emperor.png",
+   "frame": [
+    112,
+    110
+   ],
+   "rows": [
+    "front"
+   ],
+   "columns": [
+    "m0",
+    "m1",
+    "m2",
+    "m3",
+    "a0",
+    "a1",
+    "a2"
+   ],
+   "move_frames": 4,
+   "attack_frames": 3,
+   "timing_ms": {
+    "move": 220,
+    "attack": [
+     420,
+     320,
+     520
+    ]
+   },
+   "floats": true,
+   "tier": "major",
+   "attack": "Collapse: the core swells, both gauntlets fire a beam, then the enrage form turns pink.",
+   "extras": {
+    "Void beam": {
+     "file": "emperor_void_beam.png",
+     "frame": [
+      120,
+      24
+     ],
+     "count": 3,
+     "note": "Fired from both gauntlets; points right, rotate to aim."
+    },
+    "Collapse ring": {
+     "file": "emperor_collapse_ring.png",
+     "frame": [
+      128,
+      80
+     ],
+     "count": 3,
+     "note": "Phase 3: the edge of the arena closes in."
+    }
+   }
+  },
+  "giant_slime": {
+   "name": "Giant Slime",
+   "zone": "meadow",
+   "file": "giant_slime.png",
+   "frame": [
+    64,
+    54
+   ],
+   "rows": [
+    "front"
+   ],
+   "columns": [
+    "m0",
+    "m1",
+    "m2",
+    "m3",
+    "a0",
+    "a1",
+    "a2"
+   ],
+   "move_frames": 4,
+   "attack_frames": 3,
+   "timing_ms": {
+    "move": 200,
+    "attack": [
+     320,
+     260,
+     360
+    ]
+   },
+   "floats": false,
+   "tier": "mini",
+   "attack": "Bellyflop: squashes wide, springs up tall, then splats down and flings gel.",
+   "extras": {}
+  },
+  "alpha_bat": {
+   "name": "Alpha Bat",
+   "zone": "meadow",
+   "file": "alpha_bat.png",
+   "frame": [
+    68,
+    44
+   ],
+   "rows": [
+    "front"
+   ],
+   "columns": [
+    "m0",
+    "m1",
+    "m2",
+    "m3",
+    "a0",
+    "a1",
+    "a2"
+   ],
+   "move_frames": 4,
+   "attack_frames": 3,
+   "timing_ms": {
+    "move": 110,
+    "attack": [
+     260,
+     380,
+     260
+    ]
+   },
+   "floats": true,
+   "tier": "mini",
+   "attack": "Screech: wings back, mouth open, a ring of sound rolls out.",
+   "extras": {
+    "Screech": {
+     "file": "alpha_bat_screech.png",
+     "frame": [
+      72,
+      48
+     ],
+     "count": 3,
+     "note": "Rolls out below the bat; each ring that reaches you calls more bats."
+    }
+   }
+  },
+  "mushroom_king": {
+   "name": "Mushroom King",
+   "zone": "forest",
+   "file": "mushroom_king.png",
+   "frame": [
+    64,
+    62
+   ],
+   "rows": [
+    "front"
+   ],
+   "columns": [
+    "m0",
+    "m1",
+    "m2",
+    "m3",
+    "a0",
+    "a1",
+    "a2"
+   ],
+   "move_frames": 4,
+   "attack_frames": 3,
+   "timing_ms": {
+    "move": 180,
+    "attack": [
+     320,
+     380,
+     300
+    ]
+   },
+   "floats": false,
+   "tier": "mini",
+   "attack": "Spore Storm: raises the scepter, the cap bursts with spores, then slams the scepter down.",
+   "extras": {
+    "Spore storm": {
+     "file": "mushroom_king_spore_storm.png",
+     "frame": [
+      96,
+      64
+     ],
+     "count": 3,
+     "note": "Spreads out around him on the strike; the clouds slow and poison."
+    }
+   }
+  },
+  "pack_leader": {
+   "name": "Pack Leader Wolf",
+   "zone": "forest",
+   "file": "pack_leader.png",
+   "frame": [
+    56,
+    48
+   ],
+   "rows": [
+    "front",
+    "side"
+   ],
+   "columns": [
+    "m0",
+    "m1",
+    "m2",
+    "m3",
+    "a0",
+    "a1",
+    "a2"
+   ],
+   "move_frames": 4,
+   "attack_frames": 3,
+   "timing_ms": {
+    "move": 110,
+    "attack": [
+     300,
+     520,
+     260
+    ]
+   },
+   "floats": false,
+   "tier": "mini",
+   "attack": "Howl: lowers its head, throws it back and howls, then drops into a crouch.",
+   "extras": {
+    "Howl": {
+     "file": "pack_leader_howl.png",
+     "frame": [
+      80,
+      56
+     ],
+     "count": 3,
+     "note": "Rolls out from the wolf; every enemy it touches speeds up."
+    }
+   }
+  },
+  "crystal_titan": {
+   "name": "Crystal Titan",
+   "zone": "caverns",
+   "file": "crystal_titan.png",
+   "frame": [
+    68,
+    64
+   ],
+   "rows": [
+    "front"
+   ],
+   "columns": [
+    "m0",
+    "m1",
+    "m2",
+    "m3",
+    "a0",
+    "a1",
+    "a2"
+   ],
+   "move_frames": 4,
+   "attack_frames": 3,
+   "timing_ms": {
+    "move": 260,
+    "attack": [
+     420,
+     200,
+     420
+    ]
+   },
+   "floats": false,
+   "tier": "mini",
+   "attack": "Ground Slam: both fists overhead, a violet-flashing slam, then spikes burst out.",
+   "extras": {
+    "Spike wave": {
+     "file": "crystal_titan_spike_wave.png",
+     "frame": [
+      96,
+      40
+     ],
+     "count": 3,
+     "note": "Rows of crystal spikes rise along the slam direction; points right, rotate to aim."
+    }
+   }
+  },
+  "moth_queen": {
+   "name": "Moth Queen",
+   "zone": "caverns",
+   "file": "moth_queen.png",
+   "frame": [
+    72,
+    50
+   ],
+   "rows": [
+    "front"
+   ],
+   "columns": [
+    "m0",
+    "m1",
+    "m2",
+    "m3",
+    "a0",
+    "a1",
+    "a2"
+   ],
+   "move_frames": 4,
+   "attack_frames": 3,
+   "timing_ms": {
+    "move": 120,
+    "attack": [
+     300,
+     420,
+     300
+    ]
+   },
+   "floats": true,
+   "tier": "mini",
+   "attack": "Royal Bloom: spreads her wings, flares green, then sweeps them down.",
+   "extras": {
+    "Royal bloom": {
+     "file": "moth_queen_royal_bloom.png",
+     "frame": [
+      80,
+      56
+     ],
+     "count": 3,
+     "note": "Plays around her when she heals; Healer Moths appear on the last frame."
+    }
+   }
+  },
+  "magma_wyrm": {
+   "name": "Magma Wyrm",
+   "zone": "volcanic",
+   "file": "magma_wyrm.png",
+   "frame": [
+    64,
+    62
+   ],
+   "rows": [
+    "front"
+   ],
+   "columns": [
+    "m0",
+    "m1",
+    "m2",
+    "m3",
+    "a0",
+    "a1",
+    "a2"
+   ],
+   "move_frames": 4,
+   "attack_frames": 3,
+   "timing_ms": {
+    "move": 200,
+    "attack": [
+     360,
+     300,
+     420
+    ]
+   },
+   "floats": false,
+   "tier": "mini",
+   "attack": "Fire Breath: rears back, the jaw opens glowing, then it lunges and breathes.",
+   "extras": {
+    "Fire breath": {
+     "file": "magma_wyrm_fire_breath.png",
+     "frame": [
+      48,
+      72
+     ],
+     "count": 3,
+     "note": "Comes out of the open jaw and sweeps; points down, rotate to aim."
+    }
+   }
+  },
+  "inferno_golem": {
+   "name": "Inferno Golem",
+   "zone": "volcanic",
+   "file": "inferno_golem.png",
+   "frame": [
+    64,
+    62
+   ],
+   "rows": [
+    "front"
+   ],
+   "columns": [
+    "m0",
+    "m1",
+    "m2",
+    "m3",
+    "a0",
+    "a1",
+    "a2"
+   ],
+   "move_frames": 4,
+   "attack_frames": 3,
+   "timing_ms": {
+    "move": 240,
+    "attack": [
+     400,
+     180,
+     400
+    ]
+   },
+   "floats": false,
+   "tier": "mini",
+   "attack": "Ground Pound: fists raised, a blazing slam, then a fire ring spreads.",
+   "extras": {
+    "Fire ring": {
+     "file": "inferno_golem_fire_ring.png",
+     "frame": [
+      112,
+      72
+     ],
+     "count": 3,
+     "note": "Spreads out from the slam; you have to step through or outrun it."
+    }
+   }
+  },
+  "phantom_lord": {
+   "name": "Phantom Lord",
+   "zone": "shadow",
+   "file": "phantom_lord.png",
+   "frame": [
+    56,
+    62
+   ],
+   "rows": [
+    "front"
+   ],
+   "columns": [
+    "m0",
+    "m1",
+    "m2",
+    "m3",
+    "a0",
+    "a1",
+    "a2"
+   ],
+   "move_frames": 4,
+   "attack_frames": 3,
+   "timing_ms": {
+    "move": 160,
+    "attack": [
+     320,
+     260,
+     420
+    ]
+   },
+   "floats": true,
+   "tier": "mini",
+   "attack": "Mirror Court: raises a hand, splits into two copies, which slide apart.",
+   "extras": {}
+  },
+  "nightmare_king": {
+   "name": "Nightmare King",
+   "zone": "shadow",
+   "file": "nightmare_king.png",
+   "frame": [
+    68,
+    60
+   ],
+   "rows": [
+    "front"
+   ],
+   "columns": [
+    "m0",
+    "m1",
+    "m2",
+    "m3",
+    "a0",
+    "a1",
+    "a2"
+   ],
+   "move_frames": 4,
+   "attack_frames": 3,
+   "timing_ms": {
+    "move": 220,
+    "attack": [
+     300,
+     420,
+     320
+    ]
+   },
+   "floats": true,
+   "tier": "mini",
+   "attack": "Dread Roar: hunches, every eye widens as the maw opens, then the roar.",
+   "extras": {
+    "Dread roar": {
+     "file": "nightmare_king_dread_roar.png",
+     "frame": [
+      112,
+      72
+     ],
+     "count": 3,
+     "note": "Rolls out on the roar; while it passes you attack slower."
+    }
+   }
+  },
+  "void_hydra": {
+   "name": "Void Hydra",
+   "zone": "void",
+   "file": "void_hydra.png",
+   "frame": [
+    80,
+    64
+   ],
+   "rows": [
+    "front"
+   ],
+   "columns": [
+    "m0",
+    "m1",
+    "m2",
+    "m3",
+    "a0",
+    "a1",
+    "a2"
+   ],
+   "move_frames": 4,
+   "attack_frames": 3,
+   "timing_ms": {
+    "move": 180,
+    "attack": [
+     260,
+     260,
+     260
+    ]
+   },
+   "floats": false,
+   "tier": "mini",
+   "attack": "Triple Strike: left, middle and right heads lunge one after another, jaws glowing pink.",
+   "extras": {}
+  },
+  "reality_breaker": {
+   "name": "Reality Breaker",
+   "zone": "void",
+   "file": "reality_breaker.png",
+   "frame": [
+    56,
+    62
+   ],
+   "rows": [
+    "front"
+   ],
+   "columns": [
+    "m0",
+    "m1",
+    "m2",
+    "m3",
+    "a0",
+    "a1",
+    "a2"
+   ],
+   "move_frames": 4,
+   "attack_frames": 3,
+   "timing_ms": {
+    "move": 170,
+    "attack": [
+     300,
+     300,
+     300
+    ]
+   },
+   "floats": true,
+   "tier": "mini",
+   "attack": "Break Step: its plates spread, it shatters into static, then snaps back in a pink flash.",
+   "extras": {}
+  }
+ }
+}

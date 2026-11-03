@@ -1,0 +1,57 @@
+
+<canvas id="game"></canvas>
+<div id="loading">LOADING…</div>
+
+<div id="hud" hidden>
+  <div class="abs hud-tl">
+    <div class="portrait" id="hud-face"></div><div class="lvl" id="hud-lvl">LV 1</div>
+    <div class="hud-bars">
+      <div class="bar hp" style="--c:var(--hp);--hi:var(--hp-hi)"><i id="hp-fill" style="width:100%"></i><b id="hp-label">HP</b></div>
+      <div class="bar" style="--c:var(--xp);--hi:var(--xp-hi);height:18px"><i id="xp-fill" style="width:0%"></i><b id="xp-label" style="line-height:12px">XP</b></div>
+    </div>
+  </div>
+  <div class="abs hud-top">
+    <div class="roundplank plank"><span class="gold" id="hud-round">ROUND 1</span><span class="dim t8" id="hud-zone">MEADOW</span><span style="display:flex;gap:6px;align-items:center" id="hud-timer"><span id="hud-time">0:00</span></span></div>
+    <div class="phase" id="hud-phase">OPENING</div>
+    <div class="bossbar" id="bossbar" hidden><div class="t8 cream" id="boss-name">BOSS</div><div class="bar" id="boss-bar" style="--c:#b066dc;--hi:#e8b4ff"><i id="boss-fill" style="width:100%"></i></div></div>
+  </div>
+  <div class="abs hud-tr">
+    <div class="cnt plank" id="hud-gold-box"><span class="gold" id="hud-gold">0</span></div>
+    <div class="cnt plank" id="hud-kill-box"><span id="hud-kills">0</span></div>
+    <div class="mats" id="hud-mats"></div>
+  </div>
+  <div class="abs hud-bl" id="hud-weapons"></div>
+  <div class="abs hud-bc">
+    <div class="ability"><div class="slot" id="ab-slot"><div class="cool" id="ab-cool"><b id="ab-num"></b></div></div><span class="key keytag">SPACE</span><div class="charges" id="ab-charges"></div></div>
+    <div class="belt plank" id="hud-belt"></div>
+  </div>
+  <div class="abs toast panel" id="toast" hidden></div>
+</div>
+
+<div id="notification" class="plank" hidden><span id="notif-text"></span></div>
+
+<div id="farmhud" hidden>
+  <div class="abs cnt plank" id="farm-gold" style="left:18px;top:18px"></div>
+  <div class="abs roundplank plank" id="farm-where" style="right:18px;top:18px"></div>
+  <div class="abs hint" style="left:18px;bottom:12px"><span class="key">W</span><span class="key">A</span><span class="key">S</span><span class="key">D</span> WALK · SOUTH PATH TO BATTLE · EAST BRIDGE TO TOWN</div>
+</div>
+<div id="farm-prompt" class="plank" hidden></div>
+
+<div id="shade" hidden></div>
+<div class="vig" id="vig" hidden></div>
+<div class="redvig" id="redvig" hidden></div>
+<div class="confetti" id="confetti" hidden></div>
+
+<div id="stage" hidden>
+  <section class="screen" id="title" hidden></section>
+  <section class="screen" id="classes" hidden></section>
+  <section class="screen" id="battlemap" hidden></section>
+  <section class="screen" id="levelup" hidden></section>
+  <section class="screen" id="stats" hidden></section>
+  <section class="screen" id="pause" hidden></section>
+  <section class="screen" id="options" hidden></section>
+  <section class="screen" id="roundcomplete" hidden></section>
+  <section class="screen" id="runover" hidden></section>
+  <section class="screen" id="victory" hidden></section>
+  <section class="screen" id="farmshop" hidden></section>
+</div>
