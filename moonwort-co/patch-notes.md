@@ -6,15 +6,34 @@ Newest on top. See the repo's CLAUDE.md for how patch notes work.
 
 ---
 
-## 0.0 · 2026-11-03 · Hunter (with Forge)
-Project folder created from the approved pitch. Nothing built yet.
+## 0.1 · 2026-11-02 · Hunter (with Claude)
+Prototype 1: a 2D phone-first build covering 3 in-game days. Play it from the Lab or `builds/moonwort-co.html`.
 
 ### What's new
-- The brief is in `pitch/brief.md`.
+- A familiar picks you: three quick questions decide between Sorrel the cat, Burdock the toad and Quill the crow. Your familiar drops a hint whenever a brew isn't quite right.
+- Each day, Old Pell, Wren and Tamsin each knock with a trouble. They describe how they feel, never what to make.
+- At the bench, put up to three herbs in the mortar. Steep, grind, dry or moonlight each one, then stir with two circles of your thumb. There are 13 brews to find, plus funny duds ("Tonic of Mild Regret": they hiccup in Latin).
+- Moonlight follows the real moon tonight: a waxing moon brightens a herb, a waning moon calms it. The dawn card shows the real phase and season.
+- One garden bed with 3 plots: sow at dusk, harvest at dawn. The hedgerow can be foraged once a day by season. On day 2 you find moonwort, the shop's namesake, and leave it be.
+- Grimoire: every herb you use opens a lore card with its botanical name, a true fact, a Culpeper quote, what science says today, a safety note and sources. Every card says "not medical advice".
+- Feedback form (Lab, or copy fallback) asks for one plant fact you remember, for the pass-bar recall test.
 
 ### Next up
+- [ ] @Hunter: play it on a real phone from the PR's Lab preview. Is reading a trouble and finding the brew fun on its own?
+- [ ] @Hunter: run the pass-bar test with 5 people (4 of 5 find a brew without help, want to keep playing, and recall a plant fact the next day).
+- [ ] @Hunter: review the lore cards in `design/lore/ingredients.json` (or name a reviewer). Every entry has `reviewed_by: null` until a person checks it.
 - [ ] Crew deck (about 12 slides) from the brief.
-- [ ] Add the game to the table in the repo README.
+- [x] Add the game to the table in the repo README. (Hunter with Claude, Nov 2)
+
+### Watch out
+- [ ] Only bots have played it: the sim and a Playwright run through all 3 days at 390 and 320 px in desktop Chromium. It hasn't been tried on a real phone, iOS Safari, or with haptics.
+- [ ] The trait numbers per herb are game design, only loosely inspired by Culpeper's hot / cold, dry / moist. Check them against the lore data before anyone calls them "accurate".
+- [ ] Prototype 1 is 2D and 3 days. The brief said 3D greybox and 1 day (Hunter changed both on Nov 2). The pitch dates the approval Nov 3 but this entry is Nov 2, because the Forge date looks off by a day.
+- [ ] Moonlight depends on the real date, so testers on different nights get different answers. Use `?date=YYYY-MM-DD` to compare.
+- [ ] The time to first brew is measured from game start (after the quiz), not from install.
+- [ ] Only the stir gesture exists. Grind, pour and cork are still taps on a chip.
+- [ ] `kit/open-notes.py` crashes on Windows (it reads patch notes without UTF-8). It's not fixed here; it needs its own small PR.
+- [ ] The Lead Artist plan is a separate PR (#101), and both PRs add a top patch-notes entry. Whichever merges second needs a one-line conflict fixed.
 
 ### Watch out
 - [ ] The brief is a draft until the crew deck settles the open calls.

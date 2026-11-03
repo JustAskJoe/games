@@ -21,6 +21,7 @@
       "blurb": "One-thumb lighthouse puzzle: sweep the beam and every boat in your light turns for home, every boat in the dark holds her course. Six nights: reefs, crossings, a current, fog and a storm." },
     { "slug": "wormsbound", "name": "Wormsbound", "kind": "Artillery", "build": "P1", "dir": "wormsbound", "file": "wormsbound.html",
       "blurb": "Turn-based artillery with five characters and GunBound-style turn delay: 1 Player vs 3 computers (Easy/Medium/Hard) or a 1v1 on one keyboard. Desktop first." },
-    {"slug":"moonwort-co", "name":"Moonwort & Co.", "kind":"cozy apothecary sim with real herbal lor", "dir":"moonwort-co", "stage":"pitch", "blurb":"Approved pitch (cozy apothecary sim with real herbal lore); no build yet."}
+    { "slug": "moonwort-co", "name": "Moonwort & Co.", "kind": "Cozy apothecary sim", "build": "P1", "dir": "moonwort-co", "file": "moonwort-co.html",
+      "blurb": "Neighbors knock with a trouble, never a recipe: read what they need, mix and prepare herbs by the real moon, stir, and hand it over. Three days, a familiar that picks you, and a grimoire of true lore cards." }
   ]
 }
