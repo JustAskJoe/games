@@ -1,0 +1,556 @@
+{
+ "tile": 96,
+ "screen": [
+  427,
+  267
+ ],
+ "note": "Obstacles stand on the bottom-center of their box. Radius is the collision circle at the feet in art px; 0 means a ground shape (see hazard).",
+ "zones": {
+  "meadow": {
+   "ground": "meadow_ground.png",
+   "obstacles": [
+    {
+     "name": "Oak",
+     "box": [
+      0,
+      0,
+      44,
+      50
+     ],
+     "radius": 9
+    },
+    {
+     "name": "Pine",
+     "box": [
+      46,
+      2,
+      30,
+      48
+     ],
+     "radius": 8
+    },
+    {
+     "name": "Boulder",
+     "box": [
+      78,
+      30,
+      26,
+      20
+     ],
+     "radius": 10
+    },
+    {
+     "name": "Bush",
+     "box": [
+      106,
+      34,
+      22,
+      16
+     ],
+     "radius": 8
+    },
+    {
+     "name": "Pond",
+     "box": [
+      130,
+      20,
+      52,
+      30
+     ],
+     "radius": 0,
+     "hazard": "blocks movement (water)"
+    }
+   ],
+   "details": [
+    {
+     "name": "white flower",
+     "box": [
+      0,
+      1,
+      5,
+      6
+     ]
+    },
+    {
+     "name": "pink flower",
+     "box": [
+      7,
+      1,
+      5,
+      6
+     ]
+    },
+    {
+     "name": "blue flower",
+     "box": [
+      14,
+      1,
+      5,
+      6
+     ]
+    },
+    {
+     "name": "pebbles",
+     "box": [
+      21,
+      3,
+      6,
+      4
+     ]
+    },
+    {
+     "name": "clover",
+     "box": [
+      29,
+      2,
+      6,
+      5
+     ]
+    },
+    {
+     "name": "tall grass",
+     "box": [
+      37,
+      0,
+      7,
+      7
+     ]
+    }
+   ]
+  },
+  "forest": {
+   "ground": "forest_ground.png",
+   "obstacles": [
+    {
+     "name": "Old tree",
+     "box": [
+      0,
+      0,
+      52,
+      58
+     ],
+     "radius": 10
+    },
+    {
+     "name": "Fallen log",
+     "box": [
+      54,
+      40,
+      40,
+      18
+     ],
+     "radius": 0,
+     "hazard": "blocks movement (long box)"
+    },
+    {
+     "name": "Stump",
+     "box": [
+      96,
+      42,
+      20,
+      16
+     ],
+     "radius": 7
+    },
+    {
+     "name": "Giant mushroom",
+     "box": [
+      118,
+      26,
+      28,
+      32
+     ],
+     "radius": 8
+    },
+    {
+     "name": "Mossy boulder",
+     "box": [
+      148,
+      38,
+      26,
+      20
+     ],
+     "radius": 10
+    }
+   ],
+   "details": [
+    {
+     "name": "fern",
+     "box": [
+      0,
+      0,
+      9,
+      7
+     ]
+    },
+    {
+     "name": "toadstools",
+     "box": [
+      11,
+      1,
+      7,
+      6
+     ]
+    },
+    {
+     "name": "fallen leaves",
+     "box": [
+      20,
+      2,
+      8,
+      5
+     ]
+    },
+    {
+     "name": "moss patch",
+     "box": [
+      30,
+      2,
+      10,
+      5
+     ]
+    }
+   ]
+  },
+  "caverns": {
+   "ground": "caverns_ground.png",
+   "obstacles": [
+    {
+     "name": "Stalagmite",
+     "box": [
+      0,
+      8,
+      18,
+      32
+     ],
+     "radius": 7
+    },
+    {
+     "name": "Crystal cluster",
+     "box": [
+      20,
+      4,
+      34,
+      36
+     ],
+     "radius": 10,
+     "glow": "#7ee0f0"
+    },
+    {
+     "name": "Rock pillar",
+     "box": [
+      56,
+      0,
+      24,
+      40
+     ],
+     "radius": 10
+    },
+    {
+     "name": "Rock",
+     "box": [
+      82,
+      26,
+      18,
+      14
+     ],
+     "radius": 7
+    }
+   ],
+   "details": [
+    {
+     "name": "glow crystal",
+     "box": [
+      0,
+      0,
+      5,
+      7
+     ]
+    },
+    {
+     "name": "rubble",
+     "box": [
+      7,
+      2,
+      8,
+      5
+     ]
+    },
+    {
+     "name": "puddle",
+     "box": [
+      17,
+      3,
+      10,
+      4
+     ]
+    },
+    {
+     "name": "cave moss",
+     "box": [
+      29,
+      3,
+      6,
+      4
+     ]
+    }
+   ]
+  },
+  "volcanic": {
+   "ground": "volcanic_ground.png",
+   "obstacles": [
+    {
+     "name": "Basalt columns",
+     "box": [
+      0,
+      6,
+      30,
+      38
+     ],
+     "radius": 12
+    },
+    {
+     "name": "Lava pool",
+     "box": [
+      32,
+      10,
+      58,
+      34
+     ],
+     "radius": 0,
+     "hazard": "burns while you stand in it",
+     "glow": "#ffa030"
+    },
+    {
+     "name": "Charred tree",
+     "box": [
+      92,
+      0,
+      32,
+      44
+     ],
+     "radius": 6
+    },
+    {
+     "name": "Obsidian",
+     "box": [
+      126,
+      26,
+      24,
+      18
+     ],
+     "radius": 9
+    }
+   ],
+   "details": [
+    {
+     "name": "embers",
+     "box": [
+      0,
+      0,
+      7,
+      6
+     ]
+    },
+    {
+     "name": "lava crack",
+     "box": [
+      9,
+      1,
+      12,
+      5
+     ]
+    },
+    {
+     "name": "ash pile",
+     "box": [
+      23,
+      2,
+      8,
+      4
+     ]
+    },
+    {
+     "name": "bones",
+     "box": [
+      33,
+      1,
+      8,
+      5
+     ]
+    }
+   ]
+  },
+  "shadow": {
+   "ground": "shadow_ground.png",
+   "obstacles": [
+    {
+     "name": "Dead tree",
+     "box": [
+      0,
+      0,
+      36,
+      46
+     ],
+     "radius": 7
+    },
+    {
+     "name": "Broken pillar",
+     "box": [
+      38,
+      10,
+      20,
+      36
+     ],
+     "radius": 8
+    },
+    {
+     "name": "Gravestone",
+     "box": [
+      60,
+      24,
+      16,
+      22
+     ],
+     "radius": 6
+    },
+    {
+     "name": "Ruined arch",
+     "box": [
+      78,
+      6,
+      36,
+      40
+     ],
+     "radius": 0,
+     "hazard": "walk under the middle; the two pillars block"
+    }
+   ],
+   "details": [
+    {
+     "name": "dead grass",
+     "box": [
+      0,
+      2,
+      7,
+      6
+     ]
+    },
+    {
+     "name": "ghost flower",
+     "box": [
+      9,
+      2,
+      5,
+      6
+     ]
+    },
+    {
+     "name": "candle",
+     "box": [
+      16,
+      0,
+      4,
+      8
+     ]
+    },
+    {
+     "name": "skull",
+     "box": [
+      22,
+      3,
+      6,
+      5
+     ]
+    }
+   ]
+  },
+  "void": {
+   "ground": "void_ground.png",
+   "obstacles": [
+    {
+     "name": "Floating rock",
+     "box": [
+      0,
+      12,
+      38,
+      34
+     ],
+     "radius": 12,
+     "glow": "#20e0d0"
+    },
+    {
+     "name": "Void pit",
+     "box": [
+      40,
+      14,
+      54,
+      32
+     ],
+     "radius": 0,
+     "hazard": "pulls you in slowly; standing in it hurts",
+     "glow": "#20e0d0"
+    },
+    {
+     "name": "Monolith",
+     "box": [
+      96,
+      0,
+      22,
+      46
+     ],
+     "radius": 6,
+     "glow": "#20e0d0"
+    },
+    {
+     "name": "Debris",
+     "box": [
+      120,
+      32,
+      26,
+      14
+     ],
+     "radius": 8
+    }
+   ],
+   "details": [
+    {
+     "name": "neon shard",
+     "box": [
+      0,
+      0,
+      5,
+      7
+     ]
+    },
+    {
+     "name": "star motes",
+     "box": [
+      7,
+      0,
+      9,
+      7
+     ]
+    },
+    {
+     "name": "pink crack",
+     "box": [
+      18,
+      3,
+      10,
+      4
+     ]
+    },
+    {
+     "name": "void pebble",
+     "box": [
+      30,
+      3,
+      6,
+      4
+     ]
+    }
+   ]
+  }
+ }
+}
