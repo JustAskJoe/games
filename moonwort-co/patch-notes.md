@@ -33,6 +33,11 @@ Prototype 1: a 2D phone-first build covering 3 in-game days. Play it from the La
 - [ ] The time to first brew is measured from game start (after the quiz), not from install.
 - [ ] Only the stir gesture exists. Grind, pour and cork are still taps on a chip.
 - [ ] `kit/open-notes.py` crashes on Windows (it reads patch notes without UTF-8). It's not fixed here; it needs its own small PR.
+- [ ] @Hunter: lore science lines for 9 herbs (calendula, rosemary, thyme, lemon balm, yarrow, fennel, rose, nettle, hops) come from the European Medicines Agency, because NCCIH has no sheet for them and MedlinePlus retired its herb pages. Keep EMA, or set those to null for NIH-only sources?
+- [ ] Some true facts rest only on Grieve's *A Modern Herbal* (WWI nettle cloth, peppermint dates, Four Thieves' Vinegar, the Henry VIII hop ban). Each needs a second modern source before it's trusted. The full list is under "Unverified" in `design/lore/README.md`.
+- [ ] Name questions for a botanist: dandelion (Kew treats *Taraxacum officinale* as a group of microspecies), Culpeper's camomile and valerian were probably different species from ours, his "mint" is spearmint, and POWO now calls rosemary *Salvia rosmarinus*.
+- [ ] @Hunter: content calls. Elder is `kitchen_safe` only when the berries are ripe and cooked (raw ones are toxic). Hops are in the cannabis family and toxic to dogs. Mugwort and sage carry pregnancy cautions. Valerian, hops and lemon balm can cause drowsiness. The cards say all this; decide whether any herb should leave the game.
+- [ ] POWO links were confirmed through Kew's checklist on GBIF, not opened in a browser (POWO blocks scripts).
 - [ ] The Lead Artist plan is a separate PR (#101), and both PRs add a top patch-notes entry. Whichever merges second needs a one-line conflict fixed.
 
 ### Watch out

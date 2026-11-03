@@ -132,7 +132,7 @@
     if (U.mode !== 'play' || !U.G) return;
     $('#app').hidden = false;
     const G = U.G;
-    $('#hud').innerHTML = `<span class="day">Day ${G.day + 1}</span>${ART.moon(U.sky, 20)}<span class="sp"></span>
+    $('#hud').innerHTML = `<span class="day">Day ${Math.min(G.day + 1, D.DAYS.length)}</span>${ART.moon(U.sky, 20)}<span class="sp"></span>
       <span class="pill">◉ <b id="hudCoin">${G.coin}</b></span><span class="pill">♥ <b>${Object.values(G.trust).reduce((a, b) => a + b, 0)}</b></span>
       <button id="menuBtn" type="button" data-act="menu" aria-label="Menu">≡</button>`;
     document.querySelectorAll('#nav button').forEach(b => {
@@ -207,7 +207,7 @@
       <div class="bot">${esc(L.botanical || '')}${L.family ? ' · ' + esc(L.family) : ''}</div></div></div>
       ${L.card ? `<p>${esc(L.card)}</p>` : '<p class="small">Lore card coming soon.</p>'}
       ${L.true_fact ? `<div class="fact"><b>True fact:</b> ${esc(L.true_fact)}</div>` : ''}
-      ${c && c.quote ? `<q>“${esc(c.quote)}”</q><div class="src">Nicholas Culpeper, <i>The Complete Herbal</i> (1653)${L.planet ? ' · he gave it to ' + esc(L.planet) : ''}</div>` : ''}
+      ${c && c.quote ? `<q>${esc(c.quote)}</q><div class="src">Nicholas Culpeper, <i>The Complete Herbal</i> (1653)${L.planet ? ' · he gave it to ' + esc(L.planet) : ''}</div>` : ''}
       ${f && f.text ? `<h3>Folklore</h3><p class="small">${esc(f.text)}</p>` : ''}
       ${s && s.text ? `<h3>What science says today</h3><p class="small">${esc(s.text)}</p>` : ''}
       ${L.safety ? `<div class="safe">${esc(L.safety)}</div>` : ''}

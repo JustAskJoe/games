@@ -26,7 +26,7 @@ Is reading a villager's trouble and finding the right brew fun on its own? **Pas
 | Duds are named and funny, sell for 1 coin, never fail you | From the brief. "Tonic of Mild Regret": the villager hiccups in Latin. |
 | You can set a brew aside and try again before giving it | Lets players experiment without letting a villager down. Set-aside brews sell at dusk. |
 | The familiar picks you through a 3-question quiz (cat, toad or crow) | Hunter, Nov 2. The familiar gives a hint after any brew that isn't the best one, by naming the biggest trait gap in words. |
-| Lore cards come from a cited dataset (`design/lore/ingredients.json`) | Hunter wants it educational and correct. Sources: Culpeper (1653, public domain), NCCIH and NIH, Kew POWO and USDA PLANTS for names. Every card ends with "not medical advice". See `design/lore/README.md`. |
+| Lore cards come from a cited dataset (`design/lore/ingredients.json`, entries under `ingredients`) | Hunter wants it educational and correct. Sources: Culpeper (1653, public domain), NCCIH and NIH, Kew POWO and USDA PLANTS for names. Every card ends with "not medical advice". See `design/lore/README.md`. |
 | Only one gesture so far: stir (two circles), with "Stir for me" | Keeps scope small. Grind, pour and cork gestures come once brewing proves fun. |
 
 ## Architecture
