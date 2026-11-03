@@ -244,7 +244,7 @@ Agents now fill in the same playtest questionnaire as human testers. Eight scrip
 - [ ] Claude's two runs are one seed each, played by the same model that wrote the code, and it played the min-maxer knowing the newbie run's lesson that sealed pays. Treat them as two careful testers, not a sample.
 - [ ] The API runner has only run on `--mock`. Untested against the real API: the JSON-schema output format, `effort: low` on Haiku 5.5, refusal handling and the cache hit. Check the first real run's logged `usage` and replace the estimate.
 - [ ] The workflow pins `@anthropic-ai/sdk@^0.136.0` without checking that version exists on npm, and the workflow has never run. Try a `go: false` run first (it calls nothing).
-- [ ] The new workflow touches `.github/`, so Guard needs another teammate's approval on this PR.
+- [x] The new workflow touches `.github/`, so Guard needs another teammate's approval on this PR. Moved to its own pull request on Nov 2 (on hold until Hunter wants the paid run), so the rest could merge (Claude, Nov 2).
 - [ ] Standing orders made routine visits automatic, so some lines (for example Quill's "Glyphsmiths' workshop, I mean") went unread in the moment. A human would read every line.
 
 
