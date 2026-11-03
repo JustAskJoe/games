@@ -121,9 +121,9 @@ function bot(style) {
     if (G.phase === 'close') {
       if (careful) {
         const rent = G.week[G.dayIdx].rent;
-        if (ups) for (const k of ['lens', 'spec', 'hands']) if (!G.up[k] && G.cash > rent + CT.UPGRADES[k].cost + 80) CT.act(G, { t: 'upgrade', k });
+        if (ups && G.dayIdx < CT.SHOW_DAY) for (const k of ['lens', 'spec', 'hands']) if (!G.up[k] && G.cash > rent + CT.UPGRADES[k].cost + 80) CT.act(G, { t: 'upgrade', k });
         // Eye tools only once there's a card worth grading (a raw card worth 40+ whose read could reach 9)
-        if (ups && G.stock.some(c => !c.graded && c.know.loupe && !c.know.fake && CT.estimate(G, c).gradeHi >= 9 && CT.estimate(G, c).value >= 40)) for (const k of ['eye1', 'eye2', 'eye3']) if (!G.up[k] && G.cash > rent + CT.UPGRADES[k].cost + 80) CT.act(G, { t: 'upgrade', k });
+        if (ups && G.dayIdx < CT.SHOW_DAY && G.stock.some(c => !c.graded && c.know.loupe && !c.know.fake && CT.estimate(G, c).gradeHi >= 9 && CT.estimate(G, c).value >= 40)) for (const k of ['eye1', 'eye2', 'eye3']) if (!G.up[k] && G.cash > rent + CT.UPGRADES[k].cost + 80) CT.act(G, { t: 'upgrade', k });
         if (G.dayIdx >= 1) CT.act(G, { t: 'policy', limit2: true });
         for (const c of G.stock.slice()) {
           if (!c.know.loupe) CT.act(G, { t: 'inspect', uid: c.uid, tool: 'loupe' });
@@ -152,7 +152,7 @@ function bot(style) {
         if (org && G.dayIdx >= 1 && G.dayIdx < 6 && G.cash > rent + 400) CT.act(G, { t: 'order', item: 'premium', game: hotGame(G) });
         if (style !== 'lazy') { if (G.store.gear.hard < 6 && G.cash > rent + 20) CT.act(G, { t: 'order', item: 'hard' }); if (G.store.gear.penny < 25 && G.cash > rent + 20) CT.act(G, { t: 'order', item: 'penny' }); }
       }
-      if (org && G.dayIdx === CT.SHOW_DAY && G.cash > G.week[G.dayIdx].rent + CT.SHOW_FEE + 40) CT.act(G, { t: 'bookShow' });
+      if (org && G.dayIdx === CT.SHOW_DAY) CT.act(G, { t: 'bookShow' });
       return CT.act(G, { t: 'endDay' });
     }
     if (G.phase === 'night') return playNight(G, style);
@@ -206,7 +206,9 @@ function playNight(G, style) {
   if (N.pick === 'show' && !N.show.bids) {
     // bring the best things you own, plus Orrin's cards; sell anything bid at or over its estimate
     const worth = o => o.t ? CT.estimate(G, o).value : CT.goodValue(G, o);
-    const pool = G.stock.filter(c => !c.know.fake && !CT.contractWants(G, c) && (c.consign || worth(c) >= 15)).concat(G.goods.filter(o => o.type !== 'repack' && worth(o) >= 30)).sort((a, b) => worth(b) - worth(a)).slice(0, CT.SHOW_MAX);
+    // keep raw grading candidates home: a slab is worth more than a show bid on the raw card
+    const gradeMe = c => { if (c.graded || !c.know.loupe) return false; const e = CT.estimate(G, c); return e.gradeHi >= 9 && e.grade >= 8 && e.value >= 20; };
+    const pool = G.stock.filter(c => !c.know.fake && !CT.contractWants(G, c) && !gradeMe(c) && (c.consign || worth(c) >= 15)).concat(G.goods.filter(o => o.type !== 'repack' && worth(o) >= 30)).sort((a, b) => worth(b) - worth(a)).slice(0, CT.SHOW_MAX);
     if (pool.length && CT.act(G, { t: 'showBring', uids: pool.map(o => o.uid) }).ok) for (const b of N.show.bids) { const o = CT.findThing(G, b.uid); if (o && b.bid > 0 && b.bid >= worth(o) * (o.consign ? 0.9 : 1)) CT.act(G, { t: 'showSell', uid: b.uid }); }
     return CT.act(G, { t: 'nextMorning' });
   }

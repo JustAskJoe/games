@@ -1,0 +1,264 @@
+# Agent playtest: Card Trader v3.2.1 (show fee from sales), 2026-11-03
+
+© 2026 justaskjoe. All rights reserved.
+
+Scripted personas (Tier A), 3 runs each, seeds 1017+. Made by `node card-trader/prototype/playtest-agents.js`. These are bots playing through `act()`: they find clarity and pacing problems the engine can measure, not how the game feels. Read them next to the human answers.
+
+## Systems across personas
+
+Median clear / fun (1-5) per persona; `-` = never touched. Low numbers are bold.
+
+| System | kid | minmax | cozy | vintage | sealed | goblin | newbie | trusting |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| opening | 4 / **2** | 5 / 3 | 5 / 3 | 5 / 3 | 5 / 3 | 4 / **2** | 5 / 3 | 5 / 3 |
+| stockroom | 5 / **2** | 5 / 3 | 5 / 4 | 5 / 3 | 5 / 3 | **2** / **2** | 5 / 5 | 5 / 5 |
+| fetch | 3 / 4 | 5 / 4 | 5 / 4 | 5 / 4 | 5 / 4 | 3 / 3 | 5 / 4 | 3 / 3 |
+| browsers | 4 / 4 | 3 / 5 | 3 / 4 | 3 / 4 | 3 / 5 | 3 / 4 | 3 / 5 | 4 / 5 |
+| tags | - | 5 / 5 | 5 / 5 | 5 / 5 | 5 / 5 | 5 / 5 | - | - |
+| sleeves | **1** / **1** | 4 / **1** | 5 / 3 | 5 / 3 | 5 / **1** | **1** / **1** | 4 / **2** | 5 / **2** |
+| sealed | 5 / 5 | 5 / 5 | 5 / 5 | 5 / 5 | 5 / 5 | 5 / 5 | 5 / 5 | 5 / 4 |
+| vintage | 5 / 4 | 5 / 3 | 5 / 3 | 5 / 4 | 5 / 3 | 4 / 4 | 5 / 3 | 5 / 3 |
+| reprints | 5 / **2** (missed) | 5 / 4 | 5 / 4 | 5 / 4 | 5 / 4 | 5 / **2** (missed) | 5 / **2** | 5 / **2** |
+| repacks | - | - | - | - | - | 4 / **2** | - | - |
+| rating | **2** / 3 (missed) | 5 / 4 | 5 / 3 | 5 / 3 | 5 / 3 | 3 / 3 | 5 / 3 | 5 / 4 |
+| fakes | **1** / **1** | 5 / 5 | **2** / 4 | 3 / 4 | 3 / 4 | 3 / 4 | 4 / 4 | **1** / **1** |
+| thieves | **1** / 3 | 5 / 5 | **2** / 3 | 4 / 4 | 5 / 5 | **1** / **2** | 5 / 4 | 3 / **2** |
+| board | - | 5 / 4 | - | 5 / 4 | 5 / 4 | 5 / **2** | - | - |
+| upgrades | - | 5 / 5 | 5 / 4 | 5 / 4 | 5 / 5 | 4 / 4 | 5 / 4 | 5 / 4 |
+| loupe | 5 / 3 | 5 / 5 | 5 / 5 | 5 / 5 | 5 / 5 | 5 / 4 | 5 / 5 | 5 / 4 |
+| nights | 5 / 5 | 5 / 4 | 5 / 5 | 5 / 5 | 5 / 3 | **2** / 4 | 5 / 4 | **2** / 3 |
+| contract | 5 / 3 | 5 / 4 | 5 / 4 | 4 / **2** | 4 / 3 | 5 / 3 | 5 / 4 | 5 / 4 |
+| consign | 5 / 3 | 5 / 5 | 5 / 4 | 5 / 5 | 5 / 5 | 5 / 5 | 5 / 5 | 5 / 5 |
+| show | 5 / 3 | 5 / 3 | 5 / 3 | 5 / 3 | 5 / 3 | 5 / 3 | 5 / 3 | 5 / 3 |
+
+## Flags
+
+- **opening** unfun for 2 personas (kid, goblin).
+- **stockroom** unfun for 2 personas (kid, goblin).
+- **sleeves** unclear for 2 personas (kid, goblin).
+- **sleeves** unfun for 6 personas (kid, minmax, sealed, goblin, newbie, trusting).
+- **reprints** unfun for 4 personas (kid, goblin, newbie, trusting).
+- **repacks** never touched by 7 of 8 personas (kid, minmax, cozy, vintage, sealed, newbie, trusting).
+- **fakes** unclear for 3 personas (kid, cozy, trusting).
+- **fakes** unfun for 2 personas (kid, trusting).
+- **thieves** unclear for 3 personas (kid, cozy, goblin).
+- **thieves** unfun for 2 personas (goblin, trusting).
+- **board** never touched by 4 of 8 personas (kid, cozy, newbie, trusting).
+- **nights** unclear for 2 personas (goblin, trusting).
+
+## Verdict across all runs
+
+| | Items (runs that said so) |
+| --- | --- |
+| keep | sealed product (24/24), the loupe (22/24), Orrin's consignment (21/24), upgrades (20/24), price tags (15/24), After Hours nights (14/24), Bijou's contract (12/24), fetching from the back (12/24) |
+| change | sleeves and wear (18/24), fakes (12/24), thieves (11/24), reprints (7/24), After Hours nights (7/24), the opening (6/24), the stock room (6/24), fetching from the back (3/24) |
+| remove | repacks (23/24), the board (12/24), price tags (9/24), upgrades (3/24), reprints (2/24), Bijou's contract (1/24) |
+| add | A reminder to re-check stock for fakes (20/24), A safer way to cover rent mid-run (17/24), Auto-sleeve when placing a card (6/24), Auto-sort / "stock the floor" button (6/24), Something new around day 4 (6/24), A morning line that says why the rating moved (6/24), Something new around day 6 (5/24), Something new around day 8 (4/24) |
+
+## Pacing
+
+| Persona | Early money / energy | Mid | Late | Drag day (median) | Rank (median gain) | Again |
+| --- | --- | --- | --- | --- | --- | --- |
+| kid | ok / fine | broke / exciting | broke / fine | 4 (3/3 runs) | Corner Stall (-3%) | 1 |
+| minmax | tight / exciting | tight / fine | ok / fine | 9 (2/3 runs) | Lane Favorite (182%) | 5 |
+| cozy | broke / fine | broke / fine | tight / fine | 7 (3/3 runs) | Corner Stall (110%) | 4 |
+| vintage | ok / exciting | broke / exciting | broke / fine | 6 (3/3 runs) | Strip Regular (59%) | 2 |
+| sealed | ok / fine | broke / fine | broke / fine | 6 (1/3 runs) | Strip Regular (132%) | 4 |
+| goblin | broke / fine | broke / fine | broke / drag | 4 (3/3 runs) | Corner Stall (-105%) | 1 |
+| newbie | tight / exciting | tight / exciting | flush / exciting | 8 (2/3 runs) | Lane Favorite (208%) | 4 |
+| trusting | tight / fine | broke / fine | broke / fine | 6 (3/3 runs) | Corner Stall (-23%) | 2 |
+
+## Per persona
+
+### Impatient kid (`agent-kid`)
+
+Wants packs ripped and deals now. Skips every hint.
+
+- Opening: singles/cash/shell, singles/cash/star, singles/cash/star. Setup clear 4, 4, 4, felt fine, fine, fine.
+- Unclear: sleeves, rating, fakes, thieves. Unfun: opening, stockroom, sleeves, reprints, fakes. Never touched: tags, reprints, repacks, rating, board, upgrades.
+- Seed 1017: Corner Stall, 531₵ → 245₵, 3.2★, tab 115₵, drag day 4, again 1/5.
+  - Worst: Day 7: Paid 228₵ for 2 cards and 2 turned out fake (worth about 0₵ in all).
+  - Best: Day 5: Tournament: 10 players, 55₵ in fees and deck sales.
+  - Contradiction: Day 1 a buyer asked me to check the back and it paid; day 6 someone asked for the good stuff in the back and their friend was gone when I came back. The two asks look alike. Day 4: Paid 25₵ for Stag of Meeti while it was on the reprint list. A seller pushed it as about to moon.
+  - Confused: In sleeves and wear, the game said "raw cards need a hard sleeve or mag case in the case (out of sleeves: order more at close)" 7 times and "out of sleeves" 7×.
+  - Never noticed (telemetry only, not in its answers): bought 1 fake on day 6 and never found out; bought 1 fake on day 6 and never found out; bought 1 fake on day 7 and never found out; bought 1 fake on day 8 and never found out; bought 2 fakes on day 8 and never found out; bought 1 fake on day 10 and never found out.
+- Seed 1034: Corner Stall, 654₵ → 633₵, 3.6★, tab 114₵, drag day 6, again 1/5.
+  - Worst: Day 1: Paid 78₵ for 2 cards and 1 turned out fake (worth about 16₵ in all).
+  - Best: Day 8: Tournament: 13 players, 71₵ in fees and deck sales.
+  - Contradiction: Day 1 a buyer asked me to check the back and it paid; day 3 someone asked for the good stuff in the back and their friend was gone when I came back. The two asks look alike. Day 4: Paid 5₵ for Seahorse of Emei while it was on the reprint list. A seller pushed it as about to moon.
+  - Confused: In sleeves and wear, the game said "raw cards need a hard sleeve or mag case in the case (out of sleeves: order more at close)" 9 times and "out of sleeves" 9×.
+  - Never noticed (telemetry only, not in its answers): bought 1 fake on day 2 and never found out; bought 1 fake on day 3 and never found out; bought 1 fake on day 5 and never found out; bought 1 fake on day 6 and never found out; bought 1 fake on day 7 and never found out; bought 1 fake on day 7 and never found out; bought 2 fakes on day 9 and never found out; bought 1 fake on day 9 and never found out.
+- Seed 1051: Corner Stall, 533₵ → 533₵, 3.6★, tab 135₵, drag day 4, again 1/5.
+  - Worst: Day 4: Bought 3 "factory sealed" packs for 60₵: resealed, hits already taken.
+  - Best: Day 8: Tournament: 15 players, 82₵ in fees and deck sales.
+  - Contradiction: Day 1 a buyer asked me to check the back and it paid; day 3 someone asked for the good stuff in the back and their friend was gone when I came back. The two asks look alike. Day 4: Paid 16₵ for Finch of Meeney while it was on the reprint list. A seller pushed it as about to moon.
+  - Confused: In sleeves and wear, the game said "raw cards need a hard sleeve or mag case in the case (out of sleeves: order more at close)" 9 times and "out of sleeves" 9×.
+  - Never noticed (telemetry only, not in its answers): bought 1 fake on day 1 and never found out; bought 1 fake on day 2 and never found out; bought 1 fake on day 3 and never found out; bought 1 fake on day 5 and never found out; bought 1 fake on day 5 and never found out; bought 1 fake on day 6 and never found out; bought 2 fakes on day 7 and never found out; bought 2 fakes on day 9 and never found out; bought 1 fake on day 10 and never found out.
+
+### Min-maxer (`agent-minmax`)
+
+Reads everything, haggles every coin, buys the upgrades that pay.
+
+- Opening: singles/balanced/hive, singles/balanced/hive, singles/balanced/star. Setup clear 5, 5, 5, felt fine, busywork, busywork.
+- Unclear: none. Unfun: sleeves. Never touched: repacks.
+- Seed 1017: Strip Regular, 568₵ → 1139₵, 4.5★, drag day 9, again 5/5.
+  - Worst: Day 9: Ran out of sleeves: new cards went unsleeved.
+  - Best: Day 1: A browser found something on the floor and paid 24₵.
+  - Confused: In browsers, the game said "not now" 1 time and "show something first" 1×.
+- Seed 1034: Lane Favorite, 542₵ → 2332₵, 4.8★, drag day 9, again 5/5.
+  - Worst: Day 2: Won a Dock Auction crate for 66₵; it was worth about 60₵.
+  - Best: Day 2: A browser found something on the floor and paid 12₵.
+  - Confused: In browsers, the game said "not now" 1 time and "show something first" 1×.
+- Seed 1051: Lane Favorite, 540₵ → 1524₵, 4.9★, drag day none, again 5/5.
+  - Worst: Day 6: Ran out of sleeves: new cards went unsleeved.
+  - Best: Day 8: A browser found something on the floor and paid 155₵.
+  - Confused: In browsers, the game said "not now" 1 time and "show something first" 1×.
+
+### Cozy collector (`agent-cozy`)
+
+Loves sleeving and arranging, keeps the best cards, never accuses anyone.
+
+- Opening: singles/stock/hive, singles/stock/shell, singles/stock/hive. Setup clear 5, 5, 5, felt fun, fun, fun.
+- Unclear: fakes, thieves. Unfun: none. Never touched: repacks, board.
+- Seed 1017: Corner Stall, 553₵ → 704₵, 3.9★, drag day 4, again 2/5.
+  - Worst: Day 6: Paid 30₵ for 9 cards and 1 turned out fake (worth about 24₵ in all).
+  - Best: Day 5: Tournament: 12 players, 66₵ in fees and deck sales.
+  - Confused: In browsers, the game said "not now" 1 time and "show something first" 1×.
+  - Never noticed (telemetry only, not in its answers): bought 1 fake on day 4 and never found out; bought 1 fake on day 5 and never found out; bought 1 fake on day 6 and never found out; bought 1 fake on day 9 and never found out; bought 1 fake on day 9 and never found out.
+- Seed 1034: Strip Regular, 549₵ → 1152₵, 4.1★, drag day 7, again 4/5.
+  - Worst: Day 5: Paid 151₵ for 9 cards and 3 turned out fake (worth about 103₵ in all).
+  - Best: Day 4: Bought 3 cards for 5₵, worth about 104₵.
+  - Contradiction: Day 5 a buyer asked me to check the back and it paid; day 3 someone asked for the good stuff in the back and their friend was gone when I came back. The two asks look alike. The rating wants a full case (it says "half the case was empty"), but a full unlocked case got robbed 3 times.
+  - Confused: In fakes: Sent a card to the graders and it came back FAKE (day 7), and I couldn't tell what I should have done.
+  - Never noticed (telemetry only, not in its answers): bought 1 fake on day 6 and never found out; bought 2 fakes on day 7 and never found out; bought 1 fake on day 8 and never found out; bought 1 fake on day 9 and never found out; bought 1 fake on day 9 and never found out; bought 1 fake on day 10 and never found out; bought 1 fake on day 10 and never found out.
+- Seed 1051: Lane Favorite, 549₵ → 1749₵, 3.6★, drag day 8, again 4/5.
+  - Worst: Day 3: Paid 28₵ for 2 cards and 1 turned out fake (worth about 12₵ in all).
+  - Best: Day 2: Bulk Dig flip turned up a 214₵ card.
+  - Confused: In fakes: Sent a card to the graders and it came back FAKE (day 10), and I couldn't tell what I should have done.
+  - Never noticed (telemetry only, not in its answers): bought 1 fake on day 1 and never found out; bought 1 fake on day 3 and never found out; bought 2 fakes on day 5 and never found out; bought 1 fake on day 6 and never found out; bought 1 fake on day 7 and never found out; bought 1 fake on day 8 and never found out; bought 1 fake on day 9 and never found out; bought 1 fake on day 10 and never found out.
+
+### Vintage hunter (`agent-vintage`)
+
+Here for estate lots and old packs. Buys the scale and the riser.
+
+- Opening: vintage/cash/hive, vintage/cash/hive, vintage/cash/shell. Setup clear 5, 5, 5, felt fun, fun, fun.
+- Unclear: none. Unfun: contract. Never touched: repacks.
+- Seed 1017: Corner Stall, 533₵ → 667₵, 4.6★, drag day 4, again 2/5.
+  - Worst: Day 9: Paid 80₵ for 9 cards and 1 turned out fake (worth about 33₵ in all).
+  - Best: Day 8: Tournament: 12 players, 66₵ in fees and deck sales.
+  - Contradiction: Day 2 a buyer asked me to check the back and it paid; day 10 someone asked for the good stuff in the back and their friend was gone when I came back. The two asks look alike. Day 4: Paid 5₵ for Oari Whale while it was on the reprint list. A seller pushed it as about to moon.
+  - Confused: In fakes: Paid 46₵ for 2 cards and 1 turned out fake (worth about 14₵ in all) (day 3), and I couldn't tell what I should have done.
+  - Never noticed (telemetry only, not in its answers): bought 1 fake on day 4 and never found out; bought 1 fake on day 4 and never found out; bought 1 fake on day 6 and never found out; bought 2 fakes on day 9 and never found out.
+- Seed 1034: Strip Regular, 531₵ → 1093₵, 4.7★, tab 91₵, drag day 8, again 3/5.
+  - Worst: Day 5: Paid 55₵ for 9 cards and 1 turned out fake (worth about 16₵ in all).
+  - Best: Day 3: Bulk Dig flip turned up a 262₵ card.
+  - Confused: In browsers, the game said "not now" 1 time and "show something first" 1×.
+  - Never noticed (telemetry only, not in its answers): bought 1 fake on day 3 and never found out; bought 1 fake on day 4 and never found out; bought 2 fakes on day 5 and never found out; bought 1 fake on day 7 and never found out; bought 2 fakes on day 7 and never found out; bought 2 fakes on day 9 and never found out.
+- Seed 1051: Strip Regular, 531₵ → 844₵, 4.5★, tab 60₵, drag day 6, again 1/5.
+  - Worst: Day 5: Paid 38₵ for 9 cards and 2 turned out fake (worth about 15₵ in all).
+  - Best: Day 4: Bought 3 cards for 3₵, worth about 114₵.
+  - Confused: In browsers, the game said "not now" 1 time and "show something first" 1×.
+  - Never noticed (telemetry only, not in its answers): bought 1 fake on day 5 and never found out; bought 1 fake on day 5 and never found out; bought 1 fake on day 6 and never found out; bought 1 fake on day 7 and never found out; bought 1 fake on day 8 and never found out; bought 2 fakes on day 9 and never found out; bought 2 fakes on day 9 and never found out; bought 1 fake on day 10 and never found out.
+
+### Sealed speculator (`agent-sealed`)
+
+Buys boxes to hold, grades sealed, sells to collectors, limit 2 on packs.
+
+- Opening: sealed/stock/hive, sealed/stock/shell, sealed/stock/hive. Setup clear 5, 5, 5, felt fine, fine, fine.
+- Unclear: none. Unfun: sleeves. Never touched: repacks.
+- Seed 1017: Lane Favorite, 553₵ → 1913₵, 4.3★, drag day none, again 4/5.
+  - Worst: Day 8: Paid 21₵ for 9 cards and 2 turned out fake (worth about 8₵ in all).
+  - Best: Day 7: Sold sealed product to a collector for 169₵.
+  - Contradiction: Day 2 a buyer asked me to check the back and it paid; day 3 someone asked for the good stuff in the back and their friend was gone when I came back. The two asks look alike.
+  - Confused: In fakes, the game said "not enough cash" 1 time.
+  - Never noticed (telemetry only, not in its answers): bought 1 fake on day 3 and never found out; bought 2 fakes on day 6 and never found out; bought 1 fake on day 7 and never found out; bought 1 fake on day 8 and never found out; bought 1 fake on day 10 and never found out.
+- Seed 1034: Strip Regular, 551₵ → 1123₵, 4.3★, drag day 6, again 3/5.
+  - Worst: Day 9: Paid 182₵ for 9 cards and 1 turned out fake (worth about 35₵ in all).
+  - Best: Day 2: A browser found something on the floor and paid 105₵.
+  - Confused: In browsers, the game said "not now" 1 time and "show something first" 1×.
+  - Never noticed (telemetry only, not in its answers): bought 1 fake on day 7 and never found out; bought 2 fakes on day 8 and never found out; bought 2 fakes on day 9 and never found out; bought 1 fake on day 10 and never found out.
+- Seed 1051: Strip Regular, 551₵ → 1277₵, 4.3★, drag day none, again 4/5.
+  - Worst: Day 8: Paid 15₵ for Manta of Pecoo while it was on the reprint list.
+  - Best: Day 4: A browser found something on the floor and paid 133₵.
+  - Contradiction: Day 8: Paid 15₵ for Manta of Pecoo while it was on the reprint list. A seller pushed it as about to moon.
+  - Confused: In browsers, the game said "not now" 1 time and "show something first" 1×.
+  - Never noticed (telemetry only, not in its answers): bought 1 fake on day 7 and never found out; bought 1 fake on day 8 and never found out; bought 3 fakes on day 9 and never found out.
+
+### Chaos goblin (`agent-goblin`)
+
+Tries odd things: singles on the rack, 1₵ tags, random security calls.
+
+- Opening: sealed/balanced/star, singles/balanced/hive, sealed/stock/hive. Setup clear 3, 4, 3, felt fine, fine, fine.
+- Unclear: stockroom, sleeves, thieves, nights. Unfun: opening, stockroom, sleeves, reprints, repacks, thieves, board. Never touched: reprints.
+- Seed 1017: Corner Stall, 546₵ → -11₵, 2.5★, tab 277₵, drag day 4, again 1/5.
+  - Worst: Day 2: Tournament prize turned out fake under UV; the crowd turned on me.
+  - Best: Day 4: Card Night: ripped 1 pack live, hype +8%.
+  - Contradiction: Day 7: Called security (they showed 3 tells) and was wrong: no proof, they walked. The tells said crook, security said innocent. Day 4 a buyer asked me to check the back and it paid; day 3 someone asked for the good stuff in the back and their friend was gone when I came back. The two asks look alike.
+  - Confused: In sleeves and wear, the game said "raw cards need a hard sleeve or mag case in the case (out of sleeves: order more at close)" 8 times and "out of sleeves" 8×.
+  - Never noticed (telemetry only, not in its answers): bought 1 fake on day 6 and never found out; bought 2 fakes on day 7 and never found out.
+- Seed 1034: Corner Stall, 542₵ → -71₵, 2.3★, tab 356₵, drag day 6, again 1/5.
+  - Worst: Day 4: Bought 3 "factory sealed" packs for 60₵: resealed, hits already taken.
+  - Best: Day 2: Tournament: 12 players, 67₵ in fees and deck sales.
+  - Contradiction: I sleeved cards and one still got switched: penny sleeves don't count, only hard sleeves do.
+  - Confused: In sleeves and wear, the game said "raw cards need a hard sleeve or mag case in the case (out of sleeves: order more at close)" 9 times and "out of sleeves" 9×.
+- Seed 1051: Corner Stall, 551₵ → -28₵, 2.3★, tab 288₵, drag day 4, again 1/5.
+  - Worst: Day 4: Paid 41₵ for 9 cards and 1 turned out fake (worth about 20₵ in all).
+  - Best: Day 1: Bulk Dig flip turned up a 24₵ card.
+  - Contradiction: Day 2 a buyer asked me to check the back and it paid; day 3 someone asked for the good stuff in the back and their friend was gone when I came back. The two asks look alike. I sleeved cards and one still got switched: penny sleeves don't count, only hard sleeves do.
+  - Confused: In sleeves and wear, the game said "raw cards need a hard sleeve or mag case in the case (out of sleeves: order more at close)" 9 times and "out of sleeves" 9×.
+  - Never noticed (telemetry only, not in its answers): bought 2 fakes on day 5 and never found out.
+
+### Cautious newbie (`agent-newbie`)
+
+Reads every hint, inspects everything, too nervous to call security.
+
+- Opening: singles/balanced/shell, singles/balanced/shell, singles/balanced/shell. Setup clear 5, 5, 5, felt fine, fine, fine.
+- Unclear: none. Unfun: sleeves, reprints. Never touched: tags, repacks, board.
+- Seed 1017: Lane Favorite, 573₵ → 1763₵, 4.5★, drag day 7, again 4/5.
+  - Worst: Day 7: Paid 12₵ for 2 cards and 2 turned out fake (worth about 0₵ in all).
+  - Best: Day 10: A browser found something on the floor and paid 463₵.
+  - Contradiction: Day 4: Paid 3₵ for Klaza Mite while it was on the reprint list. A seller pushed it as about to moon.
+  - Confused: In browsers, the game said "not now" 1 time and "show something first" 1×.
+  - Never noticed (telemetry only, not in its answers): bought 1 fake on day 5 and never found out; bought 1 fake on day 5 and never found out; bought 3 fakes on day 9 and never found out.
+- Seed 1034: Dock Legend, 538₵ → 3102₵, 4.5★, drag day none, again 4/5.
+  - Worst: Day 4: Tournament prize turned out fake under UV; the crowd turned on me.
+  - Best: Day 3: A browser found something on the floor and paid 30₵.
+  - Confused: In browsers, the game said "not now" 1 time and "show something first" 1×.
+  - Never noticed (telemetry only, not in its answers): bought 1 fake on day 3 and never found out; bought 1 fake on day 3 and never found out; bought 1 fake on day 5 and never found out; bought 1 fake on day 7 and never found out; bought 1 fake on day 8 and never found out; bought 1 fake on day 9 and never found out; bought 1 fake on day 9 and never found out; bought 1 fake on day 10 and never found out.
+- Seed 1051: Strip Regular, 538₵ → 1009₵, 4.2★, drag day 8, again 3/5.
+  - Worst: Day 9: Paid 120₵ for 9 cards and 1 turned out fake (worth about 13₵ in all).
+  - Best: Day 9: A browser found something on the floor and paid 56₵.
+  - Contradiction: Day 4: Paid 5₵ for Urchin of Oulu while it was on the reprint list. A seller pushed it as about to moon.
+  - Confused: In fakes: Paid 55₵ for 2 cards and 1 turned out fake (worth about 40₵ in all) (day 3), and I couldn't tell what I should have done.
+  - Never noticed (telemetry only, not in its answers): bought 1 fake on day 2 and never found out; bought 1 fake on day 7 and never found out; bought 1 fake on day 7 and never found out; bought 2 fakes on day 9 and never found out; bought 2 fakes on day 9 and never found out.
+
+### Trusting soul (`agent-trusting`)
+
+Takes people at their word: pays asks, buys "factory sealed" packs, lets thieves go.
+
+- Opening: singles/balanced/shell, singles/balanced/shell, singles/balanced/shell. Setup clear 5, 5, 5, felt fine, fine, fine.
+- Unclear: fakes, nights. Unfun: sleeves, reprints, fakes, thieves. Never touched: tags, repacks, board.
+- Seed 1017: Corner Stall, 573₵ → 140₵, 3.4★, tab 256₵, drag day 6, again 1/5.
+  - Worst: Day 1: Paid 79₵ for 2 cards and 1 turned out fake (worth about 43₵ in all).
+  - Best: Day 3: A browser found something on the floor and paid 96₵.
+  - Contradiction: Day 4 a buyer asked me to check the back and it paid; day 3 someone asked for the good stuff in the back and their friend was gone when I came back. The two asks look alike. Day 4: Paid 9₵ for Phoenix of Miora while it was on the reprint list. A seller pushed it as about to moon.
+  - Confused: In fakes, the game said "not enough cash" 2 times.
+  - Never noticed (telemetry only, not in its answers): bought 1 fake on day 7 and never found out; bought 1 fake on day 7 and never found out; bought 1 fake on day 8 and never found out; bought 1 fake on day 10 and never found out.
+- Seed 1034: Corner Stall, 538₵ → 751₵, 3.3★, drag day 5, again 2/5.
+  - Worst: Day 3: Paid 136₵ for 2 cards and 1 turned out fake (worth about 16₵ in all).
+  - Best: Day 1: A browser found something on the floor and paid 30₵.
+  - Contradiction: Day 4 a buyer asked me to check the back and it paid; day 3 someone asked for the good stuff in the back and their friend was gone when I came back. The two asks look alike. Day 4: Paid 9₵ for Newt of Mape while it was on the reprint list. A seller pushed it as about to moon.
+  - Confused: In fakes: Bought 3 "factory sealed" packs for 60₵: resealed, hits already taken (day 4), and I couldn't tell what I should have done.
+  - Never noticed (telemetry only, not in its answers): bought 2 fakes on day 2 and never found out; bought 1 fake on day 3 and never found out; bought 1 fake on day 4 and never found out; bought 1 fake on day 4 and never found out; bought 2 fakes on day 5 and never found out; bought 2 fakes on day 7 and never found out; bought 1 fake on day 9 and never found out; bought 1 fake on day 10 and never found out; bought 1 fake on day 10 and never found out.
+- Seed 1051: Corner Stall, 538₵ → 415₵, 3.9★, drag day 8, again 3/5.
+  - Worst: Day 4: Tournament prize turned out fake under UV; the crowd turned on me.
+  - Best: Day 3: A browser found something on the floor and paid 21₵.
+  - Contradiction: Day 1 a buyer asked me to check the back and it paid; day 10 someone asked for the good stuff in the back and their friend was gone when I came back. The two asks look alike. Day 4: Paid 6₵ for Moth of Traxa while it was on the reprint list. A seller pushed it as about to moon.
+  - Confused: In fakes, the game said "not enough cash" 1 time.
+  - Never noticed (telemetry only, not in its answers): bought 1 fake on day 1 and never found out; bought 1 fake on day 3 and never found out; bought 1 fake on day 7 and never found out; bought 1 fake on day 8 and never found out; bought 1 fake on day 9 and never found out; bought 2 fakes on day 9 and never found out; bought 1 fake on day 10 and never found out.
+
+## How to read this
+
+- Heuristics are in `kit/agents/playtester.md` ("How answers are derived"). Every text answer quotes an event from that run.
+- `mins` is an estimate (4 s a move, 10 s a visit, 30 s a morning), not a measured time.
+- Personas are bots with fixed habits. A system they flag is worth a human look; a system they like is not proof it is fun.
