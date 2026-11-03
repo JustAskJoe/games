@@ -7,7 +7,7 @@
 Fails (exit 1) if the build breaks, the sim leaves its pass band, or the walkthrough hits a JS error,
 doesn't reach the end screen, or scrolls sideways.
 Pass band (v2, 5-day week): the careful bot grows the shop at least 150%, beats the sloppy bot in 90%+ of seeds,
-and the Loupe upgrades are worth at least 5 points of growth over the same bot without them.
+and the Loupe upgrades are worth at least 5 points of growth over the same bot without them (median of same-seed differences).
 v3 (the Back Room): an organized back room beats a lazy one by 30+ points, the greedy bot (grails in an unlocked case)
 loses 5-15% of its final value to theft, and walk-up browsers make 25-45% of the careful bot's single sales.
 v3 rev 2 (10-day run): a paranoid bot (security on anyone with a tell) ends a star or more below the organized one,
@@ -31,12 +31,14 @@ def run(label, cmd, cwd):
 run('build', [sys.executable, 'build.py'], proto)
 
 if shutil.which('node'):
-    r = run('balance sim (200 runs per bot)', ['node', 'sim.js', '200'], proto)
+    r = run('balance sim (400 runs per bot)', ['node', 'sim.js', '400'], proto)
     gain = {m.group(1): int(m.group(2)) for m in re.finditer(r'^(\w+)\s+median gain (-?\d+)%', r.stdout, re.M)}
     beats = re.search(r'careful beats sloppy (\d+)%', r.stdout)
     if gain.get('careful', 0) < 150: fails.append('balance: careful gain under 150%')
     if not beats or int(beats.group(1)) < 90: fails.append('balance: careful beats sloppy under 90%')
-    if gain.get('careful', 0) - gain.get('noupgrades', 0) < 5: fails.append('balance: Loupe upgrades worth under 5 points')
+    # v3.2: same-seed difference (careful minus noupgrades), not the gap between two medians, which swung ±25 points on noise
+    pm = re.search(r'^upgrades paired median (-?\d+) points', r.stdout, re.M)
+    if not pm or int(pm.group(1)) < 5: fails.append('balance: Loupe upgrades worth under 5 points (paired)')
     if gain.get('noupgrades', 0) - gain.get('lazy', 0) < 30: fails.append('balance: organized back room worth under 30 points')
     theft = re.search(r'^greedy\s+back room:.*?stolen [\d.]+ \([^,]*, (\d+)% of final\)', r.stdout, re.M)
     if not theft or not 5 <= int(theft.group(1)) <= 15: fails.append('balance: greedy theft outside 5-15%')

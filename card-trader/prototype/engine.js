@@ -219,6 +219,7 @@ const NIGHTS = {
   tourney: { name: 'Tournament Night', blurb: 'Host a tournament: entry fees, players buy singles, you put up a prize and get 2 prize promos.' },
   auction: { name: 'Dock Auction', blurb: 'Bid on an unclaimed cargo crate against two rival dealers. Three clues, one crate.' },
   dig: { name: 'Bulk Dig', blurb: 'A 10₵ mystery bulk lot: 16 face-down cards, 6 flips. Read the backs for foil glints.' },
+  show: { name: 'Regional Show', blurb: 'Your own table at the regional show: bring up to 6 items, the crowd bids on each.' },
   swap: { name: 'Swap Meet', blurb: 'Three regulars each offer a 1-for-1 trade. No cash, just your eye.' },
 };
 
@@ -411,10 +412,11 @@ function newGame(seed) {
 }
 function shopValue(G) {
   let v = G.cash - G.tab + G.bulk * 1;
-  for (const c of G.stock) v += trueValue(G, c, 1);
+  for (const c of G.stock) if (!c.consign) v += trueValue(G, c, 1);
   for (const g in G.packs) v += G.packs[g] * PACK_RETAIL;
   for (const p of G.grading) if (p.card) v += trueValue(G, p.card, 1);
   const S = G.store; if (!S) return v;
+  if (G.consign && !G.consign.done) v -= G.consign.owed;
   for (const g in S.backPacks) v += S.backPacks[g] * PACK_RETAIL;
   for (const g in S.dead) v -= Math.min(S.dead[g], G.packs[g] + S.backPacks[g]) * (PACK_RETAIL - DEAD_PACK);
   for (const o of G.goods) v += goodValue(G, o, true);
@@ -449,6 +451,7 @@ function startDay(G) {
     for (const x of uni(G).sets) if (x.era === 'modern' && x.release === runDay(G)) event(G, { t: 'release', set: x.id });
     // v3.1: the vintage loop starts with a shady stranger who gives you three real vintage packs, free
     if (G.dayIdx === 2 && !G.strangerCame) { G.strangerCame = true; D.visitors.splice(Math.min(2, D.visitors.length), 0, { who: 'mox', role: 'stranger' }); }
+    spineDay(G, D);
     if (G.grateful && G.dayIdx >= 1) { G.grateful--; D.visitors.splice(1, 0, { who: pick(G, ['pip', 'moma']), role: 'sell', n: 2, games: ['shell', 'star'], q: 7.8, gem: 'h', src: 'old', read: true, intent: 'grateful' }); event(G, { t: 'grateful' }); } }
   G.demand = Object.assign({}, D.demand);
   // last night's hype lands on today
@@ -524,6 +527,7 @@ function spawnVisit(G, spec) {
       }
       v.cards.push(c);
     }
+    contractSeed(G, v, spec);
     let belief = 0; for (const c of v.cards) belief += sellerBelief(G, spec.who, c);
     if (spec.role === 'bulk') belief = Math.max(4, belief * 0.6);
     // v3.1: rep is how people treat you. At rep 100 sellers ask about 10% less; at rep 0, about 10% more.
@@ -543,6 +547,7 @@ function matches(G, wants, c) {
   if (!wants) return true;
   const tm = tmpl(c.t);
   if (wants.t) return c.t === wants.t;
+  if (wants.vintage && c.era !== 'vintage') return false;
   if (wants.game && tm.game !== wants.game) return false;
   if (wants.min && RANK[tm.rarity] < RANK[wants.min]) return false;
   if (wants.cond) { const g = c.graded ? c.graded.grade : trueGrade(c); if (g < wants.cond) return false; }
@@ -588,6 +593,7 @@ const BAD_LINES = {
 function line(G, v, key, p) { const L = LINES[v.species][key]; if (!L || !L.length) return null; return pick(G, L).replace('{p}', p != null ? p + '₵' : '').replace('{w}', wantsText(v.wants)); }
 function wantsText(w) {
   if (!w) return 'anything good';
+  if (w.vintage) return 'vintage singles';
   if (w.t) return tmpl(w.t).name + ' (the one everyone\'s talking about)';
   const r = w.min ? (w.min === 'c' ? 'any' : RARITY_NAME[w.min].toLowerCase() + ' or better') : 'anything';
   return (w.game ? r + ' ' + GAMES[w.game].name : r + ' card') + (w.cond ? ' in grade ' + w.cond + '+ shape' : '');
@@ -628,6 +634,7 @@ function act(G, it) {
       const D = G.week[G.dayIdx];
       if (G.visitIdx + 1 >= D.visitors.length) { closeShop(G); return ok(); }
       if (G.store && G.visitIdx >= 0 && R(G) < 0.06 * Math.max(0, ratingMod(G) + 0.5)) D.visitors.splice(G.visitIdx + 1, 0, { who: pick(G, ['nova', 'kiri']), role: 'browse' });
+      if (G.store && G.consign && !G.consign.done && G.stock.some(c => c.consign && isFloor(c.loc)) && R(G) < 0.12) D.visitors.splice(G.visitIdx + 1, 0, { who: 'vault', role: 'buy', wants: { vintage: true, min: 'u' } });
       if (G.store && autoOn(G, 'rack')) refillRack(G);
       G.visitIdx++; G.visit = spawnVisit(G, D.visitors[G.visitIdx]); G.phase = 'visit';
       const nv = G.visit, P = PEOPLE[nv.who], hello3 = G.store && v3Hello(G, nv);
@@ -745,13 +752,14 @@ function act(G, it) {
     }
     case 'toBulk': {
       if (G.phase !== 'shop' && G.phase !== 'close') return err('not now');
-      const c = findStock(G, it.uid); if (!c) return err('no card');
+      const c = findStock(G, it.uid); if (!c) return err('no card'); if (c.consign) return err('that\'s Orrin\'s card');
       G.stock.splice(G.stock.indexOf(c), 1); G.bulk++; return ok();
     }
     case 'grade': {
       if (G.phase !== 'close') return err('send cards at close');
       const c = findStock(G, it.uid), co = GRADERS[it.co]; if (!c || !co) return err('bad card or grader');
       if (c.graded) return err('already slabbed');
+      if (c.consign) return err('that\'s Orrin\'s card: he didn\'t ask you to grade it');
       if (G.cash < co.fee) return err('not enough cash');
       money(G, -co.fee, 'fee', co.name + ' grading fee');
       G.stock.splice(G.stock.indexOf(c), 1);
@@ -790,6 +798,8 @@ function act(G, it) {
       G.days.push(summaryOfDay(G));
       if (G.dayIdx >= G.week.length - 1) { finale(G); return ok(); }
       G.phase = 'night'; G.events = [];
+      if (G.show && G.show.booked && !G.show.done) { G.show.done = true; G.night = { flyers: ['show'], pick: 'show', done: false, show: { bids: null } }; G.lastNight = 'show';
+        say(G, 'vee', 'Regional show! Pick up to ' + SHOW_MAX + ' items for your table. Each gets a bid from the crowd: sell it, or take it home.'); return ok(); }
       let flyers = NIGHT_FLYERS[0].slice();
       if (G.dayIdx > 0) { const pool = NIGHT_POOL.filter(k => k !== G.lastNight); const a = pick(G, pool); flyers = [a, pick(G, pool.filter(k => k !== a))]; }
       G.night = { flyers, pick: null, done: false };
@@ -880,7 +890,7 @@ const SCALP_CAP = 6; // v3.1: Skrimp buys at most 6 packs a visit (2 under "Limi
 function dealScalp(G) {
   const v = G.visit, cap = G.policy.limit2 ? 2 : SCALP_CAP;
   const n = takePacks(G, Math.min(packTotal(G), cap));
-  const promos = G.policy.limit2 ? [] : G.stock.filter(c => c.v && c.v.promo && !c.know.fake && !c.graded);
+  const promos = G.policy.limit2 ? [] : G.stock.filter(c => c.v && c.v.promo && !c.know.fake && !c.graded && !c.consign);
   let cash = n * (PACK_RETAIL + 3);
   for (const c of promos) { cash += Math.round(trueValue(G, c) * 0.9); G.stock.splice(G.stock.indexOf(c), 1); }
   if (!n && !promos.length) { say(G, v.who, 'Nothing to scalp? Lame.'); endVisit(G, 'pass'); return ok(); }
@@ -897,6 +907,7 @@ function closeShop(G) {
   const next = G.week[G.dayIdx + 1];
   let msg = next ? 'Closing time! Tomorrow: ' + next.name + '. ' + Object.keys(next.demand).map(g => GAMES[g].name + ' ×' + next.demand[g]).join(', ') + '.' : 'Last close! Send anything to the graders: tonight is Grade Day and every slab comes home.';
   // the pump card's reprint only lands on the first release day; later release eves have nothing to say about it
+  if (G.store && G.dayIdx === SHOW_DAY && !G.show) msg += ' Flyer on the board: a regional show tonight. Book a table for ' + SHOW_FEE + '₵ and bring up to ' + SHOW_MAX + ' items. The crowd pays well for slabs and vintage.';
   if (next && next.release && G.pump && !G.week.slice(0, G.dayIdx + 1).some(D => D.release)) msg += ' ' + next.name.replace(/ Release Day$/, '') + ' reprint list is out: ' + tmpl(G.pump.t).name + ' is on it.';
   say(G, 'vee', msg);
 }
@@ -943,7 +954,7 @@ function pickNight(G, ev) {
       const P = PEOPLE[w], game = SPECIES[P.species].game;
       const theirs = makeCard(G, game, pick(G, ['u', 'r', 'r', 'h']), 7.4, { src: 'old', read: true });
       // they want one of your cards they like: the one they value most, if you have any
-      const mine = G.stock.filter(c => !c.know.fake && !c.graded).sort((a, b) => trueValue(G, b) - trueValue(G, a));
+      const mine = G.stock.filter(c => !c.know.fake && !c.graded && !c.consign).sort((a, b) => trueValue(G, b) - trueValue(G, a));
       const want = mine.length ? mine[Math.min(mine.length - 1, Math.floor(R(G) * 3))] : null;
       swaps.push({ who: w, theirs, want: want ? want.uid : null, done: null });
     }
@@ -1134,9 +1145,9 @@ const V3_SPECIALS = {
   0: [{ who: 'pip', role: 'sell', n: 1, games: ['star'], q: 7, gem: 'r', fakes: 1, intent: 'victim', read: true }, { who: 'nova', role: 'browse' }],
   1: [{ who: 'gang', role: 'weigh' }, { who: 'nova', role: 'browse' }, { who: 'vault', role: 'buy', wants: { min: 'r', far: true } }],
   2: [{ who: 'sticky', role: 'thief' }, { who: 'snip', role: 'sell', n: 2, games: ['star', 'hive'], q: 7, gem: 'h', src: 'trim', intent: 'schemer' }, { who: 'dash', role: 'distract', wants: { min: 'u', far: true } }, { who: 'kiri', role: 'browse' }],
-  3: [{ who: 'flick', role: 'switch', wants: { min: 'r' } }, { who: 'gloss', role: 'reseal' }, { who: 'rook', role: 'thief', hard: 'drifter' }, { who: 'nova', role: 'browse' }],
+  3: [{ who: 'bijou', role: 'contract' }, { who: 'flick', role: 'switch', wants: { min: 'r' } }, { who: 'gloss', role: 'reseal' }, { who: 'rook', role: 'thief', hard: 'drifter' }, { who: 'nova', role: 'browse' }],
   4: [{ who: 'sticky', role: 'thief' }, { who: 'gang', role: 'weigh' }, { who: 'tad', role: 'thief', hard: 'kid' }, { who: 'kiri', role: 'browse' }, { who: 'hoard', role: 'sealedc' }],
-  5: [{ who: 'estate', role: 'vintage' }, { who: 'moma', role: 'sell', n: 2, games: ['shell'], q: 7, gem: 'h', fakes: 1, intent: 'victim', read: true }, { who: 'nova', role: 'browse' }, { who: 'dash', role: 'distract', wants: { min: 'u', far: true }, back: true }],
+  5: [{ who: 'orrin', role: 'consign' }, { who: 'estate', role: 'vintage' }, { who: 'moma', role: 'sell', n: 2, games: ['shell'], q: 7, gem: 'h', fakes: 1, intent: 'victim', read: true }, { who: 'nova', role: 'browse' }, { who: 'dash', role: 'distract', wants: { min: 'u', far: true }, back: true }],
   6: [{ who: 'quill', role: 'sell', n: 2, games: ['star', 'shell'], q: 8.2, gem: 'h', fakes: 2, src: 'ring', intent: 'schemer', back: true }, { who: 'sticky', role: 'thief', back: true }, { who: 'kiri', role: 'browse' }, { who: 'hoard', role: 'sealedc' }],
   7: [{ who: 'estate', role: 'vintage' }, { who: 'flick', role: 'switch', wants: { min: 'r' }, back: true }, { who: 'tad', role: 'thief', hard: 'kid' }, { who: 'nova', role: 'browse' }, { who: 'vault', role: 'buy', wants: { min: 'h', far: true } }],
   8: [{ who: 'skrimp', role: 'scalp' }, { who: 'gloss', role: 'reseal', back: true }, { who: 'rook', role: 'thief', hard: 'drifter' }, { who: 'kiri', role: 'browse' }, { who: 'hoard', role: 'sealedc' }],
@@ -1151,6 +1162,8 @@ Object.assign(PEOPLE, {
   dash:   { name: 'Dash', species: 'zekk', askMul: 1, floorMul: 1, ceilMul: 1, line: 'very interested in what you keep in the back', bad: true, sig: 'a chipped front mandible' },
   rook:   { name: 'Rook', species: 'mollu', askMul: 1, floorMul: 1, ceilMul: 1, line: 'a drifter who knows cards are money', bad: true, sig: 'a shell patched with dock tape' },
   tad:    { name: 'Tad', species: 'puffi', askMul: 1, floorMul: 1, ceilMul: 1, line: 'a kid with big eyes and bigger pockets', bad: true, sig: 'a sticker-covered backpack' },
+  bijou:  { name: 'Bijou', species: 'puffi', askMul: 1, floorMul: 1, ceilMul: 1, line: 'a collector three cards short of a complete run' },
+  orrin:  { name: 'Old Orrin', species: 'mollu', askMul: 1, floorMul: 1, ceilMul: 1, line: 'an old collector with a binder of vintage' },
   mox:    { name: 'Mox', species: 'zekk', askMul: 1, floorMul: 1, ceilMul: 1, line: 'a stranger in a long coat with something to give away' },
   pip:    { name: 'Pip', species: 'puffi', askMul: 1.0, floorMul: 0.7, ceilMul: 1, line: 'a kid selling a "rare promo" from a strip stall' },
   moma:   { name: 'Moma', species: 'mollu', askMul: 1.0, floorMul: 0.7, ceilMul: 1, line: 'a parent selling their kid\'s old cards' },
@@ -1293,7 +1306,9 @@ function wearRoll(G, c, chance) {
   if (attr === 'sur' && (c.prot === 'penny' || c.prot === 'hard')) return false;
   if (attr === 'edg' && c.prot === 'hard') return false;
   if (c[attr] <= 1) return false;
-  const before = trueValue(G, c, 1); c[attr]--; G.store.stats.wearHits++; G.store.stats.wearValue += before - trueValue(G, c, 1); return true;
+  const before = trueValue(G, c, 1); c[attr]--; const lost = before - trueValue(G, c, 1); G.store.stats.wearHits++; G.store.stats.wearValue += lost;
+  if (c.consign && G.consign) G.consign.owed += Math.round(lost);
+  return true;
 }
 // New stock lands in the inbox tray, then the back binders if the tray is full.
 function arrive(G, c) {
@@ -1408,6 +1423,7 @@ function sellThing(G, o, price, who) {
   if (o.t) {
     G.stock.splice(G.stock.indexOf(o), 1);
     money(G, price, 'sell', 'Sold ' + (readable(G, o) ? tmpl(o.t).name : 'a card') + ' to ' + who);
+    if (o.consign) { const cut = Math.round(CONSIGN_CUT * Math.max(price, o.minPrice || 0)); money(G, -cut, 'consign', 'Old Orrin\'s cut (80%)'); G.consign.sold++; G.consign.cutPaid += cut; event(G, { t: 'consignSold', t2: o.t, price, cut }); return; }
     if (o.fake || o.trim && !o.graded) { G.complaints.push({ who, price }); if (o.fake) G.stats.fakesSold++; }
     const flip = price - (o.cost || 0); if (!G.stats.bestFlip || flip > G.stats.bestFlip.flip) G.stats.bestFlip = { flip: Math.round(flip), t: o.t, price };
   } else {
@@ -1485,7 +1501,8 @@ function steal(G, what) {
     const items = onGrid(G, 'case').filter(o => !(o.t && o.graded) || R(G) < 0.5); if (!items.length) return null;
     const o = pick(G, items), val = o.t ? trueValue(G, o, 1) : goodValue(G, o);
     if (o.t) G.stock.splice(G.stock.indexOf(o), 1); else G.goods.splice(G.goods.indexOf(o), 1);
-    S.stats.stolen++; S.stats.stolenValue += val; bump(G, -0.02, 'theft'); event(G, { t: 'theft', from: 'case', card: o.t || null, good: o.type || null }); return o;
+    if (o.consign) G.consign.owed += Math.round(val);
+    S.stats.stolen++; S.stats.stolenValue += val; bump(G, -0.02, 'theft'); event(G, { t: 'theft', from: 'case', card: o.t || null, good: o.type || null, consign: !!o.consign }); return o;
   }
   const games = ['shell', 'hive', 'star'].filter(g => G.packs[g] > 0);
   if (games.length) { const g = pick(G, games); G.packs[g]--; S.dead[g] = Math.min(S.dead[g], G.packs[g]); S.stats.stolen++; S.stats.stolenValue += PACK_RETAIL; event(G, { t: 'theft', from: 'rack', game: g }); return g; }
@@ -1604,7 +1621,146 @@ function dealStranger(G) {
   say(G, v.who, '*presses three old packs into your hands* Real. Heavy ones, light ones, who knows. Enjoy, friend. *gone before you look up*');
   endVisit(G, 'deal'); return ok({ n });
 }
+// ---------- v3.2 mid-run spine (design/midrun-spine.md) ----------
+// Day 4: Bijou's contract (three cards by day 7). Day 6: Old Orrin consigns vintage singles (back on day 9), and the
+// regional show at night. Day indexes are 0-based.
+const CONTRACT_DAY = 3, CONTRACT_DUE = 6, CONSIGN_DAY = 5, CONSIGN_BACK = 8, SHOW_DAY = 5;
+const CONTRACT_PAY = 1.5, CONTRACT_BONUS = 25, CONSIGN_CUT = 0.8, CONSIGN_MIN = 0.85, CONSIGN_BUY = 0.9, SHOW_FEE = 40, SHOW_MAX = 6;
+const SPINE_ROLES = ['contract', 'deliver', 'consign', 'consignBack'];
+function spineDay(G, D) {
+  const K = G.contract, C = G.consign;
+  if (G.dayIdx === CONTRACT_DAY + 1 && K && !K.closed && !K.list[0].got) { const t = K.list[0].t; D.visitors.splice(Math.min(2, D.visitors.length), 0, { who: 'pearla', role: 'sell', n: 2, games: [tmpl(t).game, 'shell'], q: 7.2, src: 'old', contractCard: t }); }
+  if (G.dayIdx === CONTRACT_DAY + 2 && K && !K.closed && !K.list[2].got) { const t = K.list[2].t; D.visitors.splice(Math.min(3, D.visitors.length), 0, { who: 'klik', role: 'sell', n: 2, games: [tmpl(t).game, 'star'], q: 8.2, src: 'old', contractCard: t }); }
+  if (G.dayIdx === CONTRACT_DUE && K && !K.closed) D.visitors.splice(Math.min(1, D.visitors.length), 0, { who: 'bijou', role: 'deliver' });
+  if (G.dayIdx === CONSIGN_BACK && C && !C.done) D.visitors.splice(Math.min(1, D.visitors.length), 0, { who: 'orrin', role: 'consignBack' });
+}
+function contractOffer(G) {
+  const U = uni(G), d = runDay(G), games = ['shell', 'hive', 'star'];
+  for (let i = games.length - 1; i > 0; i--) { const j = Math.floor(R(G) * (i + 1)); [games[i], games[j]] = [games[j], games[i]]; }
+  // picked by market price, not rarity: two worth 8-40₵, the stretch 40-200₵ (and it must grade 8+)
+  const one = (g, lo, hi) => { const all = U.search({ game: g, era: 'modern', day: d, minValue: lo, max: lo < 40 ? 'h' : 'g' }), l = all.filter(c => c.base <= hi); return (l.length ? pick(G, l) : all.length ? all[all.length - 1] : U.search({ game: g, era: 'modern', day: d })[0]).id; };
+  return [{ t: one(games[0], 8, 40) }, { t: one(games[1], 8, 40) }, { t: one(games[2], 40, 200), grade: 8 }];
+}
+function cardGrade(c) { return c.graded ? c.graded.grade : trueGrade(c); }
+function contractFits(G, w, c) { return !c.fake && !c.consign && c.t === w.t && (!w.grade || cardGrade(c) >= w.grade); }
+function contractWants(G, c) { const K = G.contract; return !!K && !K.closed && !c.consign && K.list.some(w => !w.got && c.t === w.t); }
+function contractStatus(G) {
+  const K = G.contract; if (!K) return null;
+  return { closed: K.closed, due: K.due, paid: K.paid, list: K.list.map(w => ({ t: w.t, name: tmpl(w.t).name, game: tmpl(w.t).game, rarity: tmpl(w.t).rarity, grade: w.grade || null, got: !!w.got,
+    have: !w.got && G.stock.some(c => contractFits(G, w, c)), close: !w.got && G.stock.some(c => c.t === w.t && !c.consign && !contractFits(G, w, c)) })) };
+}
+// Sellers on days 5-7 sometimes carry a card from the want list (card 1 is guaranteed by its own seller on day 5).
+function contractSeed(G, v, spec) {
+  const K = G.contract;
+  if (spec.contractCard) { v.cards[0] = makeCard(G, tmpl(spec.contractCard).game, null, spec.q || 7, { id: spec.contractCard, src: 'old', read: true }); return; }
+  if (!K || K.closed || G.dayIdx < CONTRACT_DAY + 1 || G.dayIdx > CONTRACT_DUE || (spec.role !== 'sell' && spec.role !== 'lot') || !v.cards.length) return;
+  const w = !K.list[1].got && R(G) < 1 / 6 ? K.list[1] : spec.role === 'lot' && !K.list[2].got && R(G) < 1 / 12 ? K.list[2] : null; if (!w) return;
+  const i = v.cards.findIndex(c => !c.fake); if (i < 0) return;
+  v.cards[i] = makeCard(G, tmpl(w.t).game, null, spec.q || 7, { id: w.t, src: 'old', read: !!spec.read });
+}
+function deliverContract(G, uid) {
+  const v = G.visit, K = G.contract; if (G.phase !== 'visit' || !v || v.role !== 'deliver' || !K) return err('not now');
+  const c = findStock(G, uid); if (!c) return err('no card');
+  const w = K.list.find(x => !x.got && contractFits(G, x, c));
+  if (!w) { const near = K.list.find(x => !x.got && x.t === c.t && x.grade); return err(near ? 'Bijou checks it: not grade ' + near.grade + '+ shape' : c.consign ? 'that\'s Orrin\'s card' : 'not on Bijou\'s list'); }
+  const pay = Math.round(CONTRACT_PAY * trueValue(G, c, 1));
+  G.stock.splice(G.stock.indexOf(c), 1); w.got = true; K.paid += pay; G.store.stats.contractCards = (G.store.stats.contractCards || 0) + 1;
+  money(G, pay, 'sell', 'Bijou\'s contract: ' + tmpl(c.t).name);
+  G.rep = clamp(G.rep + 2, 0, 100); bump(G, 0.04, 'filled a collector\'s want list'); event(G, { t: 'contractCard', t2: c.t, pay });
+  if (K.list.every(x => x.got)) {
+    money(G, CONTRACT_BONUS, 'sell', 'Bijou\'s set bonus'); bump(G, 0.1, 'completed a contract'); K.closed = true; event(G, { t: 'contractDone', paid: K.paid + CONTRACT_BONUS });
+    say(G, v.who, 'The run is COMPLETE. ' + pay + '₵ for this one, and ' + CONTRACT_BONUS + '₵ extra. I\'m telling everyone about your shop.'); endVisit(G, 'deal'); return ok({ pay, done: true });
+  }
+  say(G, v.who, 'Yes! ' + tmpl(c.t).name + '. ' + pay + '₵, as promised. Anything else on my list?'); return ok({ pay });
+}
+function consignLot(G) {
+  // picked by market price (about 25-300₵ each), so it's the "rare stuff" a collector would trust a shop with
+  const U = uni(G), pool = U.search({ era: 'vintage', minValue: 25 }).filter(k => k.base <= 300), out = [];
+  for (let i = 0; i < 5; i++) {
+    const k = pool.splice(Math.floor(R(G) * pool.length), 1)[0], c = makeCard(G, k.game, null, 7.4, { id: k.id, src: 'old', read: true });
+    c.consign = true; c.minPrice = Math.max(4, Math.round(CONSIGN_MIN * trueValue(G, c, 1))); c.cost = 0; out.push(c);
+  }
+  return out;
+}
+function acceptConsign(G) {
+  const v = G.visit; let floor = 0;
+  for (const c of v.lot) { addStock(G, c);
+    for (const f of ['case', 'cbinder']) if (place(G, c.uid, f).ok) { floor++; break; }
+    c.tag = Math.max(c.minPrice, defaultTag(G, c)); }
+  G.consign = { uids: v.lot.map(c => c.uid), sold: 0, cutPaid: 0, owed: 0, back: CONSIGN_BACK, done: false };
+  event(G, { t: 'consign', n: v.lot.length, floor });
+  say(G, v.who, 'Wonderful. Minimums are on the tags. I\'ll be back on day ' + (CONSIGN_BACK + 1) + ' for my share. Look after them!'); endVisit(G, 'deal'); return ok({ floor });
+}
+// Orrin's return: you settle what you owe, he takes back what didn't sell, and offers you any of it at 90% of market.
+function settleConsign(G, v) {
+  const C = G.consign, S = G.store, unsold = G.stock.filter(c => c.consign);
+  v.unsold = unsold.map(c => ({ uid: c.uid, price: Math.round(CONSIGN_BUY * trueValue(G, c, 1)) }));
+  v.owed = C.owed; if (C.owed) { const paid = Math.min(C.owed, Math.max(0, G.cash)); money(G, -paid, 'consign', 'Paid Old Orrin for lost or worn cards'); if (paid < C.owed) G.tab += C.owed - paid; }
+  if (C.sold >= 3) { G.rep = clamp(G.rep + 3, 0, 100); bump(G, 0.08, 'trusted with a collection'); }
+  v.sold = C.sold; v.cut = C.cutPaid; S.stats.consignSold = C.sold;
+}
+function buyConsign(G, uid) {
+  const v = G.visit; if (G.phase !== 'visit' || !v || v.role !== 'consignBack') return err('not now');
+  const o = (v.unsold || []).find(x => x.uid === uid), c = o && findStock(G, uid); if (!c || !c.consign) return err('not one of Orrin\'s cards');
+  if (G.cash < o.price) return err('not enough cash');
+  money(G, -o.price, 'buy', 'Bought from Old Orrin: ' + tmpl(c.t).name); c.consign = false; delete c.minPrice; c.cost = o.price; o.bought = true;
+  say(G, v.who, 'It\'s yours. It\'s in good hands.'); return ok();
+}
+function endConsign(G) {
+  const v = G.visit; for (const c of G.stock.filter(c => c.consign)) G.stock.splice(G.stock.indexOf(c), 1);
+  G.consign.done = true; event(G, { t: 'consignBack', sold: v.sold });
+  say(G, v.who, v.sold >= 3 ? 'You sold ' + v.sold + ' of five. Good shop. I\'ll tell my friends.' : 'Only ' + v.sold + ' sold. Ah well. Take care.'); endVisit(G, 'pass'); return ok();
+}
+function spineHello(G, nv) {
+  if (nv.role === 'contract') return 'I\'m three cards short of a complete run. Find me these by day ' + (CONTRACT_DUE + 1) + ' and I pay half again over market for each: ' + nv.list.map(w => tmpl(w.t).name + (w.grade ? ' (grade ' + w.grade + '+ only)' : '')).join(', ') + '. Deal?';
+  if (nv.role === 'deliver') { const K = G.contract, have = K.list.filter(w => !w.got && G.stock.some(c => contractFits(G, w, c))).length; return 'Day ' + (CONTRACT_DUE + 1) + '! ' + (have ? 'You found ' + have + '? Show me!' : 'Find any of my cards?'); }
+  if (nv.role === 'consign') return 'Heard your shop is legit. Five vintage singles from my collection. You sell them for me: I keep 80% of each sale, you keep 20%. My minimum is on each one. Deal?';
+  if (nv.role === 'consignBack') return 'Back for my share! You sold ' + nv.sold + ' of five (' + nv.cut + '₵ to me).' + (nv.owed ? ' And ' + nv.owed + '₵ for the ones lost or worn.' : '') + (nv.unsold.length ? ' Want to buy any of the rest? 90% of market.' : '');
+  return null;
+}
+function spineAct(G, it) {
+  const v = G.visit, inVisit = G.phase === 'visit' && v;
+  if (it.t === 'accept') {
+    if (v.role === 'contract') { G.contract = { list: v.list, due: CONTRACT_DUE, paid: 0, closed: false }; event(G, { t: 'contract' }); say(G, v.who, 'Wonderful! Day ' + (CONTRACT_DUE + 1) + '. Don\'t forget me.'); endVisit(G, 'deal'); return ok(); }
+    if (v.role === 'consign') return acceptConsign(G);
+    if (v.role === 'consignBack') return endConsign(G);
+    if (v.role === 'deliver') return err('hand Bijou a card from the list');
+  }
+  if (it.t === 'pass') {
+    if (v.role === 'contract') { say(G, v.who, 'Fair enough. Someone else then.'); endVisit(G, 'pass'); return ok(); }
+    if (v.role === 'consign') { say(G, v.who, 'Another shop, then. Good day.'); endVisit(G, 'pass'); return ok(); }
+    if (v.role === 'consignBack') return endConsign(G);
+    if (v.role === 'deliver') { const K = G.contract; K.closed = true;
+      if (!K.list.some(w => w.got)) { G.rep = clamp(G.rep - 3, 0, 100); bump(G, -0.05, 'broke a contract'); say(G, v.who, 'Nothing? I waited all week. Hmph.'); }
+      else say(G, v.who, 'Not the full run, but it\'s closer. Thank you.');
+      event(G, { t: 'contractClosed', paid: K.paid }); endVisit(G, 'pass'); return ok(); }
+  }
+  return inVisit ? null : null;
+}
+function showBring(G, uids) {
+  const N = G.night; if (G.phase !== 'night' || !N || N.pick !== 'show' || N.show.bids) return err('not now');
+  const list = [...new Set(uids || [])].slice(0, SHOW_MAX).map(u => findThing(G, u)).filter(Boolean);
+  if (!list.length) return err('bring at least one item');
+  N.show.bids = list.map(o => {
+    if (o.t && !o.graded) wearRoll(G, o, WEAR_SHOW);
+    const val = o.t ? lookValue(G, o) : goodValue(G, o), vint = o.t ? o.era === 'vintage' : !!GOODS[o.type].vintage;
+    // a crowd, not a guaranteed buyer: about a quarter of items draw no bid; the rest 0.9-1.3x market, more for slabs and vintage
+    if (R(G) < 0.25) return { uid: o.uid, bid: 0, sold: false };
+    return { uid: o.uid, bid: Math.max(1, Math.round(val * (0.9 + R(G) * 0.4 + (o.t && o.graded ? 0.1 : 0) + (vint ? 0.1 : 0)))), sold: false };
+  });
+  return ok({ bids: N.show.bids });
+}
+function showSell(G, uid) {
+  const N = G.night; if (G.phase !== 'night' || !N || N.pick !== 'show' || !N.show.bids) return err('not now');
+  const b = N.show.bids.find(x => x.uid === uid && !x.sold && x.bid > 0), o = b && findThing(G, uid); if (!o) return err('no bid for that');
+  sellThing(G, o, b.bid, 'a show buyer'); b.sold = true; G.store.stats.showSales = (G.store.stats.showSales || 0) + 1; return ok();
+}
 function v3Spawn(G, v, spec) {
+  if (SPINE_ROLES.indexOf(v.role) >= 0) { v.tells = []; v.tellsShown = 0;
+    if (v.role === 'contract') v.list = contractOffer(G);
+    if (v.role === 'consign') v.lot = consignLot(G);
+    if (v.role === 'consignBack') settleConsign(G, v);
+    return; }
   if (v.role === 'stranger') { v.gift = [giftPack(G), giftPack(G), giftPack(G)]; v.tells = ['keeps checking the door', 'sunglasses indoors']; v.tellsShown = 2; return; }
   if (spec.intent) v.intent = spec.intent;
   if (spec.hard) v.hard = spec.hard;
@@ -1622,6 +1778,7 @@ function v3Spawn(G, v, spec) {
 function lookOf(G, o) { return o.t ? lookValue(G, o) : goodValue(G, o); }
 function v3Hello(G, nv) {
   const S = G.store, P = PEOPLE[nv.who], disg = nv.disguised ? '*a stranger in a hat* ' : '';
+  if (SPINE_ROLES.indexOf(nv.role) >= 0) return spineHello(G, nv);
   if (nv.role === 'stranger') return '*long coat, sunglasses indoors* Psst. Three old packs. Real ones, vintage. Free. Don\'t ask where from. You want \'em or not?';
   if (nv.role === 'weigh') return S.noTouch ? 'A "no touching" sign? Lame. We\'re out.' : disg + 'Yo. We\'ll take 3 packs. But we pick. We like to... feel them first.';
   if (nv.role === 'thief') return nv.hard === 'kid' ? 'Hi! I\'m just looking! *very close to the pack rack*' : nv.hard === 'drifter' ? 'Just warming up, friend. Nice shop. *eyes the rack*' : disg + 'Oh, just browsing! Don\'t mind me. *drifts toward the ' + (S.locked || !onGrid(G, 'case').length ? 'rack' : 'display case') + '*';
@@ -1683,7 +1840,17 @@ function callSecurity(G) {
 }
 function v3Act(G, it) {
   const v = G.visit, S = G.store, inVisit = G.phase === 'visit' && v;
+  if ((it.t === 'accept' || it.t === 'pass') && inVisit && SPINE_ROLES.indexOf(v.role) >= 0) return spineAct(G, it);
   switch (it.t) {
+    case 'deliver': return deliverContract(G, it.uid);
+    case 'buyConsign': return buyConsign(G, it.uid);
+    case 'bookShow': {
+      if (G.phase !== 'close' || G.dayIdx !== SHOW_DAY) return err('the show is on day ' + (SHOW_DAY + 1));
+      if (G.show) return err('already booked'); if (G.cash < SHOW_FEE) return err('not enough cash');
+      money(G, -SHOW_FEE, 'fee', 'Regional show table'); G.show = { booked: true, done: false }; return ok();
+    }
+    case 'showBring': return showBring(G, it.uids);
+    case 'showSell': return showSell(G, it.uid);
     case 'watch': {
       if (!inVisit || ['thief', 'switch', 'distract'].indexOf(v.role) < 0) return err('not now');
       v.watched = true;
@@ -1773,6 +1940,7 @@ const CT = { newGame, load, act, DAYS, GAMES, SPECIES, PEOPLE, GRADERS, RARITY_N
   FINISH, SETS, ERRORS, PROMOS, UPGRADES, NIGHTS, NIGHT_FLYERS,
   RENT: RENT10, NIGHT_POOL, FIX, GOODS, GEAR, CATALOG, UNLOCKS, TELLS, WEAR_DAY, WEAR_SHOW, BULK_CAP, uni, setName,
   FOCUS, SPLIT, openChecklist, where, goodsAt, onGrid, gridFits, gridFree, gridSpot, shapeOf, sizeOf, pocketsFree, isFloor, placeRule, findThing, backPackTotal,
-  defaultTag, lookValue, goodValue, autoOn, SCALP_CAP, gradeRange, eyeLevel, BLACK_LABEL, valueAt, setMult, currentSet, boardHas, tmpl, trueGrade, centerRatio, estimate, readable, trueValue, shopValue, matches, wantsText, demandOf, variantMult, packTotal };
+  defaultTag, lookValue, goodValue, autoOn, SCALP_CAP, gradeRange, eyeLevel, BLACK_LABEL, valueAt, setMult, currentSet, boardHas, tmpl, trueGrade, centerRatio, estimate, readable, trueValue, shopValue, matches, wantsText, demandOf, variantMult, packTotal,
+  contractStatus, contractWants, cardGrade, CONTRACT_DAY, CONTRACT_DUE, CONSIGN_DAY, CONSIGN_BACK, SHOW_DAY, CONTRACT_PAY, CONTRACT_BONUS, CONSIGN_CUT, CONSIGN_BUY, SHOW_FEE, SHOW_MAX };
 if (typeof module !== 'undefined' && module.exports) module.exports = CT; else root.CT = CT;
 })(this);

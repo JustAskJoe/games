@@ -6,6 +6,62 @@ Newest on top. See the repo's CLAUDE.md for how patch notes work.
 
 ---
 
+## v3.2 mid-run spine · 2026-11-02 · Hunter (with Claude)
+Days 4–7 had nothing to chase and vintage arrived too late. Three new things give the middle of the run a spine (scope: `design/midrun-spine.md`; decisions: `design/handoff.md`). The run stays 10 days.
+
+### What's new
+- **Day 4: Bijou's contract.** A collector asks for three specific cards by day 7. Take it or pass.
+  - Each card pays **1.5× market**, and all three add **25₵**.
+  - Two are findable (about 8–40₵). The stretch card (about 40–200₵) must grade **8+**, and Bijou checks.
+  - Cards you own count. Matching cards wear a **WANTED** badge, and the morning report tracks the list.
+  - A seller brings card 1 on day 5 and a copy of the stretch card on day 6 (in random condition). Card 2 turns up in sellers' cards and lots.
+  - Taking the contract and delivering nothing costs a little rep.
+- **Day 6: Old Orrin consigns his vintage.** Five vintage singles (about 25–300₵ each) for you to sell.
+  - He keeps 80% of each sale, you keep 20%. Sell under his minimum and the gap comes out of your share.
+  - They go straight into your case and counter binder, taking that space. They carry an **ORRIN'S** badge and aren't yours to grade, bulk or trade.
+  - Stolen or worn while you hold them: you owe him.
+  - Vintage-hunting buyers drop in more often while his cards are out.
+  - **Day 9:** he settles up, takes the rest home, and offers any unsold card at 90% of market. Sell 3+ for a rep and rating bump.
+- **Day 6 night: the regional show.** Book a table at close for 40₵ (it replaces that night's After Hours).
+  - Bring up to 6 items. About a quarter draw no bid; the rest get 0.9–1.3× market, more for slabs and vintage.
+  - Sell each one or take it home. Raw cards can pick up a little wear on the trip.
+
+### Balance (400 runs per bot)
+| Band | Result |
+| --- | --- |
+| careful growth (150%+) | +294% (v3.1: +269%) |
+| Loupe upgrades worth 5+ (same-seed difference, new) | +11 |
+| organized vs lazy (30+) | +316% vs +185% |
+| greedy theft (5–15%) | 10% |
+| naive theft (10%+) | 15% |
+| careful beats sloppy | 98% |
+| Bots' contract (60 seeds, careful / noupgrades) | card 1 in 73% / 70% of runs, card 2 in 37% / 52%, the stretch card in 25% / 27%, all three in 3% / 15% |
+| Orrin's cards sold by the careful bot | 4.8 of 5 a run |
+
+### Next up
+- [ ] Re-run the agent playtests on v3.2 (the persona bots in PR #70 need rules for the contract, consignment and show), then the paid run. Watch the median "drag day" (beta gate: day 7 or later).
+- [ ] @Hunter: check the three picks you were unsure about (contract paid per card, two findable plus one stretch, grade 8+ on the stretch only).
+
+### Watch out
+- [ ] **Changed the upgrade band's statistic.**
+  - It now uses the median of same-seed differences (careful minus noupgrades), not the gap between two medians.
+  - The old gap swung between −24 and +14 on the same code. Same-seed, the upgrades are worth +8 to +11 with or without the spine.
+  - The bar is still 5 points, and the sim now runs 400 seeds per bot (was 200), so build-and-test takes longer.
+  - Raise it with the Balance agent if this looks like loosening.
+- [ ] **Growth is up ~25 points** (careful +294% vs +269%). Ranks use fixed thresholds, so more runs reach Dock Legend. Retune `RANKS10` if that's too easy.
+- [ ] **Orrin's cards almost always sell** (4.8 of 5 for the careful bot, mostly at the show). The space trade-off may not bite yet. Consider keeping consigned cards out of the show, or fewer show slots.
+- [ ] **The stretch card is hard for bots** because they only see a grade range. Real players may find it easier (or harder). Watch the playtests.
+- [ ] **Findable contract cards can be worth only a few ₵ in poor condition** (the pick is by base price). One walkthrough card read 2–7₵.
+- [ ] **The sim bot's day 1 gate** now moves the cheapest case cards down to the counter binder when a small opening crate can't fill both. A new seed order exposed it.
+- [ ] **The walkthrough bot plays badly,** so it's given 40₵ on day 6 to book the show. That's in test.py, not the game.
+- [ ] Contract and consignment events that happen mid-day aren't shown in the next morning's report (events reset at the start of each day, as for other daytime events).
+- [ ] Not checked on a real phone; the walkthrough's phone-width screenshots pass the no-sideways-scroll check.
+
+## v3.1 labels · 2026-11-02 · Hunter (with Claude)
+No game change.
+- The Arcade card now says v3.1 and describes the 10-day shop, not v2's 5-day stall.
+- The README status describes v3.1.
+
 ## v3.1 floor, tutorial and vintage · 2026-11-01 · Hunter (with Claude)
 Built on the grading rework (PR #74). Hunter's answers to the v3.1 plan's Q5–Q10 are in `design/handoff.md`.
 
@@ -41,7 +97,7 @@ Built on the grading rework (PR #74). Hunter's answers to the v3.1 plan's Q5–Q
   | careful beats sloppy | 98% |
 
 ### Next up
-- [ ] A mid-run spine: a collector contract on day 4 and a regional show on day 6 (plan section 6).
+- [x] A mid-run spine: a collector contract on day 4 and a regional show on day 6 (plan section 6). Done in v3.2, with Orrin's consignment (Claude, Nov 2).
 - [ ] Re-run the agent playtests on this build. The persona bots in PR #70 need rules for the stranger, Stock the floor and grading ranges first.
 - [ ] Then the paid API playtest (OK'd by Hunter, about $0.75), after a `go: false` estimate.
 
