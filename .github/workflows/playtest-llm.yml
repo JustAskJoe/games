@@ -1,0 +1,80 @@
+# Playtest (LLM): Tier B, API route. Claude plays Card Trader v3 as persona playtesters and fills in the questionnaire
+# (card-trader/prototype/playtest-llm.js, design in kit/agents/playtester.md). Manual only: no schedule, no other trigger.
+# With go=false (the default) it prints the estimated tokens and dollars and calls nothing. go=true spends on the org secret
+# PLAYTEST_ANTHROPIC_API_KEY, a key from its own Anthropic Console workspace with a $5/month hard spend limit (not the
+# Artist's ANTHROPIC_API_KEY). Results are uploaded as a workflow artifact; nothing is committed or written to the
+# questionnaire page. The first real run needs Hunter's OK.
+# © 2026 justaskjoe. All rights reserved.
+name: Playtest (LLM)
+
+on:
+  workflow_dispatch:
+    inputs:
+      go:
+        description: "Spend for real (false = estimate only)"
+        type: boolean
+        default: false
+      runs:
+        description: "How many personas (max runs per batch)"
+        default: "8"
+      personas:
+        description: "all, or a comma list (kid,minmax,cozy,vintage,sealed,goblin,newbie,trusting)"
+        default: "all"
+      model:
+        description: "Model id"
+        default: "claude-haiku-5-5"
+      max_tokens:
+        description: "Stop the batch once this many tokens are used"
+        default: "6000000"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: playtest-llm
+  cancel-in-progress: false
+
+jobs:
+  playtest:
+    name: Play as personas
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:   # inputs reach the shell as env vars, never pasted into the script
+      PERSONAS: ${{ inputs.personas }}
+      RUNS: ${{ inputs.runs }}
+      MODEL: ${{ inputs.model }}
+      MAX_TOKENS: ${{ inputs.max_tokens }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Estimate (always; calls nothing)
+        working-directory: card-trader/prototype
+        run: node playtest-llm.js --personas "$PERSONAS" --max-runs "$RUNS" --model "$MODEL" --max-tokens "$MAX_TOKENS"
+      - name: Check the key is set up
+        if: ${{ inputs.go }}
+        env:
+          HAS_KEY: ${{ secrets.PLAYTEST_ANTHROPIC_API_KEY != '' }}
+        run: |
+          if [ "$HAS_KEY" != "true" ]; then
+            echo "::error::Needs the org secret PLAYTEST_ANTHROPIC_API_KEY (see kit/agents/playtester.md)."
+            exit 1
+          fi
+      - name: Install the Anthropic SDK
+        if: ${{ inputs.go }}
+        working-directory: card-trader/prototype
+        run: npm install --no-save --no-package-lock @anthropic-ai/sdk@^0.136.0
+      - name: Play (spends on PLAYTEST_ANTHROPIC_API_KEY)
+        if: ${{ inputs.go }}
+        working-directory: card-trader/prototype
+        env:
+          PLAYTEST_ANTHROPIC_API_KEY: ${{ secrets.PLAYTEST_ANTHROPIC_API_KEY }}
+        run: node playtest-llm.js --go --personas "$PERSONAS" --max-runs "$RUNS" --model "$MODEL" --max-tokens "$MAX_TOKENS" --out "$RUNNER_TEMP/playtests"
+      - name: Upload results
+        if: ${{ inputs.go && always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playtest-llm
+          path: ${{ runner.temp }}/playtests/
+          if-no-files-found: warn
