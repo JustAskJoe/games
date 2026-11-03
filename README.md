@@ -19,6 +19,7 @@ Every game starts as a pitch in Forge (our team questionnaire). Approved pitches
 | [Automation Idler](automation-idler/) | Idler built around real life automations | Design |
 | [Rogue Shooter](rogue-shooter/) | Isometric rogue-like auto-shooter with class selection, weapon evolutions and synergies | Prototype 1 |
 | [Lightkeeper](lightkeeper/) | One-thumb night sea puzzle: boats in your lighthouse beam turn for home, boats in the dark hold course | Prototype v1 |
+| [Moonwort & Co.](moonwort-co/) | Cozy apothecary sim with real herbal lore: read a neighbor's trouble, brew by the real moon | Prototype 1 |
 
 Shared building blocks (deck generator, layouts, prototype snippets, art workflow) are in [`kit/`](kit/).
 
@@ -55,6 +56,7 @@ Most builds are single HTML files. Open `builds/*.html` in a browser, or run a p
 | Rogue Shooter | [`rogue-shooter/builds/rogue-shooter.html`](rogue-shooter/builds/rogue-shooter.html) |
 | Lightkeeper | [`lightkeeper/builds/lightkeeper.html`](lightkeeper/builds/lightkeeper.html) |
 | Intergalactic Card Trader | [`card-trader/builds/card-trader.html`](card-trader/builds/card-trader.html) |
+| Moonwort & Co. | [`moonwort-co/builds/moonwort-co.html`](moonwort-co/builds/moonwort-co.html) |
 
 GitHub shows `.html` files as source, so download the file (with its `img/` folder where there is one) and open it locally to play. Every build is also playable in the [JustAskJoe Lab](https://jaj-forge.huntefl.workers.dev/lab) (email sign-in for the crew).
 
