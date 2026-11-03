@@ -30,7 +30,7 @@
     { id: 'valerian',   name: 'Valerian',    t: { H: 1,  M: -3, B: 0 },  color: '#c9a98a', shape: 'root' },
     { id: 'hops',       name: 'Hops',        t: { H: -1, M: -2, B: 1 },  color: '#b6cf7a', shape: 'cone' },
     { id: 'garlic',     name: 'Garlic',      t: { H: 3,  M: 0,  B: 1 },  color: '#eee6d6', shape: 'bulb' },
-    { id: 'mugwort',    name: 'Mugwort',     t: { H: 1,  M: -1, B: 1 },  color: '#9aa79a', shape: 'leaf' },
+    { id: 'mugwort',    name: 'Mugwort',     t: { H: 1,  M: -1, B: 1 },  color: '#9aa79a', shape: 'leaf', outerOnly: true },
     // Lore only: rare, never picked or brewed. Found while foraging and left where it grows.
     { id: 'moonwort',   name: 'Moonwort',    t: null, color: '#cfd8b8', shape: 'fern', loreOnly: true },
   ];

@@ -6,6 +6,27 @@ Newest on top. See the repo's CLAUDE.md for how patch notes work.
 
 ---
 
+## 0.1.1 · 2026-11-03 · Hunter (with Claude)
+Lore fixes from the first review of all 20 grimoire cards. Hunter took Claude's suggestions.
+
+### What's new
+- Mugwort is now pillow-only: a mix with mugwort can only become a salve or a Dream Pillow, never a drink, because it must not be used in pregnancy. Its bench chip says "pillow only", and the sim checks that no mix of up to 3 herbs breaks the rule.
+- Garlic's card no longer calls it a "cure-all", and the plague-thieves tale is gone. Its folklore is now Herodotus on the pyramid builders' rations.
+- Hops: the "Henry VIII banned hops" story is corrected to what happened (a 1530 rule for his own ale brewer), with a beer historian as the source. The cannabis-family fact is replaced by a cozier one about hop cones.
+- Rose has a new true fact you can remember: rose hips are its fruit, and in 1941 Britain gathered 200 tons of them for vitamin C syrup (BMJ, 1942).
+- Second sources for the WWI nettle cloth and peppermint facts. Peppermint's card now says "the late 1600s" rather than a single year.
+
+### Next up
+- [ ] @Hunter: play it on a real phone from the PR's Lab preview.
+- [ ] A person still needs to mark the cards reviewed (`reviewed_by` stays null until then).
+
+### Watch out
+- [ ] Valerian and yarrow aren't kitchen-safe but stay brewable for now (fictional brews, safety note on each card). Revisit before a wider release.
+- [ ] Rose is "soothing" in the game, but Culpeper calls roses cooling and drying. The traits are game design; left as is.
+- [ ] Dandelion's botanical name still needs a botanist's word.
+
+---
+
 ## 0.1 · 2026-11-02 · Hunter (with Claude)
 Prototype 1: a 2D phone-first build covering 3 in-game days. Play it from the Lab or `builds/moonwort-co.html`.
 
@@ -34,7 +55,7 @@ Prototype 1: a 2D phone-first build covering 3 in-game days. Play it from the La
 - [ ] Only the stir gesture exists. Grind, pour and cork are still taps on a chip.
 - [ ] `kit/open-notes.py` crashes on Windows (it reads patch notes without UTF-8). It's not fixed here; it needs its own small PR.
 - [ ] @Hunter: lore science lines for 9 herbs (calendula, rosemary, thyme, lemon balm, yarrow, fennel, rose, nettle, hops) come from the European Medicines Agency, because NCCIH has no sheet for them and MedlinePlus retired its herb pages. Keep EMA, or set those to null for NIH-only sources?
-- [ ] Some true facts rest only on Grieve's *A Modern Herbal* (WWI nettle cloth, peppermint dates, Four Thieves' Vinegar, the Henry VIII hop ban). Each needs a second modern source before it's trusted. The full list is under "Unverified" in `design/lore/README.md`.
+- [x] Some true facts rest only on Grieve's *A Modern Herbal* (WWI nettle cloth, peppermint dates, Four Thieves' Vinegar, the Henry VIII hop ban). Each needs a second modern source before it's trusted. The full list is under "Unverified" in `design/lore/README.md`. (Fixed or removed in 0.1.1, Hunter with Claude, Nov 3.)
 - [ ] Name questions for a botanist: dandelion (Kew treats *Taraxacum officinale* as a group of microspecies), Culpeper's camomile and valerian were probably different species from ours, his "mint" is spearmint, and POWO now calls rosemary *Salvia rosmarinus*.
 - [ ] @Hunter: content calls. Elder is `kitchen_safe` only when the berries are ripe and cooked (raw ones are toxic). Hops are in the cannabis family and toxic to dogs. Mugwort and sage carry pregnancy cautions. Valerian, hops and lemon balm can cause drowsiness. The cards say all this; decide whether any herb should leave the game.
 - [ ] POWO links were confirmed through Kew's checklist on GBIF, not opened in a browser (POWO blocks scripts).

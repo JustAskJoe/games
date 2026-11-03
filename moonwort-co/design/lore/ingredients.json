@@ -108,14 +108,15 @@
         "url": "https://www.nccih.nih.gov/health/peppermint-oil"
       },
       "safety": "Tea appears safe. Oil can cause heartburn or skin irritation. Never put peppermint oil on an infant's or young child's face.",
-      "card": "Peppermint is a newcomer to the herb garden: botanists only named it as its own plant in 1696. Like all mints, once it moves into a bed, it rarely leaves.",
+      "card": "Peppermint is a newcomer to the herb garden: it was only described as its own plant in the late 1600s. Like all mints, once it moves into a bed, it rarely leaves.",
       "true_fact": "Peppermint is a natural hybrid of water mint and spearmint.",
       "kitchen_safe": true,
       "sources": [
         "https://www.gutenberg.org/ebooks/49513",
         "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:450969-1",
         "https://www.nccih.nih.gov/health/peppermint-oil",
-        "https://www.botanical.com/botanical/mgmh/m/mints-39.html"
+        "https://www.botanical.com/botanical/mgmh/m/mints-39.html",
+        "https://www.ema.europa.eu/en/documents/herbal-report/superseded-assessment-report-mentha-x-piperita-l-folium_en.pdf"
       ],
       "checked": "2026-11-02",
       "reviewed_by": null
@@ -506,13 +507,14 @@
       },
       "safety": "No side effects known from EU review. Medicinal use not established for children under 12 or in pregnancy.",
       "card": "A rose hung above the table meant 'what's said here stays here', which is why secrets are told sub rosa. Apothecaries once pounded the red petals with sugar into a sweet conserve.",
-      "true_fact": "Rose petals used in European herbal medicine come from Rosa gallica, Rosa centifolia or Rosa damascena.",
+      "true_fact": "Rose hips are the rose's fruit. In 1941, British volunteers and schoolchildren gathered 200 tons of them to make vitamin C syrup when oranges were scarce.",
       "kitchen_safe": true,
       "sources": [
         "https://www.gutenberg.org/ebooks/49513",
         "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:732569-1",
         "https://www.ema.europa.eu/en/medicines/herbal/rosae-flos",
-        "https://www.botanical.com/botanical/mgmh/r/roses-18.html"
+        "https://www.botanical.com/botanical/mgmh/r/roses-18.html",
+        "https://www.bmj.com/content/1/4230/171.1.full.pdf"
       ],
       "checked": "2026-11-02",
       "reviewed_by": null
@@ -534,7 +536,7 @@
         "summary": "Culpeper believed nettles, hot and dry under Mars, eaten as spring tops cleared away winter's cold, moist humours."
       },
       "folklore": {
-        "text": "Nettle fibre was woven into household linen in 16th and 17th century Scotland. During the First World War, Germany gathered tonnes of nettles to make army clothing.",
+        "text": "Nettle fibre was woven into household linen in 16th and 17th century Scotland. During the First World War, cotton was scarce in Germany, and its army turned to nettle fibre for cloth.",
         "source": "Mrs. M. Grieve, A Modern Herbal (1931), botanical.com",
         "url": "https://www.botanical.com/botanical/mgmh/n/nettle03.html"
       },
@@ -552,7 +554,8 @@
         "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:260630-2",
         "https://www.ema.europa.eu/en/medicines/herbal/urticae-folium",
         "https://www.botanical.com/botanical/mgmh/n/nettle03.html",
-        "https://www.ema.europa.eu/en/documents/herbal-monograph/final-community-herbal-monograph-urtica-dioica-l-urtica-urens-l-folium_en.pdf"
+        "https://www.ema.europa.eu/en/documents/herbal-monograph/final-community-herbal-monograph-urtica-dioica-l-urtica-urens-l-folium_en.pdf",
+        "https://pmc.ncbi.nlm.nih.gov/articles/PMC9230748"
       ],
       "checked": "2026-11-02",
       "reviewed_by": null
@@ -656,9 +659,9 @@
         "summary": "Culpeper believed hops, under Mars, opened obstructions of the liver and spleen and cleansed the blood."
       },
       "folklore": {
-        "text": "Early English drinkers resisted hops: Henry VIII forbade brewers adding them to ale, and Parliament was petitioned against the hop as 'a wicked weed'. Hopped ale became 'beer'.",
-        "source": "Mrs. M. Grieve, A Modern Herbal (1931), botanical.com",
-        "url": "https://www.botanical.com/botanical/mgmh/h/hops--32.html"
+        "text": "Old English ale was brewed without hops. In 1530 Henry VIII's household rules told his ale brewer at Eltham to use no hops, but his beer brewer used them, and hopped beer won out in the end. The popular story of a nationwide ban is a myth.",
+        "source": "Martyn Cornell, beer historian, 'Myth two: hops were forbidden by Henry VI and Henry VIII', Zythophile",
+        "url": "https://zythophile.co.uk/false-ale-quotes/myth-two-hops-were-forbidden-by-henry-vi"
       },
       "science": {
         "text": "EU regulators (EMA) accept hops only as a traditional herbal product for mild stress and sleep; trials mixed hops with valerian, so hops' own effect is unproven.",
@@ -666,8 +669,8 @@
         "url": "https://www.ema.europa.eu/en/medicines/herbal/lupuli-flos"
       },
       "safety": "Sedating: may impair driving. Not advised in pregnancy, breastfeeding or under 12. Toxic to dogs (ASPCA).",
-      "card": "Pliny said the hop strangles willows as a wolf does a sheep; its name lupulus comes from lupus, 'wolf'. England once petitioned against this 'wicked weed'.",
-      "true_fact": "Hops belong to the Cannabaceae, the same plant family as cannabis.",
+      "card": "Pliny said the hop strangles willows as a wolf does a sheep; its name lupulus comes from lupus, 'wolf'. Henry VIII told his own ale brewer to keep hops out of the royal ale.",
+      "true_fact": "The hops brewers use are the papery cones of the female hop vine.",
       "kitchen_safe": false,
       "sources": [
         "https://www.gutenberg.org/ebooks/49513",
@@ -675,7 +678,8 @@
         "https://www.ema.europa.eu/en/medicines/herbal/lupuli-flos",
         "https://www.botanical.com/botanical/mgmh/h/hops--32.html",
         "https://www.ema.europa.eu/en/documents/herbal-monograph/final-community-herbal-monograph-humulus-lupulus-l-flos-revision-1_en.pdf",
-        "https://www.aspca.org/pet-care/animal-poison-control/toxic-and-non-toxic-plants/hops"
+        "https://www.aspca.org/pet-care/animal-poison-control/toxic-and-non-toxic-plants/hops",
+        "https://zythophile.co.uk/false-ale-quotes/myth-two-hops-were-forbidden-by-henry-vi"
       ],
       "checked": "2026-11-02",
       "reviewed_by": null
@@ -697,9 +701,9 @@
         "summary": "Culpeper believed garlic, owned by Mars, was an old cure-all against venom and plague, though he admitted its smell made it offensive."
       },
       "folklore": {
-        "text": "Garlic was the main ingredient of 'Four Thieves' Vinegar', used against the 1722 plague in Marseilles; the tale says four thieves used it to rob the sick unharmed.",
-        "source": "Mrs. M. Grieve, A Modern Herbal (1931), botanical.com",
-        "url": "https://www.botanical.com/botanical/mgmh/g/garlic06.html"
+        "text": "Herodotus wrote that an inscription on the Great Pyramid recorded how much was spent on radishes, onions and skorodon for its builders. Macaulay translates skorodon as leeks; most translators read it as garlic.",
+        "source": "Herodotus, Histories, Book 2, ch. 125 (tr. G. C. Macaulay, public domain)",
+        "url": "https://www.gutenberg.org/ebooks/2707"
       },
       "science": {
         "text": "NCCIH says garlic supplements may lower cholesterol, blood pressure and blood sugar slightly; there is very little research on immune claims.",
@@ -707,13 +711,14 @@
         "url": "https://www.nccih.nih.gov/health/garlic"
       },
       "safety": "Supplements may raise bleeding risk, especially with blood thinners or before surgery. Raw garlic on skin can burn.",
-      "card": "They called garlic the poor man's treacle: a cure-all for those who couldn't buy fancy remedies. Legend says four thieves robbed plague houses unharmed, armed with garlic vinegar.",
+      "card": "Country folk called garlic 'the poor man's treacle': a homely standby for those who couldn't pay the apothecary. A braid hung by the hearth keeps for months.",
       "true_fact": "'Garlic' comes from Old English words for 'spear' and 'plant', after its spear-shaped leaves.",
       "kitchen_safe": true,
       "sources": [
         "https://www.gutenberg.org/ebooks/49513",
         "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:528796-1",
         "https://www.nccih.nih.gov/health/garlic",
+        "https://www.gutenberg.org/ebooks/2707",
         "https://www.botanical.com/botanical/mgmh/g/garlic06.html"
       ],
       "checked": "2026-11-02",
@@ -747,7 +752,7 @@
         "url": "https://www.nccih.nih.gov/health/mugwort"
       },
       "safety": "Must not be used in pregnancy. Safety otherwise unknown. Pollen is a common allergen, cross-reacting with fennel.",
-      "card": "Medieval travellers trusted mugwort to keep them from weariness on the road, and on St John's Eve folk wore crowns of it. A lore-shelf herb: admired, not brewed.",
+      "card": "Medieval travellers trusted mugwort to keep them from weariness on the road, and on St John's Eve folk wore crowns of it. In this shop it is sewn into pillows only, never brewed for drinking.",
       "true_fact": "Before hops became common, mugwort was used to flavour beer.",
       "kitchen_safe": false,
       "sources": [

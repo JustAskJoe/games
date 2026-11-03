@@ -56,5 +56,20 @@ for (const s of skies) {
 const dud = MW.resolve([{ id: 'ginger', proc: 'grind' }, { id: 'garlic', proc: 'grind' }, { id: 'thyme', proc: 'grind' }], skies[0]);
 check(!dud.brew && !!dud.name, `ginger + garlic + thyme, all ground → ${dud.name}`);
 
+// 6. Pillow-only herbs (mugwort) never end up in a drink, in any mix of up to 3 herbs on either moon.
+{
+  const others = D.INGREDIENTS.filter(i => !i.loreOnly && !i.outerOnly).map(i => i.id);
+  const procs = D.PROCESSES.map(p => p.id);
+  let drinks = 0, mixes = 0;
+  for (const outer of D.INGREDIENTS.filter(i => i.outerOnly)) for (const sky of skies) for (const pa of procs)
+    for (const a of [null, ...others]) for (const pb of procs) for (const b of [null, ...others]) {
+      if (b && !a) continue;
+      const items = [{ id: outer.id, proc: pa }].concat(a ? [{ id: a, proc: pb }] : [], b ? [{ id: b, proc: 'steep' }] : []);
+      const r = MW.resolve(items, sky); mixes++;
+      if (r.brew && !MW.BREW[r.brew].external) drinks++;
+    }
+  check(drinks === 0, `pillow-only herbs never make a drink (${mixes} mixes tried)`);
+}
+
 console.log(fails ? `SIM: FAIL (${fails})` : 'SIM: PASS');
 process.exit(fails ? 1 : 0);

@@ -40,9 +40,12 @@
   const dist = (p, q) => Math.hypot(p.H - q.H, p.M - q.M, p.B - q.B);
   function resolve(items, sky) {
     const p = profile(items, sky);
+    // Herbs that aren't safe to drink (mugwort) only make brews for the skin or the pillow.
+    const outer = items.some(it => ING[it.id] && ING[it.id].outerOnly);
     let best = null, bd = 1e9;
     for (const b of D.BREWS) {
       if (b.min && items.length < b.min) continue;
+      if (outer && !b.external) continue;
       const d = dist(p, b.at);
       if (d < bd) { bd = d; best = b; }
     }

@@ -168,7 +168,7 @@
     const p = MW.profile(U.mix, U.sky);
     const herbs = D.INGREDIENTS.filter(i => !i.loreOnly && (G.pantry[i.id] || 0) > 0).map(i => {
       const left = G.pantry[i.id] - (used[i.id] || 0);
-      return `<button class="herb" data-act="mix" data-id="${i.id}" type="button" ${left <= 0 || U.mix.length >= 3 ? 'disabled' : ''}><span class="n">${left}</span>${ART.herb(i)}${i.name}</button>`;
+      return `<button class="herb" data-act="mix" data-id="${i.id}" type="button" ${left <= 0 || U.mix.length >= 3 ? 'disabled' : ''}><span class="n">${left}</span>${ART.herb(i)}${i.name}${i.outerOnly ? '<span class="tag">pillow only</span>' : ''}</button>`;
     }).join('');
     return `${tr ? `<div class="box"><div class="cust">${ART.face(vill(tr.v))}<div style="flex:1"><div class="who">For ${vill(tr.v).name}</div><div class="bubble">${esc(tr.text)}</div></div></div></div>` : '<div class="box small">Nobody is waiting. You can still experiment; set-aside brews sell at dusk.</div>'}
       <h3>Mortar</h3><div class="slots">${slots}</div>
