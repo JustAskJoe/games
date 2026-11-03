@@ -1,0 +1,630 @@
+{
+ "size": 16,
+ "groups": {
+  "cards": [
+   "Vitality",
+   "Power",
+   "Swiftness",
+   "Precision",
+   "Armor",
+   "Rapid Fire",
+   "Magnetism",
+   "Fortune",
+   "Momentum",
+   "Adrenaline",
+   "Thick Skin",
+   "Multi Shot"
+  ],
+  "weapons": [
+   "Orbital Blades",
+   "Chain Lightning",
+   "Fire Trail",
+   "Frost Nova",
+   "Homing Missiles"
+  ],
+  "attacks": [
+   "Sword Slash",
+   "Magic Bolt",
+   "Piercing Shot",
+   "Dagger Flurry",
+   "Hex Pulse"
+  ],
+  "abilities": [
+   "Shield Bash",
+   "Blink",
+   "Focus Shot",
+   "Shadow Dash",
+   "Ritual Burst"
+  ],
+  "potions": [
+   "Heal Flask",
+   "Speed Draught",
+   "Power Tonic",
+   "Focus Drops",
+   "Iron Brew",
+   "Cleansing Salve",
+   "Berserker Brew",
+   "Stone Skin Elixir",
+   "Ghost Oil",
+   "Vampiric Serum",
+   "Shadow Extract",
+   "Harvest Moon Tonic",
+   "Frost Elixir",
+   "Storm Surge"
+  ],
+  "materials": [
+   "Slime Gel",
+   "Bat Wings",
+   "Bone Fragments",
+   "Demon Essence",
+   "Wisp Dust",
+   "Spore Dust",
+   "Golem Core"
+  ],
+  "misc": [
+   "Gold",
+   "XP Gem",
+   "Kills",
+   "Timer"
+  ],
+  "crops": [
+   "Healing Herb",
+   "Pep Root",
+   "Glow Moss",
+   "Wheat",
+   "Thorn Seed",
+   "Fire Pepper",
+   "Frost Berry",
+   "Iron Vine",
+   "Bloodroot",
+   "Shadow Mushroom",
+   "Thunder Turnip",
+   "Echo Bloom"
+  ],
+  "blessings": [
+   "Thorns",
+   "Vampirism",
+   "Guardian",
+   "Resilience",
+   "Swiftness (blessing)",
+   "Fortune (blessing)",
+   "Wrath",
+   "Renewal",
+   "Echo"
+  ],
+  "mutators": [
+   "Swarm",
+   "Haste",
+   "Tough Hide",
+   "Fog of War",
+   "No Regen",
+   "Berserkers",
+   "Shielded",
+   "Drought",
+   "Gravity Well",
+   "Thorned",
+   "Iron Will",
+   "Darkness",
+   "Mirror",
+   "Frenzy",
+   "Cursed"
+  ],
+  "animals": [
+   "Chickens",
+   "Cows",
+   "Pigs",
+   "Goats",
+   "Bees",
+   "Dogs"
+  ],
+  "extra": [
+   "Luck",
+   "Lock",
+   "Upgrade"
+  ],
+  "crops_high": [
+   "Dragon Fruit",
+   "Crystal Bloom",
+   "Storm Seed",
+   "Void Blossom",
+   "Life Tree Sapling",
+   "Ironbark Root",
+   "Mirror Petal",
+   "Phoenix Flower",
+   "World Tree Seedling",
+   "Starfruit",
+   "Soulbloom",
+   "Void Heart",
+   "Oblivion Seed",
+   "Eternity Blossom",
+   "Null Root",
+   "Rift Bloom"
+  ],
+  "tonics": [
+   "Rage Infusion",
+   "Time Stop Flask",
+   "Invincibility Draught",
+   "Phoenix Draught",
+   "Void Elixir",
+   "Mega Magnet"
+  ]
+ },
+ "icons": {
+  "Vitality": [
+   0,
+   0
+  ],
+  "Power": [
+   16,
+   0
+  ],
+  "Swiftness": [
+   32,
+   0
+  ],
+  "Precision": [
+   48,
+   0
+  ],
+  "Armor": [
+   64,
+   0
+  ],
+  "Rapid Fire": [
+   80,
+   0
+  ],
+  "Magnetism": [
+   96,
+   0
+  ],
+  "Fortune": [
+   112,
+   0
+  ],
+  "Momentum": [
+   128,
+   0
+  ],
+  "Adrenaline": [
+   144,
+   0
+  ],
+  "Thick Skin": [
+   160,
+   0
+  ],
+  "Multi Shot": [
+   176,
+   0
+  ],
+  "Orbital Blades": [
+   0,
+   16
+  ],
+  "Chain Lightning": [
+   16,
+   16
+  ],
+  "Fire Trail": [
+   32,
+   16
+  ],
+  "Frost Nova": [
+   48,
+   16
+  ],
+  "Homing Missiles": [
+   64,
+   16
+  ],
+  "Sword Slash": [
+   0,
+   32
+  ],
+  "Magic Bolt": [
+   16,
+   32
+  ],
+  "Piercing Shot": [
+   32,
+   32
+  ],
+  "Dagger Flurry": [
+   48,
+   32
+  ],
+  "Hex Pulse": [
+   64,
+   32
+  ],
+  "Shield Bash": [
+   0,
+   48
+  ],
+  "Blink": [
+   16,
+   48
+  ],
+  "Focus Shot": [
+   32,
+   48
+  ],
+  "Shadow Dash": [
+   48,
+   48
+  ],
+  "Ritual Burst": [
+   64,
+   48
+  ],
+  "Heal Flask": [
+   0,
+   64
+  ],
+  "Speed Draught": [
+   16,
+   64
+  ],
+  "Power Tonic": [
+   32,
+   64
+  ],
+  "Focus Drops": [
+   48,
+   64
+  ],
+  "Iron Brew": [
+   64,
+   64
+  ],
+  "Cleansing Salve": [
+   80,
+   64
+  ],
+  "Berserker Brew": [
+   96,
+   64
+  ],
+  "Stone Skin Elixir": [
+   112,
+   64
+  ],
+  "Ghost Oil": [
+   128,
+   64
+  ],
+  "Vampiric Serum": [
+   144,
+   64
+  ],
+  "Shadow Extract": [
+   160,
+   64
+  ],
+  "Harvest Moon Tonic": [
+   176,
+   64
+  ],
+  "Frost Elixir": [
+   192,
+   64
+  ],
+  "Storm Surge": [
+   208,
+   64
+  ],
+  "Slime Gel": [
+   0,
+   80
+  ],
+  "Bat Wings": [
+   16,
+   80
+  ],
+  "Bone Fragments": [
+   32,
+   80
+  ],
+  "Demon Essence": [
+   48,
+   80
+  ],
+  "Wisp Dust": [
+   64,
+   80
+  ],
+  "Spore Dust": [
+   80,
+   80
+  ],
+  "Golem Core": [
+   96,
+   80
+  ],
+  "Gold": [
+   0,
+   96
+  ],
+  "XP Gem": [
+   16,
+   96
+  ],
+  "Kills": [
+   32,
+   96
+  ],
+  "Timer": [
+   48,
+   96
+  ],
+  "Healing Herb": [
+   0,
+   112
+  ],
+  "Pep Root": [
+   16,
+   112
+  ],
+  "Glow Moss": [
+   32,
+   112
+  ],
+  "Wheat": [
+   48,
+   112
+  ],
+  "Thorn Seed": [
+   64,
+   112
+  ],
+  "Fire Pepper": [
+   80,
+   112
+  ],
+  "Frost Berry": [
+   96,
+   112
+  ],
+  "Iron Vine": [
+   112,
+   112
+  ],
+  "Bloodroot": [
+   128,
+   112
+  ],
+  "Shadow Mushroom": [
+   144,
+   112
+  ],
+  "Thunder Turnip": [
+   160,
+   112
+  ],
+  "Echo Bloom": [
+   176,
+   112
+  ],
+  "Thorns": [
+   0,
+   128
+  ],
+  "Vampirism": [
+   16,
+   128
+  ],
+  "Guardian": [
+   32,
+   128
+  ],
+  "Resilience": [
+   48,
+   128
+  ],
+  "Swiftness (blessing)": [
+   64,
+   128
+  ],
+  "Fortune (blessing)": [
+   80,
+   128
+  ],
+  "Wrath": [
+   96,
+   128
+  ],
+  "Renewal": [
+   112,
+   128
+  ],
+  "Echo": [
+   128,
+   128
+  ],
+  "Swarm": [
+   0,
+   144
+  ],
+  "Haste": [
+   16,
+   144
+  ],
+  "Tough Hide": [
+   32,
+   144
+  ],
+  "Fog of War": [
+   48,
+   144
+  ],
+  "No Regen": [
+   64,
+   144
+  ],
+  "Berserkers": [
+   80,
+   144
+  ],
+  "Shielded": [
+   96,
+   144
+  ],
+  "Drought": [
+   112,
+   144
+  ],
+  "Gravity Well": [
+   128,
+   144
+  ],
+  "Thorned": [
+   144,
+   144
+  ],
+  "Iron Will": [
+   160,
+   144
+  ],
+  "Darkness": [
+   176,
+   144
+  ],
+  "Mirror": [
+   192,
+   144
+  ],
+  "Frenzy": [
+   208,
+   144
+  ],
+  "Cursed": [
+   224,
+   144
+  ],
+  "Chickens": [
+   0,
+   160
+  ],
+  "Cows": [
+   16,
+   160
+  ],
+  "Pigs": [
+   32,
+   160
+  ],
+  "Goats": [
+   48,
+   160
+  ],
+  "Bees": [
+   64,
+   160
+  ],
+  "Dogs": [
+   80,
+   160
+  ],
+  "Luck": [
+   0,
+   176
+  ],
+  "Lock": [
+   16,
+   176
+  ],
+  "Upgrade": [
+   32,
+   176
+  ],
+  "Dragon Fruit": [
+   0,
+   192
+  ],
+  "Crystal Bloom": [
+   16,
+   192
+  ],
+  "Storm Seed": [
+   32,
+   192
+  ],
+  "Void Blossom": [
+   48,
+   192
+  ],
+  "Life Tree Sapling": [
+   64,
+   192
+  ],
+  "Ironbark Root": [
+   80,
+   192
+  ],
+  "Mirror Petal": [
+   96,
+   192
+  ],
+  "Phoenix Flower": [
+   112,
+   192
+  ],
+  "World Tree Seedling": [
+   128,
+   192
+  ],
+  "Starfruit": [
+   144,
+   192
+  ],
+  "Soulbloom": [
+   160,
+   192
+  ],
+  "Void Heart": [
+   176,
+   192
+  ],
+  "Oblivion Seed": [
+   192,
+   192
+  ],
+  "Eternity Blossom": [
+   208,
+   192
+  ],
+  "Null Root": [
+   224,
+   192
+  ],
+  "Rift Bloom": [
+   240,
+   192
+  ],
+  "Rage Infusion": [
+   0,
+   208
+  ],
+  "Time Stop Flask": [
+   16,
+   208
+  ],
+  "Invincibility Draught": [
+   32,
+   208
+  ],
+  "Phoenix Draught": [
+   48,
+   208
+  ],
+  "Void Elixir": [
+   64,
+   208
+  ],
+  "Mega Magnet": [
+   80,
+   208
+  ]
+ }
+}

@@ -1,0 +1,751 @@
+{
+ "healing-herb": {
+  "name": "Healing Herb",
+  "w": 16,
+  "h": 32,
+  "frames": 4,
+  "ms": [
+   500,
+   500,
+   500,
+   700
+  ]
+ },
+ "pep-root": {
+  "name": "Pep Root",
+  "w": 16,
+  "h": 32,
+  "frames": 4,
+  "ms": [
+   500,
+   500,
+   500,
+   700
+  ]
+ },
+ "glow-moss": {
+  "name": "Glow Moss",
+  "w": 16,
+  "h": 32,
+  "frames": 5,
+  "ms": [
+   500,
+   500,
+   500,
+   700,
+   700
+  ]
+ },
+ "wheat": {
+  "name": "Wheat",
+  "w": 16,
+  "h": 32,
+  "frames": 4,
+  "ms": [
+   500,
+   500,
+   500,
+   700
+  ]
+ },
+ "thorn-seed": {
+  "name": "Thorn Seed",
+  "w": 16,
+  "h": 32,
+  "frames": 4,
+  "ms": [
+   500,
+   500,
+   500,
+   700
+  ]
+ },
+ "fire-pepper": {
+  "name": "Fire Pepper",
+  "w": 16,
+  "h": 32,
+  "frames": 4,
+  "ms": [
+   500,
+   500,
+   500,
+   700
+  ]
+ },
+ "frost-berry": {
+  "name": "Frost Berry",
+  "w": 16,
+  "h": 32,
+  "frames": 4,
+  "ms": [
+   500,
+   500,
+   500,
+   700
+  ]
+ },
+ "thunder-turnip": {
+  "name": "Thunder Turnip",
+  "w": 16,
+  "h": 32,
+  "frames": 4,
+  "ms": [
+   500,
+   500,
+   500,
+   700
+  ]
+ },
+ "shadow-mushroom": {
+  "name": "Shadow Mushroom",
+  "w": 16,
+  "h": 32,
+  "frames": 4,
+  "ms": [
+   500,
+   500,
+   500,
+   700
+  ]
+ },
+ "iron-vine": {
+  "name": "Iron Vine",
+  "w": 16,
+  "h": 32,
+  "frames": 4,
+  "ms": [
+   500,
+   500,
+   500,
+   700
+  ]
+ },
+ "bloodroot": {
+  "name": "Bloodroot",
+  "w": 16,
+  "h": 32,
+  "frames": 4,
+  "ms": [
+   500,
+   500,
+   500,
+   700
+  ]
+ },
+ "echo-bloom": {
+  "name": "Echo Bloom",
+  "w": 16,
+  "h": 32,
+  "frames": 4,
+  "ms": [
+   500,
+   500,
+   500,
+   700
+  ]
+ },
+ "dragon-fruit": {
+  "name": "Dragon Fruit",
+  "w": 32,
+  "h": 32,
+  "frames": 4,
+  "ms": [
+   500,
+   500,
+   500,
+   700
+  ]
+ },
+ "crystal-bloom": {
+  "name": "Crystal Bloom",
+  "w": 32,
+  "h": 32,
+  "frames": 5,
+  "ms": [
+   500,
+   500,
+   500,
+   700,
+   700
+  ]
+ },
+ "storm-seed": {
+  "name": "Storm Seed",
+  "w": 32,
+  "h": 32,
+  "frames": 5,
+  "ms": [
+   500,
+   500,
+   500,
+   700,
+   700
+  ]
+ },
+ "void-blossom": {
+  "name": "Void Blossom",
+  "w": 32,
+  "h": 32,
+  "frames": 5,
+  "ms": [
+   500,
+   500,
+   500,
+   700,
+   700
+  ]
+ },
+ "life-tree-sapling": {
+  "name": "Life Tree Sapling",
+  "w": 32,
+  "h": 32,
+  "frames": 4,
+  "ms": [
+   500,
+   500,
+   500,
+   700
+  ]
+ },
+ "ironbark-root": {
+  "name": "Ironbark Root",
+  "w": 32,
+  "h": 32,
+  "frames": 4,
+  "ms": [
+   500,
+   500,
+   500,
+   700
+  ]
+ },
+ "mirror-petal": {
+  "name": "Mirror Petal",
+  "w": 32,
+  "h": 32,
+  "frames": 4,
+  "ms": [
+   500,
+   500,
+   500,
+   700
+  ]
+ },
+ "phoenix-flower": {
+  "name": "Phoenix Flower",
+  "w": 32,
+  "h": 48,
+  "frames": 5,
+  "ms": [
+   500,
+   500,
+   500,
+   700,
+   700
+  ]
+ },
+ "world-tree-seedling": {
+  "name": "World Tree Seedling",
+  "w": 32,
+  "h": 48,
+  "frames": 4,
+  "ms": [
+   500,
+   500,
+   500,
+   700
+  ]
+ },
+ "starfruit": {
+  "name": "Starfruit",
+  "w": 32,
+  "h": 48,
+  "frames": 5,
+  "ms": [
+   500,
+   500,
+   500,
+   700,
+   700
+  ]
+ },
+ "soulbloom": {
+  "name": "Soulbloom",
+  "w": 32,
+  "h": 48,
+  "frames": 5,
+  "ms": [
+   500,
+   500,
+   500,
+   700,
+   700
+  ]
+ },
+ "void-heart": {
+  "name": "Void Heart",
+  "w": 32,
+  "h": 48,
+  "frames": 5,
+  "ms": [
+   500,
+   500,
+   500,
+   700,
+   700
+  ]
+ },
+ "oblivion-seed": {
+  "name": "Oblivion Seed",
+  "w": 32,
+  "h": 48,
+  "frames": 5,
+  "ms": [
+   500,
+   500,
+   500,
+   700,
+   700
+  ]
+ },
+ "eternity-blossom": {
+  "name": "Eternity Blossom",
+  "w": 32,
+  "h": 48,
+  "frames": 5,
+  "ms": [
+   500,
+   500,
+   500,
+   700,
+   700
+  ]
+ },
+ "null-root": {
+  "name": "Null Root",
+  "w": 32,
+  "h": 48,
+  "frames": 5,
+  "ms": [
+   500,
+   500,
+   500,
+   700,
+   700
+  ]
+ },
+ "rift-bloom": {
+  "name": "Rift Bloom",
+  "w": 32,
+  "h": 48,
+  "frames": 5,
+  "ms": [
+   500,
+   500,
+   500,
+   700,
+   700
+  ]
+ },
+ "tilled-plot-1x1": {
+  "name": "Tilled plot 1x1",
+  "w": 16,
+  "h": 32,
+  "frames": 1,
+  "ms": [
+   600
+  ]
+ },
+ "tilled-plot-2x1": {
+  "name": "Tilled plot 2x1",
+  "w": 32,
+  "h": 32,
+  "frames": 1,
+  "ms": [
+   600
+  ]
+ },
+ "tilled-plot-2x2": {
+  "name": "Tilled plot 2x2",
+  "w": 32,
+  "h": 48,
+  "frames": 1,
+  "ms": [
+   600
+  ]
+ },
+ "void-plot": {
+  "name": "Void plot",
+  "w": 32,
+  "h": 48,
+  "frames": 2,
+  "ms": [
+   600,
+   600
+  ]
+ },
+ "chicken-walk": {
+  "name": "Chicken walk",
+  "w": 16,
+  "h": 16,
+  "frames": 4,
+  "ms": [
+   140,
+   140,
+   140,
+   140
+  ]
+ },
+ "chicken-idle": {
+  "name": "Chicken idle",
+  "w": 16,
+  "h": 16,
+  "frames": 2,
+  "ms": [
+   900,
+   400
+  ]
+ },
+ "cow-walk": {
+  "name": "Cow walk",
+  "w": 32,
+  "h": 24,
+  "frames": 4,
+  "ms": [
+   140,
+   140,
+   140,
+   140
+  ]
+ },
+ "cow-idle": {
+  "name": "Cow idle",
+  "w": 32,
+  "h": 24,
+  "frames": 2,
+  "ms": [
+   900,
+   400
+  ]
+ },
+ "pig-walk": {
+  "name": "Pig walk",
+  "w": 24,
+  "h": 18,
+  "frames": 4,
+  "ms": [
+   140,
+   140,
+   140,
+   140
+  ]
+ },
+ "pig-idle": {
+  "name": "Pig idle",
+  "w": 24,
+  "h": 18,
+  "frames": 2,
+  "ms": [
+   900,
+   400
+  ]
+ },
+ "goat-walk": {
+  "name": "Goat walk",
+  "w": 26,
+  "h": 22,
+  "frames": 4,
+  "ms": [
+   140,
+   140,
+   140,
+   140
+  ]
+ },
+ "goat-idle": {
+  "name": "Goat idle",
+  "w": 26,
+  "h": 22,
+  "frames": 2,
+  "ms": [
+   900,
+   400
+  ]
+ },
+ "bees-hive": {
+  "name": "Bees hive",
+  "w": 24,
+  "h": 28,
+  "frames": 4,
+  "ms": [
+   160,
+   160,
+   160,
+   160
+  ]
+ },
+ "farmer-idle-front": {
+  "name": "Farmer idle front",
+  "w": 32,
+  "h": 44,
+  "frames": 2,
+  "ms": [
+   800,
+   600
+  ]
+ },
+ "farmer-walk-front": {
+  "name": "Farmer walk front",
+  "w": 32,
+  "h": 44,
+  "frames": 4,
+  "ms": [
+   150,
+   150,
+   150,
+   150
+  ]
+ },
+ "farmer-idle-side": {
+  "name": "Farmer idle side",
+  "w": 32,
+  "h": 44,
+  "frames": 2,
+  "ms": [
+   800,
+   600
+  ]
+ },
+ "farmer-walk-side": {
+  "name": "Farmer walk side",
+  "w": 32,
+  "h": 44,
+  "frames": 4,
+  "ms": [
+   150,
+   150,
+   150,
+   150
+  ]
+ },
+ "farmer-idle-back": {
+  "name": "Farmer idle back",
+  "w": 32,
+  "h": 44,
+  "frames": 2,
+  "ms": [
+   800,
+   600
+  ]
+ },
+ "farmer-walk-back": {
+  "name": "Farmer walk back",
+  "w": 32,
+  "h": 44,
+  "frames": 4,
+  "ms": [
+   150,
+   150,
+   150,
+   150
+  ]
+ },
+ "arena-warrior-idle-front": {
+  "name": "Arena warrior idle front",
+  "w": 32,
+  "h": 44,
+  "frames": 2,
+  "ms": [
+   800,
+   600
+  ]
+ },
+ "arena-warrior-walk-front": {
+  "name": "Arena warrior walk front",
+  "w": 32,
+  "h": 44,
+  "frames": 4,
+  "ms": [
+   150,
+   150,
+   150,
+   150
+  ]
+ },
+ "arena-warrior-idle-side": {
+  "name": "Arena warrior idle side",
+  "w": 32,
+  "h": 44,
+  "frames": 2,
+  "ms": [
+   800,
+   600
+  ]
+ },
+ "arena-warrior-walk-side": {
+  "name": "Arena warrior walk side",
+  "w": 32,
+  "h": 44,
+  "frames": 4,
+  "ms": [
+   150,
+   150,
+   150,
+   150
+  ]
+ },
+ "arena-warrior-idle-back": {
+  "name": "Arena warrior idle back",
+  "w": 32,
+  "h": 44,
+  "frames": 2,
+  "ms": [
+   800,
+   600
+  ]
+ },
+ "arena-warrior-walk-back": {
+  "name": "Arena warrior walk back",
+  "w": 32,
+  "h": 44,
+  "frames": 4,
+  "ms": [
+   150,
+   150,
+   150,
+   150
+  ]
+ },
+ "seed-keeper-idle-front": {
+  "name": "Seed keeper idle front",
+  "w": 32,
+  "h": 44,
+  "frames": 2,
+  "ms": [
+   800,
+   600
+  ]
+ },
+ "seed-keeper-walk-front": {
+  "name": "Seed keeper walk front",
+  "w": 32,
+  "h": 44,
+  "frames": 4,
+  "ms": [
+   150,
+   150,
+   150,
+   150
+  ]
+ },
+ "seed-keeper-idle-side": {
+  "name": "Seed keeper idle side",
+  "w": 32,
+  "h": 44,
+  "frames": 2,
+  "ms": [
+   800,
+   600
+  ]
+ },
+ "seed-keeper-walk-side": {
+  "name": "Seed keeper walk side",
+  "w": 32,
+  "h": 44,
+  "frames": 4,
+  "ms": [
+   150,
+   150,
+   150,
+   150
+  ]
+ },
+ "seed-keeper-idle-back": {
+  "name": "Seed keeper idle back",
+  "w": 32,
+  "h": 44,
+  "frames": 2,
+  "ms": [
+   800,
+   600
+  ]
+ },
+ "seed-keeper-walk-back": {
+  "name": "Seed keeper walk back",
+  "w": 32,
+  "h": 44,
+  "frames": 4,
+  "ms": [
+   150,
+   150,
+   150,
+   150
+  ]
+ },
+ "shopkeeper-idle-front": {
+  "name": "Shopkeeper idle front",
+  "w": 32,
+  "h": 44,
+  "frames": 2,
+  "ms": [
+   800,
+   600
+  ]
+ },
+ "shopkeeper-walk-front": {
+  "name": "Shopkeeper walk front",
+  "w": 32,
+  "h": 44,
+  "frames": 4,
+  "ms": [
+   150,
+   150,
+   150,
+   150
+  ]
+ },
+ "shopkeeper-idle-side": {
+  "name": "Shopkeeper idle side",
+  "w": 32,
+  "h": 44,
+  "frames": 2,
+  "ms": [
+   800,
+   600
+  ]
+ },
+ "shopkeeper-walk-side": {
+  "name": "Shopkeeper walk side",
+  "w": 32,
+  "h": 44,
+  "frames": 4,
+  "ms": [
+   150,
+   150,
+   150,
+   150
+  ]
+ },
+ "shopkeeper-idle-back": {
+  "name": "Shopkeeper idle back",
+  "w": 32,
+  "h": 44,
+  "frames": 2,
+  "ms": [
+   800,
+   600
+  ]
+ },
+ "shopkeeper-walk-back": {
+  "name": "Shopkeeper walk back",
+  "w": 32,
+  "h": 44,
+  "frames": 4,
+  "ms": [
+   150,
+   150,
+   150,
+   150
+  ]
+ }
+}

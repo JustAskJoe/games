@@ -1,0 +1,76 @@
+<title>Farm Day One</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Rajdhani:wght@500;600;700&display=swap">
+<style>
+/* Layout: one big map with a day-one / fully-built switch, then a short key of what each lot becomes. */
+:root {
+  --bg: #1a1612; --panel: #2a2218; --panel-2: #231c14; --wood: #6b4c22;
+  --fg: #f0e4c8; --dim: #b4a27e; --gold: #ffcc44; --gold-deep: #5a3a00;
+  --display: 'Press Start 2P', 'Courier New', monospace;
+  --body: 'Rajdhani', 'Segoe UI', system-ui, sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { background: var(--bg); color: var(--fg); }
+body { font-family: var(--body); font-size: 16px; line-height: 1.45; margin: 0; }
+.wrap { max-width: 1800px; margin: 0 auto; padding-block: 28px 56px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 18px; }
+.eyebrow { font-family: var(--display); font-size: 9px; letter-spacing: 2px; color: var(--dim); text-transform: uppercase; }
+h1 { font-family: var(--display); font-size: clamp(18px, 3.4vw, 28px); color: var(--gold); text-shadow: 2px 2px 0 var(--gold-deep); margin: 0; letter-spacing: 1px; line-height: 1.4; }
+.lede { max-width: 90ch; color: var(--dim); font-weight: 600; margin: 0; }
+.controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; position: sticky; top: 0; z-index: 3; background: var(--bg); padding: 8px 0; }
+.controls span { font-family: var(--display); font-size: 9px; color: var(--dim); letter-spacing: 1px; margin-right: 4px; }
+.chip { font-family: var(--display); font-size: 9px; letter-spacing: 1px; color: var(--fg); background: var(--panel); border: 2px solid var(--wood); padding: 8px 10px; cursor: pointer; }
+.chip[aria-pressed="true"] { border-color: var(--gold); color: var(--gold); }
+.chip:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.map { position: relative; width: 100%; max-width: calc({{W}}px * 2); border: 2px solid var(--wood); line-height: 0; }
+.map img { width: 100%; height: auto; image-rendering: pixelated; display: block; }
+.layer { position: absolute; inset: 0; }
+.layer[hidden], .map img[hidden] { display: none; }
+.tag { position: absolute; transform: translate(-50%, -50%); font-family: var(--display); font-size: 8px; line-height: 1.6; letter-spacing: 1px; white-space: nowrap; color: #fff8e0; background: rgba(26, 22, 18, .82); border: 1px solid var(--wood); padding: 2px 6px; pointer-events: none; }
+.hide-tags .tag { display: none; }
+.key { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 12px; }
+.key div { background: var(--panel-2); border: 2px solid var(--wood); padding: 12px 14px; }
+.key b { display: block; font-family: var(--display); font-size: 9px; font-weight: 400; color: var(--gold); letter-spacing: 1px; margin-bottom: 6px; line-height: 1.6; }
+.key p { margin: 0; color: var(--dim); font-weight: 600; }
+footer { color: var(--dim); font-size: 13px; font-weight: 600; }
+</style>
+<div class="wrap">
+  <div class="eyebrow">Rogue Shooter v2 · Farm hub · Riverside layout</div>
+  <h1>The farm on day one</h1>
+  <p class="lede">What you see when a new run starts: only the cabin stands. Each building site is an empty lot or an old ruin, roped off with stakes and a blank sign with a hammer on it (no words on the art). Four crop plots are tilled and ready; the other 26 are buried under rocks, stumps, twigs and weeds until you clear them. The animal pen has a broken fence and no animals. Switch to "Fully built" to compare with the finished farm.</p>
+  <div class="controls" role="group" aria-label="View">
+    <span>SHOW</span>
+    <button class="chip" id="v-start" aria-pressed="true">Day one</button>
+    <button class="chip" id="v-built" aria-pressed="false">Fully built</button>
+    <button class="chip" id="v-tags" aria-pressed="true">Labels on</button>
+  </div>
+  <div class="map" id="map">
+    <img src="{{START}}" width="{{W}}" height="{{H}}" alt="The farm on day one: cabin, empty lots and ruins, covered crop plots, empty pen" id="img-start">
+    <img src="{{BUILT}}" width="{{W}}" height="{{H}}" alt="The fully built farm" id="img-built" hidden>
+    <div class="layer" id="tags-start">{{TAGS_START}}</div>
+    <div class="layer" id="tags-built" hidden>{{TAGS_BUILT}}</div>
+  </div>
+  <section class="key" aria-label="What each lot becomes">
+    <div><b>CABIN</b><p>Already yours. Same as the built farm: woodpile, bench, flower beds, picket fence.</p></div>
+    <div><b>FORGE LOT</b><p>A burned-out stone shell: broken walls, a cold furnace mouth, the chimney snapped off, rubble and a rusty anvil on its side.</p></div>
+    <div><b>ALCHEMY LAB LOT</b><p>A snapped tower stump with ivy, a bare timber frame, a cracked cauldron on its side and a few bottle shards.</p></div>
+    <div><b>SHRINE RUINS</b><p>The stone platform survives but is cracked and mossy. One pillar stands, one has fallen, the orb is gone and the braziers are tipped over.</p></div>
+    <div><b>OLD BARN</b><p>Collapsed: one leaning gable frame over a heap of red planks and old hay.</p></div>
+    <div><b>ARENA LOT</b><p>An empty dirt clearing ringed by half-buried stones, with weeds and a fallen banner pole.</p></div>
+    <div><b>TRAINING GROUNDS LOT</b><p>The sand yard is mostly grown over, with broken fence posts and a training dummy lying in the grass.</p></div>
+    <div><b>CROP FIELD</b><p>Plots 1, 2, 7 and 8 (top left) start tilled, with a hoe and watering can. The other 26 are covered, ready to be cleared as you unlock them.</p></div>
+    <div><b>ANIMAL PEN</b><p>Empty. The fence has gaps and a fallen rail, the trough is tipped over, and weeds grow through the mud.</p></div>
+  </section>
+  <footer>Drawn by Claude in code (art/tools/farmhub/farm_start.py). © 2026 justaskjoe. All rights reserved.</footer>
+</div>
+<script>
+const $ = id => document.getElementById(id);
+function show(built) {
+  $('img-start').hidden = built; $('tags-start').hidden = built;
+  $('img-built').hidden = !built; $('tags-built').hidden = !built;
+  $('v-start').setAttribute('aria-pressed', !built); $('v-built').setAttribute('aria-pressed', built);
+}
+$('v-start').addEventListener('click', () => show(false));
+$('v-built').addEventListener('click', () => show(true));
+$('v-tags').addEventListener('click', e => { const on = e.currentTarget.getAttribute('aria-pressed') !== 'true'; e.currentTarget.setAttribute('aria-pressed', on); e.currentTarget.textContent = on ? 'Labels on' : 'Labels off'; $('map').classList.toggle('hide-tags', !on); });
+</script>
