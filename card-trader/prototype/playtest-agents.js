@@ -10,10 +10,10 @@
 const CT = require('./engine.js');
 const fs = require('fs'), path = require('path');
 
-const SYS = ['opening', 'stockroom', 'fetch', 'browsers', 'tags', 'sleeves', 'sealed', 'vintage', 'reprints', 'repacks', 'rating', 'fakes', 'thieves', 'board', 'upgrades', 'loupe', 'nights'];
+const SYS = ['opening', 'stockroom', 'fetch', 'browsers', 'tags', 'sleeves', 'sealed', 'vintage', 'reprints', 'repacks', 'rating', 'fakes', 'thieves', 'board', 'upgrades', 'loupe', 'nights', 'contract', 'consign', 'show'];
 const NAMES = { opening: 'the opening', stockroom: 'the stock room', fetch: 'fetching from the back', browsers: 'browsers', tags: 'price tags', sleeves: 'sleeves and wear',
   sealed: 'sealed product', vintage: 'vintage', reprints: 'reprints', repacks: 'repacks', rating: 'the store rating', fakes: 'fakes', thieves: 'thieves', board: 'the board',
-  upgrades: 'upgrades', loupe: 'the loupe', nights: 'After Hours nights' };
+  upgrades: 'upgrades', loupe: 'the loupe', nights: 'After Hours nights', contract: "Bijou's contract", consign: "Orrin's consignment", show: 'the regional show' };
 const GAMES3 = ['shell', 'hive', 'star'];
 
 // ---------- personas ----------
@@ -71,9 +71,10 @@ function newTelemetry() {
 const SYS_OF_ACT = { place: 'stockroom', movePacks: 'stockroom', autoStore: 'stockroom', unpack: 'stockroom', tag: 'tags', retag: 'tags', sleeve: 'sleeves', sleevePolicy: 'sleeves', applyPolicy: 'sleeves',
   openGood: 'sealed', gradeSealed: 'sealed', showPacks: 'sealed', openVintage: 'vintage', weigh: 'vintage', buyVintage: 'vintage', repack: 'repacks', inspect: 'loupe', flaw: 'loupe',
   inform: 'fakes', inspectPacks: 'fakes', watch: 'thieves', letGo: 'thieves', refuse: 'board', upgrade: 'upgrades', unlock: 'upgrades', lockCase: 'thieves', sign: 'thieves', sellBehind: 'thieves',
+  deliver: 'contract', buyConsign: 'consign', bookShow: 'show', showBring: 'show', showSell: 'show',
   pickNight: 'nights', cardNight: 'nights', tourney: 'nights', bid: 'nights', drop: 'nights', dig: 'nights', swap: 'nights', policy: 'sealed', crack: 'sealed', restock: 'sealed', order: 'sealed', toBulk: 'stockroom', grade: 'loupe' };
 const UNLOCK_SYS = { binder: 'stockroom', cbinder: 'stockroom', shelves: 'stockroom', bigcase: 'stockroom', case2: 'stockroom', vault: 'vintage', lock: 'thieves', tlbinder: 'thieves', camera: 'thieves', scale: 'vintage', riser: 'vintage', sorter: 'repacks', dropbox: 'sealed' };
-const ROLE_SYS = { browse: 'browsers', sealedc: 'sealed', vintage: 'vintage', thief: 'thieves', distract: 'fetch', switch: 'thieves', weigh: 'thieves', reseal: 'fakes', scalp: 'sealed', sealed: 'sealed' };
+const ROLE_SYS = { contract: 'contract', deliver: 'contract', consign: 'consign', consignBack: 'consign', browse: 'browsers', sealedc: 'sealed', vintage: 'vintage', thief: 'thieves', distract: 'fetch', switch: 'thieves', weigh: 'thieves', reseal: 'fakes', scalp: 'sealed', sealed: 'sealed' };
 const FIXN = { bbinder: 'back binder', safe: 'safe', inbox: 'inbox tray', shelf: 'back shelves' };
 const name = (G, o) => o ? (o.t ? (CT.readable(G, o) ? CT.tmpl(o.t).name : 'a card') : CT.GOODS[o.type] ? CT.GOODS[o.type].name.toLowerCase() : o.type) : 'something';
 // surprise: a bad thing the player didn't see coming (counts against clear as well as fun).
@@ -159,6 +160,7 @@ function readEvents(G, T) {
   if (T.ev !== G.events) { T.ev = G.events; T.evN = 0; }
   for (; T.evN < G.events.length; T.evN++) {
     const e = G.events[T.evN];
+    if (e.t === 'theft' && e.consign) moment(T, G, 'consign', 'bad', 0, "One of Orrin's cards was stolen from the case: I owe him for it", true);
     if (e.t === 'theft') moment(T, G, 'thieves', 'bad', 0, 'Something was stolen from the ' + e.from + (e.card ? ' (' + CT.tmpl(e.card).name + ')' : e.good ? ' (' + (CT.GOODS[e.good] ? CT.GOODS[e.good].name.toLowerCase() : e.good) + ')' : e.game ? ' (a ' + CT.GAMES[e.game].name + ' pack)' : '') + (T.watchedToday ? '' : ' and I never saw who'), !T.watchedToday);
     else if (e.t === 'distracted') moment(T, G, 'fetch', 'bad', 0, 'Went to the back to fetch a card; when I came back their friend was gone' + (e.got ? ' and so was something from the floor' : ''), true);
     else if (e.t === 'switched') moment(T, G, 'sleeves', 'bad', 0, 'A customer handed back a card in a fresh sleeve; it had been switched for a fake (it was in a penny sleeve or none)', true);
@@ -173,6 +175,13 @@ function readEvents(G, T) {
     else if (e.t === 'cardNight') moment(T, G, 'nights', e.holo || e.grail ? 'good' : 'good', e.sold * 7, 'Card Night: ripped ' + e.n + ' pack' + (e.n === 1 ? '' : 's') + ' live' + (e.grail ? ', pulled a GRAIL' : e.holo ? ', pulled ' + e.holo + ' holo' + (e.holo > 1 ? 's' : '') : '') + ', hype +' + Math.round(e.hype * 100) + '%');
     else if (e.t === 'tourney') moment(T, G, 'nights', e.fakePrize ? 'bad' : 'good', e.entrants * 5 + e.sales, e.fakePrize ? 'Tournament prize turned out fake under UV; the crowd turned on me' : 'Tournament: ' + e.entrants + ' players, ' + (e.entrants * 5 + e.sales) + '₵ in fees and deck sales');
     else if (e.t === 'grade') { if (e.fake) moment(T, G, 'fakes', 'bad', 0, 'Sent a card to the graders and it came back FAKE', true); else if (e.altered) moment(T, G, 'fakes', 'bad', 0, 'A card came back from the graders marked trimmed', true); }
+    else if (e.t === 'contract') T.sys.contract.touch++;
+    else if (e.t === 'contractCard') moment(T, G, 'contract', 'good', e.pay, 'Handed Bijou ' + CT.tmpl(e.t2).name + ' for ' + e.pay + '₵ (1.5× market)');
+    else if (e.t === 'contractDone') moment(T, G, 'contract', 'good', 25, "Completed Bijou's whole want list: " + e.paid + '₵ in all');
+    else if (e.t === 'contractClosed' && !e.paid) moment(T, G, 'contract', 'bad', 0, "Took Bijou's contract and found none of the cards; rep dropped", true);
+    else if (e.t === 'consign') T.sys.consign.touch++;
+    else if (e.t === 'consignSold') moment(T, G, 'consign', 'good', e.price - e.cut, "Sold one of Orrin's vintage cards for " + e.price + '₵; my 20% was ' + (e.price - e.cut) + '₵');
+    else if (e.t === 'consignBack') moment(T, G, 'consign', e.sold >= 3 ? 'good' : 'bad', 0, 'Orrin came back: ' + e.sold + ' of his 5 cards sold');
     else if (e.t === 'tab') moment(T, G, 'upgrades', 'bad', e.amt, 'Couldn\'t cover rent: ' + e.amt + '₵ went on the tab', !T.hints);
   }
 }
@@ -263,9 +272,9 @@ function playerFor(P, seed) {
   function haggleSell(G, value) {
     if (P.haggle === 'none') return a(G, { t: 'accept' });
     let p = Math.round(value * (P.haggle === 'hard' ? 1.35 : 1.15));
-    while (G.visit && G.visit.patience > 1) {
+    for (let k = 0; k < 12 && G.visit && G.visit.patience > 1; k++) {
       if (G.visit.bid >= value * (P.haggle === 'hard' ? 0.95 : 0.85)) return a(G, { t: 'accept' });
-      a(G, { t: 'offer', price: p });
+      if (!a(G, { t: 'offer', price: p }).ok) break;
       if (!G.visit) return;
       p = Math.max(Math.round(value * 0.9), Math.round(p * 0.92));
     }
@@ -280,6 +289,19 @@ function playerFor(P, seed) {
     if (P.security === 'tells' && v.tellsShown > 0 && ['thief', 'distract', 'switch'].indexOf(v.role) < 0) return a(G, { t: 'security' });
     if (P.refuse && P.chaos && chance(0.04)) return a(G, { t: 'refuse' });
     switch (v.role) {
+      // v3.2 spine. Readers and collectors take the contract; vintage lovers and readers take Orrin's cards.
+      case 'contract': return a(G, { t: P.hints || P.taste === 'cards' || chance(0.5) ? 'accept' : 'pass' });
+      case 'consign': return a(G, { t: P.vintage || P.hints || P.taste === 'cards' ? 'accept' : 'pass' });
+      case 'deliver': {
+        for (const w of CT.contractStatus(G).list) { if (w.got || !G.visit) continue;
+          for (const c of G.stock.filter(x => x.t === w.t && !x.consign && !x.know.fake)) if (G.visit && a(G, { t: 'deliver', uid: c.uid }).ok) break; }
+        return G.visit && a(G, { t: 'pass' });
+      }
+      case 'consignBack': {
+        const rent = G.week[G.dayIdx].rent;
+        if (P.vintage >= 0.85) for (const o of v.unsold || []) if (G.visit && G.cash > o.price + rent + 40) a(G, { t: 'buyConsign', uid: o.uid });
+        return G.visit && a(G, { t: 'accept' });
+      }
       case 'weigh': return a(G, { t: P.hints ? 'sellBehind' : 'accept' });
       case 'thief': {
         if (!(chance(P.watch) && (suspicious(v) || P.watch >= 0.8))) return a(G, { t: 'pass' });
@@ -335,7 +357,7 @@ function playerFor(P, seed) {
       case 'sell': case 'lot': case 'bulk': return buyFrom(G, v);
     }
     // buyers (buy, flip): find a fit and show it
-    let fits = G.stock.filter(c => CT.matches(G, v.wants, c) && !c.know.fake);
+    let fits = G.stock.filter(c => CT.matches(G, v.wants, c) && !c.know.fake && !(P.hints && CT.contractWants(G, c)));
     if (P.keepBest) { const top = G.stock.slice().sort((x, y) => est(G, y) - est(G, x)).slice(0, 3); fits = fits.filter(c => top.indexOf(c) < 0); }
     if (!fits.length) return a(G, { t: 'pass' });
     fits.sort((x, y) => (CT.isFloor(y.loc) ? 1 : 0) - (CT.isFloor(x.loc) ? 1 : 0) || est(G, y) - est(G, x));
@@ -385,7 +407,7 @@ function playerFor(P, seed) {
         if (!c.know.loupe) a(G, { t: 'inspect', uid: c.uid, tool: 'loupe' });
         if (!c.know.uv) a(G, { t: 'inspect', uid: c.uid, tool: 'uv' });
         const e = CT.estimate(G, c); if (e.fake) continue;
-        if (!c.graded && c.know.loupe && CT.trueGrade(c) >= 9 && e.value >= 20 && spare(15)) a(G, { t: 'grade', uid: c.uid, co: 'halo' });
+        if (!c.graded && c.know.loupe && e.gradeHi >= 9 && e.grade >= 8 && e.value >= 20 && spare(15)) a(G, { t: 'grade', uid: c.uid, co: 'halo' });
         else if (!c.graded && e.rarity === 'c' && e.value < 2.5) a(G, { t: 'toBulk', uid: c.uid });
       }
       if (U.sorter && G.bulk >= 150) a(G, { t: 'repack', n: 8, per: 15, every: 4, min: 12, price: 12 });
@@ -398,7 +420,7 @@ function playerFor(P, seed) {
       if (!G.up.lens && spare(CT.UPGRADES.lens.cost + 60)) a(G, { t: 'upgrade', k: 'lens' });
       if (S.gear.hard < 8 && spare(10)) a(G, { t: 'order', item: 'hard' });
       if (S.gear.mag < 2 && spare(30)) a(G, { t: 'order', item: 'mag' });
-      for (const c of G.stock.filter(c => !c.graded && c.know.loupe && CT.trueGrade(c) >= 9 && est(G, c) >= 30).slice(0, 1)) if (spare(25)) a(G, { t: 'grade', uid: c.uid, co: 'halo' });
+      for (const c of G.stock.filter(c => !c.graded && c.know.loupe && CT.estimate(G, c).gradeHi >= 9 && CT.estimate(G, c).grade >= 8 && est(G, c) >= 30).slice(0, 1)) if (spare(25)) a(G, { t: 'grade', uid: c.uid, co: 'halo' });
     } else if (P.ups === 'vintage') {
       if (!U.scale && spare(60)) a(G, { t: 'unlock', k: 'scale' });
       if (!U.riser && G.goods.some(o => CT.GOODS[o.type].vintage) && spare(60)) a(G, { t: 'unlock', k: 'riser' });
@@ -425,6 +447,7 @@ function playerFor(P, seed) {
     if (P.sleeve === 'all' && S.gear.penny < 20 && spare(10)) a(G, { t: 'order', item: 'penny' });
     if (P.hints && S.gear.hard < 4 && spare(10)) a(G, { t: 'order', item: 'hard' });   // the drawer count is on screen
     if (P.hints && S.gear.penny < 10 && spare(10)) a(G, { t: 'order', item: 'penny' });
+    if (G.dayIdx === CT.SHOW_DAY && !G.show && (P.hints || P.taste === 'thrills') && spare(CT.SHOW_FEE + 30)) a(G, { t: 'bookShow' });
     if (next && P.ups !== 'none' && P.ups !== 'sealed' && spare(CT.BOX.cost + 10)) a(G, { t: 'restock', game: hotGame(G) });
     if (next && P.ups === 'none' && CT.packTotal(G) + CT.backPackTotal(G) < 4 && spare(CT.BOX.cost)) a(G, { t: 'restock', game: GAMES3[r(3)] });
     return a(G, { t: 'endDay' });
@@ -434,6 +457,16 @@ function playerFor(P, seed) {
     if (!N.pick) {
       const order = P.nights ? N.flyers.slice().sort((x, y) => P.nights.indexOf(x) - P.nights.indexOf(y)) : N.flyers.slice().sort(() => rnd() - 0.5);
       for (const ev of order) if (a(G, { t: 'pickNight', ev }).ok) return;
+      return a(G, { t: 'nextMorning' });
+    }
+    if (N.pick === 'show') {
+      if (!N.show.bids) {
+        const worth = o => o.t ? est(G, o) : CT.goodValue(G, o);
+        const pool = G.stock.filter(c => !c.know.fake && !(P.hints && CT.contractWants(G, c)) && !(P.keepBest && !c.consign && worth(c) >= 60)).concat(G.goods.filter(o => o.type !== 'repack' && !(P.hold && !CT.GOODS[o.type].vintage)))
+          .sort((x, y) => worth(y) - worth(x)).slice(0, CT.SHOW_MAX);
+        if (pool.length && a(G, { t: 'showBring', uids: pool.map(o => o.uid) }).ok)
+          for (const b of N.show.bids) { const o = CT.findThing(G, b.uid); if (o && b.bid > 0 && (P.haggle === 'none' || P.trust || b.bid >= worth(o) * (P.haggle === 'hard' ? 1 : 0.9))) a(G, { t: 'showSell', uid: b.uid }); }
+      }
       return a(G, { t: 'nextMorning' });
     }
     if (!N.done) {

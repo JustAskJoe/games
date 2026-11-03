@@ -6,6 +6,34 @@ Newest on top. See the repo's CLAUDE.md for how patch notes work.
 
 ---
 
+## v3.2 agent playtest · 2026-11-03 · Hunter (with Claude)
+No game change. The free persona playtests re-ran on v3.2 (8 personas × 3 runs, same seeds as Nov 1). Findings: `playtests/findings-2026-11-03.md`. Tables: `playtests/agents-2026-11-03.md`.
+
+### What's new
+- **The persona bots know v3.2:**
+  - Readers and collectors take Bijou's contract and hand over what they find. Vintage lovers and readers take Orrin's cards, and the vintage hunter buys some back.
+  - Hint-readers and thrill-seekers book the show and sell at it.
+  - Three new systems in their answers: `contract`, `consign`, `show`.
+- **Persona fixes:**
+  - A haggle loop could spin forever when an offer was refused; it now gives up after 12 tries.
+  - Grading decisions now use the grade range a player sees, not the hidden true grade.
+
+### Results (v3.0 → v3.2)
+- **Median drag day: 5 → 6** (beta gate: 7). It moved later for 6 of 8 personas.
+- **"Play again": avg 2.1 → 2.6.**
+- **Contract:** taken in 21 of 24 runs, 56% of cards delivered, kept by 13.
+- **Consignment:** taken in 21 runs, 88% of cards sold, kept by 19.
+- **Show:** booked in only 10 of 24 runs, because most shops have under 100₵ after day 6's rent.
+
+### Next up
+- [ ] Take the show's table fee out of its sales instead of up front (finding 1), and look at consignment selling too easily (finding 2). Then re-run this round (free).
+- [ ] Teach the personas to use auto-sleeve and Stock the floor. Their "sleeves unfun" and "add auto-sleeve" answers come partly from their own hand-sleeving habit.
+- [ ] Push `agents-2026-11-03-batch.json` to the questionnaire artifact (needs Hunter's OK). The page's results tab may not show the three new systems yet.
+
+### Watch out
+- [ ] v3.1 and v3.2 both landed since the last round, so the changes can't be credited to the spine alone.
+- [ ] The personas' spine rules were written for this round. Their choices (who takes the contract, who books the show) shape the numbers.
+
 ## v3.2 mid-run spine · 2026-11-02 · Hunter (with Claude)
 Days 4–7 had nothing to chase and vintage arrived too late. Three new things give the middle of the run a spine (scope: `design/midrun-spine.md`; decisions: `design/handoff.md`). The run stays 10 days.
 
