@@ -89,6 +89,20 @@ Answers to the v3.1 plan's Q5–Q10. Hunter said yes to Q5 and Q6, "you pick" fo
   - Honest customers show a tell 4% of the time (was 12%).
   - A warnings bar (crate waiting, slabs back, case nearly empty, rack empty, sleeves low) with fix buttons.
 
+## v3.2 mid-run spine (Hunter, Nov 2, 2026: "get this going", "lets get all this scoped in")
+Full scope in `midrun-spine.md`.
+- **The run stays 10 days.** Days 4–9 each get a hook.
+- **Day 4, Bijou's contract:** three cards by day 7, each paid at 1.5× market, plus 25₵ for all three. Hunter was unsure on the details, so Claude picked these:
+  - paid per card, not all-or-nothing;
+  - two findable cards plus one stretch;
+  - only the stretch card needs grade 8+.
+- **Day 6, Old Orrin's consignment** (Hunter's idea): five vintage singles.
+  - He keeps 80% of each sale, you keep 20%.
+  - The cards take your floor space, and you owe him for any stolen or worn.
+  - He's back on day 9 and offers the unsold ones at 90% of market.
+  - Moved from day 5 to day 6 (Estate Season) so it lands with the estates and the show.
+- **Day 6 night, the regional show:** a 40₵ table, up to 6 items. v3.2.1 (Hunter: "Fix and re-run", Nov 3): the fee comes out of show sales, never more than you make there, so a broke shop can still book. Fakes and trims draw no bid. About a quarter get no bid; the rest get 0.9–1.3× market, more for slabs and vintage.
+
 ## Still open
 - Final title (Intergalactic Card Trader is a working title).
 - Whether the art direction holds after the crew sees it.

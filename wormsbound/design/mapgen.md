@@ -19,7 +19,7 @@ Every setting is a level, so a menu or the Lab can draw them straight from `MapG
 | Setting | Levels (default **bold**) | What it does |
 |---|---|---|
 | Theme | 10 themes (**Crater Hills**) | Colours, props, liquid, wind and the hazard. See [Themes](#themes). |
-| Landform | **Auto** (the theme's own) or one of 10 | The big shape. See [Landforms](#landforms). |
+| Landform | **Auto** (the theme's own) or one of 11 | The big shape. See [Landforms](#landforms). |
 | Size | Small 128×72 · **Medium 160×90** · Large 200×112 · Huge 240×135 | Grid size. Wormsbound stays Medium (the whole map on one screen) until it has a camera. |
 | Height | Very low · Low · **Normal** · High · Very high | Where the ground stands. High = longer falls, more to dig. |
 | Ruggedness | Smooth · Rolling · **Normal** · Rough · Jagged | Swells, then small jags on Rough and Jagged. |
@@ -34,7 +34,7 @@ Every setting is a level, so a menu or the Lab can draw them straight from `MapG
 | Wind | Calm ×0.5 · **Breezy ×1** · Windy ×1.3 · Gale ×1.6 | Multiplies every turn's wind. |
 | Mirror | **Off** · Mirror | Left half copied onto the right, hazards and spawns too. Fair ground for competitive 1v1. |
 
-Themes set their own defaults (Sky Isles has no caves and is windy; Fungal Hollow is calm with more caves, and so on), presets set more, and your own changes go on top.
+Themes set their own defaults (Sky Isles (`sky`) has no caves and is windy; Fungal Hollow is calm with more caves, and so on), presets set more, and your own changes go on top.
 
 ## Themes
 Each theme has its own default landform, props, platform style, hazard, liquid, wind and colours (`MapGen.THEMES[id].look`, which any renderer can use). The **rule** is the theme's signature: it's built (from wind, hazards and liquid) and makes each map play differently. **Later** is a bigger idea for that theme that needs new engine work.
@@ -57,6 +57,7 @@ Each theme has its own default landform, props, platform style, hazard, liquid, 
 |---|---|---|
 | Hills | Rolling hills, a valley in the middle | chasms when sparse, no valley when packed |
 | Islands | 3–6 floating islands, low rocks just above the liquid | how many islands and how wide |
+| Lagoon | Low ground cut by 3–5 channels that go below the liquid (Louiemark's Lagoon Isles shape) | how many channels |
 | Mesas | Flat plateaus at five heights with sheer edges | slot canyons between them when sparse |
 | Caverns | One thick slab with chambers, tunnels and skylight shafts | how many chambers |
 | Canyon | Two high plateaus, a gorge down to the liquid, stepped ledges | gorge width; a natural bridge when heavy |
@@ -71,7 +72,8 @@ Every landform reads Height and Ruggedness. On top of the shape come caves, over
 ## Presets
 | Preset | What |
 |---|---|
-| The 10 theme maps | Each theme with its own defaults. **Shuffle** deals from these. |
+| The 10 theme maps | Each theme with its own defaults. **Shuffle** and online rounds deal from these. |
+| Sunset Valley, Frost Peak, Lagoon Isles | Louiemark's first three maps (Nov 2), rebuilt as presets: Crater Hills on Hills, Frostbite Peaks on Peak, Shipwreck Cove on Lagoon. No hazards, breezy wind. Their old ids (`valley`, `peak`, `isles`) still work. |
 | Classic Duel | Crater Hills, mirrored, no hazards |
 | Tournament | Dune Mesas, mirrored, no hazards, few props, normal wind |
 | Archipelago | Sky Isles with more, smaller islands, high water and a few ledges |
@@ -177,5 +179,5 @@ The default map's mirror line (Crater Hills, Volt vs Volt, 200 matches): median 
 2. **Which mechanics next** from the list above? The small ones (tides, slippery ice, bouncy caps, updrafts) are each about a day with tests.
 3. **Shuffle:** theme maps only (now), or the modes too?
 4. **Hazards default:** on (Few) for every theme map, or off in ranked or competitive play?
-5. **The real map menu:** the in-game picker is a plain list plus a code box until the menus are designed. Should the full Lab panel live in the game later?
+5. **The Custom Map screen** (Nov 11) is a first pass in the game's own style. Keep it on the title screen, or move it under a Play / Options menu when the menus are designed?
 6. **Bigger maps:** do we want a camera (and the Large and Huge sizes) for Prototype 2?

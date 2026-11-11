@@ -33,6 +33,7 @@
   const VMAX = 60;              // launch speed at full power, cells / s
   const WIND_MAX = 7;           // strongest wind push, cells / s² sideways
   const UNIT_R = 1.5;           // unit body radius, cells
+  const MAX_TEAMS = 6;          // online free-for-all takes up to 6 players
   const UNITS_PER_TEAM = 1;     // default side size: 1v1 and the 4-way free-for-all both use one unit a side
   const HP = 100;               // a "standard" unit; characters scale from it
   const MOVE_STEPS = 14;        // default steps a turn (characters override)
@@ -103,15 +104,13 @@
   function surfaceY(G, x) { const cx = clamp(Math.floor(x), 0, COLS - 1); for (let y = 0; y < ROWS; y++) if (G.T[y * COLS + cx]) return y; return ROWS; }
 
   // Maps come from the map generator (mapgen.js): ten themes, each a preset you can tweak, plus share codes.
-  // MAPS lists the ten theme maps (Shuffle deals from these); opts.map also takes any preset id or share code.
+  // MAPS lists the theme maps a round can deal; opts.map also takes any preset id, share code or settings object.
+  // With no opts.map, each round's map comes from its seed (pickMap), so every copy of the game (server, both
+  // browsers) builds the same one without sending anything extra.
   const MAPS = {}; for (const id of MapGen.MAP_IDS) MAPS[id] = { name: MapGen.PRESETS[id].name, blurb: MapGen.PRESETS[id].blurb };
   const MAP_IDS = MapGen.MAP_IDS;
+  function pickMap(seed) { let h = (seed >>> 0) ^ 0x9E3779B9; h = Math.imul(h ^ (h >>> 16), 0x45D9F3B) >>> 0; h = Math.imul(h ^ (h >>> 16), 0x45D9F3B) >>> 0; return MAP_IDS[((h ^ (h >>> 16)) >>> 0) % MAP_IDS.length]; }
   const BARREL = { r: 4.5, dmg: 44 }; // a map hazard: blows up when a blast reaches it (and sets off the next one)
-  // Spawns go on dry ground: the nearest column (either side) with ground well above the water there and 6 cells each way.
-  function landNear(G, x) {
-    for (let d = 0; d < COLS; d++) for (const s of [x + d, x - d]) if (s >= 4 && s < COLS - 4 && [s - 6, s - 3, s, s + 3, s + 6].every((c) => surfaceY(G, c) < G.water - 4)) return s;
-    return x;
-  }
   function carve(G, cx, cy, r) {
     const x0 = Math.max(0, Math.floor(cx - r)), x1 = Math.min(COLS - 1, Math.ceil(cx + r));
     const y0 = Math.max(0, Math.floor(cy - r)), y1 = Math.min(ROWS - 1, Math.ceil(cy + r));
@@ -126,9 +125,9 @@
   // ---------- game state ----------
   // opts.teams: 2 (1v1) or 4 (free-for-all). opts.size: units per side (default 1). opts.first: which side shoots first.
   // opts.chars: each side's character id (default Volt). opts.map: a preset id, a share code or a settings object for
-  // MapGen (default Crater Hills). A preset or a code with seed 0 builds a new layout from the match seed.
+  // MapGen (default: a theme picked from the seed). A preset or a code with seed 0 builds a new layout from the match seed.
   function newGame(seed, opts = {}) {
-    const teams = opts.teams === 4 ? 4 : opts.teams === 3 ? 3 : 2, size = Math.max(1, Math.min(2, opts.size || UNITS_PER_TEAM));
+    const teams = Math.max(2, Math.min(MAX_TEAMS, opts.teams | 0)), size = Math.max(1, Math.min(2, opts.size || UNITS_PER_TEAM));
     const chars = Array.from({ length: teams }, (_, t) => (opts.chars && CHARS[opts.chars[t]]) ? opts.chars[t] : 'volt');
     const G = {
       v: 2, seed: seed >>> 0, _s: (seed >>> 0) || 1, _id: 0, map: 'hills', mapName: '', theme: 'hills', windMul: 1, mirror: false,
@@ -138,7 +137,7 @@
       ammo: [], ss: new Array(teams).fill(0), fused: false, winner: null,
       stats: { shots: 0, shot2: 0, ss: 0, lobs: 0, dudBlasts: 0, chains: 0, strikes: 0, drowned: 0, fallKOs: 0, selfDmg: new Array(teams).fill(0), dmg: new Array(teams).fill(0) },
     };
-    const M = MapGen.generate(opts.map || 'hills', { w: COLS, h: ROWS, seed: G.seed });
+    const M = MapGen.generate(opts.map || pickMap(seed), { w: COLS, h: ROWS, seed: G.seed });
     Object.assign(G, { map: M.id, mapName: M.name, theme: M.theme, T: M.T, water: M.water, windMul: M.windMul, mirror: M.mirror });
     for (let t = 0; t < G.teams; t++) { const C = CHARS[chars[t]]; G.ammo.push({ shot1: C.shot1.ammo, shot2: C.shot2.ammo, dud: DUD.ammo }); }
     // spawn spots spread evenly across the map; each side takes a block of them. In 1v1, side 0 starts on the left;
@@ -149,7 +148,8 @@
     const mul = opts.hpMul || (size > 1 ? HP_MUL.crew : teams > 2 ? HP_MUL.ffa : HP_MUL.duel);
     for (let k = 0; k < spots; k++) {
       const t = order[Math.floor(k / size)], C = CHARS[chars[t]], hp = Math.round(C.hp * mul);
-      let x = landNear(G, Math.round(COLS * (0.08 + 0.84 * (k + 0.3 + R(G) * 0.4) / spots)));
+      let x = Math.round(COLS * (0.08 + 0.84 * (k + 0.3 + R(G) * 0.4) / spots));
+      x = dryLand(G, x, G.units.map((v) => Math.floor(v.x)));
       if (G.mirror && spots % 2 === 0 && k >= spots / 2) x = COLS - 1 - Math.floor(G.units[spots - 1 - k].x); // mirror maps mirror the spawns
       G.units.push({ id: ++G._id, team: t, char: chars[t], x: x + 0.5, y: surfaceY(G, x), vx: 0, vy: 0, hp, maxHp: hp, alive: true, air: false, face: x < COLS / 2 ? 1 : -1, delay: 0 });
     }
@@ -170,6 +170,14 @@
     for (let t = 0; t < teams; t++) if (t !== G.team) G.ss[t] = 1; // sides that don't shoot first get a one-notch SS head start (first turn wins 58% → 51% in the 1v1 sim)
     G.wind = rollWind(G);
     return G;
+  }
+  // the nearest column to x with ground well above the water and 5 cells from a channel's edge (spawns must never land in one),
+  // and at least 8 cells from anyone already placed
+  function dryLand(G, x, taken = []) {
+    const dry = (c) => c >= 0 && c < COLS && surfaceY(G, c) < G.water - 4; // the map's own water line (the generator sets it)
+    const ok = (c) => c >= 3 && c < COLS - 3 && dry(c - 5) && dry(c) && dry(c + 5) && taken.every((t) => Math.abs(t - c) >= 8);
+    for (let d = 0; d < COLS; d++) { if (ok(x - d)) return x - d; if (ok(x + d)) return x + d; }
+    return x;
   }
   // One notch of SS charge at the start of each of your turns.
   function chargeSS(G) { G.ss[G.team] = Math.min(SS_CHARGE, G.ss[G.team] + 1); }
@@ -537,7 +545,7 @@
     nodud:  { tries: 36, refine: 14, noiseA: 1.4, noiseP: 0.018, dud: 0, lob: 0, dodge: 1 },
     duder:  { tries: 36, refine: 14, noiseA: 1.4, noiseP: 0.018, dud: 2.2, lob: 1, dodge: 1 },
     // the computer opponents in 1 Player mode
-    easy:   { tries: 8,  refine: 0,  noiseA: 7.0, noiseP: 0.09,  dud: 0.6, lob: 0, dodge: 0, ssSkip: 0.5 },
+    easy:   { tries: 8,  refine: 0,  noiseA: 7.5, noiseP: 0.10,  dud: 0.6, lob: 0, dodge: 0, ssSkip: 0.5 },
     medium: { tries: 18, refine: 6,  noiseA: 3.2, noiseP: 0.04,  dud: 1, lob: 1, dodge: 1 },
     hard:   { tries: 36, refine: 14, noiseA: 1.4, noiseP: 0.018, dud: 1, lob: 1, dodge: 1 },
   };
@@ -652,7 +660,7 @@
   }
 
   const WB = { TICK, COLS, ROWS, WATER0, GRAV, VMAX, WIND_MAX, UNIT_R, UNITS_PER_TEAM, HP, MOVE_STEPS, LOB_RANGE, LOB_POWER, SUDDEN_ROUNDS, MAX_ROUNDS, suddenTurn, maxTurns, DMG_SPREAD, SS_CHARGE, DELAY, HP_MUL,
-    DUD, BARREL, CHARS, CHAR_IDS, WEAPON_IDS, MAPS, MAP_IDS, MapGen, STYLES, newGame, act, step, resolve, current, teamUnits, charOf, shotSpec, ssReady, turnOrder, delayIf, solidAt, surfaceY, center, lobbable, canLob,
+    DUD, BARREL, CHARS, CHAR_IDS, WEAPON_IDS, MAPS, MAP_IDS, pickMap, MapGen, STYLES, newGame, act, step, resolve, current, teamUnits, charOf, shotSpec, ssReady, turnOrder, delayIf, solidAt, surfaceY, center, lobbable, canLob,
     predict, blastScore, botTurn, playOut, hash, replay };
   if (typeof module !== 'undefined' && module.exports) module.exports = WB; else root.WB = WB;
 })(typeof window !== 'undefined' ? window : globalThis);

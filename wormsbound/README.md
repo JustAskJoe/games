@@ -2,7 +2,7 @@
 
 Other · team pitch · approved in Forge on 2026-11-02 by Louiemark
 
-**Status:** Prototype 1 (Nov 2, 2026): **1 Player** (you vs 3 computers, Easy / Medium / Hard) or **2 Players** (1v1 on one keyboard), five characters, generated maps (10 themes, presets, custom settings, share codes and a Map Lab), GunBound-style turn delay, best of three. **Next:** online 1v1. **Next:** play it with a friend and fill in the feedback form. Current decisions: [design/handoff.md](design/handoff.md).
+**Status:** Prototype 1 (Nov 2, 2026): **1 Player** (you vs 3 computers, Easy / Medium / Hard) or **2 Players** (1v1 on one keyboard), five characters, generated maps (10 themes, presets, custom settings, share codes, a Custom Map screen and a Map Lab), GunBound-style turn delay, best of three. **Online** (`server/`, see its README; live on Cloudflare since Nov 2): a 1v1, or a **free-for-all for 2 to 6 players** in one room. **Next:** play it with a friend and fill in the feedback form. Current decisions: [design/handoff.md](design/handoff.md).
 
 A turn-based artillery brawler for 2 to 4 friends on one screen: pick a character (Brick, Zip, Volt, Digger or Gale, each with its own shots and an SS ultimate), aim, read the wind, and lob shells across ground that blows apart. Shells that land without exploding stay live, and anyone close enough can lob them on.
 

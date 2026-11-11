@@ -6,6 +6,30 @@ Newest on top. See the repo's CLAUDE.md for how patch notes work.
 
 ---
 
+## Map generator replaces the three maps · 2026-11-11 · Hunter (with Claude)
+Louiemark chose to replace his three maps with the map generator, and map making now lives inside the game.
+
+### What's new
+- **Every map is generated now,** online too. With no map picked (online rounds, or Shuffle), each round deals one of the 10 theme maps from the round's seed, so the server and every player build the same one.
+- **Louiemark's three maps are still here** as presets in a new **Classic maps** group: Sunset Valley, Frost Peak and Lagoon Isles. Lagoon Isles' channels are now a landform of their own (**Lagoon**) that any custom map can use.
+- **Custom Map screen** on the title screen: start from any preset, pick a theme, move any setting and watch the preview change. Then roll a new layout, keep the same layout every match, copy the share code, paste someone else's, save up to 8 favourites, and **Use this map**.
+- The title screen is wider so the three mode buttons sit in one row and everything fits on screen.
+- Sky Isles' id is now `sky` (the old `isles` is Lagoon Isles again).
+
+### Next up
+- [ ] @Louiemark: play the preview, then merge. The checklist is in the pull request.
+- [ ] @Louiemark: redeploy the room server (`wormsbound/server`) **before or right after merging**, then check with `node smoke.js <live address>` and `--ffa 6`.
+- [ ] Let the online host pick a map or paste a code in the lobby. Today online rounds always deal a theme map from the seed (the server sends no map yet).
+- [ ] Answer the open questions at the end of `design/mapgen.md` (one is new: where the Custom Map screen lives once there are real menus).
+
+### Watch out
+- [ ] **The live room server still runs the old engine.** Until it's redeployed, online rounds disagree on the map (old server: Louiemark's three maps; new pages: generator themes), so checksums fail and pages keep re-syncing to the server's copy. Local play is fine.
+- [ ] Old replays and sim numbers don't compare: the same seed now gives a different map.
+- [ ] Nobody has played the Custom Map screen with a mouse yet. It's checked in the browser test at 1280 × 720, and it opens with no sideways scroll at 390, 320 and 844 × 390. On a phone the whole stage scales down, so the sliders get small.
+- [ ] Lagoon Isles (Shipwreck Cove colours on the Lagoon landform) only looks like the old map; it isn't the same layout, and the balance sim hasn't been run on it per character.
+- [ ] **Easy computers aim a little worse** (aim noise 7.0 → 7.5, power noise 0.09 → 0.10). On generated maps a new player (sloppy bot) beat 3 Easy computers only 24% of the time in the sim (band 28%+); now 37%, and a good player 65% (was 55%). Medium and Hard are unchanged. @Louiemark: your call if you'd rather tune it another way.
+- [ ] `build-and-test.py` now finds `npm` through `shutil.which` (on Windows a bare `npm` wouldn't start, so the online tests never ran there).
+
 ## Map generator · 2026-11-02 · Hunter (with Claude)
 Every map is now generated: 10 themes, custom settings, presets and share codes, plus a Map Lab to build and share maps. A proposal for Louiemark (Wormsbound lead) to confirm. Design: [`design/mapgen.md`](design/mapgen.md).
 
@@ -60,6 +84,55 @@ Three new maps you can play now, and a design proposal for crate weapons.
 - [ ] Persistent stat leveling (option C in the weapons doc) would break the brief's "never pay-to-win / cosmetics only". Not proposed; listed so it's a conscious call.
 - [ ] Crates add randomness the balance sim doesn't model yet; the character band has to be re-checked with crates on.
 - [ ] Weapon names and ideas are first-pass, checked against the famous Worms weapons from memory only, not against GunBound, Pocket Tanks or ShellShock Live lists.
+
+## P1 online · 2026-11-02 · Louiemark (with Claude)
+Online 1v1 and an online free-for-all for up to 6 players. The room server is live on Cloudflare (`wss://wormsbound-rooms.louiemark-ambata.workers.dev`) and the game uses it.
+
+### What's new
+- **ONLINE 1v1** on the title screen. Make a room and read out the 4-letter code, or join with one. Each of you picks a character and presses Ready; then it's a normal best-of-three 1v1, with turn delay, SS and live duds.
+- **The server referees.** Every move goes to the room server, which plays it on its own copy of the game and sends it to both of you. You can't cheat with a modified page, and both screens always show the same game (each one checks a checksum after every move and quietly re-syncs if needed).
+- You **see the other player's aim live** while they drag. On their turn your controls are replaced by "Ana (Brick) is aiming…".
+- **Dropped connection?** The game reconnects by itself and puts you back in your seat. A player who vanishes has their turn passed after 50 seconds.
+- Rematch from the end screen when both of you ask (R works too).
+- **It's live:** ONLINE 1v1 on the Lab now connects to the room server on Cloudflare, no setup needed.
+- **Online free-for-all, 2 to 6 players.** Title screen → ONLINE → MAKE A FREE-FOR-ALL, and everyone else joins with the code. Pick, press Ready, and whoever made the room presses START. One round a game, last one standing wins; then BACK TO THE ROOM and ready up for the next. Friends can join between games.
+- Two new side colours for players 5 and 6: **Rose** and **Sky**. With 5 or 6 players the health bars at the top get slimmer so all six fit.
+- If someone drops out mid-game, their turns pass after 8 seconds instead of 50, so the others aren't stuck waiting. They can come back and carry on.
+- **Three maps, picked at random every round:** **Sunset Valley** (the hills you know), **Frost Peak** (a snowy night, a mountain in the middle with a tunnel through it) and **Lagoon Isles** (sunny islands with water channels between them: knock people in). The map's name shows at the top. Works in every mode, online too.
+
+### Next up
+- [x] @Louiemark: deploy it. (Louiemark, Nov 2: deployed to `https://wormsbound-rooms.louiemark-ambata.workers.dev`, `ONLINE_SERVER` set.) Open a **new session** (so it sees `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`) and say "deploy the Wormsbound room server". Steps in `wormsbound/server/README.md`: `npx wrangler@3 deploy`, then put the address in `ONLINE_SERVER` and merge.
+- [ ] @Louiemark: play an online match with a friend on two computers and fill in the feedback form.
+- [ ] Decide whether rooms should be crew-only (behind the Lab's sign-in) or open to anyone with a code.
+- [ ] @Louiemark: play a free-for-all with 3 or more friends on their own computers and fill in the feedback form. Is one round a game right, or should it be best of 3?
+- [ ] @Louiemark: balance the characters across the three maps (planned for Nov 3). Gale is the strongest: 57% overall, and in a per-map check about 58% on Frost Peak, 55% on Lagoon Isles and 58% on Sunset Valley.
+- [ ] Map ideas not built: let players (or the room host) choose the map, or not repeat the last one. Today it's a straight 1-in-3 roll from the round's seed, so the same map can come up twice in a row.
+- [ ] Free-for-all ideas not built: fill empty seats with computer players, show placings (who went out when), and a spectator view for people who join mid-game.
+
+### Watch out
+- [x] **Not deployed:** (Louiemark, Nov 2: deployed and set.) Until `ONLINE_SERVER` is set, ONLINE 1v1 on the Lab says the server isn't set up (on your own machine it uses the local test server). `?server=wss://…` on the build's address overrides it for testing.
+- [x] **Not tested on Cloudflare itself:** (Louiemark, Nov 2: `curl …/new` returns a code, and `node smoke.js <live address>` played a whole best-of-3 on the live Durable Object, 42 moves, every checksum matching on both clients. Still not two browsers on two computers.) the Worker bundles and loads (checked with esbuild, the bundler Wrangler uses), and the room logic is the same file the local server runs, but no real Durable Object has run it yet.
+- [ ] Rooms are in memory: if both players leave and Cloudflare evicts the room, it's gone. Anyone with the code can join; there's no sign-in.
+- [ ] Tested with two headless browser pages on one machine, not two real computers over the internet; no lag or flaky-connection testing beyond one forced drop and reconnect.
+- [ ] The server lives on Louiemark's own Cloudflare account (documented in `ARCHITECTURE.md`).
+- [ ] **Local testing changed:** with `ONLINE_SERVER` set, a build opened from a file or localhost now connects to the **live** server too. To use the local test server add `?server=ws://localhost:8431` (`test-online.py` already does).
+- [ ] Live checks leave real rooms on the server: each `node smoke.js <live address>` run, plus the `curl …/new` checks, made a few rooms on the free plan. They're tiny and get evicted, but don't loop the live smoke test.
+- [x] The `CLOUDFLARE_ACCOUNT_ID` in the cloud environment was one character short (31 of 32) at deploy time; the deploy used the full ID read from the API for the token's only account. Louiemark updated it afterwards, but this session couldn't see the new value. Check the next deploy works without the workaround. (Louiemark, Nov 2: fixed in the environment; now the full 32 characters and matches the token's account exactly, checked against the Cloudflare API. Not redeployed to test.)
+- [ ] Deployed with wrangler 3 (it warns it's out of date; wrangler 4 is current). Fine for now; the README still says `wrangler@3`.
+- [ ] Not checked: two real people on two computers or phones over the internet, through the live server.
+- [ ] **Maps need the live server redeployed before this merges.** The server runs the engine too: an old server builds every round on Sunset Valley while new pages build the seed's map, so checksums disagree and pages keep re-syncing to the server's copy. Deploy `wormsbound/server` first, then merge; check with `node smoke.js <live address>` and `--ffa 6`.
+- [ ] **Map tuning numbers are first passes** (`engine.js`: `PEAK_H` 13, `ISLE_H` 25, `CHANNEL_W` 0.016, `HILLS` 10). Flat, open ground made Gale win 65–71% on the new maps; adding hills for cover (`HILLS`) brought her to 57% overall. A taller peak sent 58% of 1v1s to sudden death; lowering it fixed that.
+- [ ] Per-map 1v1 numbers from a 200-match bot check (before `HILLS` went to 10): Lagoon Isles matches are shorter (median 10 turns vs 15) with more splash-outs (0.5 a match vs 0.2); Frost Peak goes to sudden death more (24–30% vs 22%). Bots never walk, so walking into a channel by mistake isn't in the numbers.
+- [ ] Old sim and test numbers don't compare directly: seeds that used to give Sunset Valley now give any of the three maps.
+- [ ] The three maps were checked with screenshots at 1280×720 (1 Player, 4-way). Not checked on a real phone or by a person; the Frost Peak tunnel is hard to see at a glance.
+- [x] **Free-for-all needs the server redeployed.** (Louiemark, Nov 2: redeployed from this branch before merging, with no account-ID workaround needed. Live `smoke.js --ffa 6`: a whole 6-player game, 30 turns, 0 desyncs on all six; the live 1v1 smoke test still passes.) It works once the new `room.js` is on Cloudflare. Until then the live server makes every room a 1v1 (the page copes, but MAKE A FREE-FOR-ALL gives a 1v1 room). Deploy before or with merging; check with `node smoke.js <live address> --ffa 6`.
+- [ ] Free-for-all was tested with six headless pages on one machine (`test-online-ffa.py`) and in-process and socket tests (`npm test`), not with real people. A 6-way game took 39–43 turns in those runs, about 7 per player. With people taking 15–20 s a turn, that's 10–14 minutes; check that it doesn't drag.
+- [ ] Free-for-all health uses the 4-way's × 1.8. A 60-game bot check: median 30 turns in a 6-way (5 per player, same as the 4-way's 5.5); seat wins 7–15 of 60 at × 1.8 (expected 10, noisy). Lower health (× 1.5) made it 26 turns. Not added to `sim.js`'s pass bands.
+- [ ] Six sides spawn about 22 cells apart on the same 160-cell map, so the first shots can reach someone without much aiming. Watch whether the early game feels crowded.
+- [ ] Sides 5 and 6 (Rose, Sky) only appear online; Rose and Ember (orange) are the closest pair of colours. Check with a colour-blind player.
+- [ ] With 5 or 6 sides the HUD hides the character names and round pips, and long player names are cut to fit. Checked at 1280×720 and the lobby at 390 px wide; the in-game HUD with 6 sides wasn't checked on a real phone.
+- [ ] Nobody can join a free-for-all once a game has started; they get "join when it ends". There's no spectating yet.
+- [ ] Cloud sessions don't have Python Playwright: `build-and-test.py` printed "Playwright missing" until `pip install playwright==1.63.0` (matches the preinstalled Chromium, no browser download). After that: ALL GOOD, including the two-page online test.
 
 ## P1 modes · 2026-11-02 · Louiemark (with Claude)
 Turn delay, 1 Player vs 3 computers, and 1v1 with one character each. Full `build-and-test.py`: ALL GOOD.

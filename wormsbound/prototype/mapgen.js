@@ -105,6 +105,16 @@
       for (let x = 0; x < c.w; x++) fillCol(c, x, c.top + n[x] + v * Math.exp(-Math.pow((x / c.w - 0.5) / 0.09, 2)));
       chasms(c, [2, 1, 0, 0, 0][c.s.land]);
     } },
+    lagoon: { name: 'Lagoon', blurb: 'Low islands split by channels that go down below the liquid.', gen(c) {
+      // Louiemark's Lagoon Isles shape: ground near the liquid, cut by 3–5 channels (fewer on heavier land)
+      const n = wob(c, 30), k = [5, 4, 4, 3, 3][c.s.land] - (c.r() < 0.5 ? 1 : 0) + 1, low = Math.min(c.top + c.h * 0.05, c.water - 9 * c.sy);
+      const ch = Array.from({ length: k }, (_, i) => ({ u: (i + 1) / (k + 1) + (c.r() - 0.5) * 0.06, w: 0.016 + c.r() * 0.008 }));
+      for (let x = 0; x < c.w; x++) {
+        const u = (x + 0.5) / c.w; let t = low + n[x] * 0.7;
+        for (const q of ch) { const d = Math.abs(u - q.u) / q.w; if (d < 1) t = Math.max(t, c.h - 3 * c.sy); else if (d < 1.8) t = Math.max(t, c.h - 3 * c.sy - (c.h - 3 * c.sy - t) * (d - 1) / 0.8); }
+        fillCol(c, x, t);
+      }
+    } },
     islands: { name: 'Islands', blurb: 'Floating islands over open liquid. Knock-offs are deadly.', gen(c) {
       const n = Math.max(2, Math.round([6, 5, 4, 3, 3][c.s.land] * c.sx)), gap = c.w / n, hf = [0.32, 0.37, 0.42, 0.46, 0.5][c.s.land];
       for (let i = 0; i < n; i++) {
@@ -354,7 +364,7 @@
       look: { sky: ['#2B1E45', '#7A3B5E', '#FF8A3D', '#FFC37A'], ridges: ['rgba(107,58,91,.55)', 'rgba(70,40,78,.7)'], bg: 'hills',
         shades: [['#A6DE62', '#93CF55'], ['#6FAE45', '#62A03C'], ['#D2834A', '#C47640'], ['#B2643A', '#A55B36'], ['#8C4C3A', '#7F4436'], ['#6A3E4A', '#5E3743']], tuft: '#B8EC74',
         rock: ROCK_LOOK[0], prop: ['#7A4A34', '#6C412E'], accent: ['#5FA845', '#54983C'], liquid: LIQ.water, hazard: '#C9481A' } },
-    isles: { name: 'Sky Isles', blurb: 'Floating islands over open water. Miss the edge and you swim.', landform: 'islands',
+    sky: { name: 'Sky Isles', blurb: 'Floating islands over open water. Miss the edge and you swim.', landform: 'islands',
       props: [['tree', 2], ['pillar', 2], ['boulder', 1]], platform: 'ledge', hazard: { kind: 'dud', name: 'Old dud' }, set: { caves: 0, weather: 2, overhangs: 0 },
       rule: 'High winds: gusts up here are 30% stronger. Read the wind or lose the shot.',
       later: 'Updrafts between islands that lift shells (and units) passing over them.',
@@ -445,9 +455,13 @@
   const PRESETS = {};
   for (const id of THEME_IDS) PRESETS[id] = { name: THEMES[id].name, blurb: THEMES[id].blurb, group: 'Theme maps', s: { theme: id } };
   Object.assign(PRESETS, {
+    // Louiemark's first three maps (Nov 2), rebuilt as presets: no hazards, normal wind, his names
+    valley: { name: 'Sunset Valley', blurb: 'Rolling hills around a valley in the middle.', group: 'Classic maps', s: { theme: 'hills', landform: 'hills', hazards: 0, weather: 1 } },
+    peak: { name: 'Frost Peak', blurb: 'A snowy mountain in the middle. Lob over it or dig through.', group: 'Classic maps', s: { theme: 'frost', landform: 'peak', hazards: 0, weather: 1, caves: 2 } },
+    isles: { name: 'Lagoon Isles', blurb: 'Low islands with water between them. Knock people in.', group: 'Classic maps', s: { theme: 'cove', landform: 'lagoon', hazards: 0, weather: 1, props: 1 } },
     classic: { name: 'Classic Duel', blurb: 'Crater Hills mirrored down the middle: the same ground on both sides.', group: 'Modes', s: { theme: 'hills', symmetry: 1, hazards: 0 } },
     tourney: { name: 'Tournament', blurb: 'Mirrored mesas, normal wind, no hazards, few props. For settling arguments.', group: 'Modes', s: { theme: 'dunes', symmetry: 1, hazards: 0, props: 1, weather: 1, rugged: 1 } },
-    archipelago: { name: 'Archipelago', blurb: 'More, smaller islands and high water. Knockback is king.', group: 'Modes', s: { theme: 'isles', land: 1, water: 2, platforms: 1 } },
+    archipelago: { name: 'Archipelago', blurb: 'More, smaller islands and high water. Knockback is king.', group: 'Modes', s: { theme: 'sky', land: 1, water: 2, platforms: 1 } },
     warren: { name: 'Worm Warren', blurb: 'A tall hill riddled with tunnels. Dig, hide, ambush.', group: 'Modes', s: { theme: 'fungal', landform: 'hills', caves: 4, overhangs: 2, height: 3 } },
     highrise: { name: 'High Rise', blurb: 'Tall buildings with girders between them.', group: 'Modes', s: { theme: 'roofs', height: 4, platforms: 2, land: 1 } },
     hightide: { name: 'High Tide', blurb: 'The sea starts high. Every bit of ground counts.', group: 'Modes', s: { theme: 'cove', water: 3, height: 3 } },

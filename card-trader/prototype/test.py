@@ -44,6 +44,10 @@ BOT = """() => {
   if (G.phase === 'shop') { if (G.packs.star > 2) return click('[data-act=crack][data-game=star]'); return click('[data-act=next]'); }
   if (G.phase === 'visit') {
     const v = G.visit;
+    // v3.2 spine: take the contract and the consignment, hand Bijou what we have (three tries), buy one of Orrin's back
+    if (v.role === 'contract' || v.role === 'consign') return click('#deal [data-act=accept]');
+    if (v.role === 'deliver') { window._dlv = (window._dlv || 0) + 1; return (window._dlv <= 3 && click('#deal [data-act=deliver]')) || click('#deal [data-act=pass]'); }
+    if (v.role === 'consignBack') return (!window._bc && (window._bc = 1) && click('#deal [data-act=buyConsign]:not([disabled])')) || click('#deal [data-act=accept]');
     if (v.role === 'scalp') return click('[data-act=pass]');
     if (v.role === 'weigh') return click('[data-act=sellBehind]') || click('[data-act=pass]');
     if (v.role === 'thief') return v.caught ? (click('[data-act=letGo][data-parent]') || click('[data-act=letGo][data-work]') || click('[data-act=security]')) : click('[data-act=watch]');
@@ -67,10 +71,15 @@ BOT = """() => {
   if (G.phase === 'close' && G.dayIdx === 0 && !window._cat) { if (!CTUI.catalog) return click('[data-act=catalog]'); window._cat = 1; click('[data-act=unlock][data-k=lock]'); click('[data-act=order][data-item=poster]'); return click('#loupe [data-act=catalog]'); }
   if (G.phase === 'close' && G.dayIdx === 2 && !CTUI.board && !window._bd) { window._bd = 1; return click('#hud [data-act=board]'); }
   if (CTUI.board) return click('#loupe [data-act=board]');
-  if (G.phase === 'close') { click('[data-act=grade][data-co=halo]'); if (G.dayIdx === 0) click('[data-act=upgrade][data-k=lens]'); if (G.dayIdx === 1) click('[data-act=policy]'); return click('[data-act=endDay]'); }
+  // day 6 close: this bot plays badly, so top it up for the table and the show screens get exercised
+  if (G.phase === 'close') { if (G.dayIdx === 5 && !G.show) { CT.act(G, { t: 'bookShow' }); } click('[data-act=grade][data-co=halo]'); if (G.dayIdx === 0) click('[data-act=upgrade][data-k=lens]'); if (G.dayIdx === 1) click('[data-act=policy]'); return click('[data-act=endDay]'); }
   if (G.phase === 'night') {
     const N = G.night;
     if (!N.pick) { for (const b of document.querySelectorAll('[data-act=pickNight]')) { b.click(); if (CTUI.G.night && CTUI.G.night.pick) return true; } return click('[data-act=nextMorning]'); }
+    if (N.pick === 'show') {
+      if (!N.show.bids) { const picks = document.querySelectorAll('[data-act=showPick]'); for (let i = 0; i < Math.min(3, picks.length); i++) document.querySelectorAll('[data-act=showPick]')[i].click(); return click('[data-act=showBring]') || click('[data-act=nextMorning]'); }
+      return click('[data-act=showSell]') || click('[data-act=nextMorning]');
+    }
     if (!N.done) {
       if (N.pick === 'cardnight') return click('[data-act=rip]');
       if (N.pick === 'tourney') { click('[data-act=tourPrize]'); return click('[data-act=hostTourney]'); }
@@ -109,7 +118,7 @@ with sync_playwright() as p:
         ph = pg.evaluate('CTUI.G.phase')
         if ph == 'end': break
         key = ph + str(pg.evaluate('CTUI.G.dayIdx')) + (('_' + str(pg.evaluate('CTUI.G.night && CTUI.G.night.pick'))) if ph == 'night' else '') + (('_' + pg.evaluate('CTUI.room')) if pg.evaluate('CTUI.room') else '') + ('_board' if pg.evaluate('CTUI.board') else '') + ('_catalog' if pg.evaluate('CTUI.catalog') else '')
-        if ph == 'visit' and pg.evaluate('CTUI.G.visit.role') in ('weigh', 'thief', 'switch', 'reseal', 'distract', 'browse', 'vintage', 'sealedc'): key += '_' + pg.evaluate('CTUI.G.visit.role')
+        if ph == 'visit' and pg.evaluate('CTUI.G.visit.role') in ('weigh', 'thief', 'switch', 'reseal', 'distract', 'browse', 'vintage', 'sealedc', 'contract', 'deliver', 'consign', 'consignBack'): key += '_' + pg.evaluate('CTUI.G.visit.role')
         if key not in seen:
             seen.add(key); pg.wait_for_timeout(250); pg.screenshot(path=str(shots / f'd2_{key}.png'))
         if ph == 'visit' and 'loupe' not in seen and pg.evaluate('CTUI.G.visit.cards.length') > 0:
@@ -121,6 +130,9 @@ with sync_playwright() as p:
     print('steps', n, 'phase', pg.evaluate('CTUI.G.phase'), 'final', final)
     if pg.evaluate('CTUI.G.phase') != 'end': errs.append('the UI walkthrough never reached the end screen')
     if not reloaded: errs.append('never reached day 2 to test save and reload')
+    spine = pg.evaluate('[!!CTUI.G.contract, !!CTUI.G.consign, !!(CTUI.G.show && CTUI.G.show.done), CTUI.G.store.stats.showSales || 0]')
+    print('spine (contract, consign, show, show sales):', spine)
+    if not all(spine[:3]): errs.append(f'the walkthrough missed part of the mid-run spine: {spine}')
     # stock drawer and a second run
     pg.click('[data-act=stock]'); pg.wait_for_timeout(200); pg.screenshot(path=str(shots / 'd5_stock.png')); pg.click('#loupe [data-act=stock]')
     pg.click('[data-act=again]'); pg.wait_for_timeout(300)

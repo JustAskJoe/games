@@ -22,6 +22,10 @@ function bot(style) {
       // paranoid: anyone showing a tell gets security called on them
       if (style === 'paranoid' && v.tellsShown > 0 && ['thief', 'distract', 'switch'].indexOf(v.role) < 0) return CT.act(G, { t: 'security' });
       if (watchful && v.disguised && CT.boardHas(G, v.who)) return CT.act(G, { t: 'refuse' });
+      // v3.2 spine: organized shops take the contract and the consignment; the rest pass
+      if (v.role === 'contract' || v.role === 'consign') return CT.act(G, { t: org ? 'accept' : 'pass' });
+      if (v.role === 'deliver') { for (const w of CT.contractStatus(G).list) { if (!G.visit) return; if (w.got) continue; for (const c of G.stock.filter(x => x.t === w.t && !x.consign && !x.know.fake)) if (G.visit && CT.act(G, { t: 'deliver', uid: c.uid }).ok) break; } return G.visit && CT.act(G, { t: 'pass' }); } // Bijou checks the grade, so trying costs nothing
+      if (v.role === 'consignBack') return CT.act(G, { t: 'pass' });
       if (v.role === 'stranger') return CT.act(G, { t: 'accept' }); // free vintage packs (paranoid already called security above)
       if (v.role === 'weigh') return CT.act(G, { t: org ? 'sellBehind' : 'accept' });
       if (v.role === 'thief') {
@@ -106,7 +110,7 @@ function bot(style) {
         CT.act(G, { t: 'showPacks' });
         return haggleSell(G, CT.PACK_RETAIL * G.visit.packs, style);
       }
-      const fits = G.stock.filter(c => CT.matches(G, v.wants, c) && !c.know.fake);
+      const fits = G.stock.filter(c => CT.matches(G, v.wants, c) && !c.know.fake && !(org && CT.contractWants(G, c)));
       if (!fits.length) return CT.act(G, { t: 'pass' });
       fits.sort((a, b) => CT.estimate(G, b).value - CT.estimate(G, a).value);
       const c = style === 'sloppy' ? fits[fits.length - 1] : fits[0];
@@ -117,9 +121,9 @@ function bot(style) {
     if (G.phase === 'close') {
       if (careful) {
         const rent = G.week[G.dayIdx].rent;
-        if (ups) for (const k of ['lens', 'spec', 'hands']) if (!G.up[k] && G.cash > rent + CT.UPGRADES[k].cost + 80) CT.act(G, { t: 'upgrade', k });
+        if (ups && G.dayIdx < CT.SHOW_DAY) for (const k of ['lens', 'spec', 'hands']) if (!G.up[k] && G.cash > rent + CT.UPGRADES[k].cost + 80) CT.act(G, { t: 'upgrade', k });
         // Eye tools only once there's a card worth grading (a raw card worth 40+ whose read could reach 9)
-        if (ups && G.stock.some(c => !c.graded && c.know.loupe && !c.know.fake && CT.estimate(G, c).gradeHi >= 9 && CT.estimate(G, c).value >= 40)) for (const k of ['eye1', 'eye2', 'eye3']) if (!G.up[k] && G.cash > rent + CT.UPGRADES[k].cost + 80) CT.act(G, { t: 'upgrade', k });
+        if (ups && G.dayIdx < CT.SHOW_DAY && G.stock.some(c => !c.graded && c.know.loupe && !c.know.fake && CT.estimate(G, c).gradeHi >= 9 && CT.estimate(G, c).value >= 40)) for (const k of ['eye1', 'eye2', 'eye3']) if (!G.up[k] && G.cash > rent + CT.UPGRADES[k].cost + 80) CT.act(G, { t: 'upgrade', k });
         if (G.dayIdx >= 1) CT.act(G, { t: 'policy', limit2: true });
         for (const c of G.stock.slice()) {
           if (!c.know.loupe) CT.act(G, { t: 'inspect', uid: c.uid, tool: 'loupe' });
@@ -148,6 +152,7 @@ function bot(style) {
         if (org && G.dayIdx >= 1 && G.dayIdx < 6 && G.cash > rent + 400) CT.act(G, { t: 'order', item: 'premium', game: hotGame(G) });
         if (style !== 'lazy') { if (G.store.gear.hard < 6 && G.cash > rent + 20) CT.act(G, { t: 'order', item: 'hard' }); if (G.store.gear.penny < 25 && G.cash > rent + 20) CT.act(G, { t: 'order', item: 'penny' }); }
       }
+      if (org && G.dayIdx === CT.SHOW_DAY) CT.act(G, { t: 'bookShow' });
       return CT.act(G, { t: 'endDay' });
     }
     if (G.phase === 'night') return playNight(G, style);
@@ -165,6 +170,8 @@ function setupGate(G) {
   const mine = G.stock.filter(c => !CT.isFloor(c.loc) && !c.know.fake && !c.graded).sort((a, b) => CT.estimate(G, b).value - CT.estimate(G, a).value);
   for (const c of mine) { if (CT.onGrid(G, 'case').length >= 3) break; if (c.prot !== 'hard' && c.prot !== 'mag') CT.act(G, { t: 'sleeve', uid: c.uid, prot: 'hard' }); CT.act(G, { t: 'place', uid: c.uid, to: 'case' }); }
   for (const c of mine.filter(c => !CT.isFloor(c.loc))) { if (CT.where(G, 'cbinder').length >= 4) break; if (!c.prot || c.prot === 'none') CT.act(G, { t: 'sleeve', uid: c.uid, prot: 'penny' }); CT.act(G, { t: 'place', uid: c.uid, to: 'cbinder' }); }
+  // a small opening crate: the back room may have put most of it in the case; move the cheapest case cards down
+  for (const c of CT.where(G, 'case').sort((a, b) => CT.estimate(G, a).value - CT.estimate(G, b).value)) { if (CT.where(G, 'cbinder').length >= 4 || CT.onGrid(G, 'case').length <= 3) break; CT.act(G, { t: 'place', uid: c.uid, to: 'cbinder' }); }
   for (const o of G.goods.filter(o => o.loc === 'shelf' && CT.GOODS[o.type].where.indexOf('rack') >= 0)) { if (CT.packTotal(G) + CT.goodsAt(G, 'rack').length >= 3) break; CT.act(G, { t: 'place', uid: o.uid, to: 'rack' }); }
 }
 function backRoom(G, style) {
@@ -177,7 +184,7 @@ function backRoom(G, style) {
   if (style === 'lazy' || style === 'sloppy') return;
   CT.act(G, { t: 'autoStore' });
   const mult = style === 'greedy' ? 1.25 : 1.1, want = style === 'greedy' ? 14 : 10;
-  const pool = G.stock.filter(c => c.loc !== 'case' && !c.know.fake && (style === 'greedy' || c.loc !== 'safe'))
+  const pool = G.stock.filter(c => c.loc !== 'case' && !c.know.fake && !CT.contractWants(G, c) && (style === 'greedy' || c.loc !== 'safe'))
     .map(c => [c, CT.estimate(G, c).value]).filter(([, v]) => v >= 12).sort((a, b) => b[1] - a[1]);
   for (const [c, v] of pool) {
     if (CT.onGrid(G, 'case').length >= want) break;
@@ -195,6 +202,15 @@ function playNight(G, style) {
     const order = style === 'sloppy' ? N.flyers.slice() : N.flyers.slice().sort((a, b) => pref.indexOf(a) - pref.indexOf(b));
     for (const ev of order) if (CT.act(G, { t: 'pickNight', ev }).ok) return;
     return CT.act(G, { t: 'nextMorning' }); // can't afford either flyer: skip the night
+  }
+  if (N.pick === 'show' && !N.show.bids) {
+    // bring the best things you own, plus Orrin's cards; sell anything bid at or over its estimate
+    const worth = o => o.t ? CT.estimate(G, o).value : CT.goodValue(G, o);
+    // keep raw grading candidates home: a slab is worth more than a show bid on the raw card
+    const gradeMe = c => { if (c.graded || !c.know.loupe) return false; const e = CT.estimate(G, c); return e.gradeHi >= 9 && e.grade >= 8 && e.value >= 20; };
+    const pool = G.stock.filter(c => !c.know.fake && !CT.contractWants(G, c) && !gradeMe(c) && (c.consign || worth(c) >= 15)).concat(G.goods.filter(o => o.type !== 'repack' && worth(o) >= 30)).sort((a, b) => worth(b) - worth(a)).slice(0, CT.SHOW_MAX);
+    if (pool.length && CT.act(G, { t: 'showBring', uids: pool.map(o => o.uid) }).ok) for (const b of N.show.bids) { const o = CT.findThing(G, b.uid); if (o && b.bid > 0 && b.bid >= worth(o) * (o.consign ? 0.9 : 1)) CT.act(G, { t: 'showSell', uid: b.uid }); }
+    return CT.act(G, { t: 'nextMorning' });
   }
   if (!N.done) {
     if (N.pick === 'cardnight') { const g = Object.keys(G.packs).sort((a, b) => G.packs[b] - G.packs[a])[0]; CT.act(G, { t: 'cardNight', game: g, n: style === 'sloppy' ? 0 : Math.min(3, G.packs[g]) }); }
@@ -265,5 +281,8 @@ if (require.main === module) {
     console.log(`${s.padEnd(10)} median gain ${med(gains).toFixed(0)}%  tab ${Math.round(tabs / N * 100)}%  fakes sold ${avg('fakesSold')}  promos ${avg('promos')}  variants ${avg('variants')}  misprints ${avg('misprints')}  scalped ${avg('scalpedPacks')}  ranks ${JSON.stringify(ranks)}`);
   }
   console.log(`careful beats sloppy ${Math.round(carefulWins / N * 100)}%`);
+  // v3.2: the upgrade band compares the same seeds (careful minus noupgrades), which is far steadier than two medians
+  const pair = res.careful.map((G, i) => (G.final.gain / G.final.start - res.noupgrades[i].final.gain / res.noupgrades[i].final.start) * 100);
+  console.log(`upgrades paired median ${med(pair).toFixed(0)} points`);
 }
 module.exports = { run, bot };

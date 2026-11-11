@@ -1,0 +1,381 @@
+{
+ "about": "ArtifactData batch for https://claude.ai/artifact/UcN4Lpz8yMHSyDCK69DmYM, collection playtests: the two Claude-played runs. A person pushes this after review; nothing here writes to the artifact. © 2026 justaskjoe. All rights reserved.",
+ "url": "https://claude.ai/artifact/UcN4Lpz8yMHSyDCK69DmYM",
+ "action": "batch",
+ "writes": [
+  {
+   "op": "set",
+   "collection": "playtests",
+   "doc_id": "agent-claude-newbie",
+   "data": {
+    "source": "agent-claude",
+    "persona": "newbie",
+    "name": "Cautious newbie (played by Claude)",
+    "runs": [
+     {
+      "day": "end",
+      "mins": 73,
+      "rank": "Lane Favorite",
+      "focus": "singles",
+      "split": "balanced",
+      "home": "shell",
+      "setupClear": 5,
+      "setupFeel": "fine",
+      "floorBack": 4,
+      "counterFloor": 4,
+      "grids": 4,
+      "rearranged": "yes",
+      "sys": {
+       "opening": {
+        "clear": 5,
+        "fun": 3,
+        "missed": false
+       },
+       "stockroom": {
+        "clear": 4,
+        "fun": 3,
+        "missed": false
+       },
+       "fetch": {
+        "clear": 4,
+        "fun": 3,
+        "missed": false
+       },
+       "browsers": {
+        "clear": 5,
+        "fun": 4,
+        "missed": false
+       },
+       "tags": {
+        "clear": null,
+        "fun": null,
+        "missed": true
+       },
+       "sleeves": {
+        "clear": 4,
+        "fun": 2,
+        "missed": false
+       },
+       "sealed": {
+        "clear": 3,
+        "fun": 5,
+        "missed": false
+       },
+       "vintage": {
+        "clear": 3,
+        "fun": 1,
+        "missed": true
+       },
+       "reprints": {
+        "clear": 3,
+        "fun": 2,
+        "missed": false
+       },
+       "repacks": {
+        "clear": null,
+        "fun": null,
+        "missed": true
+       },
+       "rating": {
+        "clear": 1,
+        "fun": 2,
+        "missed": false
+       },
+       "fakes": {
+        "clear": 3,
+        "fun": 4,
+        "missed": false
+       },
+       "thieves": {
+        "clear": 4,
+        "fun": 4,
+        "missed": false
+       },
+       "board": {
+        "clear": null,
+        "fun": null,
+        "missed": true
+       },
+       "upgrades": {
+        "clear": 4,
+        "fun": 4,
+        "missed": false
+       },
+       "loupe": {
+        "clear": 4,
+        "fun": 4,
+        "missed": false
+       },
+       "nights": {
+        "clear": 3,
+        "fun": 3,
+        "missed": false
+       }
+      },
+      "pace": {
+       "early": {
+        "money": "tight",
+        "energy": "exciting"
+       },
+       "mid": {
+        "money": "tight",
+        "energy": "drag"
+       },
+       "late": {
+        "money": "flush",
+        "energy": "fine"
+       }
+      },
+      "drag": "5",
+      "contra": "Rep climbed from 60 to the max of 100 while my star rating slid from 4.25 to 3.69, with reviews like 'Overpriced and pushy' (I never touched a tag), 'Case is always stocked' (my case held one 10c card) and 'Pulled a hit from their repack!' (I never made a repack). A booster box shows as worth ~250c, but it can't go on the rack, so opening it into packs (~170c) is the only way to sell it. On Card Night with zero packs, DJ Vee said 'the crowd still bought some packs'.",
+      "confused": "The star rating. It dropped on days that felt great and nothing told me why. And tells: most customers showed one and almost none were crooks, so by day 3 I ignored them. Prices also swing overnight: the 180c card I bought on day 1 was 'worth' 203c, not 251c, the next morning because Shellstorm demand dipped.",
+      "best": "Day 3: a 'perfect' card I paid 7c for looked like 208c and passed my UV lamp and loupe. DJ Vee's hint about perfect-looking promos made me buy the Spectrometer, re-scan it, and it was a fake. That's the game teaching me something. Also day 2: a browser paid 135c off the rack for the 60c blister I'd ordered the night before.",
+      "worst": "Days 5 and 6: my singles side was dead (everything I owned was 1-10c) and the day was just pack buyers and 'Your loss!' sellers. And day 6: the first estate lot was a vintage pack at 944c when I had 94c. Vintage was never reachable in my whole run.",
+      "change": "Explain the star rating every morning (which three things moved it and by how much) and make reviews match what actually happened in my shop. Make tells mean more: fewer of them on honest customers.",
+      "bugs": "Reviews mention things I never had (repacks, a vintage box on display). DJ Vee's day-8 close repeats the day-4 line 'Wave 3 reprint list is out' on the eve of Wave 4. Card Night with no packs still says the crowd bought packs.",
+      "again": 3,
+      "at": "2026-11-01T12:00:00.000Z",
+      "build": "v3",
+      "source": "agent-claude",
+      "persona": "newbie",
+      "seed": 2001,
+      "verdict": {
+       "like": [
+        "The day 1 checklist: I set up with zero refusals.",
+        "DJ Vee's warnings paid off: the Scale Gang tip (sold behind the counter) and the perfect-promo tip (the Spectrometer caught a 208c fake).",
+        "Watching thieves: caught a kid, a drifter and Sticky, and the parent scene and 'buy my finds' are lovely.",
+        "Ordering a 60c blister and selling it off the rack for 135c the next day."
+       ],
+       "dislike": [
+        "The star rating fell all run (4.25 to 3.69) while rep hit 100, and nothing said why.",
+        "Reviews about things I never had (repacks, a vintage box).",
+        "Days 5-6 felt like watching my standing orders: singles all 1-10c, sellers walk.",
+        "Vintage at 944c when I had 94c. I could only look at it."
+       ],
+       "makesSense": [
+        "Opening checklist",
+        "Watching vs calling security",
+        "Pack buyers and the rack",
+        "The Spectrometer catching ring fakes"
+       ],
+       "confusing": [
+        "Why the star rating moves",
+        "What a tell means when most honest people show one",
+        "Box value 250c that I can only sell as 170c of packs",
+        "Card values swinging overnight with demand",
+        "Cards I couldn't read because they're from another game's script"
+       ],
+       "keep": [
+        "Day 1 checklist",
+        "DJ Vee warnings that teach a counter",
+        "Thief encounters with kid/drifter choices",
+        "Sealed ordering loop"
+       ],
+       "remove": [
+        "Reviews that describe things the shop never had",
+        "Tells on honest customers (or make them much rarer)",
+        "Unreadable cards: I'm a card shop owner, I know the sets"
+       ],
+       "change": [
+        "Rating: show the three biggest reasons it moved each morning",
+        "Let a booster box go on the rack, or stop showing a value I can't reach",
+        "Swap meets: stop asking for my best card for junk every time"
+       ],
+       "add": [
+        "A day 5-6 event so the middle isn't routine",
+        "A cheaper first taste of vintage (a single old pack around 100-150c)",
+        "A \"stock the floor\" button for routine mornings"
+       ]
+      }
+     }
+    ]
+   }
+  },
+  {
+   "op": "set",
+   "collection": "playtests",
+   "doc_id": "agent-claude-minmax",
+   "data": {
+    "source": "agent-claude",
+    "persona": "minmax",
+    "name": "Impatient min-maxer (played by Claude)",
+    "runs": [
+     {
+      "day": "end",
+      "mins": 76,
+      "rank": "Lane Favorite",
+      "focus": "singles",
+      "split": "cash",
+      "home": "star",
+      "setupClear": 4,
+      "setupFeel": "fine",
+      "floorBack": 3,
+      "counterFloor": 4,
+      "grids": 2,
+      "rearranged": "yes",
+      "sys": {
+       "opening": {
+        "clear": 4,
+        "fun": 3,
+        "missed": false
+       },
+       "stockroom": {
+        "clear": 3,
+        "fun": 2,
+        "missed": false
+       },
+       "fetch": {
+        "clear": 4,
+        "fun": 4,
+        "missed": false
+       },
+       "browsers": {
+        "clear": 5,
+        "fun": 3,
+        "missed": false
+       },
+       "tags": {
+        "clear": 4,
+        "fun": 2,
+        "missed": false
+       },
+       "sleeves": {
+        "clear": 4,
+        "fun": 2,
+        "missed": false
+       },
+       "sealed": {
+        "clear": 2,
+        "fun": 4,
+        "missed": false
+       },
+       "vintage": {
+        "clear": 2,
+        "fun": 1,
+        "missed": false
+       },
+       "reprints": {
+        "clear": 2,
+        "fun": 2,
+        "missed": false
+       },
+       "repacks": {
+        "clear": null,
+        "fun": null,
+        "missed": true
+       },
+       "rating": {
+        "clear": 1,
+        "fun": 2,
+        "missed": false
+       },
+       "fakes": {
+        "clear": 4,
+        "fun": 4,
+        "missed": false
+       },
+       "thieves": {
+        "clear": 4,
+        "fun": 5,
+        "missed": false
+       },
+       "board": {
+        "clear": 3,
+        "fun": 2,
+        "missed": false
+       },
+       "upgrades": {
+        "clear": 4,
+        "fun": 4,
+        "missed": false
+       },
+       "loupe": {
+        "clear": 3,
+        "fun": 3,
+        "missed": false
+       },
+       "nights": {
+        "clear": 3,
+        "fun": 3,
+        "missed": false
+       }
+      },
+      "pace": {
+       "early": {
+        "money": "flush",
+        "energy": "exciting"
+       },
+       "mid": {
+        "money": "flush",
+        "energy": "drag"
+       },
+       "late": {
+        "money": "flush",
+        "energy": "fine"
+       }
+      },
+      "drag": "4",
+      "contra": "Skrimp the scalper pays 31c a pack, more than my own customers (~28c). I sold him every pack three times (days 3, 5 and 9) for ~1,300c, by far my best income. Rep fell 73 to 43, but the star rating barely moved and nothing else got worse, so the 'bad' choice is the best one. The board flags Sticky in a hat, but watching catches them the same way, so refusing only loses the bounty.",
+      "confused": "Sealed supply. A Hive premium box I paid 230c for was 'worth' 216c the next morning because of a reprint nobody warned me about. A Shellstorm order was refused for 'allocation' when the gossip had named a Hive set. The rack only holds 16 packs, so 'no room' kept stopping me. Also the first loupe on a card cut its estimate from ~498c to ~280c.",
+      "best": "Day 1: a 'whole binder page for 14c' had a ~498c card in it (280c after the loupe), and Mimbo paid 258c for another card the same day. Day 8: Vault paid 762c for a Lopu Fox that had sat unnoticed in my back binder.",
+      "worst": "Days 4 and 6: 26 packs in stock and I sold about one pack each day. After the scalper days the shop just idled. And vintage: I bought the scale and the riser, the first lot was 1064c when I had 700c ('the estate can't go that low'), and the next one was 2675c.",
+      "change": "Make the scalper's cost visible and real (fewer buyers tomorrow, a rating hit, a 'Limit 2' reminder at the counter) or cap him. Bring estate vintage earlier and cheaper, or let me put a deposit down, so the vintage fixtures I buy can pay off.",
+      "bugs": "Reviews say 'Pulled a hit from their repack!' and 'Saw a vintage box on display' and I had neither. The day-8 close says 'Wave 3 reprint list is out' on the eve of Wave 4.",
+      "again": 4,
+      "at": "2026-11-01T12:00:00.000Z",
+      "build": "v3",
+      "source": "agent-claude",
+      "persona": "minmax",
+      "seed": 2002,
+      "verdict": {
+       "like": [
+        "Day 1 binder page for 14c hiding a big card: that rush is the game at its best.",
+        "Vault paying 762c on Collector's Fair day.",
+        "Bounties for catching thieves.",
+        "Opening premium boxes onto a full rack."
+       ],
+       "dislike": [
+        "The scalper being strictly the best move (about 1,300c from three sales) with no felt cost.",
+        "Days 4 and 6: 26 packs, one sale.",
+        "Buying the scale and riser for vintage I could never afford.",
+        "Allocation and reprint surprises that wiped margin with no warning."
+       ],
+       "makesSense": [
+        "Loupe and Spectrometer upgrades",
+        "Watch, then security with proof",
+        "Release days drive pack buyers"
+       ],
+       "confusing": [
+        "Rep vs stars: rep fell to 43 and nothing changed",
+        "The first estimate (498c) before the loupe (280c)",
+        "Allocation refusal on a set the gossip never named",
+        "Rack capacity (16 packs) only shows as \"no room\""
+       ],
+       "keep": [
+        "Gems in cheap lots (but rarer and smaller)",
+        "Collector's Fair big buyer",
+        "Bounties",
+        "Premium boxes"
+       ],
+       "remove": [
+        "Unlimited scalper buyouts",
+        "Board refusals that add nothing over watching"
+       ],
+       "change": [
+        "Scalper: cap him, make him cost real buyers tomorrow, or make Limit 2 the default answer",
+        "Vintage: earlier, cheaper first lot, or a layaway deposit",
+        "Show allocation and reprint risk before I order",
+        "Show a condition range before the loupe, not a perfect-card number"
+       ],
+       "add": [
+        "A rep payoff or penalty I can feel (prices, buyers, events)",
+        "Mid-run goals (a contract or a fair to prep for around day 5)",
+        "A rack-full warning with \"move the rest to the shelf\""
+       ]
+      }
+     }
+    ]
+   }
+  }
+ ]
+}

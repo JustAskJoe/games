@@ -1,0 +1,95 @@
+<title>Rogue Shooter Heroes</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Rajdhani:wght@500;600;700&display=swap">
+<style>
+/* Layout: wooden field journal, one plank per hero: live walk and attack loops on grass, frame strips underneath. */
+:root {
+  --bg: #1a1612; --panel: #2a2218; --panel-2: #231c14; --wood: #6b4c22; --wood-light: #a08050;
+  --fg: #f0e4c8; --dim: #b4a27e; --gold: #ffcc44; --gold-deep: #5a3a00; --grass: #5ea23c; --grass-dark: #529434;
+  --display: 'Press Start 2P', 'Courier New', monospace;
+  --body: 'Rajdhani', 'Segoe UI', system-ui, sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { background: var(--bg); color: var(--fg); }
+body { font-family: var(--body); font-size: 16px; line-height: 1.45; margin: 0; }
+.wrap { max-width: 1240px; margin: 0 auto; padding-block: 28px 56px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 22px; }
+header.top { display: grid; gap: 10px; }
+.eyebrow { font-family: var(--display); font-size: 9px; letter-spacing: 2px; color: var(--dim); text-transform: uppercase; }
+h1 { font-family: var(--display); font-size: clamp(18px, 3.4vw, 28px); color: var(--gold); text-shadow: 2px 2px 0 var(--gold-deep); margin: 0; letter-spacing: 1px; line-height: 1.4; }
+.lede { max-width: 72ch; color: var(--dim); font-weight: 600; margin: 0; }
+.controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.controls span { font-family: var(--display); font-size: 9px; color: var(--dim); letter-spacing: 1px; margin-right: 4px; }
+.chip { font-family: var(--display); font-size: 9px; letter-spacing: 1px; color: var(--fg); background: var(--panel); border: 2px solid var(--wood); padding: 8px 10px; cursor: pointer; }
+.chip[aria-pressed="true"] { border-color: var(--gold); color: var(--gold); }
+.chip:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+section { background: var(--panel-2); border: 2px solid var(--wood); box-shadow: inset 0 1px 0 rgba(255,255,255,0.04), 0 4px 16px rgba(0,0,0,0.4); padding: 18px; display: grid; gap: 12px; min-width: 0; }
+section header { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: baseline; }
+h2 { font-family: var(--display); font-size: 14px; color: var(--gold); margin: 0; text-shadow: 1px 1px 0 var(--gold-deep); letter-spacing: 1px; }
+h3 { font-family: var(--display); font-size: 9px; color: var(--fg); margin: 0; letter-spacing: 1.5px; font-weight: 400; }
+.role { font-family: var(--display); font-size: 8px; color: var(--dim); letter-spacing: 1.5px; text-transform: uppercase; }
+section p { margin: 0; color: var(--dim); font-weight: 600; max-width: 84ch; }
+.anims { display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); gap: 18px; }
+@media (max-width: 900px) { .anims { grid-template-columns: 1fr; } }
+.block { display: grid; gap: 10px; align-content: start; min-width: 0; }
+.block.wide { grid-column: 1 / -1; }
+.what { margin: 0; color: var(--dim); font-weight: 600; font-size: 14px; }
+.row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+figure { margin: 0; display: grid; gap: 6px; justify-items: center; min-width: 0; }
+canvas { width: 100%; height: auto; image-rendering: pixelated; border: 2px solid var(--wood); background: var(--grass); }
+canvas.walk { max-width: 192px; }
+canvas.atk { max-width: 288px; }
+canvas.abl { max-width: 384px; }
+figcaption { font-family: var(--display); font-size: 8px; color: var(--dim); letter-spacing: 1.5px; }
+.strip { display: flex; flex-wrap: wrap; gap: 4px; padding: 6px; background: var(--panel); border: 1px solid var(--wood); }
+.strip img { image-rendering: pixelated; width: 48px; height: auto; background: var(--grass-dark); }
+.strip.fx img { width: 72px; }
+.strip.ab img { width: 96px; }
+footer { color: var(--dim); font-size: 13px; font-weight: 600; }
+</style>
+<div class="wrap">
+  <header class="top">
+    <div class="eyebrow">Rogue Shooter v2 · Heroes · Walk, attack and ability</div>
+    <h1>The five heroes in motion</h1>
+    <p class="lede">Every hero walks and attacks facing front, side and back; the game flips the side view for left. Walks are 4 frames. Base attacks and spacebar abilities are 3 frames each, with that class's effect. Shown at 6× for walks and 3× for attacks and abilities; in the game everything draws at 3×.</p>
+  </header>
+  <div class="controls" role="group" aria-label="Playback">
+    <span>PLAYBACK</span>
+    <button class="chip" id="t-play" aria-pressed="true">Playing</button>
+    <button class="chip" id="t-slow" aria-pressed="false">Slow motion</button>
+  </div>
+  {{CARDS}}
+  <footer>Drawn by Claude in code (art/tools/heroes). Sprite sheets in art/sprites/heroes. © 2026 justaskjoe. All rights reserved.</footer>
+</div>
+<script>
+const DATA = {{DATA}};
+const imgs = {};
+function load(src) { if (!imgs[src]) { const i = new Image(); i.src = src; imgs[src] = i; } return imgs[src]; }
+const cv = [...document.querySelectorAll('section.hero canvas')].map(c => {
+  const hero = c.closest('section').dataset.hero, view = c.dataset.view, kind = c.classList.contains('walk') ? 'walk' : c.classList.contains('atk') ? 'attack' : 'ability';
+  const frames = DATA[hero][kind][view].map(load);
+  const x = c.getContext('2d'); x.imageSmoothingEnabled = false;
+  return { c, x, frames, kind };
+});
+let playing = true, slow = false, t0 = performance.now();
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+// attack timing per frame (ms): wind-up, strike, follow-through, rest
+const ATK = [140, 110, 160, 420], ABL = [220, 160, 300, 520];
+function pick(t, seq) { let m = t % seq.reduce((a, b) => a + b, 0), i = 0; while (m >= seq[i]) { m -= seq[i]; i++; } return i; }
+function draw(now) {
+  const t = (now - t0) * (slow ? 0.3 : 1);
+  for (const o of cv) {
+    let i;
+    if (o.kind === 'walk') i = Math.floor(t / 150) % 4;
+    else i = pick(t, o.kind === 'attack' ? ATK : ABL);
+    const f = o.frames[i];
+    if (!f.complete) continue;
+    o.x.clearRect(0, 0, o.c.width, o.c.height); o.x.drawImage(f, 0, 0);
+  }
+  if (playing && !reduce) requestAnimationFrame(draw);
+}
+Promise.all(Object.values(imgs).map(i => i.decode().catch(() => {}))).then(() => requestAnimationFrame(draw));
+const pb = document.getElementById('t-play'), sb = document.getElementById('t-slow');
+pb.addEventListener('click', () => { playing = !playing; pb.setAttribute('aria-pressed', playing); pb.textContent = playing ? 'Playing' : 'Paused'; if (playing) requestAnimationFrame(draw); });
+sb.addEventListener('click', () => { slow = !slow; sb.setAttribute('aria-pressed', slow); });
+</script>

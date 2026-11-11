@@ -48,9 +48,14 @@ button { font: inherit; color: inherit; }
 .sidegrp { display: flex; gap: 10px; } .sidegrp.r { flex-direction: row-reverse; }
 .team.plum .nm { color: #B57BFF; } .team.plum .bar i { background: linear-gradient(90deg, #7A4BC9, #B57BFF); }
 .team.sun .nm { color: #FFD34D; } .team.sun .bar i { background: linear-gradient(90deg, #C99A1A, #FFD34D); }
+.team.rose .nm { color: #FF6FB5; } .team.rose .bar i { background: linear-gradient(90deg, #C23F86, #FF6FB5); }
+.team.sky .nm { color: #5AA9FF; } .team.sky .bar i { background: linear-gradient(90deg, #2C6FC9, #5AA9FF); }
 .team .cn { font-size: 17px; opacity: .85; }
 .team.sm { min-width: 0; gap: 6px; } .team.sm .nm { font-size: 19px; } .team.sm .cn { font-size: 13px; } .team.sm .bar { width: 150px; height: 11px; }
 .team.sm .pips b { width: 11px; height: 11px; }
+/* 5 or 6 sides (online free-for-all): three a side, narrower */
+.team.xs { gap: 4px; } .team.xs .nm { font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px; } .team.xs .cn { display: none; } .team.xs .bar { width: 96px; height: 9px; }
+.team.xs .pips { display: none; } .team.xs .ssm span { display: none; } .team.xs .ssm b { width: 6px; height: 6px; }
 .team.out { opacity: .35; filter: grayscale(.6); }
 .team.cur .bar { box-shadow: 0 0 0 2px var(--gold), 0 0 12px var(--gold); }
 .order { display: flex; align-items: center; gap: 4px; font-weight: 900; font-size: 11px; letter-spacing: 1px; color: var(--cream-2); min-height: 20px; text-shadow: 0 2px 0 rgba(0,0,0,.4); }
@@ -63,6 +68,33 @@ button { font: inherit; color: inherit; }
 .card .mapcode { width: 200px; font-family: ui-monospace, Consolas, monospace; font-size: 12px; }
 .card a.btn { text-decoration: none; display: inline-flex; align-items: center; }
 .card p.mapabout { font-size: 14px; margin: 6px 0 0; opacity: .85; min-height: 1.2em; }
+/* Custom Map screen: a wide card, preview on the left, themes and settings on the right */
+.card.ed { width: 1220px; max-width: 97%; max-height: 700px; overflow-y: auto; padding: 14px 20px; text-align: left; }
+.card.ed .edhead { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.card.ed h2 { font-size: 34px; margin: 0 12px 0 0; }
+.card.ed .edgrid { display: grid; grid-template-columns: 640px 1fr; gap: 16px; margin-top: 10px; }
+.card.ed canvas { width: 640px; height: 360px; display: block; border-radius: 10px; border: 2px solid var(--muted); image-rendering: pixelated; }
+.card.ed .edchips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+.card.ed .edchips span { background: var(--ink-2); border-radius: 99px; padding: 2px 9px; font-size: 12px; font-weight: 800; }
+.card.ed p.edrule { font-size: 13px; margin: 6px 0 0; opacity: .9; } .card.ed p.edrule b { color: var(--sun); }
+.card.ed .edrow { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px; }
+.card.ed .edrow .mapcode { width: 190px; }
+.card.ed .edlock { font-size: 13px; font-weight: 800; display: flex; align-items: center; gap: 6px; }
+.card.ed .edfavs small { opacity: .6; font-size: 12px; }
+.card.ed .edfav { display: inline-flex; } .card.ed .edfav button { font: inherit; font-size: 12px; font-weight: 800; color: var(--cream); background: var(--ink-2); border: 2px solid var(--muted); padding: 3px 8px; cursor: pointer; }
+.card.ed .edfav button:first-child { border-radius: 99px 0 0 99px; } .card.ed .edfav button:last-child { border-radius: 0 99px 99px 0; border-left: 0; }
+.card.ed .edthemes { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; }
+.card.ed .edthemes button { font: inherit; font-size: 11px; font-weight: 800; color: var(--cream); background: var(--ink-2); border: 2px solid transparent; border-radius: 10px; padding: 4px; cursor: pointer; line-height: 1.1; }
+.card.ed .edthemes button i { display: block; height: 22px; border-radius: 6px; margin-bottom: 3px; }
+.card.ed .edthemes button[aria-pressed="true"] { border-color: var(--sun); }
+.card.ed .edfields { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 14px; margin-top: 10px; }
+.card.ed .edf label { display: flex; justify-content: space-between; font-size: 12px; font-weight: 800; opacity: .9; } .card.ed .edf label b { color: var(--sun); }
+.card.ed .edf input[type=range] { width: 100%; accent-color: var(--sun); margin: 2px 0 0; }
+.card.ed .edf select { width: 100%; font: inherit; font-size: 13px; font-weight: 800; color: var(--cream); background: var(--ink-2); border: 2px solid var(--muted); border-radius: 10px; padding: 3px 6px; }
+.card.ed .row { justify-content: flex-end; }
+.card.ed .row #edMsg { margin: 0 auto 0 0; align-self: center; }
+.card.title { width: 860px; padding: 20px 34px; } /* the title: wide enough for three mode buttons in a row and the map row */
+.card.title .row.maps .mapcode { width: 170px; }
 .btn.lvl { position: relative; flex-direction: column; flex: 1; min-width: 0; width: 180px; min-height: 110px; padding: 12px 14px; font-size: 28px; }
 .btn.lvl small { font-family: var(--body); font-weight: 800; font-size: 13px; line-height: 1.25; margin-top: 4px; }
 .btn.lvl .num { position: absolute; left: 8px; top: 6px; font-size: 13px; opacity: .6; }
@@ -268,6 +300,16 @@ button { font: inherit; color: inherit; }
       const n = wob(c, 40), v = c.h * [0.14, 0.13, 0.12, 0.06, 0][c.s.land];
       for (let x = 0; x < c.w; x++) fillCol(c, x, c.top + n[x] + v * Math.exp(-Math.pow((x / c.w - 0.5) / 0.09, 2)));
       chasms(c, [2, 1, 0, 0, 0][c.s.land]);
+    } },
+    lagoon: { name: 'Lagoon', blurb: 'Low islands split by channels that go down below the liquid.', gen(c) {
+      // Louiemark's Lagoon Isles shape: ground near the liquid, cut by 3–5 channels (fewer on heavier land)
+      const n = wob(c, 30), k = [5, 4, 4, 3, 3][c.s.land] - (c.r() < 0.5 ? 1 : 0) + 1, low = Math.min(c.top + c.h * 0.05, c.water - 9 * c.sy);
+      const ch = Array.from({ length: k }, (_, i) => ({ u: (i + 1) / (k + 1) + (c.r() - 0.5) * 0.06, w: 0.016 + c.r() * 0.008 }));
+      for (let x = 0; x < c.w; x++) {
+        const u = (x + 0.5) / c.w; let t = low + n[x] * 0.7;
+        for (const q of ch) { const d = Math.abs(u - q.u) / q.w; if (d < 1) t = Math.max(t, c.h - 3 * c.sy); else if (d < 1.8) t = Math.max(t, c.h - 3 * c.sy - (c.h - 3 * c.sy - t) * (d - 1) / 0.8); }
+        fillCol(c, x, t);
+      }
     } },
     islands: { name: 'Islands', blurb: 'Floating islands over open liquid. Knock-offs are deadly.', gen(c) {
       const n = Math.max(2, Math.round([6, 5, 4, 3, 3][c.s.land] * c.sx)), gap = c.w / n, hf = [0.32, 0.37, 0.42, 0.46, 0.5][c.s.land];
@@ -518,7 +560,7 @@ button { font: inherit; color: inherit; }
       look: { sky: ['#2B1E45', '#7A3B5E', '#FF8A3D', '#FFC37A'], ridges: ['rgba(107,58,91,.55)', 'rgba(70,40,78,.7)'], bg: 'hills',
         shades: [['#A6DE62', '#93CF55'], ['#6FAE45', '#62A03C'], ['#D2834A', '#C47640'], ['#B2643A', '#A55B36'], ['#8C4C3A', '#7F4436'], ['#6A3E4A', '#5E3743']], tuft: '#B8EC74',
         rock: ROCK_LOOK[0], prop: ['#7A4A34', '#6C412E'], accent: ['#5FA845', '#54983C'], liquid: LIQ.water, hazard: '#C9481A' } },
-    isles: { name: 'Sky Isles', blurb: 'Floating islands over open water. Miss the edge and you swim.', landform: 'islands',
+    sky: { name: 'Sky Isles', blurb: 'Floating islands over open water. Miss the edge and you swim.', landform: 'islands',
       props: [['tree', 2], ['pillar', 2], ['boulder', 1]], platform: 'ledge', hazard: { kind: 'dud', name: 'Old dud' }, set: { caves: 0, weather: 2, overhangs: 0 },
       rule: 'High winds: gusts up here are 30% stronger. Read the wind or lose the shot.',
       later: 'Updrafts between islands that lift shells (and units) passing over them.',
@@ -609,9 +651,13 @@ button { font: inherit; color: inherit; }
   const PRESETS = {};
   for (const id of THEME_IDS) PRESETS[id] = { name: THEMES[id].name, blurb: THEMES[id].blurb, group: 'Theme maps', s: { theme: id } };
   Object.assign(PRESETS, {
+    // Louiemark's first three maps (Nov 2), rebuilt as presets: no hazards, normal wind, his names
+    valley: { name: 'Sunset Valley', blurb: 'Rolling hills around a valley in the middle.', group: 'Classic maps', s: { theme: 'hills', landform: 'hills', hazards: 0, weather: 1 } },
+    peak: { name: 'Frost Peak', blurb: 'A snowy mountain in the middle. Lob over it or dig through.', group: 'Classic maps', s: { theme: 'frost', landform: 'peak', hazards: 0, weather: 1, caves: 2 } },
+    isles: { name: 'Lagoon Isles', blurb: 'Low islands with water between them. Knock people in.', group: 'Classic maps', s: { theme: 'cove', landform: 'lagoon', hazards: 0, weather: 1, props: 1 } },
     classic: { name: 'Classic Duel', blurb: 'Crater Hills mirrored down the middle: the same ground on both sides.', group: 'Modes', s: { theme: 'hills', symmetry: 1, hazards: 0 } },
     tourney: { name: 'Tournament', blurb: 'Mirrored mesas, normal wind, no hazards, few props. For settling arguments.', group: 'Modes', s: { theme: 'dunes', symmetry: 1, hazards: 0, props: 1, weather: 1, rugged: 1 } },
-    archipelago: { name: 'Archipelago', blurb: 'More, smaller islands and high water. Knockback is king.', group: 'Modes', s: { theme: 'isles', land: 1, water: 2, platforms: 1 } },
+    archipelago: { name: 'Archipelago', blurb: 'More, smaller islands and high water. Knockback is king.', group: 'Modes', s: { theme: 'sky', land: 1, water: 2, platforms: 1 } },
     warren: { name: 'Worm Warren', blurb: 'A tall hill riddled with tunnels. Dig, hide, ambush.', group: 'Modes', s: { theme: 'fungal', landform: 'hills', caves: 4, overhangs: 2, height: 3 } },
     highrise: { name: 'High Rise', blurb: 'Tall buildings with girders between them.', group: 'Modes', s: { theme: 'roofs', height: 4, platforms: 2, land: 1 } },
     hightide: { name: 'High Tide', blurb: 'The sea starts high. Every bit of ground counts.', group: 'Modes', s: { theme: 'cove', water: 3, height: 3 } },
@@ -779,6 +825,7 @@ button { font: inherit; color: inherit; }
   const VMAX = 60;              // launch speed at full power, cells / s
   const WIND_MAX = 7;           // strongest wind push, cells / s² sideways
   const UNIT_R = 1.5;           // unit body radius, cells
+  const MAX_TEAMS = 6;          // online free-for-all takes up to 6 players
   const UNITS_PER_TEAM = 1;     // default side size: 1v1 and the 4-way free-for-all both use one unit a side
   const HP = 100;               // a "standard" unit; characters scale from it
   const MOVE_STEPS = 14;        // default steps a turn (characters override)
@@ -849,15 +896,13 @@ button { font: inherit; color: inherit; }
   function surfaceY(G, x) { const cx = clamp(Math.floor(x), 0, COLS - 1); for (let y = 0; y < ROWS; y++) if (G.T[y * COLS + cx]) return y; return ROWS; }
 
   // Maps come from the map generator (mapgen.js): ten themes, each a preset you can tweak, plus share codes.
-  // MAPS lists the ten theme maps (Shuffle deals from these); opts.map also takes any preset id or share code.
+  // MAPS lists the theme maps a round can deal; opts.map also takes any preset id, share code or settings object.
+  // With no opts.map, each round's map comes from its seed (pickMap), so every copy of the game (server, both
+  // browsers) builds the same one without sending anything extra.
   const MAPS = {}; for (const id of MapGen.MAP_IDS) MAPS[id] = { name: MapGen.PRESETS[id].name, blurb: MapGen.PRESETS[id].blurb };
   const MAP_IDS = MapGen.MAP_IDS;
+  function pickMap(seed) { let h = (seed >>> 0) ^ 0x9E3779B9; h = Math.imul(h ^ (h >>> 16), 0x45D9F3B) >>> 0; h = Math.imul(h ^ (h >>> 16), 0x45D9F3B) >>> 0; return MAP_IDS[((h ^ (h >>> 16)) >>> 0) % MAP_IDS.length]; }
   const BARREL = { r: 4.5, dmg: 44 }; // a map hazard: blows up when a blast reaches it (and sets off the next one)
-  // Spawns go on dry ground: the nearest column (either side) with ground well above the water there and 6 cells each way.
-  function landNear(G, x) {
-    for (let d = 0; d < COLS; d++) for (const s of [x + d, x - d]) if (s >= 4 && s < COLS - 4 && [s - 6, s - 3, s, s + 3, s + 6].every((c) => surfaceY(G, c) < G.water - 4)) return s;
-    return x;
-  }
   function carve(G, cx, cy, r) {
     const x0 = Math.max(0, Math.floor(cx - r)), x1 = Math.min(COLS - 1, Math.ceil(cx + r));
     const y0 = Math.max(0, Math.floor(cy - r)), y1 = Math.min(ROWS - 1, Math.ceil(cy + r));
@@ -872,9 +917,9 @@ button { font: inherit; color: inherit; }
   // ---------- game state ----------
   // opts.teams: 2 (1v1) or 4 (free-for-all). opts.size: units per side (default 1). opts.first: which side shoots first.
   // opts.chars: each side's character id (default Volt). opts.map: a preset id, a share code or a settings object for
-  // MapGen (default Crater Hills). A preset or a code with seed 0 builds a new layout from the match seed.
+  // MapGen (default: a theme picked from the seed). A preset or a code with seed 0 builds a new layout from the match seed.
   function newGame(seed, opts = {}) {
-    const teams = opts.teams === 4 ? 4 : opts.teams === 3 ? 3 : 2, size = Math.max(1, Math.min(2, opts.size || UNITS_PER_TEAM));
+    const teams = Math.max(2, Math.min(MAX_TEAMS, opts.teams | 0)), size = Math.max(1, Math.min(2, opts.size || UNITS_PER_TEAM));
     const chars = Array.from({ length: teams }, (_, t) => (opts.chars && CHARS[opts.chars[t]]) ? opts.chars[t] : 'volt');
     const G = {
       v: 2, seed: seed >>> 0, _s: (seed >>> 0) || 1, _id: 0, map: 'hills', mapName: '', theme: 'hills', windMul: 1, mirror: false,
@@ -884,7 +929,7 @@ button { font: inherit; color: inherit; }
       ammo: [], ss: new Array(teams).fill(0), fused: false, winner: null,
       stats: { shots: 0, shot2: 0, ss: 0, lobs: 0, dudBlasts: 0, chains: 0, strikes: 0, drowned: 0, fallKOs: 0, selfDmg: new Array(teams).fill(0), dmg: new Array(teams).fill(0) },
     };
-    const M = MapGen.generate(opts.map || 'hills', { w: COLS, h: ROWS, seed: G.seed });
+    const M = MapGen.generate(opts.map || pickMap(seed), { w: COLS, h: ROWS, seed: G.seed });
     Object.assign(G, { map: M.id, mapName: M.name, theme: M.theme, T: M.T, water: M.water, windMul: M.windMul, mirror: M.mirror });
     for (let t = 0; t < G.teams; t++) { const C = CHARS[chars[t]]; G.ammo.push({ shot1: C.shot1.ammo, shot2: C.shot2.ammo, dud: DUD.ammo }); }
     // spawn spots spread evenly across the map; each side takes a block of them. In 1v1, side 0 starts on the left;
@@ -895,7 +940,8 @@ button { font: inherit; color: inherit; }
     const mul = opts.hpMul || (size > 1 ? HP_MUL.crew : teams > 2 ? HP_MUL.ffa : HP_MUL.duel);
     for (let k = 0; k < spots; k++) {
       const t = order[Math.floor(k / size)], C = CHARS[chars[t]], hp = Math.round(C.hp * mul);
-      let x = landNear(G, Math.round(COLS * (0.08 + 0.84 * (k + 0.3 + R(G) * 0.4) / spots)));
+      let x = Math.round(COLS * (0.08 + 0.84 * (k + 0.3 + R(G) * 0.4) / spots));
+      x = dryLand(G, x, G.units.map((v) => Math.floor(v.x)));
       if (G.mirror && spots % 2 === 0 && k >= spots / 2) x = COLS - 1 - Math.floor(G.units[spots - 1 - k].x); // mirror maps mirror the spawns
       G.units.push({ id: ++G._id, team: t, char: chars[t], x: x + 0.5, y: surfaceY(G, x), vx: 0, vy: 0, hp, maxHp: hp, alive: true, air: false, face: x < COLS / 2 ? 1 : -1, delay: 0 });
     }
@@ -916,6 +962,14 @@ button { font: inherit; color: inherit; }
     for (let t = 0; t < teams; t++) if (t !== G.team) G.ss[t] = 1; // sides that don't shoot first get a one-notch SS head start (first turn wins 58% → 51% in the 1v1 sim)
     G.wind = rollWind(G);
     return G;
+  }
+  // the nearest column to x with ground well above the water and 5 cells from a channel's edge (spawns must never land in one),
+  // and at least 8 cells from anyone already placed
+  function dryLand(G, x, taken = []) {
+    const dry = (c) => c >= 0 && c < COLS && surfaceY(G, c) < G.water - 4; // the map's own water line (the generator sets it)
+    const ok = (c) => c >= 3 && c < COLS - 3 && dry(c - 5) && dry(c) && dry(c + 5) && taken.every((t) => Math.abs(t - c) >= 8);
+    for (let d = 0; d < COLS; d++) { if (ok(x - d)) return x - d; if (ok(x + d)) return x + d; }
+    return x;
   }
   // One notch of SS charge at the start of each of your turns.
   function chargeSS(G) { G.ss[G.team] = Math.min(SS_CHARGE, G.ss[G.team] + 1); }
@@ -1283,7 +1337,7 @@ button { font: inherit; color: inherit; }
     nodud:  { tries: 36, refine: 14, noiseA: 1.4, noiseP: 0.018, dud: 0, lob: 0, dodge: 1 },
     duder:  { tries: 36, refine: 14, noiseA: 1.4, noiseP: 0.018, dud: 2.2, lob: 1, dodge: 1 },
     // the computer opponents in 1 Player mode
-    easy:   { tries: 8,  refine: 0,  noiseA: 7.0, noiseP: 0.09,  dud: 0.6, lob: 0, dodge: 0, ssSkip: 0.5 },
+    easy:   { tries: 8,  refine: 0,  noiseA: 7.5, noiseP: 0.10,  dud: 0.6, lob: 0, dodge: 0, ssSkip: 0.5 },
     medium: { tries: 18, refine: 6,  noiseA: 3.2, noiseP: 0.04,  dud: 1, lob: 1, dodge: 1 },
     hard:   { tries: 36, refine: 14, noiseA: 1.4, noiseP: 0.018, dud: 1, lob: 1, dodge: 1 },
   };
@@ -1398,7 +1452,7 @@ button { font: inherit; color: inherit; }
   }
 
   const WB = { TICK, COLS, ROWS, WATER0, GRAV, VMAX, WIND_MAX, UNIT_R, UNITS_PER_TEAM, HP, MOVE_STEPS, LOB_RANGE, LOB_POWER, SUDDEN_ROUNDS, MAX_ROUNDS, suddenTurn, maxTurns, DMG_SPREAD, SS_CHARGE, DELAY, HP_MUL,
-    DUD, BARREL, CHARS, CHAR_IDS, WEAPON_IDS, MAPS, MAP_IDS, MapGen, STYLES, newGame, act, step, resolve, current, teamUnits, charOf, shotSpec, ssReady, turnOrder, delayIf, solidAt, surfaceY, center, lobbable, canLob,
+    DUD, BARREL, CHARS, CHAR_IDS, WEAPON_IDS, MAPS, MAP_IDS, pickMap, MapGen, STYLES, newGame, act, step, resolve, current, teamUnits, charOf, shotSpec, ssReady, turnOrder, delayIf, solidAt, surfaceY, center, lobbable, canLob,
     predict, blastScore, botTurn, playOut, hash, replay };
   if (typeof module !== 'undefined' && module.exports) module.exports = WB; else root.WB = WB;
 })(typeof window !== 'undefined' ? window : globalThis);
@@ -1409,7 +1463,8 @@ button { font: inherit; color: inherit; }
    Draws the engine (window.WB) on one 1280×720 canvas and turns mouse, touch and keyboard into act() intents.
    The UI never changes the game itself: it only calls WB.act() and steps WB.step() on the clock.
    Two modes: 1 Player (you against 3 computer opponents in a 4-way free-for-all, Easy / Medium / Hard) and
-   2 Players (1v1 on one keyboard). Each side picks one of five characters (WB.CHARS); best of 3 rounds, with the
+   2 Players (1v1 on one keyboard), and Online (through the room server in ../server/: a 1v1, or a free-for-all for
+   2 to 6 players; the server referees every move and this page replays what it says was played). Each side picks one of five characters (WB.CHARS); best of 3 rounds, with the
    first turn rotating. Turn order follows the engine's turn delay.
    Placeholder art, all drawn in code. */
 (function () {
@@ -1429,12 +1484,17 @@ button { font: inherit; color: inherit; }
     { name: 'Tide', key: 'tide', c: '#22C3B5', c2: '#0E7C7B' },
     { name: 'Plum', key: 'plum', c: '#B57BFF', c2: '#7A4BC9' },
     { name: 'Sun', key: 'sun', c: '#FFD34D', c2: '#C99A1A' },
+    { name: 'Rose', key: 'rose', c: '#FF6FB5', c2: '#C23F86' },   // sides 5 and 6: online free-for-all only
+    { name: 'Sky', key: 'sky', c: '#5AA9FF', c2: '#2C6FC9' },
   ];
   const LEVELS = {
     easy: { name: 'Easy', blurb: 'Shaky aim, few tricks. Good for learning the ropes.' },
     medium: { name: 'Medium', blurb: 'Decent aim. Uses duds, lobs them back and saves its SS.' },
     hard: { name: 'Hard', blurb: 'Sharp aim and every trick. Beating three of them is a real win.' },
   };
+  // Online 1v1: the live room server (Louiemark's Cloudflare, deployed 2026-11-02). ?server=wss://… overrides it; on your own machine
+  // it takes priority over the local test server, so add ?server=ws://localhost:8431 to test against `npm start` in wormsbound/server.
+  const ONLINE_SERVER = 'wss://wormsbound-rooms.louiemark-ambata.workers.dev';
   const FONT = (px) => `${px}px "Lilita One", "Arial Black", system-ui, sans-serif`;
 
   const cv = $('#map'), ctx = cv.getContext('2d');
@@ -1443,7 +1503,7 @@ button { font: inherit; color: inherit; }
 
   const ui = {
     screen: 'title', G: null, matchSeed: 0, round: 1, wins: [0, 0], aim: {}, weapon: 'shot1', lob: false, picks: [null, null], pickTeam: 0, cursor: 2,
-    mode: 'duel', level: 'medium', cpu: null, mapPick: startMap(),
+    mode: 'duel', level: 'medium', cpu: null, mapPick: startMap(), net: null, you: 0, remoteAim: null,
     drag: null, acc: 0, last: 0, slow: 0, shake: 0, parts: [], trails: {}, scorch: [], clouds: [], dust: [], pops: [],
     tLeft: TURN_SECONDS, timerOn: lsGet('wb-timer') !== 'off', sound: lsGet('wb-sound') !== 'off', coach: lsGet('wb-coach') !== 'off',
     fast: false, tester: false, overAt: 0, turnsSeen: 0, paused: false, fb: { q: {}, text: '', nm: '', saved: null },
@@ -1458,8 +1518,13 @@ button { font: inherit; color: inherit; }
   }
   const nSides = () => (ui.mode === 'solo' ? 4 : 2);
   const isCPU = (t) => ui.mode === 'solo' && t !== 0;
+  const online = () => ui.mode === 'online';
+  // in a match, side t sits in seat teamSeat[t] (free-for-all seats can have gaps); the lobby works in seats
+  const roomSeat = (t) => { const R = ui.net && ui.net.room; if (!R) return null; const ts = R.teamSeat && R.teamSeat.length ? R.teamSeat : null; return R.seats[ts ? ts[t] : t] || null; };
+  const ffaRoom = () => !!(online() && ui.net && ui.net.room && ui.net.room.mode === 'ffa');
+  const needWins = () => (online() && ui.net && ui.net.room && ui.net.room.need) || Math.ceil(BEST_OF / 2);
   // what a side is called: "You" and "Tide CPU" in 1 Player, "Player 1" and "Player 2" in 1v1
-  const sideLabel = (t) => ui.mode === 'solo' ? (t === 0 ? 'You' : `${TEAMS[t].name} CPU`) : `Player ${t + 1}`;
+  const sideLabel = (t) => ui.mode === 'solo' ? (t === 0 ? 'You' : `${TEAMS[t].name} CPU`) : online() ? (t === ui.you ? 'You' : (roomSeat(t) && roomSeat(t).name) || 'Opponent') : `Player ${t + 1}`;
   const unitName = (u) => sideLabel(u.team);
   const charName = (t) => WB.CHARS[ui.G.chars[t]].name;
 
@@ -1634,7 +1699,7 @@ button { font: inherit; color: inherit; }
     const ss = WB.ssReady(G);
     ui.tLeft = TURN_SECONDS; ui.lob = false; ui.weapon = ss ? 'ss' : 'shot1'; ui.cpu = null;
     if (!isCPU(G.team)) ui.turnsSeen++;
-    banner(sideLabel(G.team), `${charName(G.team)}${ss ? ' · SS READY!' : ''}${isCPU(G.team) ? '' : ui.mode === 'solo' ? ' · your turn' : ''}`, TEAMS[G.team].c);
+    banner(sideLabel(G.team), `${charName(G.team)}${ss ? ' · SS READY!' : ''}${isCPU(G.team) ? '' : ui.mode === 'solo' || (online() && G.team === ui.you) ? ' · your turn' : ''}`, TEAMS[G.team].c);
     if (ss) tone(660, 990, 0.25, 0.12, 'triangle');
     renderHUD(); renderCtl(); coachLine();
   }
@@ -1649,7 +1714,18 @@ button { font: inherit; color: inherit; }
     if (!ui.aim[u.id]) ui.aim[u.id] = { angle: u.x < WB.COLS / 2 ? 50 : 130, power: 0.62 };
     return ui.aim[u.id];
   }
-  function canAct() { return ui.screen === 'game' && !ui.paused && ui.G && ui.G.phase === 'aim' && !isCPU(ui.G.team); }
+  function canAct() {
+    if (online()) return ui.screen === 'game' && ui.G && ui.G.phase === 'aim' && ui.G.team === ui.you && ui.net && ui.net.queue.length === 0 && !ui.net.waiting;
+    return ui.screen === 'game' && !ui.paused && ui.G && ui.G.phase === 'aim' && !isCPU(ui.G.team);
+  }
+  // Every move goes through here. Offline it changes the game at once; online it goes to the server, and the game
+  // changes when the server sends it back (net.onApplied), on both screens the same way.
+  function play(it) {
+    if (!online()) return WB.act(ui.G, it);
+    ui.net.send({ t: 'act', it });
+    if (it.k !== 'move' && it.k !== 'weapon') ui.net.waiting = true; // don't let a double-click send a second shot
+    return true;
+  }
 
   // ---------- computer turns (1 Player) ----------
   // The bot decides on a copy of the game (same seed and state, so the same choice), then the moves are played on
@@ -1675,17 +1751,17 @@ button { font: inherit; color: inherit; }
     if (ui.lob) {
       const ds = WB.lobbable(G); if (!ds.length) { ui.lob = false; renderCtl(); return false; }
       const [cx, cy] = WB.center(u); ds.sort((p, q) => Math.hypot(p.x - cx, p.y - cy) - Math.hypot(q.x - cx, q.y - cy));
-      ok = WB.act(G, { k: 'lob', dud: ds[0].id, angle: a.angle, power: a.power });
+      ok = play({ k: 'lob', dud: ds[0].id, angle: a.angle, power: a.power });
     } else {
-      if (G.weapon !== ui.weapon) WB.act(G, { k: 'weapon', w: ui.weapon });
-      ok = WB.act(G, { k: 'fire', angle: a.angle, power: a.power });
+      if (G.weapon !== ui.weapon) play({ k: 'weapon', w: ui.weapon });
+      ok = play({ k: 'fire', angle: a.angle, power: a.power });
     }
-    if (ok) { SFX.fire(); burst(...muzzle(u, a), 8, 'spark'); renderCtl(); coachLine(); }
+    if (ok && !online()) { SFX.fire(); burst(...muzzle(u, a), 8, 'spark'); renderCtl(); coachLine(); }
     return ok;
   }
   function muzzle(u, a) { const [cx, cy] = WB.center(u), r = a.angle * Math.PI / 180; return [(cx + Math.cos(r) * 2.2) * CELL, (cy - Math.sin(r) * 2.2) * CELL]; }
-  function walk(dir) { if (!canAct()) return; if (WB.act(ui.G, { k: 'move', dir })) { SFX.click(); renderCtl(); coachLine(); } }
-  function pass() { if (canAct()) { WB.act(ui.G, { k: 'pass' }); renderCtl(); } }
+  function walk(dir) { if (!canAct()) return; if (play({ k: 'move', dir }) && !online()) { SFX.click(); renderCtl(); coachLine(); } }
+  function pass() { if (canAct()) { play({ k: 'pass' }); renderCtl(); } }
 
   function stagePoint(e) { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) * W / r.width, (e.clientY - r.top) * H / r.height]; }
   cv.addEventListener('pointerdown', (e) => {
@@ -1702,6 +1778,7 @@ button { font: inherit; color: inherit; }
     a.angle = Math.round(((Math.atan2(-dy, dx) * 180 / Math.PI) + 360) % 360 * 10) / 10;
     if (a.angle > 180) a.angle = a.angle > 270 ? 0 : 180; // aim at the sky, never into the ground
     a.power = Math.round(clamp(len / DRAG_FULL, 0.05, 1) * 100) / 100;
+    shareAim(a);
   });
   const endDrag = (e) => {
     if (!ui.drag || e.pointerId !== ui.drag.id) return;
@@ -1711,9 +1788,10 @@ button { font: inherit; color: inherit; }
   cv.addEventListener('pointerup', endDrag); cv.addEventListener('pointercancel', (e) => { if (ui.drag && e.pointerId === ui.drag.id) ui.drag = null; });
 
   addEventListener('keydown', (e) => {
-    if (e.target && /INPUT|TEXTAREA/.test(e.target.tagName)) return;
     const k = e.key;
-    if (ui.screen === 'end' && (k === 'r' || k === 'R')) { startMatch(); return; }
+    if (ui.screen === 'mapedit' && k === 'Escape') { ui.ed = null; titleScreen(); return; }
+    if (e.target && /INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
+    if (ui.screen === 'end' && (k === 'r' || k === 'R')) { if (ffaRoom()) lobbyScreen(); else if (online()) { if (ui.net) { ui.net.send({ t: 'rematch' }); ui.net.rematchAsked = true; roundOverAgain(); } } else startMatch(); return; }
     if (ui.screen === 'level') { if (/^[1-3]$/.test(k)) { ui.level = Object.keys(LEVELS)[+k - 1]; ui.cursor = 2; selectScreen(0); } return; }
     if (ui.screen === 'select') {
       const n = WB.CHAR_IDS.length;
@@ -1737,6 +1815,7 @@ button { font: inherit; color: inherit; }
     else if (k === '2' || k === '3') pickWeapon(WB.WEAPON_IDS[+k - 1]);
     else if (k === 'l' || k === 'L') toggleLob();
     else if (k === ' ' || k === 'Enter') { e.preventDefault(); doFire(); }
+    if (/^(Arrow(Up|Down)|[wWsSqQeEfF])$/.test(k)) shareAim(a);
     else if (k === 'x' || k === 'X') pass();
   });
   function pickWeapon(w) { if (!canAct() || (w === 'ss' ? !WB.ssReady(ui.G) : ui.G.ammo[ui.G.team][w] === 0)) return; ui.weapon = w; ui.lob = false; SFX.click(); renderCtl(); coachLine(); }
@@ -1749,14 +1828,14 @@ button { font: inherit; color: inherit; }
     const side = (t) => {
       const us = G.units.filter((u) => u.team === t), hp = us.reduce((a, u) => a + Math.max(0, u.hp), 0), max = us.reduce((a, u) => a + u.maxHp, 0);
       const out = !us.some((u) => u.alive), cur = t === G.team && G.phase !== 'over';
-      return `<div class="team ${TEAMS[t].key}${t >= half ? ' r' : ''}${n > 2 ? ' sm' : ''}${out ? ' out' : ''}${cur ? ' cur' : ''}"><div><div class="nm">${esc(sideLabel(t))} <span class="cn">· ${esc(charName(t))}</span></div><div class="bar"><i style="width:${(100 * hp / max).toFixed(1)}%"></i></div></div>
+      return `<div class="team ${TEAMS[t].key}${t >= half ? ' r' : ''}${n > 2 ? ' sm' : ''}${n > 4 ? ' xs' : ''}${out ? ' out' : ''}${cur ? ' cur' : ''}"><div><div class="nm">${esc(sideLabel(t))} <span class="cn">· ${esc(charName(t))}</span></div><div class="bar"><i style="width:${(100 * hp / max).toFixed(1)}%"></i></div></div>
         <div class="ssm${WB.ssReady(G, t) ? ' on' : ''}" title="SS charge: ready every ${WB.SS_CHARGE} turns"><span>SS</span>${Array.from({ length: WB.SS_CHARGE }, (_, i) => `<b class="${G.ss[t] > i ? 'f' : ''}"></b>`).join('')}</div>
-        <div class="pips" title="rounds won">${Array.from({ length: Math.ceil(BEST_OF / 2) }, (_, i) => `<b class="${ui.wins[t] > i ? 'on' : ''}"></b>`).join('')}</div></div>`;
+        <div class="pips" title="rounds won">${Array.from({ length: needWins() }, (_, i) => `<b class="${ui.wins[t] > i ? 'on' : ''}"></b>`).join('')}</div></div>`;
     };
     const w = G.wind, arrows = Math.round(Math.abs(w) / WB.WIND_MAX * 4);
     const windTxt = Math.abs(w) < 0.2 ? 'calm' : `${w < 0 ? '◀'.repeat(Math.max(1, arrows)) : ''} ${Math.abs(w).toFixed(1)} ${w > 0 ? '▶'.repeat(Math.max(1, arrows)) : ''}`;
     const left = Array.from({ length: half }, (_, t) => side(t)).join(''), right = Array.from({ length: n - half }, (_, i) => side(n - 1 - i)).join('');
-    $('#hud').innerHTML = `<div class="sidegrp">${left}</div>` + `<div class="mid"><div class="timer${ui.timerOn ? '' : ' off'}" id="timer">${ui.timerOn ? Math.ceil(ui.tLeft) : '∞'}</div><div class="wind" aria-label="wind">WIND ${windTxt}</div><div class="wind" style="font-size:12px;opacity:.8">Round ${ui.round} · ${esc(G.mapName)}${ui.mode === 'solo' ? ' · ' + LEVELS[ui.level].name : ''}${G.turn >= WB.suddenTurn(G) ? ' · <span style="color:#FF4D5E">SUDDEN DEATH: the water rises</span>' : ''}</div>${orderHTML()}</div><div class="sidegrp r">${right}</div>`;
+    $('#hud').innerHTML = `<div class="sidegrp">${left}</div>` + `<div class="mid"><div class="timer${ui.timerOn ? '' : ' off'}" id="timer">${ui.timerOn ? Math.ceil(ui.tLeft) : '∞'}</div><div class="wind" aria-label="wind">WIND ${windTxt}</div><div class="wind" style="font-size:12px;opacity:.8">Round ${ui.round}${G.mapName ? ' · ' + esc(G.mapName) : ''}${ui.mode === 'solo' ? ' · ' + LEVELS[ui.level].name : ''}${G.turn >= WB.suddenTurn(G) ? ' · <span style="color:#FF4D5E">SUDDEN DEATH: the water rises</span>' : ''}</div>${orderHTML()}</div><div class="sidegrp r">${right}</div>`;
   }
   // The next turns if everyone keeps firing their Shot 1, counting the current side's chosen shot: what the
   // turn delay means right now. Light shot: you may go again before them; heavy shot: they may go twice.
@@ -1765,13 +1844,14 @@ button { font: inherit; color: inherit; }
     const w = ui.lob ? 'lob' : ui.weapon, d = G.units.filter((u) => u.alive).map((u) => ({ u, d: u.id === G.actor ? WB.delayIf(G, w) : u.delay }));
     const seq = [];
     for (let i = 0; i < 6 && d.length; i++) { d.sort((a, b) => a.d - b.d || a.u.id - b.u.id); const x = d[0]; seq.push(x.u.team); x.d += WB.shotSpec(G, x.u.team, 'shot1').delay; }
-    return `<div class="order" title="Who plays next, if everyone fires their Shot 1 after this">NEXT ${seq.map((t) => `<b style="background:${TEAMS[t].c}">${esc(sideLabel(t) === 'You' ? 'You' : ui.mode === 'solo' ? TEAMS[t].name[0] : 'P' + (t + 1))}</b>`).join('')}</div>`;
+    return `<div class="order" title="Who plays next, if everyone fires their Shot 1 after this">NEXT ${seq.map((t) => `<b style="background:${TEAMS[t].c}">${esc(sideLabel(t) === 'You' ? 'You' : ui.mode === 'solo' ? TEAMS[t].name[0] : online() ? sideLabel(t).slice(0, 6) : 'P' + (t + 1))}</b>`).join('')}</div>`;
   }
   function renderCtl() {
     const G = ui.G; $('#bMenu').hidden = !G || ui.screen !== 'game';
     if (!G || ui.screen !== 'game') { $('#ctl').innerHTML = ''; return; }
     const o = $('.order'); if (o) o.outerHTML = orderHTML();
     if (isCPU(G.team) && G.phase === 'aim') { $('#ctl').innerHTML = `<span class="cputag" style="--tc:${TEAMS[G.team].c}">${esc(sideLabel(G.team))} (${esc(charName(G.team))}) is taking its turn…</span>`; return; }
+    if (online() && G.team !== ui.you && G.phase === 'aim') { const s = roomSeat(G.team); $('#ctl').innerHTML = `<span class="cputag" style="--tc:${TEAMS[G.team].c}">${esc(sideLabel(G.team))} (${esc(charName(G.team))}) is aiming…${s && !s.connected ? ' (disconnected: their turn passes soon)' : ''}</span>`; return; }
     const aim = G.phase === 'aim', am = G.ammo[G.team], lob = WB.lobbable(G).length > 0;
     const wb = (w, key) => { const S = WB.shotSpec(G, G.team, w);
       return `<button class="btn wpn${ui.weapon === w && !ui.lob ? '' : ' ghost'}" type="button" data-w="${w}" aria-pressed="${ui.weapon === w && !ui.lob}" title="${esc(S.desc)} Turn delay +${S.delay}." ${!aim || am[w] === 0 ? 'disabled' : ''}>${esc(S.name)}<small>${key} · ${am[w] < 0 ? '∞' : am[w] + ' left'} · ⏱${S.delay}</small></button>`; };
@@ -1786,7 +1866,7 @@ button { font: inherit; color: inherit; }
   function coachLine() {
     const el = $('#coach'); if (!ui.coach || ui.screen !== 'game' || !ui.G) { el.innerHTML = ''; return; }
     const G = ui.G, u = WB.current(G); if (!u || G.phase !== 'aim') { el.innerHTML = ''; return; }
-    if (isCPU(G.team)) { el.innerHTML = ''; return; }
+    if (isCPU(G.team) || (online() && G.team !== ui.you)) { el.innerHTML = ''; return; }
     const danger = G.duds.find((d) => d.fuse <= 1 && Math.hypot(d.x - u.x, d.y - u.y) < WB.DUD.r * WB.DMG_SPREAD);
     let t;
     if (danger && WB.lobbable(G).includes(danger)) t = '<b>That dud blows at the end of this turn!</b> Tap LOB (L), then drag to throw it away.';
@@ -1815,25 +1895,109 @@ button { font: inherit; color: inherit; }
     <p class="keys">Keys: ◀ ▶ / A D walk · ▲ ▼ / W S angle (Shift = fine) · Q E power · F flip · 1 2 3 shots · L lob · Space fire · X skip · Esc menu</p>`;
   function titleScreen() {
     ui.screen = 'title'; renderCtl(); coachLine();
+    const wide = () => { const c = $('#screen .card'); if (c) c.classList.add('title'); };
     show(`<div class="tag">JustAskJoe · Prototype 1</div><h1>WORMSBOUND</h1>
       <p>Pick a character, read the wind, blast the ground, and throw their own duds back at them. Best of three.</p>${HOW}
       <div class="row"><button class="btn fire" type="button" data-act="mode" data-mode="solo">1 PLAYER<small style="display:block;font-family:var(--body);font-size:12px">you vs 3 computers</small></button>
-      <button class="btn teal" type="button" data-act="mode" data-mode="duel">2 PLAYERS<small style="display:block;font-family:var(--body);font-size:12px">1v1 on one keyboard</small></button></div>
+      <button class="btn teal" type="button" data-act="mode" data-mode="duel">2 PLAYERS<small style="display:block;font-family:var(--body);font-size:12px">1v1 on one keyboard</small></button>
+      <button class="btn gold" type="button" data-act="online">ONLINE<small style="display:block;font-family:var(--body);font-size:12px">1v1 or up to 6 players</small></button></div>
       ${mapRow()}`);
+    wide();
   }
-  // The map row: Shuffle, the ten theme maps and the modes in one list, plus a box for a Map Lab share code.
+  // The map row: Shuffle, the theme maps, classic maps and modes in one list, a box for a share code, and the
+  // Custom Map screen.
   function mapRow() {
     const P = WB.MapGen.PRESETS, code = !P[ui.mapPick] && ui.mapPick !== 'shuffle';
     const opt = (v, label) => `<option value="${esc(v)}"${v === ui.mapPick ? ' selected' : ''}>${esc(label)}</option>`;
     const groups = {}; for (const id of WB.MapGen.PRESET_IDS) (groups[P[id].group] = groups[P[id].group] || []).push(opt(id, P[id].name));
-    const about = ui.mapPick === 'shuffle' ? 'A different theme map every round.' : code ? `Custom map from the Map Lab (${WB.MapGen.THEMES[WB.MapGen.decode(ui.mapPick).theme].name}).` : P[ui.mapPick].blurb;
+    const about = ui.mapPick === 'shuffle' ? 'A different theme map every round.' : code ? `Your custom map (${WB.MapGen.THEMES[WB.MapGen.decode(ui.mapPick).theme].name}).` : P[ui.mapPick].blurb;
     return `<div class="row maps"><label for="mapSel" style="align-self:center;font-size:13px;opacity:.8">MAP</label>
-      <select id="mapSel" class="mapsel">${opt('shuffle', 'Shuffle')}${Object.entries(groups).map(([g, o]) => `<optgroup label="${esc(g)}">${o.join('')}</optgroup>`).join('')}${code ? opt(ui.mapPick, 'Custom (Map Lab code)') : ''}</select>
-      <input id="mapCode" class="mapcode" type="text" placeholder="or paste a Map Lab code" value="${code ? esc(ui.mapPick) : ''}" aria-label="Map Lab share code" spellcheck="false">
+      <select id="mapSel" class="mapsel">${opt('shuffle', 'Shuffle')}${Object.entries(groups).map(([g, o]) => `<optgroup label="${esc(g)}">${o.join('')}</optgroup>`).join('')}${code ? opt(ui.mapPick, 'Custom map') : ''}</select>
+      <input id="mapCode" class="mapcode" type="text" placeholder="or paste a map code" value="${code ? esc(ui.mapPick) : ''}" aria-label="Map share code" spellcheck="false">
       <button class="btn ghost sm" type="button" data-act="mapcode">Use code</button>
-      <a class="btn ghost sm" href="wormsbound-maplab.html" target="_blank" rel="noopener">Map Lab</a></div>
+      <button class="btn gold sm" type="button" data-act="mapedit">Custom map</button></div>
       <p class="mapabout" id="mapAbout">${esc(about)}</p>`;
   }
+
+  // ---------- Custom Map screen: every generator setting, a live preview, codes and saved favourites ----------
+  // Built from MapGen.SETTINGS / PRESETS / THEMES, so a new setting or theme shows up here on its own. The game's map is
+  // always 160 × 90, so size isn't offered. The screen is drawn once; moving a control redraws only the preview and labels.
+  const MG = WB.MapGen, FAV_MAX = 8;
+  const favs = () => { try { const f = JSON.parse(lsGet('wb-favmaps') || '[]'); return Array.isArray(f) ? f.filter((c) => MG.decode(c)).slice(0, FAV_MAX) : []; } catch (e) { return []; } };
+  const edCode = (E) => MG.encode(Object.assign({}, E.s, { size: 'medium', seed: E.lock ? E.seed : 0 }));
+  function edFrom(pick) { // the editor starts from the current pick: a code, a preset, or Crater Hills for Shuffle
+    const d = MG.PRESETS[pick] ? null : MG.decode(pick), seed = (d && d.seed) || 1 + Math.floor(Math.random() * 999999);
+    return { s: d || MG.resolve(MG.PRESETS[pick] ? pick : 'hills'), preset: d ? '' : MG.PRESETS[pick] ? pick : 'hills', seed, lock: d ? !!d.seed : true };
+  }
+  function mapEditScreen() {
+    ui.screen = 'mapedit'; ui.G = null; renderHUD(); renderCtl(); coachLine();
+    const E = ui.ed = ui.ed || edFrom(ui.mapPick);
+    const groups = {}; for (const id of MG.PRESET_IDS) (groups[MG.PRESETS[id].group] = groups[MG.PRESETS[id].group] || []).push(id);
+    const label = (k, v) => k.type === 'level' ? k.names[v] : k.key === 'landform' ? (v === 'auto' ? `Auto (${MG.LANDFORMS[MG.THEMES[E.s.theme].landform].name})` : MG.LANDFORMS[v].name) : v;
+    const field = (k) => k.type === 'choice'
+      ? `<div class="edf"><label for="ed-${k.key}">${esc(k.label)}</label><select id="ed-${k.key}" data-ed="${k.key}" title="${esc(k.help)}">${k.options.map((o) => `<option value="${o}"${o === E.s[k.key] ? ' selected' : ''}>${esc(label(k, o))}</option>`).join('')}</select></div>`
+      : `<div class="edf"><label for="ed-${k.key}">${esc(k.label)} <b id="edv-${k.key}">${esc(label(k, E.s[k.key]))}</b></label><input type="range" id="ed-${k.key}" data-ed="${k.key}" min="0" max="${k.names.length - 1}" step="1" value="${E.s[k.key]}" title="${esc(k.help)}"></div>`;
+    show(`<div class="edhead"><h2>Custom map</h2>
+        <select id="edPreset" class="mapsel" aria-label="Start from a preset"><option value="">Your own settings</option>${Object.entries(groups).map(([g, ids]) => `<optgroup label="${esc(g)}">${ids.map((id) => `<option value="${id}"${id === E.preset ? ' selected' : ''}>${esc(MG.PRESETS[id].name)}</option>`).join('')}</optgroup>`).join('')}</select>
+        <button class="btn ghost sm" type="button" data-act="edsurprise">Surprise me</button></div>
+      <div class="edgrid"><div class="edleft">
+        <canvas id="edMap" width="640" height="360" aria-label="Map preview"></canvas>
+        <div class="edchips" id="edChips"></div><p class="edrule" id="edRule"></p>
+        <div class="edrow"><button class="btn ghost sm" type="button" data-act="edseed" title="Same settings, a new layout">🎲 New layout</button>
+          <label class="edlock"><input type="checkbox" id="edLock"${E.lock ? ' checked' : ''}> Same layout every match</label></div>
+        <div class="edrow"><input id="edCode" class="mapcode" type="text" readonly aria-label="This map's share code"><button class="btn ghost sm" type="button" data-act="edcopy">Copy</button>
+          <input id="edPaste" class="mapcode" type="text" placeholder="paste a code" aria-label="Paste a share code" spellcheck="false"><button class="btn ghost sm" type="button" data-act="edload">Load</button></div>
+        <div class="edrow edfavs" id="edFavs"></div>
+      </div><div class="edright">
+        <div class="edthemes">${MG.THEME_IDS.map((t) => { const L = MG.THEMES[t].look; return `<button type="button" data-act="edtheme" data-theme="${t}" title="${esc(MG.THEMES[t].blurb)}"><i style="background:linear-gradient(${L.sky[1]} 0 45%, ${L.shades[0][0]} 45% 60%, ${L.shades[3][0]} 60%)"></i>${esc(MG.THEMES[t].name)}</button>`; }).join('')}</div>
+        <div class="edfields">${MG.SETTINGS.filter((k) => k.key !== 'theme' && k.key !== 'size').map(field).join('')}</div>
+      </div></div>
+      <div class="row" style="margin-top:12px"><p class="mapabout" id="edMsg" role="status"></p><button class="btn ghost sm" type="button" data-act="edback">Back</button>
+        <button class="btn ghost sm" type="button" data-act="edsave">☆ Save to favourites</button>
+        <button class="btn fire sm" type="button" data-act="eduse">Use this map</button></div>`);
+    $('#screen .card').classList.add('ed');
+    edDraw();
+  }
+  function edDraw() {
+    const E = ui.ed, m = MG.generate(Object.assign({}, E.s, { size: 'medium', seed: E.seed })), T = MG.THEMES[m.theme];
+    const cv = $('#edMap'); if (!cv) return;
+    MG.draw(cv.getContext('2d'), m, { cell: 4, spawns: MG.spawns(m, 2) });
+    const chip = (t) => `<span>${esc(t)}</span>`;
+    $('#edChips').innerHTML = chip(MG.LANDFORMS[m.landform].name) + chip(`Land ${m.stats.land}%`) + chip(`Wind ×${m.windMul}`) + chip(m.features.length ? `${m.features.length} × ${m.hazard.name}` : 'No hazards') + chip(T.look.liquid.name[0].toUpperCase() + T.look.liquid.name.slice(1)) + (m.mirror ? chip('Mirrored') : '');
+    $('#edRule').innerHTML = `<b>${esc(T.name)}:</b> ${esc(T.rule)}`;
+    $('#edCode').value = edCode(E);
+    for (const k of MG.SETTINGS) { const v = $('#edv-' + k.key); if (v) v.textContent = k.names[E.s[k.key]]; const f = $('#ed-' + k.key); if (f && String(f.value) !== String(E.s[k.key])) f.value = E.s[k.key]; }
+    const lf = $('#ed-landform'); if (lf) lf.options[0].textContent = `Auto (${MG.LANDFORMS[MG.THEMES[E.s.theme].landform].name})`;
+    for (const b of document.querySelectorAll('[data-act=edtheme]')) b.setAttribute('aria-pressed', String(b.dataset.theme === E.s.theme));
+    $('#edPreset').value = E.preset; $('#edLock').checked = E.lock;
+    $('#edFavs').innerHTML = favs().map((c, i) => { const d = MG.decode(c); return `<span class="edfav"><button type="button" data-act="edfav" data-code="${esc(c)}" title="${esc(c)}">${i + 1}. ${esc(MG.THEMES[d.theme].name)}</button><button type="button" data-act="edunfav" data-code="${esc(c)}" aria-label="Remove favourite ${i + 1}">×</button></span>`; }).join('') || '<small>Saved maps show up here.</small>';
+  }
+  function edSay(t) { const m = $('#edMsg'); if (m) m.textContent = t; }
+  function edLoad(code) { const d = MG.decode(String(code || '').trim().toLowerCase()); if (!d) return false; ui.ed = { s: d, preset: '', seed: d.seed || ui.ed.seed, lock: !!d.seed }; mapEditScreen(); return true; }
+  function edAct(act, b) {
+    const E = ui.ed;
+    switch (act) {
+      case 'mapedit': ui.ed = edFrom(ui.mapPick); mapEditScreen(); break;
+      case 'edback': ui.ed = null; titleScreen(); break;
+      case 'edtheme': E.s.theme = b.dataset.theme; E.preset = ''; mapEditScreen(); break;
+      case 'edseed': E.seed = 1 + Math.floor(Math.random() * 999999); E.lock = true; edDraw(); break;
+      case 'edsurprise': { const r = MG.randomSettings(1 + Math.floor(Math.random() * 2147483646)); ui.ed = { s: Object.assign(r, { size: 'medium' }), preset: '', seed: r.seed || 1, lock: true }; mapEditScreen(); break; }
+      case 'edcopy': { const v = edCode(E); try { navigator.clipboard.writeText(v).then(() => edSay('Copied. Send it to a friend, or paste it into the map box.'), () => edSay('Select the code and copy it.')); } catch (e) { edSay('Select the code and copy it.'); } break; }
+      case 'edload': if (!edLoad($('#edPaste').value)) edSay("That code doesn't look right."); break;
+      case 'edfav': edLoad(b.dataset.code); break;
+      case 'edunfav': lsSet('wb-favmaps', JSON.stringify(favs().filter((c) => c !== b.dataset.code))); edDraw(); break;
+      case 'edsave': { const c = edCode(E), f = favs().filter((x) => x !== c); f.unshift(c); lsSet('wb-favmaps', JSON.stringify(f.slice(0, FAV_MAX))); edDraw(); edSay(f.length > FAV_MAX ? `Saved. Only the last ${FAV_MAX} are kept.` : 'Saved to favourites.'); break; }
+      case 'eduse': ui.ed = null; setMap(edCode(E)); break;
+      default: return false;
+    }
+    return true;
+  }
+  document.addEventListener('input', (e) => {
+    const t = e.target, k = t && t.dataset && t.dataset.ed; if (ui.screen !== 'mapedit') return;
+    if (k) { ui.ed.s[k] = t.type === 'range' ? +t.value : t.value; ui.ed.preset = ''; edDraw(); }
+    else if (t.id === 'edLock') { ui.ed.lock = t.checked; edDraw(); }
+  });
+  document.addEventListener('change', (e) => { if (ui.screen === 'mapedit' && e.target && e.target.id === 'edPreset' && e.target.value) { ui.ed.preset = e.target.value; ui.ed.s = MG.resolve(ui.ed.preset); mapEditScreen(); } });
   function setMap(m) { m = String(m || '').trim().toLowerCase(); if (!okMap(m)) return false; ui.mapPick = m; lsSet('wb-map', m); titleScreen(); return true; }
   document.addEventListener('change', (e) => { if (e.target && e.target.id === 'mapSel') setMap(e.target.value); });
   // Shuffle: every map once (in a seeded order) before any repeats, so a best-of-3 shows three different maps.
@@ -1895,22 +2059,28 @@ button { font: inherit; color: inherit; }
   }
   function roundOver() {
     const G = ui.G, w = G.winner;
-    if (w >= 0) ui.wins[w]++;
-    const need = Math.ceil(BEST_OF / 2);
-    const done = ui.wins.some((x) => x >= need);
+    if (online()) { if (ui.net && ui.net.wins) ui.wins = ui.net.wins.slice(); } else if (w >= 0) ui.wins[w]++;
+    roundOverShow();
+  }
+  function roundOverShow() {
+    const G = ui.G, w = G.winner;
+    const need = needWins(), ffa = ffaRoom();
+    const done = ffa || ui.wins.some((x) => x >= need);
     ui.screen = done ? 'end' : 'round'; renderCtl(); coachLine(); renderHUD();
-    if (done) SFX.win();
-    const you = ui.mode === 'solo' && w === 0;
-    const head = w < 0 ? 'Draw!' : you ? (done ? 'You win the match!' : `You take round ${ui.round}!`) : `${sideLabel(w)} ${done ? 'wins the match!' : `takes round ${ui.round}`}`;
+    if (done && ui.lastWinSound !== ui.round + '/' + G.seed) { ui.lastWinSound = ui.round + '/' + G.seed; SFX.win(); }
+    const you = (ui.mode === 'solo' || online()) && w === (online() ? ui.you : 0);
+    const head = w < 0 ? 'Draw!' : you ? (done ? (ffa ? 'You win!' : 'You win the match!') : `You take round ${ui.round}!`) : `${sideLabel(w)} ${done ? (ffa ? 'wins!' : 'wins the match!') : `takes round ${ui.round}`}`;
     const col = w < 0 ? '#FFF3E0' : TEAMS[w].c;
     const st = G.stats;
-    ui.endHTML = `<div class="tag">${done ? 'Match over' : `Round ${ui.round} of ${BEST_OF}`}${ui.tester ? ' · TESTER' : ''}</div><h2 style="color:${col}">${esc(head)}</h2>${ui.mode === 'solo' ? `<p style="margin:0">vs three ${LEVELS[ui.level].name} computers</p>` : ''}
-      <div class="score">${ui.wins.map((x, t) => `<span style="color:${TEAMS[t].c}" title="${esc(sideLabel(t))} · ${esc(charName(t))}">${x}</span>`).join(' – ')}</div>
-      <p style="margin:0;font-size:15px">${ui.wins.map((x, t) => `<b style="color:${TEAMS[t].c}">${esc(sideLabel(t))}</b> ${esc(charName(t))}`).join(' · ')}</p>
-      <p>${done ? 'Last round: ' : ''}${G.turn} turns · ${st.shots} shots · ${st.lobs} lobs · ${st.dudBlasts} dud blasts${st.chains ? ` · ${st.chains} chain reaction${st.chains > 1 ? 's' : ''}` : ''}${st.drowned ? ` · ${st.drowned} splashed out` : ''}</p>
+    ui.endHTML = `<div class="tag">${ffa ? `${G.teams}-player free-for-all` : done ? 'Match over' : `Round ${ui.round} of ${BEST_OF}`}${ui.tester ? ' · TESTER' : ''}</div><h2 style="color:${col}">${esc(head)}</h2>${ui.mode === 'solo' ? `<p style="margin:0">vs three ${LEVELS[ui.level].name} computers</p>` : ''}
+      ${ffa ? '' : `<div class="score">`}${ffa ? '' : ui.wins.map((x, t) => `<span style="color:${TEAMS[t].c}" title="${esc(sideLabel(t))} · ${esc(charName(t))}">${x}</span>`).join(' – ')}${ffa ? '' : '</div>'}
+      <p style="margin:0;font-size:15px">${ui.wins.map((x, t) => `<b style="color:${TEAMS[t].c}${ffa && t !== w ? ';opacity:.6' : ''}">${esc(sideLabel(t))}</b> ${esc(charName(t))}`).join(' · ')}</p>
+      <p>${done && !ffa ? 'Last round: ' : ''}${G.turn} turns · ${st.shots} shots · ${st.lobs} lobs · ${st.dudBlasts} dud blasts${st.chains ? ` · ${st.chains} chain reaction${st.chains > 1 ? 's' : ''}` : ''}${st.drowned ? ` · ${st.drowned} splashed out` : ''}</p>
       <div class="row">${done
-        ? `<button class="btn fire" type="button" data-act="rematch">REMATCH (R)</button><button class="btn gold" type="button" data-act="pickagain">New characters</button><button class="btn teal" type="button" data-act="feedback">Give feedback</button><button class="btn ghost" type="button" data-act="quit">Title</button>`
-        : `<button class="btn fire" type="button" data-act="next">${w < 0 ? 'REPLAY ROUND' : 'NEXT ROUND'}</button>`}</div>`;
+        ? ffa ? `<button class="btn fire" type="button" data-act="olobby">BACK TO THE ROOM (R)</button><button class="btn teal" type="button" data-act="feedback">Give feedback</button><button class="btn ghost" type="button" data-act="leave">Leave</button>`
+        : online() ? `<button class="btn fire" type="button" data-act="rematch">${ui.net && ui.net.rematchAsked ? 'WAITING FOR THEM…' : 'REMATCH'}</button><button class="btn teal" type="button" data-act="feedback">Give feedback</button><button class="btn ghost" type="button" data-act="leave">Leave</button>`
+        : `<button class="btn fire" type="button" data-act="rematch">REMATCH (R)</button><button class="btn gold" type="button" data-act="pickagain">New characters</button><button class="btn teal" type="button" data-act="feedback">Give feedback</button><button class="btn ghost" type="button" data-act="quit">Title</button>`
+        : `<button class="btn fire" type="button" data-act="next">${online() && ui.net && ui.net.nextAsked ? 'WAITING FOR THEM…' : w < 0 ? 'REPLAY ROUND' : 'NEXT ROUND'}</button>`}</div>`;
     show(ui.endHTML);
   }
 
@@ -1952,6 +2122,125 @@ button { font: inherit; color: inherit; }
     feedbackScreen();
   }
 
+  // ---------- online 1v1 ----------
+  function serverURL() {
+    let q = null; try { q = new URLSearchParams(location.search).get('server'); } catch (e) { /* no query */ }
+    const local = location.protocol === 'file:' || /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
+    return (q || window.WB_SERVER || ONLINE_SERVER || (local ? 'ws://localhost:8431' : '')).replace(/\/+$/, '');
+  }
+  function onlineScreen(msg) {
+    ui.screen = 'online'; ui.G = null; renderHUD(); renderCtl(); coachLine();
+    const srv = serverURL();
+    show(`<div class="tag">Online · beta</div><h2>Play friends online</h2>
+      <p>One of you makes a room and reads out the 4-letter code; everyone else joins with it.</p>
+      <div class="fq"><label for="oName">Your name</label><input id="oName" maxlength="16" value="${esc(lsGet('wb-name') || '')}" placeholder="Player"></div>
+      <div class="row"><button class="btn fire" type="button" data-act="ocreate" ${srv ? '' : 'disabled'}>MAKE A 1v1 ROOM</button><button class="btn gold" type="button" data-act="ocreateffa" ${srv ? '' : 'disabled'}>MAKE A FREE-FOR-ALL<small style="display:block;font-family:var(--body);font-size:12px">2 to 6 players</small></button></div>
+      <div class="fq" style="display:flex;gap:10px;align-items:end"><div style="flex:1"><label for="oCode">Or join with a code</label><input id="oCode" maxlength="4" style="text-transform:uppercase;letter-spacing:6px;font-size:22px" placeholder="ABCD"></div><button class="btn teal" type="button" data-act="ojoin" ${srv ? '' : 'disabled'}>JOIN</button></div>
+      ${srv ? `<p class="keys">Server: ${esc(srv)}</p>` : '<p style="color:#FF4D5E">The online server isn\'t set up yet. (Crew: see wormsbound/server/README.md.)</p>'}
+      ${msg ? `<p style="color:#FF4D5E">${esc(msg)}</p>` : ''}
+      <div class="row"><button class="btn ghost sm" type="button" data-act="quit">Back</button></div>`);
+  }
+  async function netStart(kind, mode) {
+    const name = ($('#oName') && $('#oName').value.trim()) || 'Player'; lsSet('wb-name', name);
+    const srv = serverURL(); if (!srv) return onlineScreen('No server address.');
+    let code = (($('#oCode') && $('#oCode').value) || '').trim().toUpperCase();
+    if (kind === 'create') {
+      try { const r = await fetch(srv.replace(/^ws/, 'http') + '/new'); code = (await r.json()).code; }
+      catch (e) { return onlineScreen("Couldn't reach the online server. Is it running?"); }
+    } else if (!/^[A-Z]{4}$/.test(code)) return onlineScreen('Room codes are 4 letters.');
+    netOpen(srv, code, kind === 'create' ? { t: 'create', name, mode: mode === 'ffa' ? 'ffa' : 'duel' } : { t: 'join', name });
+  }
+  function netOpen(srv, code, hello) {
+    netLeave(true);
+    ui.mode = 'online';
+    const net = ui.net = { srv, code, hello, queue: [], room: null, ws: null, token: null, waiting: false, retries: 0, closed: false, expect: null };
+    const connect = () => {
+      let ws; try { ws = new WebSocket(`${srv}/room/${code}`); } catch (e) { return onlineScreen("Couldn't open a connection to the server."); }
+      net.ws = ws;
+      ws.onopen = () => { net.retries = 0; ws.send(JSON.stringify(net.token ? { t: 'rejoin', token: net.token } : hello)); };
+      ws.onmessage = (ev) => { let m; try { m = JSON.parse(ev.data); } catch (e) { return; } onNet(m); };
+      ws.onclose = () => {
+        if (net.closed || ui.net !== net) return;
+        if (!net.token) return onlineScreen("Couldn't join that room.");
+        if (net.retries++ < 10) { banner('Connection lost', 'reconnecting…'); setTimeout(connect, 1500); }
+        else { netLeave(); onlineScreen('Lost the connection to the room.'); }
+      };
+    };
+    net.send = (m) => { if (net.ws && net.ws.readyState === 1) net.ws.send(JSON.stringify(m)); };
+    // moves from the server are played in order, each only once the last shot has landed on this screen
+    net.drain = () => {
+      while (net.queue.length && ui.G && ui.G.phase !== 'flight' && !net.expect) {
+        const m = net.queue.shift(), G = ui.G, u = WB.current(G);
+        if (!WB.act(G, m.it)) { net.send({ t: 'sync' }); net.queue = []; return; }
+        if (m.it.k === 'weapon' && m.by === ui.you) ui.weapon = m.it.w;
+        if ((m.it.k === 'fire' || m.it.k === 'lob') && u) { SFX.fire(); burst(...muzzle(u, aimOf(u)), 8, 'spark'); }
+        if (m.it.k === 'move') SFX.click();
+        if (m.by === ui.you && m.it.k !== 'move' && m.it.k !== 'weapon') net.waiting = false;
+        net.expect = m.hash;
+        if (G.phase !== 'flight') net.settled();
+        renderHUD(); renderCtl(); coachLine();
+      }
+    };
+    // after a move has fully played out here, this copy must match the server's
+    net.settled = () => {
+      if (!net.expect || !ui.G) return;
+      if (WB.hash(ui.G) !== net.expect) { net.send({ t: 'sync' }); net.queue = []; }
+      net.expect = null;
+    };
+    connect();
+    lobbyScreen('Connecting…');
+  }
+  function netLeave(quiet) {
+    const net = ui.net; if (!net) return;
+    net.closed = true; try { net.ws && net.ws.close(); } catch (e) { /* already closed */ }
+    ui.net = null; if (!quiet) ui.mode = 'duel';
+  }
+  let aimSent = 0;
+  function shareAim(a) {
+    if (!online() || !ui.net || !ui.G || ui.G.team !== ui.you) return;
+    const now = performance.now(); if (now - aimSent < 90) return; aimSent = now;
+    ui.net.send({ t: 'aim', angle: a.angle, power: a.power });
+  }
+  function onNet(m) {
+    const net = ui.net; if (!net) return;
+    if (m.t === 'joined') { ui.seat = ui.you = m.seat; net.token = m.token; return; }
+    if (m.t === 'error') { if (/code in use/.test(m.error)) return netStart('create', net.hello && net.hello.mode); banner('Server', m.error); if (net.waiting) net.waiting = false; renderCtl(); return; }
+    if (m.t === 'room' || m.t === 'state' || m.t === 'round') sideFrom(m.teamSeat);
+    if (m.t === 'room') { net.room = m; net.wins = m.wins; if (ui.screen === 'lobby') lobbyScreen(); if (ui.screen === 'game') renderHUD(); if (m.phase === 'matchover' && ui.screen === 'end') roundOverAgain(); return; }
+    if (m.t === 'state') { net.room = m; if (m.G) { onlineRound(m.G, m.wins, m.round); } else lobbyScreen(); return; }
+    if (m.t === 'round') { net.nextAsked = false; net.rematchAsked = false; onlineRound(WB.newGame(m.seed, m.opts), m.wins, m.round); return; }
+    if (m.t === 'applied') { net.queue.push(m); return; }
+    if (m.t === 'aim') { ui.remoteAim = { angle: m.angle, power: m.power, at: performance.now() }; return; }
+    if (m.t === 'roundover') { net.wins = m.wins; if (ui.screen === 'round' || ui.screen === 'end') { ui.wins = m.wins.slice(); roundOverShow(); } return; }
+  }
+  // which side of the game this page plays: the side sitting in our seat
+  function sideFrom(teamSeat) { if (!teamSeat || !teamSeat.length) return; const i = teamSeat.indexOf(ui.seat); if (i >= 0) ui.you = i; }
+  function onlineRound(G, wins, round) {
+    const net = ui.net; net.queue = []; net.expect = null; net.waiting = false;
+    ui.G = G; ui.wins = wins.slice(); ui.round = round; ui.picks = G.chars.slice();
+    ui.aim = {}; ui.cpu = null; ui.parts = []; ui.trails = {}; ui.scorch = []; ui.pops = []; ui.acc = 0; ui.slow = 0; ui.shake = 0; ui.overAt = 0; ui.paused = false; ui.remoteAim = null;
+    bakeBackground(G.seed); renderTerrain();
+    ui.screen = 'game'; hide(); onTurn();
+  }
+  function lobbyScreen(status) {
+    ui.screen = 'lobby'; renderCtl(); coachLine();
+    const net = ui.net, R = net && net.room, me = R && R.seats[ui.seat], ffa = !!(R && R.mode === 'ffa');
+    const seat = (s, j) => `<div class="toggle-row"><span><b style="color:${TEAMS[j].c}">${esc(j === ui.seat ? 'You' : s.name)}</b>${j === (R && R.host) && ffa ? ' <span class="keys">(host)</span>' : ''}${s.char ? ` · ${esc(WB.CHARS[s.char].name)}` : ' · picking…'}${s.connected ? '' : ' <span style="color:#FF4D5E">(disconnected)</span>'}</span><span>${s.ready ? '<b style="color:#7BE07A">READY</b>' : 'not ready'}</span></div>`;
+    const seated = R ? R.seats.map((s, j) => (s ? seat(s, j) : '')).join('') : '';
+    const here = R ? R.seats.filter((s) => s && s.connected) : [];
+    const waiting = !R ? '' : ffa ? (here.length < R.max ? `<div class="toggle-row"><span style="color:var(--muted)">${here.length} of ${R.max} here · more can join with the code</span></div>` : '')
+      : R.seats.filter(Boolean).length < 2 ? `<div class="toggle-row"><span style="color:var(--muted)">Waiting for a friend to join with the code…</span></div>` : '';
+    const allReady = here.length >= 2 && here.every((s) => s.char && s.ready), host = R && R.host === ui.seat, hostSeat = R && R.seats[R.host];
+    const picks = WB.CHAR_IDS.map((id) => `<button class="btn sm ${me && me.char === id ? 'gold' : 'ghost'}" type="button" data-act="opick" data-char="${id}" title="${esc(WB.CHARS[id].blurb)}"><img src="${portrait(id, Math.max(0, ui.seat || 0))}" alt="" width="54" height="40" style="border-radius:8px">${esc(WB.CHARS[id].name)}</button>`).join('');
+    const tip = status || (ffa ? (host ? 'Tell your friends this code. When everyone has picked and is ready, press Start.' : `Pick a character and press Ready. ${hostSeat ? esc(hostSeat.name) : 'The host'} starts the game.`) : 'Tell your friend this code. Pick a character, then press Ready.');
+    show(`<div class="tag">${ffa ? 'Online free-for-all · room' : 'Online 1v1 · room'}</div><h2 style="font-size:64px;letter-spacing:10px;color:var(--gold)">${esc(net ? net.code : '····')}</h2>
+      <p>${esc(tip)}</p>
+      ${seated}${waiting}
+      <div class="row" style="flex-wrap:wrap">${picks}</div>
+      <div class="row"><button class="btn ${ffa ? 'teal' : 'fire'}" type="button" data-act="oready" ${me && me.char ? '' : 'disabled'}>${me && me.ready ? 'NOT READY' : 'READY'}</button>${ffa && host ? `<button class="btn fire" type="button" data-act="ostart" ${allReady ? '' : 'disabled'}>START${here.length >= 2 ? ` (${here.length} PLAYERS)` : ''}</button>` : ''}<button class="btn ghost sm" type="button" data-act="leave">Leave</button></div>`);
+  }
+  function roundOverAgain() { if (ui.screen === 'round' || ui.screen === 'end') { const w = ui.wins.slice(); ui.endHTML = null; ui.wins = w; roundOverShow(); } }
+
   // ---------- match flow ----------
   function startRound() {
     const first = (ui.round - 1) % nSides();
@@ -1967,7 +2256,7 @@ button { font: inherit; color: inherit; }
     ui.round = 1; ui.wins = new Array(nSides()).fill(0); ui.tester = false; ui.fb = { q: {}, text: '', nm: '', saved: null };
     startRound();
   }
-  function botTurn() { if (!canAct() && !(ui.paused && ui.G && ui.G.phase === 'aim')) return; ui.tester = true; ui.paused = false; hide(); WB.botTurn(ui.G, 'smart'); renderCtl(); }
+  function botTurn() { if (online()) return; if (!canAct() && !(ui.paused && ui.G && ui.G.phase === 'aim')) return; ui.tester = true; ui.paused = false; hide(); WB.botTurn(ui.G, 'smart'); renderCtl(); }
 
   document.addEventListener('click', (e) => {
     const b = e.target.closest('button'); if (!b) return; audio();
@@ -1979,15 +2268,25 @@ button { font: inherit; color: inherit; }
       const k = b.dataset.tg; ui[k === 'timer' ? 'timerOn' : k] = !ui[k === 'timer' ? 'timerOn' : k];
       lsSet('wb-' + k, ui[k === 'timer' ? 'timerOn' : k] ? 'on' : 'off'); ui.paused = false; toggleMenu(); renderHUD(); coachLine(); return;
     }
+    if (edAct(act, b)) return;
     switch (act) {
       case 'mode': ui.mode = b.dataset.mode === 'solo' ? 'solo' : 'duel'; ui.picks = new Array(nSides()).fill(null); if (ui.mode === 'solo') levelScreen(); else { ui.cursor = 2; selectScreen(0); } break;
       case 'level': ui.level = LEVELS[b.dataset.level] ? b.dataset.level : 'medium'; lsSet('wb-level', ui.level); ui.cursor = 2; selectScreen(0); break;
       case 'start': case 'pickagain': ui.picks = new Array(nSides()).fill(null); ui.cursor = 2; selectScreen(0); break;
-      case 'rematch': startMatch(); break;
+      case 'rematch': if (online()) { ui.net.send({ t: 'rematch' }); ui.net.rematchAsked = true; roundOverAgain(); } else startMatch(); break;
       case 'mapcode': { const inp = $('#mapCode'); if (!setMap(inp && inp.value)) { const a = $('#mapAbout'); if (a) a.textContent = "That code doesn't look right. Copy it again from the Map Lab."; } break; }
       case 'pick': choose(b.dataset.char); break;
       case 'pickback': if (ui.mode === 'duel' && ui.pickTeam === 1) { ui.picks[0] = null; selectScreen(0); } else if (ui.mode === 'solo') levelScreen(); else titleScreen(); break;
-      case 'next': ui.round += ui.G.winner >= 0 ? 1 : 0; startRound(); break;
+      case 'next': if (online()) { ui.net.send({ t: 'next' }); ui.net.nextAsked = true; roundOverAgain(); } else { ui.round += ui.G.winner >= 0 ? 1 : 0; startRound(); } break;
+      case 'online': onlineScreen(); break;
+      case 'ocreate': netStart('create', 'duel'); break;
+      case 'ocreateffa': netStart('create', 'ffa'); break;
+      case 'ostart': if (ui.net) ui.net.send({ t: 'start' }); break;
+      case 'olobby': if (ui.net) lobbyScreen(); break;
+      case 'ojoin': netStart('join'); break;
+      case 'opick': if (ui.net) ui.net.send({ t: 'pick', char: b.dataset.char }); break;
+      case 'oready': if (ui.net) { const R = ui.net.room, me = R && R.seats[ui.seat]; ui.net.send({ t: 'ready', on: !(me && me.ready) }); } break;
+      case 'leave': netLeave(); titleScreen(); break;
       case 'fire': doFire(); break;
       case 'lob': toggleLob(); break;
       case 'pass': pass(); break;
@@ -1995,7 +2294,7 @@ button { font: inherit; color: inherit; }
       case 'resume': ui.paused = false; hide(); break;
       case 'how': show(`<h2>How to play</h2>${HOW}<div class="row"><button class="btn fire" type="button" data-act="resume">BACK TO THE FIGHT</button></div>`, true); break;
       case 'restart': ui.paused = false; startRound(); break;
-      case 'quit': ui.paused = false; ui.G = null; renderHUD(); titleScreen(); break;
+      case 'quit': ui.paused = false; if (online()) netLeave(); ui.G = null; renderHUD(); titleScreen(); break;
       case 'botturn': botTurn(); break;
       case 'feedback': feedbackScreen(); break;
       case 'fbsend': sendFeedback(); break;
@@ -2181,7 +2480,8 @@ button { font: inherit; color: inherit; }
     const cur = WB.current(G);
     for (const u of G.units) if (!u.alive) drawUnit(u, false, t);
     for (const u of G.units) if (u.alive) drawUnit(u, u === cur && G.phase === 'aim', t);
-    if (cur && G.phase === 'aim' && ui.screen === 'game' && !ui.paused && (!isCPU(G.team) || (ui.cpu && ui.cpu.aimed))) drawAim(cur, t);
+    if (online() && cur && G.phase === 'aim' && G.team !== ui.you) { if (ui.remoteAim && performance.now() - ui.remoteAim.at < 4000) { const a = aimOf(cur); a.angle = ui.remoteAim.angle; a.power = ui.remoteAim.power; drawAim(cur, t); } }
+    else if (cur && G.phase === 'aim' && ui.screen === 'game' && !ui.paused && (!isCPU(G.team) || (ui.cpu && ui.cpu.aimed))) drawAim(cur, t);
     for (const p of G.proj) drawProj(p, t);
     for (const id of Object.keys(ui.trails)) if (!G.proj.some((p) => String(p.id) === id)) delete ui.trails[id];
     for (const p of ui.parts) {
@@ -2221,11 +2521,13 @@ button { font: inherit; color: inherit; }
         const speed = (ui.fast ? 8 : 1) * (ui.slow > 0 ? 0.3 : 1);
         ui.acc += dt * speed; let n = 0;
         while (ui.acc >= WB.TICK && G.phase === 'flight' && n++ < 400) { onFx(WB.step(G)); ui.acc -= WB.TICK; }
-        if (G.phase !== 'flight') { ui.acc = 0; renderHUD(); renderCtl(); coachLine(); }
+        if (G.phase !== 'flight') { ui.acc = 0; if (online() && ui.net) ui.net.settled(); renderHUD(); renderCtl(); coachLine(); }
+      } else if (online() && ui.net && ui.net.queue.length) {
+        ui.net.drain();
       } else if (G.phase === 'aim' && isCPU(G.team)) {
         if (!ui.cpu) cpuStart();
         cpuStep(dt);
-      } else if (G.phase === 'aim' && ui.timerOn) {
+      } else if (G.phase === 'aim' && ui.timerOn && (!online() || G.team === ui.you)) {
         const before = Math.ceil(ui.tLeft); ui.tLeft -= dt;
         if (Math.ceil(ui.tLeft) !== before && ui.tLeft <= 5 && ui.tLeft > 0) SFX.tick();
         if (ui.tLeft <= 0) { ui.tLeft = 0; pass(); }
@@ -2246,7 +2548,7 @@ button { font: inherit; color: inherit; }
 
   // ---------- boot ----------
   window.WBUI = {
-    get G() { return ui.G; }, ui, startMatch, levelScreen, selectScreen, choose, startRound, roundOver, doFire, walk, pass, botTurn, renderAll: () => { renderHUD(); renderCtl(); coachLine(); },
+    get G() { return ui.G; }, ui, startMatch, levelScreen, onlineScreen, netStart, play, selectScreen, choose, startRound, roundOver, doFire, walk, pass, botTurn, renderAll: () => { renderHUD(); renderCtl(); coachLine(); },
     aim: (angle, power) => { const u = WB.current(ui.G); const a = aimOf(u); a.angle = angle; a.power = power; },
   };
   fit(); addEventListener('resize', fit);
