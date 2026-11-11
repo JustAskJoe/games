@@ -88,4 +88,19 @@ for (const m of WB.MapGen.PRESET_IDS.concat(['custom'])) {
   const played = mapN - r.stuck;
   console.log(`map ${m.padEnd(11)} turns p10 ${q(r.turns, .1)} p50 ${q(r.turns, .5)} p90 ${q(r.turns, .9)}  sudden death ${pct(r.sudden, played)}%  drowned ${(r.drowned / played).toFixed(1)}  barrels ${(r.barrels / played).toFixed(1)}  timeouts ${r.timeouts}  stuck ${r.stuck}  most wins ${Object.entries(r.wins).sort((x, y) => y[1] - x[1]).map(([c, w]) => c + ' ' + w).slice(0, 2).join(', ')}`);
 }
+// Crews (v2): smart-vs-smart with one of each character where it fits, on the map size the match gets and a fresh map
+// from the mode's recipe every match. Every one has to finish; side 0's share shows whether a spawn layout favours a side.
+const crewN = Math.max(10, Math.round(n / 10)), one = WB.CHAR_IDS;
+console.log(`crews: ${crewN} smart-vs-smart matches per format, fresh maps`);
+for (const [label, o] of [['2v2', { size: 2 }], ['3v3', { size: 3 }], ['5v5', { size: 5 }], ['teams5', { size: 5, recipe: 'teams' }], ['ffa6', { teams: 6 }], ['4x3', { teams: 4, size: 3 }]]) {
+  const r = { turns: [], sudden: 0, timeouts: 0, stuck: 0, drowned: 0, side0: 0 }, units = (o.teams || 2) * (o.size || 1);
+  let dims = '';
+  for (let k = 0; k < crewN; k++) {
+    const chars = Array.from({ length: units }, (_, i) => one[(i + k) % one.length]);
+    let G; try { G = WB.playOut(WB.newGame(8800 + k * 7919, Object.assign({ chars: o.size > 1 ? chars : chars.slice(0, o.teams || 2), first: k % (o.teams || 2) }, o)), new Array(6).fill('smart')).G; } catch (e) { r.stuck++; continue; }
+    dims = G.cols + 'x' + G.rows; r.turns.push(G.turn); if (G.turn >= WB.suddenTurn(G)) r.sudden++; if (G.timeout) r.timeouts++; r.drowned += G.stats.drowned; if (G.winner === 0) r.side0++;
+  }
+  const played = crewN - r.stuck;
+  console.log(`crew ${label.padEnd(7)} map ${dims.padEnd(8)} turns p10 ${q(r.turns, .1)} p50 ${q(r.turns, .5)} p90 ${q(r.turns, .9)}  sudden death ${pct(r.sudden, played)}%  drowned ${(r.drowned / played).toFixed(1)}  side 0 wins ${pct(r.side0, played)}%  timeouts ${r.timeouts}  stuck ${r.stuck}`);
+}
 console.log(`done in ${((Date.now() - t0) / 1000).toFixed(1)}s`);

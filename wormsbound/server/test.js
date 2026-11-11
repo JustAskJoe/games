@@ -164,5 +164,47 @@ function botMove(P, style = 'smart') {
   ok(P.errors.includes('no room with that code'), 'joining an empty code says there is no room');
 }
 
+{ // team battle: one player per unit, computers in the empty slots, a dropped player's unit carries on
+  const { TEAM_SLOTS } = require('./room.js');
+  const room = new Room('TEAM', { seed: 777 });
+  const A = player(room, 'Ana'), B = player(room, 'Ben'), C = player(room, 'Cy'), D = player(room, 'Di');
+  A.send({ t: 'create', name: 'Ana', mode: 'teams' }); B.send({ t: 'join', name: 'Ben' }); C.send({ t: 'join', name: 'Cy' }); D.send({ t: 'join', name: 'Di' });
+  ok(room.mode === 'teams' && [A.seat, B.seat, C.seat, D.seat].join() === [0, TEAM_SLOTS, 1, TEAM_SLOTS + 1].join(), `joining fills the two teams evenly (seats ${[A.seat, B.seat, C.seat, D.seat]})`);
+  D.send({ t: 'team', side: 0 });
+  ok(D.seat === 2 && room.seats[TEAM_SLOTS + 1] === null, 'a player can move to the other team');
+  B.send({ t: 'size', n: 3 }); ok(B.errors.includes('only the room\'s host can change that'), 'only the host sets the team size');
+  A.send({ t: 'size', n: 2 }); ok(A.errors.includes('someone is sitting in a slot that would close') && room.size === 5, 'the size can\'t close a slot someone is in');
+  A.send({ t: 'size', n: 3 }); ok(room.size === 3, 'the host sets 3 a side');
+  const all = [A, B, C, D], pick = ['brick', 'zip', 'volt', 'gale'];
+  all.forEach((P, i) => { P.send({ t: 'pick', char: pick[i] }); P.send({ t: 'ready', on: true }); });
+  B.send({ t: 'start' }); ok(room.phase === 'lobby', 'only the host can start');
+  A.send({ t: 'start' });
+  const G = room.G;
+  ok(room.phase === 'playing' && G.units.length === 6 && G.cols === 200, `3 v 3 starts on a ${G.cols} × ${G.rows} map`);
+  ok(G.units.filter((u) => u.own >= 0).length === 4 && G.units.filter((u) => u.own < 0).length === 2, 'four units have players, two are computers');
+  ok(G.units.find((u) => u.own === A.seat).char === 'brick' && G.units.find((u) => u.own === B.seat).team === 1, 'each player gets their own character on their own team');
+  // play it out: players move on their turns, the clock plays the computers; Cy drops out half way
+  let now = Date.now(), guard = 0, botTurns = 0, dropped = false, wrong = 0;
+  while (room.phase === 'playing' && guard++ < 4000) {
+    const seat = room.ownerSeat(), P = all.find((x) => x.seat === seat && !x.gone);
+    if (!dropped && room.G.turn >= 6) { dropped = true; C.gone = true; C.conn.onClose(); continue; }
+    if (P) { const other = all.find((x) => x !== P && !x.gone); const e = other.errors.length; other.send({ t: 'act', it: { k: 'pass' } }); if (other.errors.length === e) wrong++; botMove(P); }
+    else { const t = room.G.turn; now += 4000; room.tick(now); if (room.G.turn !== t || room.phase !== 'playing') botTurns++; }
+  }
+  ok(room.phase === 'lobby' && room.G.phase === 'over', `the team battle plays to the end (${room.G.turn} turns, ${botTurns} computer turns)`);
+  ok(wrong === 0, 'nobody can move on someone else\'s turn');
+  ok(botTurns > 2 && dropped, 'computers played the empty slots and the dropped player\'s unit');
+  ok([A, B, D].every((P) => P.desyncs === 0 && WB.hash(P.G) === WB.hash(room.G)), `every player's copy matches the server's (${[A, B, D].map((P) => P.desyncs)})`);
+  ok(room.wins.reduce((a, b) => a + b, 0) <= 1 && room.seats.every((st) => !st || !st.ready), 'one round a match, then everyone readies up again');
+}
+{ // a team room with one person: you and four computers against five computers
+  const room = new Room('SOLO', { seed: 31 });
+  const A = player(room, 'Ana'); A.send({ t: 'create', name: 'Ana', mode: 'teams' }); A.send({ t: 'pick', char: 'digger' }); A.send({ t: 'ready', on: true }); A.send({ t: 'start' });
+  ok(room.phase === 'playing' && room.G.units.length === 10 && room.G.cols === 320, 'one player can start a 5 v 5 with nine computers on a Giant map');
+  let now = Date.now(), guard = 0;
+  while (room.phase === 'playing' && guard++ < 6000) { if (room.ownerSeat() === A.seat) botMove(A); else { now += 4000; room.tick(now); } }
+  ok(room.phase === 'lobby' && A.desyncs === 0 && WB.hash(A.G) === WB.hash(room.G), `and it finishes in step with the server (${room.G.turn} turns)`);
+}
+
 console.log(`${passes} passed, ${fails} failed`);
 process.exit(fails ? 1 : 0);

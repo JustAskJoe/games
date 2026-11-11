@@ -97,6 +97,10 @@ button { font: inherit; color: inherit; }
 .card .sqrow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: center; margin-top: 12px; }
 .card .sqrow > span { font-size: 13px; font-weight: 800; opacity: .8; min-width: 90px; text-align: right; }
 .crewslots { display: inline-flex; gap: 5px; margin-right: 8px; vertical-align: middle; } .crewslots b { min-width: 26px; padding: 1px 8px; border-radius: 99px; border: 2px dashed var(--muted); font-size: 12px; opacity: .7; } .crewslots b.on { border: 2px solid var(--tc); color: var(--tc); opacity: 1; }
+/* team battle lobby: two columns of unit slots */
+.tcols { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 10px; text-align: left; }
+.tcol h3 { margin: 0 0 4px; font-family: var(--display); font-size: 20px; }
+.tslot { border: 2px solid var(--tc); border-radius: 12px; padding: 4px 10px; margin-bottom: 5px; font-size: 14px; } .tslot.cpu { border-style: dashed; opacity: .6; } .tslot em { float: right; font-style: normal; font-weight: 800; color: #7BE07A; } .tslot.cpu em { color: var(--muted); }
 /* camera buttons (maps bigger than one screen), under the minimap */
 .camctl { position: absolute; left: 12px; top: 244px; z-index: 12; display: flex; gap: 4px; } .camctl[hidden] { display: none; }
 .camctl .btn.sm { min-height: 28px; font-size: 12px; padding: 2px 8px; box-shadow: 0 3px 0 rgba(0,0,0,.5); }

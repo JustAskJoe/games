@@ -86,6 +86,10 @@ maps = {m[1]: (int(m[2]), int(m[3])) for m in re.finditer(r'^map (\w+)\s+turns.*
 if len(maps) < 20: fails.append(f'sim output has {len(maps)} map lines, expected 20 (every preset + custom)')
 for m, (to, st) in maps.items():  # every match on every map has to finish (the same rule as the mirror line)
     if to or st: fails.append(f'maps: {m} had {to} timeouts and {st} stuck matches')
+crews = {m[1]: (int(m[2]), int(m[3])) for m in re.finditer(r'^crew (\w+)\s+map.*?timeouts (\d+)\s+stuck (\d+)', out, re.M)}
+if len(crews) != 6: fails.append(f'sim output has {len(crews)} crew lines, expected 6 (2v2, 3v3, 5v5, teams5, ffa6, 4x3)')
+for c, (to, st) in crews.items():  # v2: every crew format has to finish on its own map size
+    if to or st: fails.append(f'crews: {c} had {to} timeouts and {st} stuck matches')
 if 'NaN' in (r.stdout + r.stderr): fails.append('balance: NaN in a unit')
 
 if not quick:
@@ -96,6 +100,7 @@ if not quick:
             if int(got) > int(width): fails.append(f'horizontal scroll at {width}px')
         run('online 1v1 in two browser pages (local server)', [sys.executable, 'test-online.py'], proto)
         run('online free-for-all in six browser pages (local server)', [sys.executable, 'test-online-ffa.py'], proto)
+        run('online team battle in three browser pages plus a computer (local server)', [sys.executable, 'test-online-teams.py'], proto)
     except ImportError:
         print('\n!! Playwright missing: pip install playwright && python -m playwright install chromium'); fails.append('playwright')
 

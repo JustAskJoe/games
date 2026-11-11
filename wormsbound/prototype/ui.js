@@ -64,12 +64,16 @@
   const online = () => ui.mode === 'online';
   // in a match, side t sits in seat teamSeat[t] (free-for-all seats can have gaps); the lobby works in seats
   const roomSeat = (t) => { const R = ui.net && ui.net.room; if (!R) return null; const ts = R.teamSeat && R.teamSeat.length ? R.teamSeat : null; return R.seats[ts ? ts[t] : t] || null; };
-  const ffaRoom = () => !!(online() && ui.net && ui.net.room && ui.net.room.mode === 'ffa');
+  // a free-for-all or a team battle: one round a match, then back to the room
+  const ffaRoom = () => !!(online() && ui.net && ui.net.room && ui.net.room.mode !== 'duel');
+  const teamRoom = () => !!(online() && ui.net && ui.net.room && ui.net.room.mode === 'teams');
+  const seatTeam = (j) => (j >= 5 ? 1 : 0); // team battle: seats 0-4 are team 0, 5-9 team 1
   const needWins = () => (online() && ui.net && ui.net.room && ui.net.room.need) || Math.ceil(BEST_OF / 2);
   // what a side is called: "You" and "Tide CPU" in 1 Player, "Player 1" and "Player 2" in 1v1
-  const sideLabel = (t) => ui.mode === 'solo' ? (t === 0 ? 'You' : `${TEAMS[t].name} CPU`) : ui.mode === 'squads' && ui.sq.vs === 'cpu' ? (t === 0 ? 'You' : 'Computer') : online() ? (t === ui.you ? 'You' : (roomSeat(t) && roomSeat(t).name) || 'Opponent') : `Player ${t + 1}`;
+  const sideLabel = (t) => ui.mode === 'solo' ? (t === 0 ? 'You' : `${TEAMS[t].name} CPU`) : ui.mode === 'squads' && ui.sq.vs === 'cpu' ? (t === 0 ? 'You' : 'Computer') : teamRoom() ? (t === ui.you ? 'Your team' : 'Their team') : online() ? (t === ui.you ? 'You' : (roomSeat(t) && roomSeat(t).name) || 'Opponent') : `Player ${t + 1}`;
   // a unit's label: its character in a crew (the colour says whose it is), its side's name when it's one a side
-  const unitName = (u) => (ui.G && ui.G.size > 1 ? WB.CHARS[u.char].name : sideLabel(u.team));
+  const ownerName = (u) => { const st = ui.net && ui.net.room && ui.net.room.seats[u.own]; return u.own === ui.seat ? 'You' : st && u.own >= 0 ? st.name : 'CPU'; };
+  const unitName = (u) => (teamRoom() ? ownerName(u) : ui.G && ui.G.size > 1 ? WB.CHARS[u.char].name : sideLabel(u.team));
   const charName = (t) => { const G = ui.G; if (G.size > 1) { const n = WB.teamUnits(G, t).length; return n + (n === 1 ? ' unit left' : ' units left'); } return WB.CHARS[G.chars[t]].name; };
   const curName = () => { const u = ui.G && WB.current(ui.G); return u ? WB.CHARS[u.char].name : ''; };
   // online: is the unit whose turn it is mine? (a team room gives every unit its own player; otherwise I play a whole side)
@@ -311,7 +315,7 @@
     const ss = WB.ssReady(G);
     ui.tLeft = TURN_SECONDS; ui.lob = false; ui.weapon = ss ? 'ss' : 'shot1'; ui.cpu = null;
     if (!isCPU(G.team)) ui.turnsSeen++;
-    banner(sideLabel(G.team), `${curName()}${ss ? ' · SS READY!' : ''}${isCPU(G.team) ? '' : vsCPU() || (online() && myTurn()) ? ' · your turn' : ''}`, TEAMS[G.team].c);
+    banner(teamRoom() ? ownerName(u) : sideLabel(G.team), `${curName()}${ss ? ' · SS READY!' : ''}${isCPU(G.team) ? '' : vsCPU() || (online() && myTurn()) ? ' · your turn' : ''}`, TEAMS[G.team].c);
     ui.cam.manual = false;
     if (ss) tone(660, 990, 0.25, 0.12, 'triangle');
     renderHUD(); renderCtl(); coachLine();
@@ -477,15 +481,15 @@
     const G = ui.G; if (!G || G.phase !== 'aim') return '<div class="order"></div>';
     const w = ui.lob ? 'lob' : ui.weapon, d = G.units.filter((u) => u.alive).map((u) => ({ u, d: u.id === G.actor ? WB.delayIf(G, w) : u.delay }));
     const seq = [];
-    for (let i = 0; i < 6 && d.length; i++) { d.sort((a, b) => a.d - b.d || a.u.id - b.u.id); const x = d[0]; seq.push(x.u.team); x.d += WB.shotSpec(G, x.u, 'shot1').delay; }
-    return `<div class="order" title="Who plays next, if everyone fires their Shot 1 after this">NEXT ${seq.map((t) => `<b style="background:${TEAMS[t].c}">${esc(sideLabel(t) === 'You' ? 'You' : ui.mode === 'solo' ? TEAMS[t].name[0] : online() ? sideLabel(t).slice(0, 6) : isCPU(t) ? 'CPU' : 'P' + (t + 1))}</b>`).join('')}</div>`;
+    for (let i = 0; i < 6 && d.length; i++) { d.sort((a, b) => a.d - b.d || a.u.id - b.u.id); const x = d[0]; seq.push(x.u); x.d += WB.shotSpec(G, x.u, 'shot1').delay; }
+    return `<div class="order" title="Who plays next, if everyone fires their Shot 1 after this">NEXT ${seq.map((su) => { const t = su.team; return `<b style="background:${TEAMS[t].c}">${esc(teamRoom() ? ownerName(su).slice(0, 6) : G.size > 1 ? WB.CHARS[su.char].name : sideLabel(t) === 'You' ? 'You' : ui.mode === 'solo' ? TEAMS[t].name[0] : online() ? sideLabel(t).slice(0, 6) : isCPU(t) ? 'CPU' : 'P' + (t + 1))}</b>`; }).join('')}</div>`;
   }
   function renderCtl() {
     const G = ui.G; $('#bMenu').hidden = !G || ui.screen !== 'game';
     if (!G || ui.screen !== 'game') { $('#ctl').innerHTML = ''; return; }
     const o = $('.order'); if (o) o.outerHTML = orderHTML();
     if (isCPU(G.team) && G.phase === 'aim') { $('#ctl').innerHTML = `<span class="cputag" style="--tc:${TEAMS[G.team].c}">${esc(sideLabel(G.team))} (${esc(curName())}) is taking its turn…</span>`; return; }
-    if (online() && !myTurn() && G.phase === 'aim') { const s = roomSeat(G.team); $('#ctl').innerHTML = `<span class="cputag" style="--tc:${TEAMS[G.team].c}">${esc(sideLabel(G.team))} (${esc(curName())}) is aiming…${s && !s.connected ? ' (disconnected: their turn passes soon)' : ''}</span>`; return; }
+    if (online() && !myTurn() && G.phase === 'aim') { const cu = WB.current(G), s = teamRoom() ? (cu && ui.net.room.seats[cu.own]) || { connected: true } : roomSeat(G.team); $('#ctl').innerHTML = `<span class="cputag" style="--tc:${TEAMS[G.team].c}">${esc(teamRoom() && cu ? ownerName(cu) : sideLabel(G.team))} (${esc(curName())}) is aiming…${s && !s.connected ? (teamRoom() ? ' (disconnected: a computer is playing for them)' : ' (disconnected: their turn passes soon)') : ''}</span>`; return; }
     const aim = G.phase === 'aim', am = WB.ammoOf(G), lob = WB.lobbable(G).length > 0;
     const wb = (w, key) => { const S = WB.shotSpec(G, WB.current(G), w);
       return `<button class="btn wpn${ui.weapon === w && !ui.lob ? '' : ' ghost'}" type="button" data-w="${w}" aria-pressed="${ui.weapon === w && !ui.lob}" title="${esc(S.desc)} Turn delay +${S.delay}." ${!aim || am[w] === 0 ? 'disabled' : ''}>${esc(S.name)}<small>${key} · ${am[w] < 0 ? '∞' : am[w] + ' left'} · ⏱${S.delay}</small></button>`; };
@@ -728,10 +732,10 @@
     ui.screen = done ? 'end' : 'round'; renderCtl(); coachLine(); renderHUD();
     if (done && ui.lastWinSound !== ui.round + '/' + G.seed) { ui.lastWinSound = ui.round + '/' + G.seed; SFX.win(); }
     const you = (vsCPU() || online()) && w === (online() ? ui.you : 0);
-    const head = w < 0 ? 'Draw!' : you ? (done ? (ffa ? 'You win!' : 'You win the match!') : `You take round ${ui.round}!`) : `${sideLabel(w)} ${done ? (ffa ? 'wins!' : 'wins the match!') : `takes round ${ui.round}`}`;
+    const head = w < 0 ? 'Draw!' : you ? (done ? (teamRoom() ? 'Your team wins!' : ffa ? 'You win!' : 'You win the match!') : `You take round ${ui.round}!`) : `${sideLabel(w)} ${done ? (ffa ? 'wins!' : 'wins the match!') : `takes round ${ui.round}`}`;
     const col = w < 0 ? '#FFF3E0' : TEAMS[w].c;
     const st = G.stats;
-    ui.endHTML = `<div class="tag">${ffa ? `${G.teams}-player free-for-all` : done ? 'Match over' : `Round ${ui.round} of ${BEST_OF}`}${ui.tester ? ' · TESTER' : ''}</div><h2 style="color:${col}">${esc(head)}</h2>${ui.mode === 'solo' ? `<p style="margin:0">vs three ${LEVELS[ui.level].name} computers</p>` : ui.mode === 'squads' ? `<p style="margin:0">${ui.sq.size} v ${ui.sq.size}${ui.sq.vs === 'cpu' ? ` against the ${LEVELS[ui.level].name} computer` : ''}</p>` : ''}
+    ui.endHTML = `<div class="tag">${teamRoom() ? `${G.size} v ${G.size} team battle` : ffa ? `${G.teams}-player free-for-all` : done ? 'Match over' : `Round ${ui.round} of ${BEST_OF}`}${ui.tester ? ' · TESTER' : ''}</div><h2 style="color:${col}">${esc(head)}</h2>${ui.mode === 'solo' ? `<p style="margin:0">vs three ${LEVELS[ui.level].name} computers</p>` : ui.mode === 'squads' ? `<p style="margin:0">${ui.sq.size} v ${ui.sq.size}${ui.sq.vs === 'cpu' ? ` against the ${LEVELS[ui.level].name} computer` : ''}</p>` : ''}
       ${ffa ? '' : `<div class="score">`}${ffa ? '' : ui.wins.map((x, t) => `<span style="color:${TEAMS[t].c}" title="${esc(sideLabel(t))} · ${esc(charName(t))}">${x}</span>`).join(' – ')}${ffa ? '' : '</div>'}
       <p style="margin:0;font-size:15px">${ui.wins.map((x, t) => `<b style="color:${TEAMS[t].c}${ffa && t !== w ? ';opacity:.6' : ''}">${esc(sideLabel(t))}</b> ${esc(charName(t))}`).join(' · ')}</p>
       <p>${done && !ffa ? 'Last round: ' : ''}${G.turn} turns · ${st.shots} shots · ${st.lobs} lobs · ${st.dudBlasts} dud blasts${st.chains ? ` · ${st.chains} chain reaction${st.chains > 1 ? 's' : ''}` : ''}${st.drowned ? ` · ${st.drowned} splashed out` : ''}</p>
@@ -793,7 +797,7 @@
     show(`<div class="tag">Online · beta</div><h2>Play friends online</h2>
       <p>One of you makes a room and reads out the 4-letter code; everyone else joins with it.</p>
       <div class="fq"><label for="oName">Your name</label><input id="oName" maxlength="16" value="${esc(lsGet('wb-name') || '')}" placeholder="Player"></div>
-      <div class="row"><button class="btn fire" type="button" data-act="ocreate" ${srv ? '' : 'disabled'}>MAKE A 1v1 ROOM</button><button class="btn gold" type="button" data-act="ocreateffa" ${srv ? '' : 'disabled'}>MAKE A FREE-FOR-ALL<small style="display:block;font-family:var(--body);font-size:12px">2 to 6 players</small></button></div>
+      <div class="row"><button class="btn fire" type="button" data-act="ocreate" ${srv ? '' : 'disabled'}>MAKE A 1v1 ROOM</button><button class="btn gold" type="button" data-act="ocreateffa" ${srv ? '' : 'disabled'}>MAKE A FREE-FOR-ALL<small style="display:block;font-family:var(--body);font-size:12px">2 to 6 players</small></button><button class="btn plum" type="button" data-act="ocreateteams" ${srv ? '' : 'disabled'}>MAKE A TEAM BATTLE<small style="display:block;font-family:var(--body);font-size:12px">up to 5 v 5, computers fill in</small></button></div>
       <div class="fq" style="display:flex;gap:10px;align-items:end"><div style="flex:1"><label for="oCode">Or join with a code</label><input id="oCode" maxlength="4" style="text-transform:uppercase;letter-spacing:6px;font-size:22px" placeholder="ABCD"></div><button class="btn teal" type="button" data-act="ojoin" ${srv ? '' : 'disabled'}>JOIN</button></div>
       ${srv ? `<p class="keys">Server: ${esc(srv)}</p>` : '<p style="color:#FF4D5E">The online server isn\'t set up yet. (Crew: see wormsbound/server/README.md.)</p>'}
       ${msg ? `<p style="color:#FF4D5E">${esc(msg)}</p>` : ''}
@@ -807,7 +811,7 @@
       try { const r = await fetch(srv.replace(/^ws/, 'http') + '/new'); code = (await r.json()).code; }
       catch (e) { return onlineScreen("Couldn't reach the online server. Is it running?"); }
     } else if (!/^[A-Z]{4}$/.test(code)) return onlineScreen('Room codes are 4 letters.');
-    netOpen(srv, code, kind === 'create' ? { t: 'create', name, mode: mode === 'ffa' ? 'ffa' : 'duel' } : { t: 'join', name });
+    netOpen(srv, code, kind === 'create' ? { t: 'create', name, mode: mode === 'ffa' || mode === 'teams' ? mode : 'duel' } : { t: 'join', name });
   }
   function netOpen(srv, code, hello) {
     netLeave(true);
@@ -829,12 +833,12 @@
     // moves from the server are played in order, each only once the last shot has landed on this screen
     net.drain = () => {
       while (net.queue.length && ui.G && ui.G.phase !== 'flight' && !net.expect) {
-        const m = net.queue.shift(), G = ui.G, u = WB.current(G);
+        const m = net.queue.shift(), G = ui.G, u = WB.current(G), mine = teamRoom() ? !!u && u.own === ui.seat : m.by === ui.you; // was this move mine?
         if (!WB.act(G, m.it)) { net.send({ t: 'sync' }); net.queue = []; return; }
-        if (m.it.k === 'weapon' && m.by === ui.you) ui.weapon = m.it.w;
-        if ((m.it.k === 'fire' || m.it.k === 'lob') && u) { SFX.fire(); burst(...muzzle(u, aimOf(u)), 8, 'spark'); }
+        if (m.it.k === 'weapon' && mine) ui.weapon = m.it.w;
+        if ((m.it.k === 'fire' || m.it.k === 'lob') && u) { SFX.fire(); burst(...muzzle(u, aimOf(u)), 8, 'spark'); ui.cam.manual = false; ui.cam.over = false; }
         if (m.it.k === 'move') SFX.click();
-        if (m.by === ui.you && m.it.k !== 'move' && m.it.k !== 'weapon') net.waiting = false;
+        if (mine && m.it.k !== 'move' && m.it.k !== 'weapon') net.waiting = false;
         net.expect = m.hash;
         if (G.phase !== 'flight') net.settled();
         renderHUD(); renderCtl(); coachLine();
@@ -856,7 +860,7 @@
   }
   let aimSent = 0;
   function shareAim(a) {
-    if (!online() || !ui.net || !ui.G || ui.G.team !== ui.you) return;
+    if (!online() || !ui.net || !ui.G || !myTurn()) return;
     const now = performance.now(); if (now - aimSent < 90) return; aimSent = now;
     ui.net.send({ t: 'aim', angle: a.angle, power: a.power });
   }
@@ -865,6 +869,7 @@
     if (m.t === 'joined') { ui.seat = ui.you = m.seat; net.token = m.token; return; }
     if (m.t === 'error') { if (/code in use/.test(m.error)) return netStart('create', net.hello && net.hello.mode); banner('Server', m.error); if (net.waiting) net.waiting = false; renderCtl(); return; }
     if (m.t === 'room' || m.t === 'state' || m.t === 'round') sideFrom(m.teamSeat);
+    if ((m.mode || (net.room && net.room.mode)) === 'teams') ui.you = seatTeam(ui.seat); // in a team battle your side is your team
     if (m.t === 'room') { net.room = m; net.wins = m.wins; if (ui.screen === 'lobby') lobbyScreen(); if (ui.screen === 'game') renderHUD(); if (m.phase === 'matchover' && ui.screen === 'end') roundOverAgain(); return; }
     if (m.t === 'state') { net.room = m; if (m.G) { onlineRound(m.G, m.wins, m.round); } else lobbyScreen(); return; }
     if (m.t === 'round') { net.nextAsked = false; net.rematchAsked = false; onlineRound(WB.newGame(m.seed, m.opts), m.wins, m.round); return; }
@@ -881,8 +886,26 @@
     bakeBackground(G.seed); renderTerrain(); camReset();
     ui.screen = 'game'; hide(); onTurn();
   }
+  // Team battle room: two columns of unit slots. Sit in one, pick a character, ready up; the host sets the size and starts.
+  function teamLobby(status) {
+    const net = ui.net, R = net.room, me = R.seats[ui.seat], host = R.host === ui.seat, hostSeat = R.seats[R.host], myTeam = seatTeam(ui.seat);
+    const here = R.seats.filter((x) => x && x.connected), allReady = here.length >= 1 && here.every((x) => x.char && x.ready);
+    const slot = (t, k) => { const j = t * 5 + k, x = R.seats[j];
+      return `<div class="tslot${x ? '' : ' cpu'}" style="--tc:${TEAMS[t].c}">${x ? `<b>${esc(j === ui.seat ? 'You' : x.name)}</b>${j === R.host ? ' <span class="keys">(host)</span>' : ''} · ${x.char ? esc(WB.CHARS[x.char].name) : 'picking…'}${x.connected ? '' : ' <span style="color:#FF4D5E">(gone)</span>'}<em>${x.ready ? 'READY' : ''}</em>` : 'Computer <em>fills in</em>'}</div>`; };
+    const col = (t) => `<div class="tcol"><h3 style="color:${TEAMS[t].c}">${t === myTeam ? 'Your team' : 'Other team'}</h3>${Array.from({ length: R.size }, (_, k) => slot(t, k)).join('')}${t !== myTeam ? `<button class="btn ghost sm" type="button" data-act="oteam" data-side="${t}">Join this team</button>` : ''}</div>`;
+    const picks = WB.CHAR_IDS.map((id) => `<button class="btn sm ${me && me.char === id ? 'gold' : 'ghost'}" type="button" data-act="opick" data-char="${id}" title="${esc(WB.CHARS[id].blurb)}"><img src="${portrait(id, myTeam)}" alt="" width="54" height="40" style="border-radius:8px">${esc(WB.CHARS[id].name)}</button>`).join('');
+    const tip = status || (host ? 'Tell your friends this code. Everyone plays one unit; computers play the empty slots. Press Start when everyone here is ready.' : `Pick a character and press Ready. ${hostSeat ? esc(hostSeat.name) : 'The host'} starts the game.`);
+    show(`<div class="tag">Online team battle · room</div><h2 style="font-size:54px;letter-spacing:10px;color:var(--gold)">${esc(net.code)}</h2>
+      <p>${esc(tip)}</p>
+      <div class="sqrow"><span>Units a side</span>${[2, 3, 4, 5].map((n) => `<button class="btn sm ${n === R.size ? 'gold' : 'ghost'}" type="button" data-act="osize" data-n="${n}" ${host ? '' : 'disabled'} aria-pressed="${n === R.size}">${n} v ${n}</button>`).join('')}</div>
+      <div class="tcols">${col(0)}${col(1)}</div>
+      <div class="row" style="flex-wrap:wrap;margin-top:10px">${picks}</div>
+      <div class="row"><button class="btn teal" type="button" data-act="oready" ${me && me.char ? '' : 'disabled'}>${me && me.ready ? 'NOT READY' : 'READY'}</button>${host ? `<button class="btn fire" type="button" data-act="ostart" ${allReady ? '' : 'disabled'}>START ${R.size} v ${R.size}</button>` : ''}<button class="btn ghost sm" type="button" data-act="leave">Leave</button></div>`);
+    $('#screen .card').classList.add('title');
+  }
   function lobbyScreen(status) {
     ui.screen = 'lobby'; renderCtl(); coachLine();
+    if (ui.net && ui.net.room && ui.net.room.mode === 'teams') return teamLobby(status);
     const net = ui.net, R = net && net.room, me = R && R.seats[ui.seat], ffa = !!(R && R.mode === 'ffa');
     const seat = (s, j) => `<div class="toggle-row"><span><b style="color:${TEAMS[j].c}">${esc(j === ui.seat ? 'You' : s.name)}</b>${j === (R && R.host) && ffa ? ' <span class="keys">(host)</span>' : ''}${s.char ? ` · ${esc(WB.CHARS[s.char].name)}` : ' · picking…'}${s.connected ? '' : ' <span style="color:#FF4D5E">(disconnected)</span>'}</span><span>${s.ready ? '<b style="color:#7BE07A">READY</b>' : 'not ready'}</span></div>`;
     const seated = R ? R.seats.map((s, j) => (s ? seat(s, j) : '')).join('') : '';
@@ -949,6 +972,9 @@
       case 'online': onlineScreen(); break;
       case 'ocreate': netStart('create', 'duel'); break;
       case 'ocreateffa': netStart('create', 'ffa'); break;
+      case 'ocreateteams': netStart('create', 'teams'); break;
+      case 'oteam': if (ui.net) ui.net.send({ t: 'team', side: +b.dataset.side }); break;
+      case 'osize': if (ui.net) ui.net.send({ t: 'size', n: +b.dataset.n }); break;
       case 'ostart': if (ui.net) ui.net.send({ t: 'start' }); break;
       case 'olobby': if (ui.net) lobbyScreen(); break;
       case 'ojoin': netStart('join'); break;
