@@ -48,7 +48,7 @@ for (const seed of [11, 222, 3333]) {
   ok(!WB.act(G, { k: 'fire', angle: 60, power: 0.5 }), 'no second shot while the first is flying');
   WB.resolve(G);
   ok(G.phase === 'aim' && G.team === 1, 'the turn passes to the other team');
-  ok(G.ammo[0].dud === WB.DUD.ammo - 1, 'firing a dud uses one');
+  ok(G.units[0].ammo.dud === WB.DUD.ammo - 1, 'firing a dud uses one');
 }
 
 // 6. A dud ticks down and goes off; a dud in reach can be lobbed.
@@ -85,7 +85,7 @@ for (const a of WB.CHAR_IDS) {
   const G = WB.newGame(500, opts);
   const hp = Math.round(WB.CHARS[a].hp * WB.HP_MUL.duel);
   ok(G.units.filter((u) => u.team === 0).every((u) => u.char === a && u.hp === hp), `${a}: side 0 is ${a} with ${hp} hp (×${WB.HP_MUL.duel} in a 1v1)`);
-  ok(G.moves === WB.CHARS[a].steps && G.ammo[0].shot2 === 2 && G.ammo[0].dud === 2, `${a}: steps ${WB.CHARS[a].steps}, 2 Shot 2s, 2 duds`);
+  ok(G.moves === WB.CHARS[a].steps && G.units[0].ammo.shot2 === 2 && G.units[0].ammo.dud === 2, `${a}: steps ${WB.CHARS[a].steps}, 2 Shot 2s, 2 duds`);
   const { G: F, log } = WB.playOut(WB.newGame(600, opts), ['smart', 'smart']);
   ok(WB.hash(WB.replay(600, log, opts)) === WB.hash(F), `${a} vs ${b}: a bot match replays exactly`);
 }
@@ -96,7 +96,7 @@ const shoot = (chars, w, angle, power, setup) => {
 { // Double Tap: two darts from one shot
   const G = shoot(['zip', 'volt'], 'shot2', 45, 0.8);
   ok(G.proj.length === 2 && G.proj[1].wait > 0, 'Double Tap fires two darts, the second a moment later');
-  WB.resolve(G); ok(G.ammo[0].shot2 === 1, 'Double Tap uses one Shot 2');
+  WB.resolve(G); ok(G.units[0].ammo.shot2 === 1, 'Double Tap uses one Shot 2');
 }
 { // Drill: tunnels through ground. Fire straight down into the hill you stand on.
   const G = shoot(['digger', 'volt'], 'shot2', 270, 0.6);
@@ -145,17 +145,17 @@ const shoot = (chars, w, angle, power, setup) => {
 // 9. SS (Special Shot): charges one notch a turn, ready on your 4th turn, and each one does its thing.
 {
   const G = WB.newGame(321, { chars: ['volt', 'volt'] });
-  ok(G.ss[0] === 1 && !WB.ssReady(G), 'SS starts with one notch on your first turn, not ready');
-  ok(G.ss[1] === 1, 'the team going second starts with a one-notch head start');
+  ok(G.units[0].ss === 1 && !WB.ssReady(G), 'SS starts with one notch on your first turn, not ready');
+  ok(G.units[1].ss === 1, 'the team going second starts with a one-notch head start');
   ok(!WB.act(G, { k: 'weapon', w: 'ss' }), 'SS can\'t be picked before it is charged');
   for (let i = 0; i < 6; i++) { WB.act(G, { k: 'pass' }); WB.resolve(G); }
-  ok(G.team === 0 && WB.ssReady(G) && G.ss[0] === WB.SS_CHARGE, `ready on your ${WB.SS_CHARGE}th turn`);
+  ok(G.team === 0 && WB.ssReady(G) && G.units[0].ss === WB.SS_CHARGE, `ready on your ${WB.SS_CHARGE}th turn`);
   ok(WB.act(G, { k: 'weapon', w: 'ss' }) && WB.act(G, { k: 'fire', angle: 60, power: 0.6 }), 'fire the SS');
-  ok(G.ss[0] === 0 && G.stats.ss === 1, 'firing it empties the charge');
+  ok(G.units[0].ss === 0 && G.stats.ss === 1, 'firing it empties the charge');
   WB.resolve(G); let g = 0; while (G.team !== 0 && g++ < 6) { WB.act(G, { k: 'pass' }); WB.resolve(G); } // the delay may give side 1 two turns
-  ok(G.ss[0] === 1, 'and it starts charging again on your next turn');
+  ok(G.units[0].ss === 1, 'and it starts charging again on your next turn');
 }
-const ssGame = (chars, seed = 11) => { const G = WB.newGame(seed, { chars }); G.ss[G.team] = WB.SS_CHARGE; WB.act(G, { k: 'weapon', w: 'ss' }); return G; };
+const ssGame = (chars, seed = 11) => { const G = WB.newGame(seed, { chars }); WB.current(G).ss = WB.SS_CHARGE; WB.act(G, { k: 'weapon', w: 'ss' }); return G; };
 { // Bullet Rain: five darts
   const G = ssGame(['zip', 'volt']); WB.act(G, { k: 'fire', angle: 50, power: 0.7 });
   ok(G.proj.length === 5 && G.proj.filter((p) => p.wait > 0).length === 4, 'Bullet Rain fires a fan of 5 darts');
@@ -205,7 +205,7 @@ const ssGame = (chars, seed = 11) => { const G = WB.newGame(seed, { chars }); G.
   const G = WB.newGame(57, { chars: ['volt', 'volt'] }); let twice = false, last = -1;
   for (let i = 0; i < 16 && G.phase !== 'over'; i++) {
     if (G.team === last) twice = true; last = G.team;
-    if (G.team === 1) { G.ss[1] = WB.SS_CHARGE; WB.act(G, { k: 'weapon', w: 'ss' }); WB.act(G, { k: 'fire', angle: 4, power: 1 }); } else WB.act(G, { k: 'fire', angle: 176, power: 1 });
+    if (G.team === 1) { G.units[1].ss = WB.SS_CHARGE; WB.act(G, { k: 'weapon', w: 'ss' }); WB.act(G, { k: 'fire', angle: 4, power: 1 }); } else WB.act(G, { k: 'fire', angle: 176, power: 1 });
     WB.resolve(G);
   }
   ok(twice, 'heavy shots on one side let the other side play twice in a row');
@@ -217,7 +217,7 @@ const ssGame = (chars, seed = 11) => { const G = WB.newGame(seed, { chars }); G.
   ok(G.units.length === 4 && new Set(G.units.map((u) => u.team)).size === 4, 'four sides, one unit each');
   ok(G.units.every((u) => u.char === G.chars[u.team] && WB.solidAt(G, u.x, u.y + 0.05)), 'each stands on the ground as its own character');
   ok(WB.turnOrder(G).map((x) => x.team).join('') === '2301', 'the first round goes round the table from the side that starts');
-  ok(G.ss.filter((v) => v === 1).length === 4, 'everyone starts with one SS notch (the first side charges on its turn)');
+  ok(G.units.filter((u) => u.ss === 1).length === 4, 'everyone starts with one SS notch (the first side charges on its turn)');
   const xs = Array.from({ length: 40 }, (_, s2) => WB.newGame(s2 + 1, { teams: 4 }).units.find((u) => u.team === 0).x);
   const quarters = [0, 1, 2, 3].map((q) => xs.filter((x) => Math.floor(x / 40) === q).length);
   ok(quarters.every((k) => k >= 5), `side 0 starts all over the map (by quarter over 40 seeds: ${quarters})`);
@@ -244,12 +244,14 @@ for (const m of WB.MAP_IDS) {
   const opts = { map: m, chars: ['gale', 'brick'] }, { G: F, log } = WB.playOut(WB.newGame(808, opts), ['smart', 'smart']);
   ok(F.phase === 'over' && WB.hash(WB.replay(808, log, opts)) === WB.hash(F), `${m}: a bot match finishes and replays exactly (${F.turn} turns)`);
 }
-// With no map given, the round's map comes from its seed (the online server sends no map), so every copy builds the same one.
+// With no map given, every round rolls a fresh map from its mode's recipe and the round's seed (the online server sends
+// no map), so every copy builds the same one.
 {
-  const seen = {};
-  for (let s = 1; s <= 300; s++) seen[WB.newGame(s * 7919).map] = 1;
-  ok(WB.MAP_IDS.every((m) => seen[m]), `all ${WB.MAP_IDS.length} theme maps come up from random seeds`);
-  ok(WB.hash(WB.newGame(4242)) === WB.hash(WB.newGame(4242)) && WB.newGame(4242).map === WB.pickMap(4242), 'the same seed always gives the same map and terrain');
+  const seen = {}, codes = {};
+  for (let s = 1; s <= 300; s++) { const G = WB.newGame(s * 7919); seen[G.theme] = 1; codes[G.map] = 1; }
+  ok(WB.MapGen.THEME_IDS.every((m) => seen[m]), `all ${WB.MapGen.THEME_IDS.length} themes come up from random seeds`);
+  ok(Object.keys(codes).length > 100, `rounds roll different settings, not just different layouts (${Object.keys(codes).length} setups in 300 rounds)`);
+  ok(WB.hash(WB.newGame(4242)) === WB.hash(WB.newGame(4242)) && !!WB.MapGen.decode(WB.newGame(4242).map), 'the same seed always gives the same map, and G.map is a share code that rebuilds it');
   ok(WB.MAP_IDS.includes(WB.newGame(13, { map: 'nope' }).map), 'an unknown map id falls back to a theme map');
   let wet = 0, close = 0;
   for (const m of WB.MAP_IDS) for (let s = 1; s <= 30; s++) for (const n of [2, 4, 6]) {
@@ -258,6 +260,49 @@ for (const m of WB.MAP_IDS) {
     const xs = G.units.map((u) => u.x).sort((a, b) => a - b); for (let i = 1; i < xs.length; i++) if (xs[i] - xs[i - 1] < 7) close++;
   }
   ok(wet === 0 && close === 0, `every theme, 2, 4 and 6 sides, 30 seeds: everyone starts on dry ground, nobody on top of anyone (${wet} wet, ${close} close)`);
+}
+
+// 8b. v2: map size grows with the match, squads of up to five, a kit per unit, planned spawns.
+{
+  const dims = (o) => { const G = WB.newGame(7, o); return G.cols + 'x' + G.rows; };
+  ok(dims({}) === '160x90' && dims({ teams: 4 }) === '160x90' && dims({ teams: 6 }) === '200x112' && dims({ size: 4 }) === '240x135' && dims({ size: 5 }) === '320x180',
+    `map size by units: 2 and 4 → ${dims({})}, 6 → ${dims({ teams: 6 })}, 8 → ${dims({ size: 4 })}, 10 → ${dims({ size: 5 })}`);
+  ok(dims({ size: 5, mapSize: 'huge' }) === '240x135', 'opts.mapSize overrides it');
+  ok(WB.newGame(1, { teams: 6, size: 5 }).units.length === 12 && WB.newGame(1, { teams: 2, size: 9 }).size === 5, `never more than ${WB.MAX_UNITS} units or ${WB.MAX_SIZE} a side`);
+  // squads: per-unit characters, kits and owners
+  const squad = ['brick', 'zip', 'volt', 'digger', 'gale'], G = WB.newGame(21, { size: 5, chars: squad.concat(squad.slice().reverse()), owners: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9] });
+  ok(G.units.length === 10 && [0, 1].every((t) => WB.teamUnits(G, t).map((u) => u.char).sort().join() === squad.slice().sort().join()), 'a 5v5 with one of each character a side');
+  ok(new Set(G.units.map((u) => u.own)).size === 10 && WB.owner(G) === WB.current(G).own, 'every unit can have its own controller; owner(G) is whose turn it is');
+  ok(WB.newGame(21, { size: 3, chars: ['gale', 'brick'] }).units.every((u) => u.char === (u.team ? 'brick' : 'gale')), 'one character per side still means the whole crew plays it');
+  const u0 = WB.current(G), mate = G.units.find((u) => u.team === u0.team && u.id !== u0.id);
+  WB.act(G, { k: 'weapon', w: 'shot2' }); WB.act(G, { k: 'fire', angle: 80, power: 0.2 });
+  ok(u0.ammo.shot2 === 1 && mate.ammo.shot2 === 2, 'ammo is per unit: one unit firing its Shot 2 leaves its crewmates full');
+  ok(WB.shotSpec(G, u0, 'shot1').name === WB.CHARS[u0.char].shot1.name, 'a unit fires its own character\'s shots');
+  WB.resolve(G);
+  // spawns: dry, apart, standing with headroom, on every size and layout; sides keeps crews together
+  let bad = 0, deep = 0, n = 0;
+  for (let s = 1; s <= 40; s++) for (const o of [{ size: 2 }, { size: 3 }, { size: 5 }, { teams: 3, size: 3 }, { teams: 4, size: 2 }, { teams: 6, size: 2 }, { size: 5, recipe: 'teams' }]) {
+    const g = WB.newGame(s * 9973, o), xs = g.units.map((u) => u.x).sort((a, b) => a - b);
+    for (let i = 1; i < xs.length; i++) if (xs[i] - xs[i - 1] < 5) bad++;
+    for (const u of g.units) {
+      n++; if (u.y >= g.water - 3 || !WB.solidAt(g, u.x, u.y + 0.5) || WB.solidAt(g, u.x, u.y - 1) || WB.solidAt(g, u.x, u.y - 3)) bad++;
+      if (u.y > WB.surfaceY(g, u.x) + 2) deep++;
+    }
+  }
+  ok(bad === 0, `squad spawns: ${n} units over 7 formats and 40 seeds all stand on dry ground with headroom, 5+ cells apart (${bad} bad)`);
+  ok(deep > 0 && deep < n * 0.4, `some units start under cover on a ledge or cave floor (${deep} of ${n})`);
+  const side = WB.newGame(5, { size: 5, spawn: 'sides' }), mix = WB.newGame(5, { size: 5, spawn: 'mixed', map: 'hills' });
+  ok(Math.max(...WB.teamUnits(side, 0).map((u) => u.x)) < Math.min(...WB.teamUnits(side, 1).map((u) => u.x)), "'sides' starts each crew together, side 0 on the left");
+  ok(Math.max(...WB.teamUnits(mix, 0).map((u) => u.x)) > Math.min(...WB.teamUnits(mix, 1).map((u) => u.x)), "'mixed' deals the two crews in among each other");
+  // whole matches on big maps finish and replay
+  for (const [label, o] of [['3v3', { size: 3, chars: ['zip', 'digger'] }], ['5v5 squads', { size: 5, chars: squad.concat(squad) }], ['5v5 team battle', { size: 5, recipe: 'teams', chars: squad.concat(squad) }], ['4 crews of 3', { teams: 4, size: 3 }]]) {
+    const { G: F, log } = WB.playOut(WB.newGame(4040, o), new Array(6).fill('smart'));
+    ok(F.phase === 'over' && WB.hash(WB.replay(4040, log, o)) === WB.hash(F), `${label} on a ${F.cols} × ${F.rows} map finishes and replays exactly (${F.turn} turns${F.timeout ? ', timed out' : ''})`);
+  }
+  // bots on a big map walk towards the fight instead of standing out of range, and never into the water
+  let walked = 0, lost = 0;
+  for (let s = 1; s <= 12; s++) { const { G: F, log } = WB.playOut(WB.newGame(s * 31337, { size: 5, recipe: 'teams' }), ['smart', 'smart']); walked += log.filter((it) => it.k === 'move').length; lost += F.stats.drowned; }
+  ok(walked > 50, `bots walk on big maps (${walked} steps in 12 matches, ${lost} units lost to the water in all)`);
 }
 
 // 9. The map generator (mapgen.js) on its own: settings, codes, every preset, random settings, sizes.

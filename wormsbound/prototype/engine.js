@@ -27,14 +27,17 @@
 
   // ---------- tuning (everything a balance pass might touch lives here) ----------
   const TICK = 1 / 60;          // seconds per physics tick
-  const COLS = 160, ROWS = 90;  // terrain grid, in cells (8 px each on a 1280×720 stage)
-  const WATER0 = 82;            // water surface row at the start; below it you drown
+  const COLS = 160, ROWS = 90;  // the one-screen terrain grid, in cells (8 px each on a 1280×720 stage). A match's own
+                                // grid is G.cols × G.rows: bigger matches get bigger maps (MapGen.sizeFor) and a camera.
+  const WATER0 = 82;            // water surface row on the one-screen grid; the map sets each match's own (G.water)
   const GRAV = 30;              // cells / s²
   const VMAX = 60;              // launch speed at full power, cells / s
   const WIND_MAX = 7;           // strongest wind push, cells / s² sideways
   const UNIT_R = 1.5;           // unit body radius, cells
   const MAX_TEAMS = 6;          // online free-for-all takes up to 6 players
   const UNITS_PER_TEAM = 1;     // default side size: 1v1 and the 4-way free-for-all both use one unit a side
+  const MAX_SIZE = 5;           // most units a side (squads and 5v5)
+  const MAX_UNITS = 12;         // most units in one match (6 sides of 2, 4 of 3, 2 of 5...)
   const HP = 100;               // a "standard" unit; characters scale from it
   const MOVE_STEPS = 14;        // default steps a turn (characters override)
   const CLIMB = 2;              // default highest ledge a step can climb
@@ -46,13 +49,16 @@
   const SUDDEN_ROUNDS = 12;     // after this many rounds (a round = one turn per side) the water rises
   const SUDDEN_RISE = 2;        // rows per turn
   const MAX_ROUNDS = 40;        // hard stop (the rising water should end it well before this)
-  const suddenTurn = (G) => SUDDEN_ROUNDS * G.teams, maxTurns = (G) => MAX_ROUNDS * G.teams;
+  // a round is one turn per side; bigger crews get more turns before the water rises (2 a side: ×1.5 ... 5 a side: ×3)
+  const crewTurns = (G) => G.teams * (1 + 0.5 * ((G.size || 1) - 1));
+  const suddenTurn = (G) => Math.round(SUDDEN_ROUNDS * crewTurns(G)), maxTurns = (G) => Math.round(MAX_ROUNDS * crewTurns(G));
   const DMG_SPREAD = 1.6;       // damage falls off to 0 at r × 1.6
   const SS_CHARGE = 4;          // the SS is ready on your 4th turn, then every 4th turn after you use it
   // Turn delay: what each action adds to the acting unit's delay (shots carry their own `delay`).
   const DELAY = { move: 12, pass: 520, lob: 620, dud: 720 };
   // Health scale by format: characters' hp numbers are for a crew of two; one unit a side needs more to last.
   const HP_MUL = { duel: 2.6, ffa: 1.8, crew: 1 };
+  const CREW_HP = [0, 0, 1.5, 1.25, 1.1, 1]; // by units a side (2 to 5): small crews need a bit more health each
   const START_GAP = 10;         // starting delays alternate teams 0, 10, 20, 30 so the first round goes A B A B
 
   // The Live dud: every character has 2. Lands without exploding, ticks down 3 turns, anyone near can lob it.
@@ -100,8 +106,8 @@
   const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
   // ---------- terrain ----------
-  const solidAt = (G, x, y) => { const cx = Math.floor(x), cy = Math.floor(y); if (cx < 0 || cx >= COLS || cy >= ROWS) return false; if (cy < 0) return false; return G.T[cy * COLS + cx] !== 0; };
-  function surfaceY(G, x) { const cx = clamp(Math.floor(x), 0, COLS - 1); for (let y = 0; y < ROWS; y++) if (G.T[y * COLS + cx]) return y; return ROWS; }
+  const solidAt = (G, x, y) => { const cx = Math.floor(x), cy = Math.floor(y); if (cx < 0 || cx >= G.cols || cy >= G.rows) return false; if (cy < 0) return false; return G.T[cy * G.cols + cx] !== 0; };
+  function surfaceY(G, x) { const cx = clamp(Math.floor(x), 0, G.cols - 1); for (let y = 0; y < G.rows; y++) if (G.T[y * G.cols + cx]) return y; return G.rows; }
 
   // Maps come from the map generator (mapgen.js): ten themes, each a preset you can tweak, plus share codes.
   // MAPS lists the theme maps a round can deal; opts.map also takes any preset id, share code or settings object.
@@ -112,8 +118,8 @@
   function pickMap(seed) { let h = (seed >>> 0) ^ 0x9E3779B9; h = Math.imul(h ^ (h >>> 16), 0x45D9F3B) >>> 0; h = Math.imul(h ^ (h >>> 16), 0x45D9F3B) >>> 0; return MAP_IDS[((h ^ (h >>> 16)) >>> 0) % MAP_IDS.length]; }
   const BARREL = { r: 4.5, dmg: 44 }; // a map hazard: blows up when a blast reaches it (and sets off the next one)
   function carve(G, cx, cy, r) {
-    const x0 = Math.max(0, Math.floor(cx - r)), x1 = Math.min(COLS - 1, Math.ceil(cx + r));
-    const y0 = Math.max(0, Math.floor(cy - r)), y1 = Math.min(ROWS - 1, Math.ceil(cy + r));
+    const COLS = G.cols, x0 = Math.max(0, Math.floor(cx - r)), x1 = Math.min(COLS - 1, Math.ceil(cx + r));
+    const y0 = Math.max(0, Math.floor(cy - r)), y1 = Math.min(G.rows - 1, Math.ceil(cy + r));
     let n = 0;
     for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
       const dx = x + 0.5 - cx, dy = y + 0.5 - cy;
@@ -123,35 +129,55 @@
   }
 
   // ---------- game state ----------
-  // opts.teams: 2 (1v1) or 4 (free-for-all). opts.size: units per side (default 1). opts.first: which side shoots first.
-  // opts.chars: each side's character id (default Volt). opts.map: a preset id, a share code or a settings object for
-  // MapGen (default: a theme picked from the seed). A preset or a code with seed 0 builds a new layout from the match seed.
+  // opts.teams: sides, 2 to 6. opts.size: units a side, 1 to 5 (at most MAX_UNITS in a match). opts.first: which side
+  // shoots first. opts.chars: a character id per side, or one per unit (side 0's units first); default Volt.
+  // opts.owners: who controls each unit (same order as per-unit chars); default: its side. The online server uses it for
+  // one player per unit, and gives the seats nobody took to bots.
+  // opts.map: a preset id, a share code or a settings object for MapGen. With none, the round rolls a fresh map from
+  // opts.recipe (default: the recipe for this format), so every copy of the match (server, every browser, a replay)
+  // builds the same one from the seed. opts.mapSize: a MapGen size id; default grows with the number of units.
+  // opts.spawn: 'sides' | 'mixed' (default: the recipe's). opts.under: share of units that may start below the surface.
+  const recipeFor = (teams, size) => (size > 1 ? 'squads' : teams > 2 ? 'ffa' : 'duel');
   function newGame(seed, opts = {}) {
-    const teams = Math.max(2, Math.min(MAX_TEAMS, opts.teams | 0)), size = Math.max(1, Math.min(2, opts.size || UNITS_PER_TEAM));
-    const chars = Array.from({ length: teams }, (_, t) => (opts.chars && CHARS[opts.chars[t]]) ? opts.chars[t] : 'volt');
+    const teams = Math.max(2, Math.min(MAX_TEAMS, opts.teams | 0));
+    const size = Math.max(1, Math.min(MAX_SIZE, Math.floor(MAX_UNITS / teams), opts.size || UNITS_PER_TEAM)), spots = teams * size;
+    const perUnit = !!opts.chars && opts.chars.length === spots && size > 1;
+    const charAt = (t, i) => { const c = opts.chars && (perUnit ? opts.chars[t * size + i] : opts.chars[t]); return CHARS[c] ? c : 'volt'; };
+    const chars = Array.from({ length: teams }, (_, t) => charAt(t, 0)); // each side's lead character (the HUD's label)
     const G = {
-      v: 2, seed: seed >>> 0, _s: (seed >>> 0) || 1, _id: 0, map: 'hills', mapName: '', theme: 'hills', windMul: 1, mirror: false,
+      v: 3, seed: seed >>> 0, _s: (seed >>> 0) || 1, _id: 0, cols: COLS, rows: ROWS, map: 'hills', mapName: '', theme: 'hills', windMul: 1, mirror: false,
       phase: 'aim', turn: 0, team: 0, teams, size, actor: 0, spent: 0, chars,
       wind: 0, water: WATER0, moves: 0, weapon: 'shot1',
       T: null, units: [], proj: [], duds: [], barrels: [], fx: [],
-      ammo: [], ss: new Array(teams).fill(0), fused: false, winner: null,
+      fused: false, winner: null,
       stats: { shots: 0, shot2: 0, ss: 0, lobs: 0, dudBlasts: 0, chains: 0, strikes: 0, drowned: 0, fallKOs: 0, selfDmg: new Array(teams).fill(0), dmg: new Array(teams).fill(0) },
     };
-    const M = MapGen.generate(opts.map || pickMap(seed), { w: COLS, h: ROWS, seed: G.seed });
-    Object.assign(G, { map: M.id, mapName: M.name, theme: M.theme, T: M.T, water: M.water, windMul: M.windMul, mirror: M.mirror });
-    for (let t = 0; t < G.teams; t++) { const C = CHARS[chars[t]]; G.ammo.push({ shot1: C.shot1.ammo, shot2: C.shot2.ammo, dud: DUD.ammo }); }
-    // spawn spots spread evenly across the map; each side takes a block of them. In 1v1, side 0 starts on the left;
-    // in a free-for-all the sides are shuffled along the map so nobody always gets the same spot.
+    const recipe = MapGen.RECIPES[opts.recipe] ? opts.recipe : recipeFor(teams, size), Rc = MapGen.RECIPES[recipe];
+    const Z = MapGen.SIZES[opts.mapSize] || MapGen.SIZES[MapGen.sizeFor(spots)];
+    const M = MapGen.generate(opts.map || MapGen.roll(recipe, G.seed), { w: Z.w, h: Z.h, seed: G.seed });
+    Object.assign(G, { cols: M.w, rows: M.h, map: M.id, mapName: M.name, theme: M.theme, T: M.T, water: M.water, windMul: M.windMul, mirror: M.mirror });
+    // where everyone starts: spots spread across the map, each on dry ground and clear of everyone else. 'sides' keeps
+    // each side together (side 0 on the left in a two-sided match); 'mixed' deals the spots out one side at a time.
+    // With more than two sides the order is shuffled so nobody always gets the same place.
     const order = Array.from({ length: teams }, (_, t) => t);
     if (teams > 2) for (let i = teams - 1; i > 0; i--) { const j = Math.floor(R(G) * (i + 1)); [order[i], order[j]] = [order[j], order[i]]; }
-    const spots = teams * size;
-    const mul = opts.hpMul || (size > 1 ? HP_MUL.crew : teams > 2 ? HP_MUL.ffa : HP_MUL.duel);
+    let layout = opts.spawn || (opts.map ? 'sides' : Rc.spawn);
+    if (layout === 'any') layout = R(G) < 0.5 ? 'sides' : 'mixed';
+    if (size === 1 || G.mirror) layout = 'sides';
+    const under = opts.under != null ? opts.under : opts.map ? 0 : (Rc.under || 0);
+    const mul = opts.hpMul || (size > 1 ? CREW_HP[size] : teams > 2 ? HP_MUL.ffa : HP_MUL.duel);
+    const gap = clamp(Math.floor(G.cols * 0.84 / spots * 0.6), 5, 8), n = new Array(teams).fill(0);
     for (let k = 0; k < spots; k++) {
-      const t = order[Math.floor(k / size)], C = CHARS[chars[t]], hp = Math.round(C.hp * mul);
-      let x = Math.round(COLS * (0.08 + 0.84 * (k + 0.3 + R(G) * 0.4) / spots));
-      x = dryLand(G, x, G.units.map((v) => Math.floor(v.x)));
-      if (G.mirror && spots % 2 === 0 && k >= spots / 2) x = COLS - 1 - Math.floor(G.units[spots - 1 - k].x); // mirror maps mirror the spawns
-      G.units.push({ id: ++G._id, team: t, char: chars[t], x: x + 0.5, y: surfaceY(G, x), vx: 0, vy: 0, hp, maxHp: hp, alive: true, air: false, face: x < COLS / 2 ? 1 : -1, delay: 0 });
+      const t = layout === 'mixed' ? order[k % teams] : order[Math.floor(k / size)], i = n[t]++, ch = charAt(t, i), C = CHARS[ch], hp = Math.round(C.hp * mul);
+      let x = Math.round(G.cols * (0.08 + 0.84 * (k + 0.3 + R(G) * 0.4) / spots));
+      x = dryLand(G, x, G.units.map((v) => Math.floor(v.x)), gap);
+      const mirrored = G.mirror && spots % 2 === 0 && k >= spots / 2;
+      if (mirrored) x = G.cols - 1 - Math.floor(G.units[spots - 1 - k].x); // mirror maps mirror the spawns
+      const deep = R(G) < under && !mirrored ? floorsAt(G, x).slice(1) : [];
+      const y = deep.length ? deep[Math.floor(R(G) * deep.length)] : surfaceY(G, x);
+      const own = opts.owners && Number.isInteger(opts.owners[t * size + i]) ? opts.owners[t * size + i] : t;
+      G.units.push({ id: ++G._id, team: t, own, char: ch, x: x + 0.5, y, vx: 0, vy: 0, hp, maxHp: hp, alive: true, air: false, face: x < G.cols / 2 ? 1 : -1, delay: 0,
+        ammo: { shot1: C.shot1.ammo, shot2: C.shot2.ammo, dud: DUD.ammo }, ss: 0 });
     }
     G.units.sort((a, b) => a.team - b.team || a.x - b.x); // ids stay as made; keep the list grouped by side
     // the map's hazards: barrels, and old live duds (anyone can lob them; they tick from turn 1). None right by a spawn.
@@ -165,23 +191,34 @@
     G.first = Number.isInteger(opts.first) && opts.first >= 0 && opts.first < teams ? opts.first : 0;
     for (const u of G.units) { const i = G.units.filter((v) => v.team === u.team).indexOf(u), rank = (u.team - G.first + teams) % teams; u.delay = (i * teams + rank) * START_GAP; }
     const a0 = nextActor(G); G.actor = a0.id; G.team = a0.team;
-    G.moves = CHARS[chars[G.team]].steps;
+    G.moves = CHARS[a0.char].steps;
+    for (const u of G.units) if (u.team !== G.team) u.ss = 1; // sides that don't shoot first get a one-notch SS head start (first turn wins 58% → 51% in the 1v1 sim)
     chargeSS(G);
-    for (let t = 0; t < teams; t++) if (t !== G.team) G.ss[t] = 1; // sides that don't shoot first get a one-notch SS head start (first turn wins 58% → 51% in the 1v1 sim)
     G.wind = rollWind(G);
     return G;
   }
   // the nearest column to x with ground well above the water and 5 cells from a channel's edge (spawns must never land in one),
-  // and at least 8 cells from anyone already placed
-  function dryLand(G, x, taken = []) {
-    const dry = (c) => c >= 0 && c < COLS && surfaceY(G, c) < G.water - 4; // the map's own water line (the generator sets it)
-    const ok = (c) => c >= 3 && c < COLS - 3 && dry(c - 5) && dry(c) && dry(c + 5) && taken.every((t) => Math.abs(t - c) >= 8);
-    for (let d = 0; d < COLS; d++) { if (ok(x - d)) return x - d; if (ok(x + d)) return x + d; }
+  // and at least `gap` cells from anyone already placed
+  function dryLand(G, x, taken = [], gap = 8) {
+    const dry = (c) => c >= 0 && c < G.cols && surfaceY(G, c) < G.water - 4; // the map's own water line (the generator sets it)
+    const ok = (c) => c >= 3 && c < G.cols - 3 && dry(c - 5) && dry(c) && dry(c + 5) && taken.every((t) => Math.abs(t - c) >= gap);
+    for (let d = 0; d < G.cols; d++) { if (ok(x - d)) return x - d; if (ok(x + d)) return x + d; }
     return x;
   }
+  // every floor a unit can stand on in column x, top first: ground with 5 clear cells above it (and beside it), well above the water
+  function floorsAt(G, x) {
+    const out = [], clear = (c, y) => { for (let k = 1; k <= 5; k++) if (solidAt(G, c, y - k)) return false; return true; };
+    for (let y = 1; y < G.water - 4; y++) if (solidAt(G, x, y) && clear(x, y) && clear(x - 1, y) && clear(x + 1, y)) out.push(y);
+    return out;
+  }
   // One notch of SS charge at the start of each of your turns.
-  function chargeSS(G) { G.ss[G.team] = Math.min(SS_CHARGE, G.ss[G.team] + 1); }
-  const ssReady = (G, t = G.team) => G.ss[t] >= SS_CHARGE;
+  // Each unit has its own kit: Shot 2 and dud ammo, and its own SS charge.
+  function chargeSS(G) { const u = current(G); if (u) u.ss = Math.min(SS_CHARGE, u.ss + 1); }
+  // who: a unit, a side (its most-charged living unit), or nothing (the unit whose turn it is)
+  const ssOf = (G, who) => { if (who && typeof who === 'object') return who.ss; if (who == null) { const u = current(G); return u ? u.ss : 0; } return Math.max(0, ...teamUnits(G, who).map((u) => u.ss)); };
+  const ssReady = (G, who) => ssOf(G, who) >= SS_CHARGE;
+  const ammoOf = (G, u = current(G)) => (u ? u.ammo : { shot1: 0, shot2: 0, dud: 0 });
+  const owner = (G) => { const u = current(G); return u ? u.own : -1; }; // who controls the unit whose turn it is
   const rollWind = (G) => Math.round((R(G) * 2 - 1) * WIND_MAX * (G.windMul || 1) * 10) / 10; // calm maps halve it, gale maps ×1.6
   const teamUnits = (G, t) => G.units.filter((u) => u.team === t && u.alive);
   function current(G) { return G.units.find((u) => u.id === G.actor && u.alive) || null; }
@@ -195,7 +232,7 @@
     return best;
   }
   // What this turn will have cost so far if you fire `w` now (or pass): for the UI's turn-order preview.
-  function delayIf(G, w) { const u = current(G); if (!u) return 0; return u.delay + G.spent + (w === 'pass' ? DELAY.pass : w === 'lob' ? DELAY.lob : shotSpec(G, G.team, w).delay); }
+  function delayIf(G, w) { const u = current(G); if (!u) return 0; return u.delay + G.spent + (w === 'pass' ? DELAY.pass : w === 'lob' ? DELAY.lob : shotSpec(G, u, w).delay); }
   // The coming turns, in order, if every unit's delay stays as it is now (the current unit counted with `extra`).
   function turnOrder(G, extra = 0, n = 6) {
     const live = G.units.filter((u) => u.alive).map((u) => ({ id: u.id, team: u.team, d: u.delay + (u.id === G.actor ? G.spent + extra : 0) }));
@@ -203,9 +240,11 @@
   }
   const center = (u) => [u.x, u.y - UNIT_R];
   const charOf = (G, t) => CHARS[G.chars[t]];
-  // The full spec of a team's weapon: { name, r, dmg, wind, speed, ... } with defaults filled in.
-  function shotSpec(G, team, w) {
-    const s = w === 'dud' ? DUD : charOf(G, team)[w];  // shot1 | shot2 | ss
+  // The full spec of a weapon: { name, r, dmg, wind, speed, ... } with defaults filled in. who: a unit, a character id,
+  // or a side (its lead character).
+  function shotSpec(G, who, w) {
+    const C = who && typeof who === 'object' ? CHARS[who.char] : CHARS[who] || charOf(G, who);
+    const s = w === 'dud' ? DUD : C[w];  // shot1 | shot2 | ss
     return Object.assign({ wind: 1, speed: 1, knock: 1 }, s);
   }
 
@@ -233,7 +272,7 @@
     const px = p.x, py = p.y;
     p.vx += G.wind * (p.wm == null ? 1 : p.wm) * dt; p.vy += GRAV * dt;
     p.x += p.vx * dt; p.y += p.vy * dt;
-    if (p.x < -4 || p.x > COLS + 4) return 'out';
+    if (p.x < -4 || p.x > G.cols + 4) return 'out';
     if (p.y >= G.water) return 'water';
     const hu = unitHit(G, p, ignoreId);
     if (hu) { p.hitUnit = hu; return 'unit'; }
@@ -254,8 +293,8 @@
     return 'ground';
   }
   function newShot(G, u, w, angle, power, team) {
-    const s = shotSpec(G, team, w);
-    const p = Object.assign(launch(u, angle, power, s.speed), { id: ++G._id, w, team, from: u.id, age: 0, wm: s.wind });
+    const s = shotSpec(G, u, w);
+    const p = Object.assign(launch(u, angle, power, s.speed), { id: ++G._id, w, team, char: u.char, from: u.id, age: 0, wm: s.wind });
     if (s.bounce) p.bounce = s.bounce;
     if (s.drill) p.drill = s.drill;
     if (w === 'dud') p.fuse = DUD.fuse;
@@ -357,8 +396,8 @@
       G.duds.push(d); G.fx.push({ k: 'dud', id: d.id, x, y, fuse: d.fuse });
       return;
     }
-    const s = shotSpec(G, p.team, p.w);
-    explode(G, p.x, p.y, s.r, s.dmg, p.team, p.w === 'ss' ? 'ss' : p.w === 'shot2' ? G.chars[p.team] : 'shot', s.knock);
+    const s = shotSpec(G, p.char || p.team, p.w);
+    explode(G, p.x, p.y, s.r, s.dmg, p.team, p.w === 'ss' ? 'ss' : p.w === 'shot2' ? (p.char || G.chars[p.team]) : 'shot', s.knock);
     if (s.strike) strike(G, p.x, s.strike.w, s.strike.dmg, p.team);
     if (s.storm) for (const dx of [0, -s.storm.gap, s.storm.gap]) strike(G, p.x + dx, s.storm.w, s.storm.dmg, p.team);
     if (s.quake) { // every enemy standing on the ground takes damage and is bounced up a little
@@ -393,7 +432,7 @@
       } else u.y = ny;
     }
     if (u.alive && (u.y >= G.water)) ko(G, u, 'water');
-    if (u.alive && (u.x < 0 || u.x >= COLS)) ko(G, u, 'out');
+    if (u.alive && (u.x < 0 || u.x >= G.cols)) ko(G, u, 'out');
   }
 
   // ---------- turns ----------
@@ -419,7 +458,7 @@
     G.spent = 0;
     G.turn++;
     if (G.turn >= suddenTurn(G)) {
-      G.water = Math.max(4, G.water - SUDDEN_RISE);
+      G.water = Math.max(4, G.water - Math.max(SUDDEN_RISE, Math.round(SUDDEN_RISE * G.rows / ROWS)));
       for (const u of G.units) if (u.alive && u.y >= G.water) ko(G, u, 'water');
       for (const d of G.duds) if (d.y >= G.water) d.gone = true;
       G.duds = G.duds.filter((d) => !d.gone);
@@ -431,7 +470,7 @@
       G.phase = 'over'; G.winner = hp.filter((h) => h === top).length > 1 ? -1 : hp.indexOf(top); G.timeout = true; return;
     }
     const nx = nextActor(G, was ? was.team : -1); G.actor = nx.id; G.team = nx.team;
-    G.phase = 'aim'; G.moves = charOf(G, G.team).steps; G.fused = false; G.weapon = 'shot1';
+    G.phase = 'aim'; G.moves = CHARS[nx.char].steps; G.fused = false; G.weapon = 'shot1';
     chargeSS(G);
     G.wind = rollWind(G);
     G.fx.push({ k: 'turn', team: G.team, turn: G.turn });
@@ -440,7 +479,7 @@
   // ---------- moving in the aim phase ----------
   function walk(G, u, dir) {
     const nx = u.x + dir, climb = CHARS[u.char].climb;
-    if (nx < 0.5 || nx > COLS - 0.5) return false;
+    if (nx < 0.5 || nx > G.cols - 0.5) return false;
     let ny = u.y, k = 0; // climb up to `climb` cells, or step down
     while (solidAt(G, nx, ny - 0.01) && k <= climb) { ny -= 1; k++; }
     if (k > climb) return false;                       // a wall
@@ -471,15 +510,15 @@
       }
       case 'weapon': {
         if (WEAPON_IDS.indexOf(it.w) < 0) return false;
-        if (it.w === 'ss' ? !ssReady(G) : G.ammo[G.team][it.w] === 0) return false;
+        if (it.w === 'ss' ? !ssReady(G) : u.ammo[it.w] === 0) return false;
         G.weapon = it.w; return true;
       }
       case 'fire': {
         if (!Number.isFinite(it.angle) || !Number.isFinite(it.power)) return false;
-        const w = G.weapon, am = G.ammo[G.team];
-        if (w === 'ss') { if (!ssReady(G)) return false; G.ss[G.team] = 0; G.stats.ss++; }
+        const w = G.weapon, am = u.ammo;
+        if (w === 'ss') { if (!ssReady(G)) return false; u.ss = 0; G.stats.ss++; }
         else { if (am[w] === 0) return false; if (am[w] > 0) am[w]--; }
-        const sp = shotSpec(G, G.team, w);
+        const sp = shotSpec(G, u, w);
         G.spent += sp.delay;
         if (sp.rain) { // Bullet Rain: a fan of darts, one after another
           const n = sp.rain.n;
@@ -488,7 +527,7 @@
         }
         const p = newShot(G, u, w, it.angle, it.power, G.team);
         G.proj.push(p); G.stats.shots++; if (w === 'shot2') G.stats.shot2++;
-        if (shotSpec(G, G.team, w).double) { // Double Tap: a second dart a third of a second later
+        if (sp.double) { // Double Tap: a second dart a third of a second later
           const q = newShot(G, u, w, it.angle, it.power * 0.96, G.team); q.wait = 20; G.proj.push(q);
         }
         u.face = Math.cos(it.angle * Math.PI / 180) >= 0 ? 1 : -1;
@@ -519,7 +558,7 @@
 
   // ---------- aim prediction (the same advance() the game uses, without changing the ground) ----------
   function predict(G, u, angle, power, w = 'shot1', team = u.team, maxTicks = 900) {
-    const s = shotSpec(G, team, w);
+    const s = shotSpec(G, u, w);
     const p = Object.assign(launch(u, angle, power, s.speed), { wm: s.wind, bounce: s.bounce || 0, drill: s.drill || 0 });
     let t = 0;
     while (t++ < maxTicks) {
@@ -553,28 +592,28 @@
   const gauss = (r) => (r() + r() + r() - 1.5) * 1.15;
 
   // Score a landing spot for `team` with weapon w (from the bot's point of view).
-  function scoreLanding(G, land, w, team, fuse) {
+  function scoreLanding(G, land, w, team, fuse, char) {
     if (land.hit === 'water' || land.hit === 'out' || land.hit === 'timeout') return -1;
     if (w === 'dud') { // a dud is a threat over time, minus the risk it gets lobbed back
       const s = blastScore(G, land.x, land.y, DUD.r, DUD.dmg, team);
       const sure = fuse <= 1 ? 1 : fuse === 2 ? 0.55 : 0.4;
       return sure * s.theirs - 1.4 * s.mine;
     }
-    const S = shotSpec(G, team, w);
+    const S = shotSpec(G, char || team, w);
     const s = blastScore(G, land.x, land.y, S.r, S.dmg, team);
     let sc = s.theirs - 1.4 * s.mine;
     if (S.double) sc *= 1.8;
     if (S.strike) for (const u of G.units) if (u.alive && Math.abs(u.x - land.x) <= S.strike.w) sc += (u.team === team ? -1.4 : 1) * Math.min(u.hp, S.strike.dmg * CHARS[u.char].armor);
     if (S.knock > 1) for (const u of G.units) { // a big push near the water or a cliff is worth a lot
       if (!u.alive) continue; const [cx, cy] = center(u); if (Math.hypot(cx - land.x, cy - land.y) > S.r * DMG_SPREAD) continue;
-      if (G.water - u.y < 14 || u.x < 10 || u.x > COLS - 10) sc += (u.team === team ? -1.4 : 1) * 0.6 * u.hp;
+      if (G.water - u.y < 14 || u.x < 10 || u.x > G.cols - 10) sc += (u.team === team ? -1.4 : 1) * 0.6 * u.hp;
     }
     if (S.rain) sc *= 3.2;
     if (S.storm) for (const dx of [0, -S.storm.gap, S.storm.gap]) for (const u of G.units) if (u.alive && Math.abs(u.x - land.x - dx) <= S.storm.w) sc += (u.team === team ? -1.4 : 1) * Math.min(u.hp, S.storm.dmg * CHARS[u.char].armor);
     if (S.quake) for (const u of G.units) if (u.alive && u.team !== team) sc += Math.min(u.hp, S.quake.dmg * CHARS[u.char].armor);
     if (S.tornado) for (const u of G.units) {
       if (!u.alive) continue; const [cx, cy] = center(u), d = Math.hypot(cx - land.x, cy - land.y); if (d > S.tornado.reach) continue;
-      const k = 1 - d / S.tornado.reach, risky = G.water - u.y < 16 || u.x < 14 || u.x > COLS - 14;
+      const k = 1 - d / S.tornado.reach, risky = G.water - u.y < 16 || u.x < 14 || u.x > G.cols - 14;
       sc += (u.team === team ? -1.4 : 1) * (Math.min(u.hp, S.tornado.dmg * k) + (risky ? 0.7 * u.hp * k : 0));
     }
     if (land.unit && G.units.find((x) => x.id === land.unit).team !== team) sc += 4;
@@ -586,7 +625,7 @@
     const tryOne = (angle, power) => {
       power = clamp(power, 0.1, 1) * powerCap;
       const land = predict(G, u, angle, power, w);
-      const sc = scoreLanding(G, land, w, u.team, fuse);
+      const sc = scoreLanding(G, land, w, u.team, fuse, u.char);
       if (sc > best.score) best = { score: sc, angle, power: power / powerCap };
     };
     for (let i = 0; i < st.tries; i++) {
@@ -596,6 +635,14 @@
     }
     for (let i = 0; i < st.refine && best.angle != null; i++) tryOne(best.angle + gauss(rnd) * 4, best.power + gauss(rnd) * 0.06);
     return best;
+  }
+  // Would one step this way be safe? The same checks as walk(), plus where the unit would end up: not in the water, not a long drop.
+  function safeStep(G, u, dir) {
+    const nx = u.x + dir, climb = CHARS[u.char].climb; if (nx < 2 || nx > G.cols - 2) return false;
+    let ny = u.y, k = 0; while (solidAt(G, nx, ny - 0.01) && k <= climb) { ny -= 1; k++; }
+    if (k > climb || solidAt(G, nx, ny - UNIT_R * 2)) return false;
+    let drop = 0; while (!solidAt(G, nx, ny + drop + 0.05) && ny + drop < G.water) drop++;
+    return ny + drop < G.water - 3 && drop <= 7;
   }
   // One full bot turn: sends its intents through act() and returns them.
   function botTurn(G, style) {
@@ -608,17 +655,24 @@
       if (G.phase !== 'aim') return sent;
     }
     const opts = [];
-    const s1 = bestShot(G, u, 'shot1', st, rnd, 0); opts.push({ w: 'shot1', ...s1 });
+    let s1 = bestShot(G, u, 'shot1', st, rnd, 0);
+    if (!(s1.score > 0) && G.cols > COLS) { // big maps: nobody in reach, so walk towards the nearest enemy first (never into the water or off a cliff)
+      const foe = G.units.filter((x) => x.alive && x.team !== u.team).sort((a, b) => Math.abs(a.x - u.x) - Math.abs(b.x - u.x))[0];
+      if (foe) { const dir = foe.x > u.x ? 1 : -1; while (G.phase === 'aim' && G.moves > 0 && Math.abs(foe.x - u.x) > 20 && safeStep(G, u, dir) && act(G, { k: 'move', dir })) sent.push({ k: 'move', dir }); }
+      if (G.phase !== 'aim') return sent;
+      s1 = bestShot(G, u, 'shot1', st, rnd, 0);
+    }
+    opts.push({ w: 'shot1', ...s1 });
     if (ssReady(G) && !(st.ssSkip && rnd() < st.ssSkip)) { const x = bestShot(G, u, 'ss', st, rnd, 0); opts.push({ w: 'ss', ...x }); }
-    if (G.ammo[u.team].shot2 !== 0) { const c = bestShot(G, u, 'shot2', st, rnd, 0); opts.push({ w: 'shot2', ...c, score: c.score * 1.05 }); }
-    if (st.dud && G.ammo[u.team].dud !== 0) { const d = bestShot(G, u, 'dud', st, rnd, DUD.fuse); opts.push({ w: 'dud', ...d, score: d.score * st.dud }); }
+    if (u.ammo.shot2 !== 0) { const c = bestShot(G, u, 'shot2', st, rnd, 0); opts.push({ w: 'shot2', ...c, score: c.score * 1.05 }); }
+    if (st.dud && u.ammo.dud !== 0) { const d = bestShot(G, u, 'dud', st, rnd, DUD.fuse); opts.push({ w: 'dud', ...d, score: d.score * st.dud }); }
     if (st.lob) for (const d of lobbable(G)) {
       const b = bestShot(G, u, 'dud', st, rnd, d.fuse - 1 <= 0 ? 1 : d.fuse, LOB_POWER);
       const here = blastScore(G, d.x, d.y, DUD.r, DUD.dmg, u.team); // getting a dud away from our own units is worth something
       opts.push({ lob: d.id, ...b, score: b.score + here.mine * (d.fuse <= 1 ? 1.2 : 0.5) });
     }
     // turn delay: a heavier shot has to be worth the turns it gives away (about 2 points of damage per 100 delay)
-    for (const o of opts) o.score -= 0.02 * (o.lob ? DELAY.lob : shotSpec(G, u.team, o.w).delay);
+    for (const o of opts) o.score -= 0.02 * (o.lob ? DELAY.lob : shotSpec(G, u, o.w).delay);
     opts.sort((a, b) => b.score - a.score);
     const o = opts[0];
     if (!o || o.angle == null) { send({ k: 'pass' }); return sent; }
@@ -643,10 +697,10 @@
   // ---------- checksum and replay ----------
   function hash(G) {
     const r = (v) => Math.round(v * 100);
-    const parts = [G.map, G.turn, G.team, G.actor, G.spent, G.units.map((u) => u.delay).join(','), G.phase, r(G.wind), G.water, G.moves, G.winner, G.chars.join(','),
+    const parts = [G.map, G.cols, G.turn, G.team, G.actor, G.spent, G.units.map((u) => u.delay).join(','), G.phase, r(G.wind), G.water, G.moves, G.winner, G.chars.join(','),
       G.units.map((u) => `${u.id}:${r(u.x)},${r(u.y)},${u.hp},${u.alive ? 1 : 0}`).join(';'),
       G.duds.map((d) => `${d.id}:${r(d.x)},${r(d.y)},${d.fuse}`).join(';'), G.barrels.map((b) => `${b.id}:${r(b.x)},${r(b.y)}`).join(';'),
-      G.ammo.map((a) => `${a.shot2},${a.dud}`).join(';'), G.ss.join(','), G.T.join('')];
+      G.units.map((u) => `${u.char},${u.ammo.shot2},${u.ammo.dud},${u.ss}`).join(';'), G.T.join('')];
     let h = 2166136261; const s = parts.join('|');
     for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
     return h.toString(16);
@@ -660,7 +714,7 @@
   }
 
   const WB = { TICK, COLS, ROWS, WATER0, GRAV, VMAX, WIND_MAX, UNIT_R, UNITS_PER_TEAM, HP, MOVE_STEPS, LOB_RANGE, LOB_POWER, SUDDEN_ROUNDS, MAX_ROUNDS, suddenTurn, maxTurns, DMG_SPREAD, SS_CHARGE, DELAY, HP_MUL,
-    DUD, BARREL, CHARS, CHAR_IDS, WEAPON_IDS, MAPS, MAP_IDS, pickMap, MapGen, STYLES, newGame, act, step, resolve, current, teamUnits, charOf, shotSpec, ssReady, turnOrder, delayIf, solidAt, surfaceY, center, lobbable, canLob,
+    MAX_TEAMS, MAX_SIZE, MAX_UNITS, DUD, BARREL, CHARS, CHAR_IDS, WEAPON_IDS, MAPS, MAP_IDS, pickMap, recipeFor, MapGen, STYLES, newGame, act, step, resolve, current, owner, teamUnits, charOf, shotSpec, ssReady, ssOf, ammoOf, safeStep, turnOrder, delayIf, solidAt, surfaceY, center, lobbable, canLob,
     predict, blastScore, botTurn, playOut, hash, replay };
   if (typeof module !== 'undefined' && module.exports) module.exports = WB; else root.WB = WB;
 })(typeof window !== 'undefined' ? window : globalThis);
