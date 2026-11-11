@@ -59,6 +59,39 @@ button { font: inherit; color: inherit; }
 .order b { min-width: 22px; padding: 1px 5px; border-radius: 99px; border: 2px solid var(--ink); color: var(--ink); text-shadow: none; text-align: center; font-size: 11px; }
 .cputag { font-family: var(--display); font-size: 22px; color: var(--tc); background: rgba(30,26,43,.85); border: 3px solid var(--tc); border-radius: 16px; padding: 10px 20px; }
 .card .row.lv { flex-wrap: nowrap; align-items: stretch; }
+.card .row.maps { gap: 6px; margin-top: 12px; }
+.card .row.maps { align-items: center; }
+.card .mapsel, .card .mapcode { font: inherit; font-weight: 800; font-size: 14px; color: var(--cream); background: var(--ink-2); border: 2px solid var(--muted); border-radius: 12px; padding: 7px 10px; }
+.card .mapcode { width: 200px; font-family: ui-monospace, Consolas, monospace; font-size: 12px; }
+.card a.btn { text-decoration: none; display: inline-flex; align-items: center; }
+.card p.mapabout { font-size: 14px; margin: 6px 0 0; opacity: .85; min-height: 1.2em; }
+/* Custom Map screen: a wide card, preview on the left, themes and settings on the right */
+.card.ed { width: 1220px; max-width: 97%; max-height: 700px; overflow-y: auto; padding: 14px 20px; text-align: left; }
+.card.ed .edhead { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.card.ed h2 { font-size: 34px; margin: 0 12px 0 0; }
+.card.ed .edgrid { display: grid; grid-template-columns: 640px 1fr; gap: 16px; margin-top: 10px; }
+.card.ed canvas { width: 640px; height: 360px; display: block; border-radius: 10px; border: 2px solid var(--muted); image-rendering: pixelated; }
+.card.ed .edchips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+.card.ed .edchips span { background: var(--ink-2); border-radius: 99px; padding: 2px 9px; font-size: 12px; font-weight: 800; }
+.card.ed p.edrule { font-size: 13px; margin: 6px 0 0; opacity: .9; } .card.ed p.edrule b { color: var(--sun); }
+.card.ed .edrow { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px; }
+.card.ed .edrow .mapcode { width: 190px; }
+.card.ed .edlock { font-size: 13px; font-weight: 800; display: flex; align-items: center; gap: 6px; }
+.card.ed .edfavs small { opacity: .6; font-size: 12px; }
+.card.ed .edfav { display: inline-flex; } .card.ed .edfav button { font: inherit; font-size: 12px; font-weight: 800; color: var(--cream); background: var(--ink-2); border: 2px solid var(--muted); padding: 3px 8px; cursor: pointer; }
+.card.ed .edfav button:first-child { border-radius: 99px 0 0 99px; } .card.ed .edfav button:last-child { border-radius: 0 99px 99px 0; border-left: 0; }
+.card.ed .edthemes { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; }
+.card.ed .edthemes button { font: inherit; font-size: 11px; font-weight: 800; color: var(--cream); background: var(--ink-2); border: 2px solid transparent; border-radius: 10px; padding: 4px; cursor: pointer; line-height: 1.1; }
+.card.ed .edthemes button i { display: block; height: 22px; border-radius: 6px; margin-bottom: 3px; }
+.card.ed .edthemes button[aria-pressed="true"] { border-color: var(--sun); }
+.card.ed .edfields { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 14px; margin-top: 10px; }
+.card.ed .edf label { display: flex; justify-content: space-between; font-size: 12px; font-weight: 800; opacity: .9; } .card.ed .edf label b { color: var(--sun); }
+.card.ed .edf input[type=range] { width: 100%; accent-color: var(--sun); margin: 2px 0 0; }
+.card.ed .edf select { width: 100%; font: inherit; font-size: 13px; font-weight: 800; color: var(--cream); background: var(--ink-2); border: 2px solid var(--muted); border-radius: 10px; padding: 3px 6px; }
+.card.ed .row { justify-content: flex-end; }
+.card.ed .row #edMsg { margin: 0 auto 0 0; align-self: center; }
+.card.title { width: 860px; padding: 20px 34px; } /* the title: wide enough for three mode buttons in a row and the map row */
+.card.title .row.maps .mapcode { width: 170px; }
 .btn.lvl { position: relative; flex-direction: column; flex: 1; min-width: 0; width: 180px; min-height: 110px; padding: 12px 14px; font-size: 28px; }
 .btn.lvl small { font-family: var(--body); font-weight: 800; font-size: 13px; line-height: 1.25; margin-top: 4px; }
 .btn.lvl .num { position: absolute; left: 8px; top: 6px; font-size: 13px; opacity: .6; }

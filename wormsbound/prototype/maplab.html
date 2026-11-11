@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Wormsbound · Map Lab</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@600;700;800;900&display=swap">
+<style>
+/* Wormsbound Map Lab: build, tune and share maps from mapgen.js. © 2026 justaskjoe. All rights reserved. */
+:root {
+  --ink: #1E1A2B; --ink-2: #3A3150; --cream: #FFF3E0; --cream-2: #F3DFC3; --muted: #9C8AA8;
+  --sun: #FF8A3D; --gold: #FFD34D; --red: #FF4D5E; --tide: #22C3B5; --dusk: #6B3A5B;
+  --display: 'Lilita One', 'Arial Black', system-ui, sans-serif;
+  --body: 'Nunito', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: #120F1C; color: var(--cream); font-family: var(--body); }
+button, input, select { font: inherit; color: inherit; }
+header { padding: 18px 20px 6px; display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+header h1 { font-family: var(--display); font-size: 34px; margin: 0; color: var(--sun); letter-spacing: .5px; text-shadow: 0 3px 0 var(--dusk); }
+header p { margin: 0; color: var(--cream-2); font-weight: 700; font-size: 15px; }
+main { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 18px; padding: 10px 20px 20px; align-items: start; }
+@media (max-width: 900px) { main { grid-template-columns: minmax(0, 1fr); padding: 8px 16px 16px; } header { padding: 14px 16px 4px; } }
+.view canvas#map { width: 100%; height: auto; display: block; border-radius: 12px; border: 3px solid var(--cream); background: #2A2140; image-rendering: pixelated; }
+.stats { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
+.chip { background: var(--ink); border: 2px solid var(--ink-2); border-radius: 999px; padding: 4px 12px; font-weight: 800; font-size: 13px; }
+.chip.bad { border-color: var(--red); color: var(--red); }
+.chip.good { border-color: var(--tide); }
+.rule { background: var(--ink); border-left: 4px solid var(--gold); border-radius: 10px; padding: 10px 14px; font-weight: 700; font-size: 14px; color: var(--cream-2); }
+.rule b { color: var(--gold); }
+.rule small { display: block; margin-top: 4px; color: var(--muted); font-size: 13px; }
+h3 { font-family: var(--display); font-weight: 400; font-size: 18px; margin: 16px 0 8px; letter-spacing: .3px; }
+.vars { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; }
+@media (max-width: 600px) { .vars { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.vars button { padding: 0; border: 2px solid var(--ink-2); border-radius: 8px; background: none; cursor: pointer; overflow: hidden; }
+.vars button:hover, .vars button:focus-visible { border-color: var(--gold); outline: none; }
+.vars canvas { width: 100%; display: block; }
+.panel { background: var(--ink); border: 3px solid var(--ink-2); border-radius: 16px; padding: 14px; }
+.panel h3:first-child { margin-top: 0; }
+.field { margin: 10px 0; }
+.field label, .lbl { display: flex; justify-content: space-between; font-weight: 800; font-size: 14px; gap: 8px; }
+.field label span { color: var(--gold); }
+.field small { display: block; color: var(--muted); font-size: 12px; font-weight: 700; margin-top: 2px; }
+select, input[type=text], input[type=number] { width: 100%; background: var(--ink-2); border: 2px solid var(--muted); border-radius: 10px; padding: 7px 9px; font-weight: 800; font-size: 14px; }
+input[type=range] { width: 100%; accent-color: var(--sun); }
+.themes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.themes button { display: flex; align-items: center; gap: 8px; border: 2px solid var(--ink-2); background: var(--ink-2); border-radius: 10px; padding: 5px 8px; font-weight: 800; font-size: 13px; cursor: pointer; text-align: left; }
+.themes button[aria-pressed=true] { border-color: var(--gold); }
+.themes i { width: 22px; height: 22px; border-radius: 6px; flex: none; border: 2px solid rgba(0,0,0,.35); }
+.row { display: flex; gap: 8px; align-items: center; }
+.btn { border: 0; border-radius: 12px; padding: 9px 14px; font-weight: 900; cursor: pointer; background: var(--ink-2); white-space: nowrap; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; }
+.btn.fire { background: var(--sun); color: var(--ink); }
+.btn.teal { background: var(--tide); color: var(--ink); }
+.btn:focus-visible, select:focus-visible, input:focus-visible, .themes button:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+.code { font-family: ui-monospace, Consolas, monospace; font-size: 13px; }
+.check { display: flex; gap: 8px; align-items: center; font-weight: 700; font-size: 13px; margin-top: 6px; }
+.seg { display: inline-flex; border-radius: 10px; overflow: hidden; border: 2px solid var(--ink-2); }
+.seg button { border: 0; background: none; padding: 4px 10px; font-weight: 800; font-size: 13px; cursor: pointer; }
+.seg button[aria-pressed=true] { background: var(--ink-2); color: var(--gold); }
+.msg { min-height: 1.2em; font-size: 13px; font-weight: 800; color: var(--tide); margin-top: 4px; }
+footer { padding: 0 20px 20px; font-size: 12px; font-weight: 800; color: rgba(255,243,224,.5); }
+</style>
+</head>
+<body>
+<header><h1>MAP LAB</h1><p>Wormsbound map generator: pick a preset, change anything, share the code.</p></header>
+<main>
+  <section class="view" aria-label="Map preview">
+    <canvas id="map" width="960" height="540" aria-label="Preview of the generated map"></canvas>
+    <div class="stats" id="stats"></div>
+    <div class="rule" id="rule"></div>
+    <div class="row" style="justify-content:space-between;flex-wrap:wrap;margin-top:12px">
+      <h3 style="margin:0">Same settings, other seeds</h3>
+      <div class="row"><span style="font-size:13px;font-weight:800;opacity:.8">Spawns shown for</span>
+        <div class="seg" role="group" aria-label="Spawn markers"><button type="button" data-sp="2" aria-pressed="true">1v1</button><button type="button" data-sp="4" aria-pressed="false">4 players</button><button type="button" data-sp="0" aria-pressed="false">none</button></div></div>
+    </div>
+    <div class="vars" id="vars" style="margin-top:8px"></div>
+  </section>
+  <aside class="panel" aria-label="Map settings">
+    <h3>Preset</h3>
+    <div class="row"><select id="preset" aria-label="Preset"></select><button class="btn" type="button" id="surprise">Surprise me</button></div>
+    <small id="presetAbout" style="display:block;color:var(--muted);font-weight:700;font-size:12px;margin-top:4px"></small>
+    <h3>Theme</h3>
+    <div class="themes" id="themes"></div>
+    <h3>Shape</h3>
+    <div id="fields"></div>
+    <h3>Seed</h3>
+    <div class="row"><input type="number" id="seed" min="1" aria-label="Seed"><button class="btn" type="button" id="reroll" aria-label="New seed">🎲</button></div>
+    <label class="check"><input type="checkbox" id="lock" checked> Same layout every match (the code keeps this seed)</label>
+    <h3>Share</h3>
+    <div class="row"><input type="text" id="code" class="code" readonly aria-label="Share code"><button class="btn" type="button" id="copy">Copy</button></div>
+    <div class="row" style="margin-top:8px"><input type="text" id="load" class="code" placeholder="paste a code" aria-label="Paste a share code" spellcheck="false"><button class="btn" type="button" id="loadBtn">Load</button></div>
+    <div class="msg" id="msg" role="status"></div>
+    <div class="row" style="margin-top:10px;flex-wrap:wrap"><a class="btn fire" id="play" href="wormsbound.html" target="_blank" rel="noopener">Play this map</a><button class="btn teal" type="button" id="png">Save PNG</button></div>
+  </aside>
+</main>
+<footer>© 2026 justaskjoe. All rights reserved.</footer>
+<!-- MAPGEN -->
+<script>
+(function () {
+  'use strict';
+  const MG = window.MapGen, $ = (q) => document.querySelector(q);
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const S = { s: MG.resolve('hills'), preset: 'hills', seed: 1 + Math.floor(Math.random() * 99999), lock: true, sp: 2 };
+  // a code or preset in the address (#code) opens it
+  const hash = decodeURIComponent(location.hash.slice(1));
+  if (hash && MG.PRESETS[hash]) { S.preset = hash; S.s = MG.resolve(hash); }
+  else if (hash && MG.decode(hash)) { const d = MG.decode(hash); S.s = d; S.preset = ''; if (d.seed) S.seed = d.seed; else S.lock = false; }
+
+  // ---------- controls, built from MG.SETTINGS ----------
+  const groups = {}; for (const id of MG.PRESET_IDS) (groups[MG.PRESETS[id].group] = groups[MG.PRESETS[id].group] || []).push(id);
+  $('#preset').innerHTML = '<option value="">Custom</option>' + Object.entries(groups).map(([g, ids]) => `<optgroup label="${esc(g)}">${ids.map((id) => `<option value="${id}">${esc(MG.PRESETS[id].name)}</option>`).join('')}</optgroup>`).join('');
+  $('#themes').innerHTML = MG.THEME_IDS.map((t) => { const L = MG.THEMES[t].look; return `<button type="button" data-theme="${t}" aria-pressed="false" title="${esc(MG.THEMES[t].blurb)}"><i style="background:linear-gradient(${L.sky[1]} 0 45%, ${L.shades[0][0]} 45% 60%, ${L.shades[3][0]} 60%)"></i>${esc(MG.THEMES[t].name)}</button>`; }).join('');
+  const label = (k, v) => k.type === 'level' ? k.names[v] : k.key === 'landform' ? (v === 'auto' ? `Auto (${MG.LANDFORMS[MG.THEMES[S.s.theme].landform].name})` : MG.LANDFORMS[v].name) : k.key === 'size' ? `${MG.SIZES[v].name} (${MG.SIZES[v].w} × ${MG.SIZES[v].h})` : v;
+  function fields() {
+    $('#fields').innerHTML = MG.SETTINGS.filter((k) => k.key !== 'theme').map((k) => k.type === 'choice'
+      ? `<div class="field"><label for="f-${k.key}">${esc(k.label)}</label><select id="f-${k.key}" data-k="${k.key}">${k.options.map((o) => `<option value="${o}"${o === S.s[k.key] ? ' selected' : ''}>${esc(label(k, o))}</option>`).join('')}</select><small>${esc(k.help)}</small></div>`
+      : `<div class="field"><label for="f-${k.key}">${esc(k.label)} <span id="v-${k.key}">${esc(label(k, S.s[k.key]))}</span></label><input type="range" id="f-${k.key}" data-k="${k.key}" min="0" max="${k.names.length - 1}" step="1" value="${S.s[k.key]}"><small>${esc(k.help)}</small></div>`).join('');
+  }
+  function sync() {
+    $('#preset').value = S.preset; $('#presetAbout').textContent = S.preset ? MG.PRESETS[S.preset].blurb : 'Your own settings.';
+    for (const b of document.querySelectorAll('[data-theme]')) b.setAttribute('aria-pressed', String(b.dataset.theme === S.s.theme));
+    for (const b of document.querySelectorAll('[data-sp]')) b.setAttribute('aria-pressed', String(+b.dataset.sp === S.sp));
+    $('#seed').value = S.seed; $('#lock').checked = S.lock;
+  }
+
+  // ---------- drawing ----------
+  let current = null;
+  function render() {
+    const s = Object.assign({}, S.s, { seed: S.seed }), m = MG.generate(s), cv = $('#map');
+    current = m;
+    const cell = Math.max(2, Math.floor(960 / m.w)); cv.width = m.w * cell; cv.height = m.h * cell;
+    MG.draw(cv.getContext('2d'), m, { cell, spawns: S.sp ? MG.spawns(m, S.sp) : [] });
+    const T = MG.THEMES[m.theme], st = m.stats, chip = (t, cls = '') => `<span class="chip ${cls}">${esc(t)}</span>`;
+    $('#stats').innerHTML = chip(st.ok ? 'Checks pass' : 'Fails: ' + st.problems.join(', '), st.ok ? 'good' : 'bad') + chip(`Land ${st.land}%`) + chip(`Fairness ${st.fairness}`) + chip(`Spawn room ${st.spawnRoom}/8`)
+      + chip(`${MG.LANDFORMS[m.landform].name}, ${m.w} × ${m.h}`) + chip(`Wind ×${m.windMul}`) + chip(`${m.features.length} × ${m.hazard.name}`) + chip(`${T.look.liquid.name[0].toUpperCase() + T.look.liquid.name.slice(1)}`) + (st.tries > 1 ? chip(`Built on try ${st.tries}`) : '');
+    $('#rule').innerHTML = `<b>${esc(T.name)}:</b> ${esc(T.rule)}<small>Later: ${esc(T.later)}</small>`;
+    const code = MG.encode(Object.assign({}, S.s, { seed: S.lock ? S.seed : 0 }));
+    $('#code').value = code; $('#play').href = 'wormsbound.html?map=' + encodeURIComponent(code);
+    history.replaceState(null, '', '#' + code);
+    // variations: the next six seeds
+    $('#vars').innerHTML = Array.from({ length: 6 }, (_, i) => `<button type="button" data-seed="${S.seed + i + 1}" aria-label="Use seed ${S.seed + i + 1}"><canvas width="${m.w}" height="${m.h}"></canvas></button>`).join('');
+    document.querySelectorAll('#vars button').forEach((b) => MG.draw(b.querySelector('canvas').getContext('2d'), MG.generate(Object.assign({}, S.s, { seed: +b.dataset.seed })), { cell: 1 }));
+    for (const k of MG.SETTINGS) { const v = $('#v-' + k.key); if (v) v.textContent = label(k, S.s[k.key]); }
+  }
+  function update() { sync(); render(); }
+
+  // ---------- events ----------
+  const say = (t) => { $('#msg').textContent = t; clearTimeout(say.t); say.t = setTimeout(() => { $('#msg').textContent = ''; }, 3000); };
+  $('#preset').addEventListener('change', (e) => { if (!e.target.value) return; S.preset = e.target.value; S.s = MG.resolve(S.preset); fields(); update(); });
+  $('#fields').addEventListener('input', (e) => {
+    const k = e.target.dataset.k; if (!k) return;
+    S.s[k] = e.target.type === 'range' ? +e.target.value : e.target.value; S.preset = '';
+    if (e.target.type !== 'range') fields(); update();
+  });
+  document.addEventListener('click', (e) => {
+    const t = e.target.closest('[data-theme]'); if (t) { S.s.theme = t.dataset.theme; S.preset = ''; fields(); update(); return; }
+    const v = e.target.closest('[data-seed]'); if (v) { S.seed = +v.dataset.seed; update(); return; }
+    const sp = e.target.closest('[data-sp]'); if (sp) { S.sp = +sp.dataset.sp; update(); }
+  });
+  $('#surprise').addEventListener('click', () => { const r = MG.randomSettings(Date.now() % 2147483647); S.s = r; S.seed = r.seed; S.preset = ''; fields(); update(); });
+  $('#reroll').addEventListener('click', () => { S.seed = 1 + Math.floor(Math.random() * 999999); update(); });
+  $('#seed').addEventListener('change', (e) => { S.seed = Math.max(1, Math.floor(+e.target.value) || 1); update(); });
+  $('#lock').addEventListener('change', (e) => { S.lock = e.target.checked; update(); });
+  $('#copy').addEventListener('click', async () => {
+    const v = $('#code').value;
+    try { await navigator.clipboard.writeText(v); say('Copied. Paste it into the game\'s map box, or send it to someone.'); }
+    catch (err) { $('#code').select(); say('Press Ctrl+C to copy.'); }
+  });
+  $('#loadBtn').addEventListener('click', () => {
+    const d = MG.decode($('#load').value);
+    if (!d) { say("That code doesn't look right."); return; }
+    S.s = d; S.preset = ''; S.lock = !!d.seed; if (d.seed) S.seed = d.seed; $('#load').value = ''; fields(); update(); say('Loaded.');
+  });
+  $('#png').addEventListener('click', () => { const a = document.createElement('a'); a.download = `wormsbound-${$('#code').value}.png`; a.href = $('#map').toDataURL('image/png'); a.click(); });
+
+  fields(); update();
+  window.MapLab = { S, get map() { return current; }, update };
+})();
+</script>
+</body>
+</html>

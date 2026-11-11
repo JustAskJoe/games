@@ -6,6 +6,85 @@ Newest on top. See the repo's CLAUDE.md for how patch notes work.
 
 ---
 
+## Map generator replaces the three maps · 2026-11-11 · Hunter (with Claude)
+Louiemark chose to replace his three maps with the map generator, and map making now lives inside the game.
+
+### What's new
+- **Every map is generated now,** online too. With no map picked (online rounds, or Shuffle), each round deals one of the 10 theme maps from the round's seed, so the server and every player build the same one.
+- **Louiemark's three maps are still here** as presets in a new **Classic maps** group: Sunset Valley, Frost Peak and Lagoon Isles. Lagoon Isles' channels are now a landform of their own (**Lagoon**) that any custom map can use.
+- **Custom Map screen** on the title screen: start from any preset, pick a theme, move any setting and watch the preview change. Then roll a new layout, keep the same layout every match, copy the share code, paste someone else's, save up to 8 favourites, and **Use this map**.
+- The title screen is wider so the three mode buttons sit in one row and everything fits on screen.
+- Sky Isles' id is now `sky` (the old `isles` is Lagoon Isles again).
+
+### Next up
+- [ ] @Louiemark: play the preview, then merge. The checklist is in the pull request.
+- [ ] @Louiemark: redeploy the room server (`wormsbound/server`) **before or right after merging**, then check with `node smoke.js <live address>` and `--ffa 6`.
+- [ ] Let the online host pick a map or paste a code in the lobby. Today online rounds always deal a theme map from the seed (the server sends no map yet).
+- [ ] Answer the open questions at the end of `design/mapgen.md` (one is new: where the Custom Map screen lives once there are real menus).
+
+### Watch out
+- [ ] **The live room server still runs the old engine.** Until it's redeployed, online rounds disagree on the map (old server: Louiemark's three maps; new pages: generator themes), so checksums fail and pages keep re-syncing to the server's copy. Local play is fine.
+- [ ] Old replays and sim numbers don't compare: the same seed now gives a different map.
+- [ ] Nobody has played the Custom Map screen with a mouse yet. It's checked in the browser test at 1280 × 720, and it opens with no sideways scroll at 390, 320 and 844 × 390. On a phone the whole stage scales down, so the sliders get small.
+- [ ] Lagoon Isles (Shipwreck Cove colours on the Lagoon landform) only looks like the old map; it isn't the same layout, and the balance sim hasn't been run on it per character.
+- [ ] **Easy computers aim a little worse** (aim noise 7.0 → 7.5, power noise 0.09 → 0.10). On generated maps a new player (sloppy bot) beat 3 Easy computers only 24% of the time in the sim (band 28%+); now 37%, and a good player 65% (was 55%). Medium and Hard are unchanged. @Louiemark: your call if you'd rather tune it another way.
+- [ ] `build-and-test.py` now finds `npm` through `shutil.which` (on Windows a bare `npm` wouldn't start, so the online tests never ran there).
+
+## Map generator · 2026-11-02 · Hunter (with Claude)
+Every map is now generated: 10 themes, custom settings, presets and share codes, plus a Map Lab to build and share maps. A proposal for Louiemark (Wormsbound lead) to confirm. Design: [`design/mapgen.md`](design/mapgen.md).
+
+### What's new
+- **10 themes:** Crater Hills, Sky Isles, Scrap Yard and Rooftops (rebuilt on the generator, so their layouts differ from yesterday's), plus **Frostbite Peaks** (one big snowy mountain), **Dune Mesas** (flat-topped plateaus), **Fungal Hollow** (glowing caverns, giant mushrooms), **Shipwreck Cove** (a sandy bowl with a wrecked ship), **Magma Works** (girder bridges over lava) and **Haunted Hollow** (graves on two cliffs over a gorge). Each has its own sky, ground, props and liquid (water, sludge, icy water, toxic ooze, sea, lava, murk).
+- **Each theme plays differently:** its own wind strength (still air underground, gusts on rooftops and peaks), **explosive barrels** (oil drums, gas canisters, spore pods, powder kegs, fuel drums) that blow up and chain when a blast reaches them, or **old live duds** on the map that anyone can lob and that tick from turn 1. Some maps have **hard rock** that blasts can't break.
+- **Custom maps, like a strategy game's map setup:** pick a preset, then change landform (10 shapes), height, ruggedness, land, caves, overhangs, platforms, props, hazards, liquid level, hard rock, wind and mirror symmetry.
+- **9 mode presets:** Classic Duel, Tournament (mirrored, no hazards), Archipelago, Worm Warren, High Rise, High Tide, Fortress, Chaos and First Steps.
+- **Share codes** like `frost-peak-1222120211020-k3j9a` rebuild the same map anywhere. Paste one into the title screen's map box.
+- **Map Lab** (`builds/wormsbound-maplab.html`): every setting with a live preview, spawn markers, six variations, checks (land, fairness, spawn room), Copy, **Play this map** and Save PNG.
+- The title screen's map row is now one list (Shuffle, the theme maps, the modes) plus the code box and a Map Lab button. Shuffle deals from the 10 theme maps.
+- Build and test: the sim plays every preset and a line of random custom settings, and fails if any match gets stuck or times out. Rule checks: every preset on 15 seeds, 200 random settings (codes round-trip, mirror maps are mirrored), all sizes, hard rock survives blasts, barrels chain, old duds tick, wind follows the theme.
+
+### Next up
+- [ ] @Louiemark: open the Map Lab and play a few theme maps. Keep, rename or cut themes, and answer the open questions at the end of `design/mapgen.md` (which mechanics next, Shuffle's pool, hazards on or off by default).
+- [ ] Next map mechanics once picked (each small): tides, slippery ice, bouncy mushroom caps, updrafts, mines.
+- [ ] Art: the themes are code-drawn placeholders; a Lead Artist plan (`art/lead-plan.md`) comes first (studio rule).
+
+### Watch out
+- [ ] **Matches run longer on several maps** than on the old four. Median turns per preset are in `design/mapgen.md`; the longest are Fortress (median 27 turns, 64% reach sudden death), Rooftops (25, 68%), Tournament and High Rise (24), Scrap Yard and Dune Mesas (23), against 14 on the default mirror line. Props were the biggest cause (shortened and thinned once); more cuts if people feel it.
+- [ ] Yesterday's four maps were rebuilt on the generator, so their layouts and sim numbers changed (Crater Hills also has old duds now). The four tests that leaned on the old Crater Hills layout were made layout-independent (a flat floor under the target, a no-hazard map for the dud count, a 40-seed spread for spawns) without loosening what they check.
+- [ ] The "Map Lab" link on the title screen and the Lab's "Play this map" assume both build files sit in the same folder. The studio Lab only lists `wormsbound.html`; whether it serves the Map Lab file next to it is unchecked.
+- [ ] Caves show the background sky through them (as before). On Fungal Hollow a dark cave wall behind the ground would look better.
+- [ ] The bots don't aim at barrels or lob old duds on purpose (they lob duds only when a dud is about to blow near them), so the sim undervalues hazards. People will use them more.
+- [ ] Checked in the headless browser (screenshots of the Lab and four themes in a match, phone width 390 with no sideways scroll) and the bot sim. No person has played the new themes yet.
+- [ ] **Archipelago is swingy:** about 10% of its matches end on turn 1 with a knock into the water (Sparse land made it 25%, so it now uses Light).
+- [ ] Zip sits right on the 40% floor of the character round-robin (was 44% before the generator); the band still passes.
+- [ ] Barrel damage (44, radius 4.5), old-dud fuses (4–6) and the wind multipliers are first guesses.
+
+## Maps and weapons proposal · 2026-11-01 · Hunter (with Claude)
+Three new maps you can play now, and a design proposal for crate weapons.
+
+### What's new
+- **Three new maps**, from the brief's setting: **Sky Isles** (floating islands over open water, with low rocks that sometimes catch you), **Scrap Yard** (scrap towers and hollow car shells to bank shots off) and **Rooftops** (flat roofs at different heights, with alleys between them that flood first). The first map is now called **Crater Hills**.
+- **Pick a map on the title screen**, or leave it on **Shuffle** (the default): every map once before any repeats, so a best-of-3 shows three different maps. The map's name shows under the wind.
+- Each map has its own sky and ground: a blue daytime sky with far-off floating rocks, a smoggy orange junkyard, and a night skyline with lit windows.
+- **A proposal for 100 crate weapons** in six groups (Normal guns, Melee, Explosive, Weird, Legendary, Goofy), with **in-match leveling** (Lv1 → Lv3, reset every match) and a small deck of weapons drawn each match, in [`design/weapons.md`](design/weapons.md). Nothing from it is built yet.
+- Build and test: the sim plays 100 matches on every map, and `build-and-test.py` fails if any of them gets stuck or times out. The rule checks now also check every map spawns everyone on dry ground and replays exactly.
+
+### Next up
+- [ ] @Louiemark: play each new map once. Does each feel different, and does any feel unfair?
+- [ ] @Louiemark: review `design/weapons.md`: crates in Prototype 2 or after the playtest, leveling option A (in-match) vs B (cosmetic mastery), the match-deck size, and which weapons to cut from the pool.
+- [ ] Phase 1 of the weapons once agreed: crates, the 4th slot, the match deck, leveling, and the weapons that reuse existing shot fields.
+- [ ] Art for the weapons and maps: a Lead Artist plan (`art/lead-plan.md`) comes first (studio rule). The maps' looks are code-drawn placeholders.
+
+### Watch out
+- [ ] **Rooftops runs long:** median 23 turns and half its matches reach sudden death (Crater Hills: 15 turns, 22%). The roofs block a lot of shots. Lower or fewer buildings would speed it up.
+- [ ] **Sky Isles is the knockback map:** median 13 turns, and about 3% of bot matches end by turn 1, from a knock into the water (Crater Hills: 1%). Gale wins the most there. The low rocks were added to stop one-shot drownings; watch whether it still feels too swingy.
+- [ ] The character band (40–60%) is still only measured on Crater Hills. Per-map win counts are printed but not judged; Gale wins the most on all four maps (25–27 of 100), and is at 55% in the Crater Hills round-robin.
+- [ ] Bots never walk, so on Sky Isles and Rooftops (where walking off an edge is deadly) people will play very differently from the sim.
+- [ ] The maps were checked in the bot sim and the headless browser test only. No person has seen them on screen (I couldn't open the build in a browser preview this session), so the colours and the title-screen map row haven't been looked at.
+- [ ] Persistent stat leveling (option C in the weapons doc) would break the brief's "never pay-to-win / cosmetics only". Not proposed; listed so it's a conscious call.
+- [ ] Crates add randomness the balance sim doesn't model yet; the character band has to be re-checked with crates on.
+- [ ] Weapon names and ideas are first-pass, checked against the famous Worms weapons from memory only, not against GunBound, Pocket Tanks or ShellShock Live lists.
+
 ## P1 online · 2026-11-02 · Louiemark (with Claude)
 Online 1v1 and an online free-for-all for up to 6 players. The room server is live on Cloudflare (`wss://wormsbound-rooms.louiemark-ambata.workers.dev`) and the game uses it.
 

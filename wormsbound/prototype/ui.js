@@ -42,11 +42,19 @@
 
   const ui = {
     screen: 'title', G: null, matchSeed: 0, round: 1, wins: [0, 0], aim: {}, weapon: 'shot1', lob: false, picks: [null, null], pickTeam: 0, cursor: 2,
-    mode: 'duel', level: 'medium', cpu: null, net: null, you: 0, remoteAim: null,
+    mode: 'duel', level: 'medium', cpu: null, mapPick: startMap(), net: null, you: 0, remoteAim: null,
     drag: null, acc: 0, last: 0, slow: 0, shake: 0, parts: [], trails: {}, scorch: [], clouds: [], dust: [], pops: [],
     tLeft: TURN_SECONDS, timerOn: lsGet('wb-timer') !== 'off', sound: lsGet('wb-sound') !== 'off', coach: lsGet('wb-coach') !== 'off',
     fast: false, tester: false, overAt: 0, turnsSeen: 0, paused: false, fb: { q: {}, text: '', nm: '', saved: null },
   };
+  // Map choice: 'shuffle', a preset id (theme maps and modes) or a share code from the Map Lab. ?map=<code or preset> in the
+  // page address picks it (the Map Lab's "Play this map" link) and is remembered like a pick from the menu.
+  function okMap(m) { return m === 'shuffle' || !!WB.MapGen.PRESETS[m] || !!WB.MapGen.decode(m); }
+  function startMap() {
+    let q = null; try { q = new URLSearchParams(location.search).get('map'); } catch (e) { /* no address bar (tests) */ }
+    if (q && okMap(q.trim().toLowerCase())) { lsSet('wb-map', q.trim().toLowerCase()); return q.trim().toLowerCase(); }
+    const m = lsGet('wb-map'); return m && okMap(m) ? m : 'shuffle';
+  }
   const nSides = () => (ui.mode === 'solo' ? 4 : 2);
   const isCPU = (t) => ui.mode === 'solo' && t !== 0;
   const online = () => ui.mode === 'online';
@@ -91,39 +99,42 @@
   };
 
   // ---------- background: sunset sky, sun, two parallax ridges (baked once per round) ----------
-  // Each map's look: sky, sun or moon, far ridges, ground colours (grass/snow/sand on top, then deeper rock), water.
-  const THEMES = {
-    valley: { sky: ['#2B1E45', '#7A3B5E', '#FF8A3D', '#FFC37A'], glow: ['rgba(255,240,200,1)', 'rgba(255,214,140,.9)', 'rgba(255,170,90,0)'], sunY: 330, stars: 70, ridges: ['rgba(107,58,91,.55)', 'rgba(70,40,78,.7)'],
-      shades: [['#A6DE62', '#93CF55'], ['#6FAE45', '#62A03C'], ['#D2834A', '#C47640'], ['#B2643A', '#A55B36'], ['#8C4C3A', '#7F4436'], ['#6A3E4A', '#5E3743']], tuft: '#B8EC74', water: ['rgba(34,195,181,.85)', 'rgba(14,60,90,.95)'] },
-    peak: { sky: ['#0E1430', '#26315E', '#5C6FA8', '#A9C1E6'], glow: ['rgba(240,248,255,1)', 'rgba(200,220,255,.75)', 'rgba(160,190,255,0)'], sunY: 150, stars: 140, ridges: ['rgba(120,140,190,.5)', 'rgba(60,72,120,.7)'],
-      shades: [['#F4FAFF', '#E2EEFA'], ['#C9DCEF', '#B7CDE5'], ['#7E8CA8', '#74829E'], ['#5F6A86', '#57627D'], ['#464E68', '#40475F'], ['#30354A', '#2B3043']], tuft: '#FFFFFF', water: ['rgba(120,190,230,.85)', 'rgba(20,40,80,.95)'] },
-    isles: { sky: ['#1C6FB0', '#4FA9DE', '#9ED9F2', '#E8F7FA'], glow: ['rgba(255,252,220,1)', 'rgba(255,240,170,.8)', 'rgba(255,230,150,0)'], sunY: 140, stars: 0, ridges: ['rgba(60,150,170,.35)', 'rgba(40,120,140,.5)'],
-      shades: [['#8EE07A', '#7CD26A'], ['#F2DE9C', '#E8D18A'], ['#E0B870', '#D4AC64'], ['#BE8C52', '#B2824C'], ['#946A44', '#88603E'], ['#6E4E3A', '#644634']], tuft: '#B6F28A', water: ['rgba(40,210,200,.8)', 'rgba(10,90,120,.95)'] },
-  };
-  let THEME = THEMES.valley, SHADES = THEME.shades;
-  function bakeBackground(seed, map) {
-    THEME = THEMES[map] || THEMES.valley; SHADES = THEME.shades;
+  // Each map's sky, far background, ground, prop and liquid colours come from its theme in mapgen.js (all drawn in code).
+  const theme = () => WB.MapGen.THEMES[(ui.G && ui.G.theme) || 'hills'].look;
+  function bakeBackground(seed) {
     let s = seed >>> 0; const r = () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
-    const g = bctx.createLinearGradient(0, 0, 0, H);
-    g.addColorStop(0, THEME.sky[0]); g.addColorStop(0.42, THEME.sky[1]); g.addColorStop(0.7, THEME.sky[2]); g.addColorStop(1, THEME.sky[3]);
+    const TH = theme(), g = bctx.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, TH.sky[0]); g.addColorStop(0.42, TH.sky[1]); g.addColorStop(0.7, TH.sky[2]); g.addColorStop(1, TH.sky[3]);
     bctx.fillStyle = g; bctx.fillRect(0, 0, W, H);
-    const sx = 260 + r() * 760, sy = THEME.sunY + r() * 60, sr = map === 'peak' ? 90 : 170;
-    const sg = bctx.createRadialGradient(sx, sy, 10, sx, sy, sr); sg.addColorStop(0, THEME.glow[0]); sg.addColorStop(0.25, THEME.glow[1]); sg.addColorStop(1, THEME.glow[2]);
-    bctx.fillStyle = sg; bctx.beginPath(); bctx.arc(sx, sy, sr, 0, 7); bctx.fill();
-    for (let i = 0; i < THEME.stars; i++) { bctx.fillStyle = `rgba(255,243,224,${0.15 + r() * 0.5})`; bctx.fillRect(r() * W, r() * (map === 'peak' ? 320 : 200), 2, 2); }
+    const sx = 260 + r() * 760, sy = 330 + r() * 60;
+    const sg = bctx.createRadialGradient(sx, sy, 10, sx, sy, 170); sg.addColorStop(0, 'rgba(255,240,200,1)'); sg.addColorStop(0.25, 'rgba(255,214,140,.9)'); sg.addColorStop(1, 'rgba(255,170,90,0)');
+    bctx.fillStyle = sg; bctx.beginPath(); bctx.arc(sx, sy, 170, 0, 7); bctx.fill();
+    for (let i = 0; i < 70; i++) { bctx.fillStyle = `rgba(255,243,224,${0.15 + r() * 0.5})`; bctx.fillRect(r() * W, r() * 200, 2, 2); }
     const ridge = (base, amp, col, k) => {
       bctx.fillStyle = col; bctx.beginPath(); bctx.moveTo(0, H);
       const p1 = r() * 6, p2 = r() * 6;
-      for (let x = 0; x <= W; x += 8) bctx.lineTo(x, base - amp * (0.6 * Math.sin(x / (180 * k) + p1) + 0.4 * Math.sin(x / (63 * k) + p2)));
+      if (TH.bg === 'blocky') { // a skyline (or scrap heaps, or a foundry): flat-topped blocks instead of hills
+        for (let x = 0; x <= W;) { const w = 30 + r() * 70, y = base - amp * (0.3 + r() * 0.9); bctx.lineTo(x, y); bctx.lineTo(x + w, y); x += w; }
+      } else if (TH.bg === 'peaks') { // jagged mountains
+        for (let x = 0; x <= W;) { const w = 50 + r() * 90; bctx.lineTo(x + w / 2, base - amp * (0.8 + r() * 1.4)); bctx.lineTo(x + w, base - amp * 0.2 * r()); x += w; }
+      } else for (let x = 0; x <= W; x += 8) bctx.lineTo(x, base - amp * (0.6 * Math.sin(x / (180 * k) + p1) + 0.4 * Math.sin(x / (63 * k) + p2)));
       bctx.lineTo(W, H); bctx.closePath(); bctx.fill();
     };
-    ridge(map === 'peak' ? 430 : 470, map === 'peak' ? 110 : 60, THEME.ridges[0], 1.4);
-    ridge(540, map === 'isles' ? 25 : 45, THEME.ridges[1], 1);
+    if (TH.bg === 'cave') { // a cave: rock teeth hanging from the top, a dim glow below
+      for (let i = 0; i < 2; i++) { bctx.fillStyle = TH.ridges[i]; bctx.beginPath(); bctx.moveTo(0, 0); for (let x = 0; x <= W;) { const w = 30 + r() * 60; bctx.lineTo(x + w / 2, 60 + i * 50 + r() * 120); bctx.lineTo(x + w, 20 + r() * 30); x += w; } bctx.lineTo(W, 0); bctx.closePath(); bctx.fill(); }
+      ridge(560, 40, TH.ridges[1], 1);
+    } else if (TH.bg === 'float') { // far-off floating rocks instead of ridges
+      for (let i = 0; i < 9; i++) { const x = r() * W, y = 300 + r() * 260, w = 40 + r() * 90; bctx.fillStyle = TH.ridges[i & 1]; bctx.beginPath(); bctx.moveTo(x - w / 2, y); bctx.lineTo(x + w / 2, y); bctx.lineTo(x + w * 0.1, y + w * 0.6); bctx.closePath(); bctx.fill(); }
+    } else { ridge(470, 60, TH.ridges[0], 1.4); ridge(540, 45, TH.ridges[1], 1); }
+    if (TH.moon) { bctx.fillStyle = 'rgba(240,235,255,.85)'; bctx.beginPath(); bctx.arc(1040, 120, 46, 0, 7); bctx.fill(); bctx.fillStyle = TH.sky[0]; bctx.beginPath(); bctx.arc(1062, 108, 40, 0, 7); bctx.fill(); }
+    if (TH.snow) for (let i = 0; i < 120; i++) { bctx.fillStyle = `rgba(255,255,255,${0.3 + r() * 0.5})`; bctx.fillRect(r() * W, r() * H, 2 + r() * 2, 2 + r() * 2); }
+    if (TH.embers) for (let i = 0; i < 80; i++) { bctx.fillStyle = `rgba(255,${120 + r() * 100 | 0},40,${0.3 + r() * 0.6})`; bctx.fillRect(r() * W, 250 + r() * 470, 2, 2); }
+    if (TH.glow) for (let i = 0; i < 60; i++) { bctx.fillStyle = `rgba(184,240,112,${0.15 + r() * 0.4})`; bctx.beginPath(); bctx.arc(r() * W, 150 + r() * 560, 1 + r() * 3, 0, 7); bctx.fill(); }
+    if (TH.windows) for (let i = 0; i < 90; i++) { bctx.fillStyle = `rgba(255,214,120,${0.25 + r() * 0.5})`; bctx.fillRect(r() * W, 430 + r() * 250, 3, 4); }
     ui.clouds = Array.from({ length: 6 }, () => ({ x: r() * W, y: 60 + r() * 220, s: 0.6 + r() * 0.9 }));
     ui.dust = Array.from({ length: reduced ? 0 : 46 }, () => ({ x: r() * W, y: 90 + r() * 560, z: 0.4 + r() * 0.8 }));
   }
 
-  function mapBanner() { const m = WB.MAPS.find((x) => x.id === ui.G.map); if (m) ui.mapName = m.name; }
   // ---------- terrain: chunky cells, coloured by depth below the surface, with scorch marks ----------
   const hash2 = (x, y) => { let h = (x * 374761393 + y * 668265263) >>> 0; h = (h ^ (h >>> 13)) * 1274126177 >>> 0; return (h >>> 16) & 255; };
   function shadeFor(depth) { return depth === 0 ? 0 : depth === 1 ? 1 : depth < 5 ? 2 : depth < 10 ? 3 : depth < 18 ? 4 : 5; }
@@ -135,8 +146,10 @@
       for (let y = 0; y < R; y++) {
         if (!T[y * C + x]) { depth = -1; continue; }
         depth++;
-        const pair = SHADES[shadeFor(depth)];
+        const v = T[y * C + x], L = theme(); // ground by depth; hard rock, props and accents in their own colours
+        const pair = v === WB.MapGen.ROCK ? L.rock : v === WB.MapGen.PROP ? L.prop : v === WB.MapGen.ACCENT ? L.accent : L.shades[shadeFor(depth)];
         tctx.fillStyle = pair[hash2(x, y) & 1]; tctx.fillRect(x * CELL, y * CELL, CELL, CELL);
+        if (v === WB.MapGen.ROCK && (hash2(x, y) & 7) === 0) { tctx.fillStyle = 'rgba(255,255,255,.08)'; tctx.fillRect(x * CELL + 1, y * CELL + 1, 3, 2); }
         if (depth > 3 && (hash2(x, y) & 31) === 0) { tctx.fillStyle = 'rgba(30,20,35,.25)'; tctx.fillRect(x * CELL + 2, y * CELL + 2, 3, 3); }
       }
     }
@@ -155,7 +168,7 @@
       if (y < R - 1 && !T[(y + 1) * C + x]) tctx.fillRect(px, py + CELL - 2, CELL, 2);
       if (y > 0 && !T[(y - 1) * C + x]) {
         tctx.fillRect(px, py - 1, CELL, 2);
-        if ((hash2(x, y) & 3) === 0) { tctx.fillStyle = THEME.tuft; tctx.fillRect(px + 2, py - 4, 2, 4); tctx.fillRect(px + 5, py - 3, 2, 3); tctx.fillStyle = '#2A1A2A'; }
+        if (T[y * C + x] === WB.MapGen.DIRT && (hash2(x, y) & 3) === 0) { tctx.fillStyle = theme().tuft; tctx.fillRect(px + 2, py - 4, 2, 4); tctx.fillRect(px + 5, py - 3, 2, 3); tctx.fillStyle = '#2A1A2A'; }
       }
     }
     ui.terrainDirty = false;
@@ -167,7 +180,7 @@
     for (let i = 0; i < lim; i++) {
       const a = Math.random() * Math.PI * 2, s = 60 + Math.random() * (kind === 'chunk' ? 360 : 160);
       ui.parts.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - (kind === 'chunk' ? 160 : 40), t: 0, life: kind === 'smoke' ? 1.4 + Math.random() : 0.7 + Math.random() * 0.7, kind,
-        c: kind === 'chunk' ? SHADES[2 + (i % 3)][i & 1] : kind === 'spark' ? (i & 1 ? '#FFD34D' : '#FF8A3D') : kind === 'drop' ? '#9FE8E0' : 'rgba(60,45,70,.5)', size: kind === 'smoke' ? 10 + Math.random() * 14 : 2 + Math.random() * 4 });
+        c: kind === 'chunk' ? theme().shades[2 + (i % 3)][i & 1] : kind === 'spark' ? (i & 1 ? '#FFD34D' : '#FF8A3D') : kind === 'drop' ? '#9FE8E0' : 'rgba(60,45,70,.5)', size: kind === 'smoke' ? 10 + Math.random() * 14 : 2 + Math.random() * 4 });
     }
   }
   function stepParts(dt) {
@@ -214,7 +227,7 @@
       else if (e.k === 'dud') { SFX.thunk(); ui.pops.push({ x: e.x * CELL, y: e.y * CELL - 22, t: 0, text: 'LIVE DUD!', c: '#FFD34D' }); }
       else if (e.k === 'ko') {
         const u = ui.G.units.find((x) => x.id === e.id);
-        ui.pops.push({ x: e.x * CELL, y: e.y * CELL - 40, t: 0, text: e.why === 'water' ? 'SPLASH OUT!' : 'K.O.!', c: '#FF4D5E' });
+        ui.pops.push({ x: e.x * CELL, y: e.y * CELL - 40, t: 0, text: e.why === 'water' ? (theme().liquid.name === 'lava' ? 'MELTED!' : 'SPLASH OUT!') : 'K.O.!', c: '#FF4D5E' });
         if (!reduced) ui.slow = 0.75;
         SFX.ko(); if (u) banner(`${unitName(u)} ${unitName(u) === 'You' ? 'are' : 'is'} out!`, charName(u.team), TEAMS[u.team].c);
       } else if (e.k === 'turn') { onTurn(); }
@@ -314,8 +327,9 @@
   cv.addEventListener('pointerup', endDrag); cv.addEventListener('pointercancel', (e) => { if (ui.drag && e.pointerId === ui.drag.id) ui.drag = null; });
 
   addEventListener('keydown', (e) => {
-    if (e.target && /INPUT|TEXTAREA/.test(e.target.tagName)) return;
     const k = e.key;
+    if (ui.screen === 'mapedit' && k === 'Escape') { ui.ed = null; titleScreen(); return; }
+    if (e.target && /INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
     if (ui.screen === 'end' && (k === 'r' || k === 'R')) { if (ffaRoom()) lobbyScreen(); else if (online()) { if (ui.net) { ui.net.send({ t: 'rematch' }); ui.net.rematchAsked = true; roundOverAgain(); } } else startMatch(); return; }
     if (ui.screen === 'level') { if (/^[1-3]$/.test(k)) { ui.level = Object.keys(LEVELS)[+k - 1]; ui.cursor = 2; selectScreen(0); } return; }
     if (ui.screen === 'select') {
@@ -360,7 +374,7 @@
     const w = G.wind, arrows = Math.round(Math.abs(w) / WB.WIND_MAX * 4);
     const windTxt = Math.abs(w) < 0.2 ? 'calm' : `${w < 0 ? '◀'.repeat(Math.max(1, arrows)) : ''} ${Math.abs(w).toFixed(1)} ${w > 0 ? '▶'.repeat(Math.max(1, arrows)) : ''}`;
     const left = Array.from({ length: half }, (_, t) => side(t)).join(''), right = Array.from({ length: n - half }, (_, i) => side(n - 1 - i)).join('');
-    $('#hud').innerHTML = `<div class="sidegrp">${left}</div>` + `<div class="mid"><div class="timer${ui.timerOn ? '' : ' off'}" id="timer">${ui.timerOn ? Math.ceil(ui.tLeft) : '∞'}</div><div class="wind" aria-label="wind">WIND ${windTxt}</div><div class="wind" style="font-size:12px;opacity:.8">Round ${ui.round}${ui.mapName ? ' · ' + esc(ui.mapName) : ''}${ui.mode === 'solo' ? ' · ' + LEVELS[ui.level].name : ''}${G.turn >= WB.suddenTurn(G) ? ' · <span style="color:#FF4D5E">SUDDEN DEATH: the water rises</span>' : ''}</div>${orderHTML()}</div><div class="sidegrp r">${right}</div>`;
+    $('#hud').innerHTML = `<div class="sidegrp">${left}</div>` + `<div class="mid"><div class="timer${ui.timerOn ? '' : ' off'}" id="timer">${ui.timerOn ? Math.ceil(ui.tLeft) : '∞'}</div><div class="wind" aria-label="wind">WIND ${windTxt}</div><div class="wind" style="font-size:12px;opacity:.8">Round ${ui.round}${G.mapName ? ' · ' + esc(G.mapName) : ''}${ui.mode === 'solo' ? ' · ' + LEVELS[ui.level].name : ''}${G.turn >= WB.suddenTurn(G) ? ' · <span style="color:#FF4D5E">SUDDEN DEATH: the water rises</span>' : ''}</div>${orderHTML()}</div><div class="sidegrp r">${right}</div>`;
   }
   // The next turns if everyone keeps firing their Shot 1, counting the current side's chosen shot: what the
   // turn delay means right now. Light shot: you may go again before them; heavy shot: they may go twice.
@@ -420,11 +434,117 @@
     <p class="keys">Keys: ◀ ▶ / A D walk · ▲ ▼ / W S angle (Shift = fine) · Q E power · F flip · 1 2 3 shots · L lob · Space fire · X skip · Esc menu</p>`;
   function titleScreen() {
     ui.screen = 'title'; renderCtl(); coachLine();
+    const wide = () => { const c = $('#screen .card'); if (c) c.classList.add('title'); };
     show(`<div class="tag">JustAskJoe · Prototype 1</div><h1>WORMSBOUND</h1>
       <p>Pick a character, read the wind, blast the ground, and throw their own duds back at them. Best of three.</p>${HOW}
       <div class="row"><button class="btn fire" type="button" data-act="mode" data-mode="solo">1 PLAYER<small style="display:block;font-family:var(--body);font-size:12px">you vs 3 computers</small></button>
       <button class="btn teal" type="button" data-act="mode" data-mode="duel">2 PLAYERS<small style="display:block;font-family:var(--body);font-size:12px">1v1 on one keyboard</small></button>
-      <button class="btn gold" type="button" data-act="online">ONLINE<small style="display:block;font-family:var(--body);font-size:12px">1v1 or up to 6 players</small></button></div>`);
+      <button class="btn gold" type="button" data-act="online">ONLINE<small style="display:block;font-family:var(--body);font-size:12px">1v1 or up to 6 players</small></button></div>
+      ${mapRow()}`);
+    wide();
+  }
+  // The map row: Shuffle, the theme maps, classic maps and modes in one list, a box for a share code, and the
+  // Custom Map screen.
+  function mapRow() {
+    const P = WB.MapGen.PRESETS, code = !P[ui.mapPick] && ui.mapPick !== 'shuffle';
+    const opt = (v, label) => `<option value="${esc(v)}"${v === ui.mapPick ? ' selected' : ''}>${esc(label)}</option>`;
+    const groups = {}; for (const id of WB.MapGen.PRESET_IDS) (groups[P[id].group] = groups[P[id].group] || []).push(opt(id, P[id].name));
+    const about = ui.mapPick === 'shuffle' ? 'A different theme map every round.' : code ? `Your custom map (${WB.MapGen.THEMES[WB.MapGen.decode(ui.mapPick).theme].name}).` : P[ui.mapPick].blurb;
+    return `<div class="row maps"><label for="mapSel" style="align-self:center;font-size:13px;opacity:.8">MAP</label>
+      <select id="mapSel" class="mapsel">${opt('shuffle', 'Shuffle')}${Object.entries(groups).map(([g, o]) => `<optgroup label="${esc(g)}">${o.join('')}</optgroup>`).join('')}${code ? opt(ui.mapPick, 'Custom map') : ''}</select>
+      <input id="mapCode" class="mapcode" type="text" placeholder="or paste a map code" value="${code ? esc(ui.mapPick) : ''}" aria-label="Map share code" spellcheck="false">
+      <button class="btn ghost sm" type="button" data-act="mapcode">Use code</button>
+      <button class="btn gold sm" type="button" data-act="mapedit">Custom map</button></div>
+      <p class="mapabout" id="mapAbout">${esc(about)}</p>`;
+  }
+
+  // ---------- Custom Map screen: every generator setting, a live preview, codes and saved favourites ----------
+  // Built from MapGen.SETTINGS / PRESETS / THEMES, so a new setting or theme shows up here on its own. The game's map is
+  // always 160 × 90, so size isn't offered. The screen is drawn once; moving a control redraws only the preview and labels.
+  const MG = WB.MapGen, FAV_MAX = 8;
+  const favs = () => { try { const f = JSON.parse(lsGet('wb-favmaps') || '[]'); return Array.isArray(f) ? f.filter((c) => MG.decode(c)).slice(0, FAV_MAX) : []; } catch (e) { return []; } };
+  const edCode = (E) => MG.encode(Object.assign({}, E.s, { size: 'medium', seed: E.lock ? E.seed : 0 }));
+  function edFrom(pick) { // the editor starts from the current pick: a code, a preset, or Crater Hills for Shuffle
+    const d = MG.PRESETS[pick] ? null : MG.decode(pick), seed = (d && d.seed) || 1 + Math.floor(Math.random() * 999999);
+    return { s: d || MG.resolve(MG.PRESETS[pick] ? pick : 'hills'), preset: d ? '' : MG.PRESETS[pick] ? pick : 'hills', seed, lock: d ? !!d.seed : true };
+  }
+  function mapEditScreen() {
+    ui.screen = 'mapedit'; ui.G = null; renderHUD(); renderCtl(); coachLine();
+    const E = ui.ed = ui.ed || edFrom(ui.mapPick);
+    const groups = {}; for (const id of MG.PRESET_IDS) (groups[MG.PRESETS[id].group] = groups[MG.PRESETS[id].group] || []).push(id);
+    const label = (k, v) => k.type === 'level' ? k.names[v] : k.key === 'landform' ? (v === 'auto' ? `Auto (${MG.LANDFORMS[MG.THEMES[E.s.theme].landform].name})` : MG.LANDFORMS[v].name) : v;
+    const field = (k) => k.type === 'choice'
+      ? `<div class="edf"><label for="ed-${k.key}">${esc(k.label)}</label><select id="ed-${k.key}" data-ed="${k.key}" title="${esc(k.help)}">${k.options.map((o) => `<option value="${o}"${o === E.s[k.key] ? ' selected' : ''}>${esc(label(k, o))}</option>`).join('')}</select></div>`
+      : `<div class="edf"><label for="ed-${k.key}">${esc(k.label)} <b id="edv-${k.key}">${esc(label(k, E.s[k.key]))}</b></label><input type="range" id="ed-${k.key}" data-ed="${k.key}" min="0" max="${k.names.length - 1}" step="1" value="${E.s[k.key]}" title="${esc(k.help)}"></div>`;
+    show(`<div class="edhead"><h2>Custom map</h2>
+        <select id="edPreset" class="mapsel" aria-label="Start from a preset"><option value="">Your own settings</option>${Object.entries(groups).map(([g, ids]) => `<optgroup label="${esc(g)}">${ids.map((id) => `<option value="${id}"${id === E.preset ? ' selected' : ''}>${esc(MG.PRESETS[id].name)}</option>`).join('')}</optgroup>`).join('')}</select>
+        <button class="btn ghost sm" type="button" data-act="edsurprise">Surprise me</button></div>
+      <div class="edgrid"><div class="edleft">
+        <canvas id="edMap" width="640" height="360" aria-label="Map preview"></canvas>
+        <div class="edchips" id="edChips"></div><p class="edrule" id="edRule"></p>
+        <div class="edrow"><button class="btn ghost sm" type="button" data-act="edseed" title="Same settings, a new layout">🎲 New layout</button>
+          <label class="edlock"><input type="checkbox" id="edLock"${E.lock ? ' checked' : ''}> Same layout every match</label></div>
+        <div class="edrow"><input id="edCode" class="mapcode" type="text" readonly aria-label="This map's share code"><button class="btn ghost sm" type="button" data-act="edcopy">Copy</button>
+          <input id="edPaste" class="mapcode" type="text" placeholder="paste a code" aria-label="Paste a share code" spellcheck="false"><button class="btn ghost sm" type="button" data-act="edload">Load</button></div>
+        <div class="edrow edfavs" id="edFavs"></div>
+      </div><div class="edright">
+        <div class="edthemes">${MG.THEME_IDS.map((t) => { const L = MG.THEMES[t].look; return `<button type="button" data-act="edtheme" data-theme="${t}" title="${esc(MG.THEMES[t].blurb)}"><i style="background:linear-gradient(${L.sky[1]} 0 45%, ${L.shades[0][0]} 45% 60%, ${L.shades[3][0]} 60%)"></i>${esc(MG.THEMES[t].name)}</button>`; }).join('')}</div>
+        <div class="edfields">${MG.SETTINGS.filter((k) => k.key !== 'theme' && k.key !== 'size').map(field).join('')}</div>
+      </div></div>
+      <div class="row" style="margin-top:12px"><p class="mapabout" id="edMsg" role="status"></p><button class="btn ghost sm" type="button" data-act="edback">Back</button>
+        <button class="btn ghost sm" type="button" data-act="edsave">☆ Save to favourites</button>
+        <button class="btn fire sm" type="button" data-act="eduse">Use this map</button></div>`);
+    $('#screen .card').classList.add('ed');
+    edDraw();
+  }
+  function edDraw() {
+    const E = ui.ed, m = MG.generate(Object.assign({}, E.s, { size: 'medium', seed: E.seed })), T = MG.THEMES[m.theme];
+    const cv = $('#edMap'); if (!cv) return;
+    MG.draw(cv.getContext('2d'), m, { cell: 4, spawns: MG.spawns(m, 2) });
+    const chip = (t) => `<span>${esc(t)}</span>`;
+    $('#edChips').innerHTML = chip(MG.LANDFORMS[m.landform].name) + chip(`Land ${m.stats.land}%`) + chip(`Wind ×${m.windMul}`) + chip(m.features.length ? `${m.features.length} × ${m.hazard.name}` : 'No hazards') + chip(T.look.liquid.name[0].toUpperCase() + T.look.liquid.name.slice(1)) + (m.mirror ? chip('Mirrored') : '');
+    $('#edRule').innerHTML = `<b>${esc(T.name)}:</b> ${esc(T.rule)}`;
+    $('#edCode').value = edCode(E);
+    for (const k of MG.SETTINGS) { const v = $('#edv-' + k.key); if (v) v.textContent = k.names[E.s[k.key]]; const f = $('#ed-' + k.key); if (f && String(f.value) !== String(E.s[k.key])) f.value = E.s[k.key]; }
+    const lf = $('#ed-landform'); if (lf) lf.options[0].textContent = `Auto (${MG.LANDFORMS[MG.THEMES[E.s.theme].landform].name})`;
+    for (const b of document.querySelectorAll('[data-act=edtheme]')) b.setAttribute('aria-pressed', String(b.dataset.theme === E.s.theme));
+    $('#edPreset').value = E.preset; $('#edLock').checked = E.lock;
+    $('#edFavs').innerHTML = favs().map((c, i) => { const d = MG.decode(c); return `<span class="edfav"><button type="button" data-act="edfav" data-code="${esc(c)}" title="${esc(c)}">${i + 1}. ${esc(MG.THEMES[d.theme].name)}</button><button type="button" data-act="edunfav" data-code="${esc(c)}" aria-label="Remove favourite ${i + 1}">×</button></span>`; }).join('') || '<small>Saved maps show up here.</small>';
+  }
+  function edSay(t) { const m = $('#edMsg'); if (m) m.textContent = t; }
+  function edLoad(code) { const d = MG.decode(String(code || '').trim().toLowerCase()); if (!d) return false; ui.ed = { s: d, preset: '', seed: d.seed || ui.ed.seed, lock: !!d.seed }; mapEditScreen(); return true; }
+  function edAct(act, b) {
+    const E = ui.ed;
+    switch (act) {
+      case 'mapedit': ui.ed = edFrom(ui.mapPick); mapEditScreen(); break;
+      case 'edback': ui.ed = null; titleScreen(); break;
+      case 'edtheme': E.s.theme = b.dataset.theme; E.preset = ''; mapEditScreen(); break;
+      case 'edseed': E.seed = 1 + Math.floor(Math.random() * 999999); E.lock = true; edDraw(); break;
+      case 'edsurprise': { const r = MG.randomSettings(1 + Math.floor(Math.random() * 2147483646)); ui.ed = { s: Object.assign(r, { size: 'medium' }), preset: '', seed: r.seed || 1, lock: true }; mapEditScreen(); break; }
+      case 'edcopy': { const v = edCode(E); try { navigator.clipboard.writeText(v).then(() => edSay('Copied. Send it to a friend, or paste it into the map box.'), () => edSay('Select the code and copy it.')); } catch (e) { edSay('Select the code and copy it.'); } break; }
+      case 'edload': if (!edLoad($('#edPaste').value)) edSay("That code doesn't look right."); break;
+      case 'edfav': edLoad(b.dataset.code); break;
+      case 'edunfav': lsSet('wb-favmaps', JSON.stringify(favs().filter((c) => c !== b.dataset.code))); edDraw(); break;
+      case 'edsave': { const c = edCode(E), f = favs().filter((x) => x !== c); f.unshift(c); lsSet('wb-favmaps', JSON.stringify(f.slice(0, FAV_MAX))); edDraw(); edSay(f.length > FAV_MAX ? `Saved. Only the last ${FAV_MAX} are kept.` : 'Saved to favourites.'); break; }
+      case 'eduse': ui.ed = null; setMap(edCode(E)); break;
+      default: return false;
+    }
+    return true;
+  }
+  document.addEventListener('input', (e) => {
+    const t = e.target, k = t && t.dataset && t.dataset.ed; if (ui.screen !== 'mapedit') return;
+    if (k) { ui.ed.s[k] = t.type === 'range' ? +t.value : t.value; ui.ed.preset = ''; edDraw(); }
+    else if (t.id === 'edLock') { ui.ed.lock = t.checked; edDraw(); }
+  });
+  document.addEventListener('change', (e) => { if (ui.screen === 'mapedit' && e.target && e.target.id === 'edPreset' && e.target.value) { ui.ed.preset = e.target.value; ui.ed.s = MG.resolve(ui.ed.preset); mapEditScreen(); } });
+  function setMap(m) { m = String(m || '').trim().toLowerCase(); if (!okMap(m)) return false; ui.mapPick = m; lsSet('wb-map', m); titleScreen(); return true; }
+  document.addEventListener('change', (e) => { if (e.target && e.target.id === 'mapSel') setMap(e.target.value); });
+  // Shuffle: every map once (in a seeded order) before any repeats, so a best-of-3 shows three different maps.
+  function mapFor(round) {
+    if (ui.mapPick !== 'shuffle') return ui.mapPick;
+    let s = ui.matchSeed >>> 0; const r = () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
+    const ids = WB.MAP_IDS.slice(); for (let i = ids.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [ids[i], ids[j]] = [ids[j], ids[i]]; }
+    return ids[(round - 1) % ids.length];
   }
   function levelScreen() {
     ui.screen = 'level'; ui.G = null; renderHUD(); renderCtl(); coachLine();
@@ -638,7 +758,7 @@
     const net = ui.net; net.queue = []; net.expect = null; net.waiting = false;
     ui.G = G; ui.wins = wins.slice(); ui.round = round; ui.picks = G.chars.slice();
     ui.aim = {}; ui.cpu = null; ui.parts = []; ui.trails = {}; ui.scorch = []; ui.pops = []; ui.acc = 0; ui.slow = 0; ui.shake = 0; ui.overAt = 0; ui.paused = false; ui.remoteAim = null;
-    bakeBackground(G.seed, G.map); renderTerrain(); mapBanner();
+    bakeBackground(G.seed); renderTerrain();
     ui.screen = 'game'; hide(); onTurn();
   }
   function lobbyScreen(status) {
@@ -663,9 +783,9 @@
   // ---------- match flow ----------
   function startRound() {
     const first = (ui.round - 1) % nSides();
-    ui.G = WB.newGame((ui.matchSeed + ui.round * 7919) >>> 0, { teams: nSides(), first, chars: ui.picks });
+    ui.G = WB.newGame((ui.matchSeed + ui.round * 7919) >>> 0, { teams: nSides(), first, chars: ui.picks, map: mapFor(ui.round) });
     ui.aim = {}; ui.cpu = null; ui.parts = []; ui.trails = {}; ui.scorch = []; ui.pops = []; ui.acc = 0; ui.slow = 0; ui.shake = 0; ui.overAt = 0; ui.paused = false;
-    bakeBackground(ui.G.seed, ui.G.map); renderTerrain(); mapBanner();
+    bakeBackground(ui.G.seed); renderTerrain();
     ui.screen = 'game'; hide(); onTurn();
   }
   function startMatch() {
@@ -687,11 +807,13 @@
       const k = b.dataset.tg; ui[k === 'timer' ? 'timerOn' : k] = !ui[k === 'timer' ? 'timerOn' : k];
       lsSet('wb-' + k, ui[k === 'timer' ? 'timerOn' : k] ? 'on' : 'off'); ui.paused = false; toggleMenu(); renderHUD(); coachLine(); return;
     }
+    if (edAct(act, b)) return;
     switch (act) {
       case 'mode': ui.mode = b.dataset.mode === 'solo' ? 'solo' : 'duel'; ui.picks = new Array(nSides()).fill(null); if (ui.mode === 'solo') levelScreen(); else { ui.cursor = 2; selectScreen(0); } break;
       case 'level': ui.level = LEVELS[b.dataset.level] ? b.dataset.level : 'medium'; lsSet('wb-level', ui.level); ui.cursor = 2; selectScreen(0); break;
       case 'start': case 'pickagain': ui.picks = new Array(nSides()).fill(null); ui.cursor = 2; selectScreen(0); break;
       case 'rematch': if (online()) { ui.net.send({ t: 'rematch' }); ui.net.rematchAsked = true; roundOverAgain(); } else startMatch(); break;
+      case 'mapcode': { const inp = $('#mapCode'); if (!setMap(inp && inp.value)) { const a = $('#mapAbout'); if (a) a.textContent = "That code doesn't look right. Copy it again from the Map Lab."; } break; }
       case 'pick': choose(b.dataset.char); break;
       case 'pickback': if (ui.mode === 'duel' && ui.pickTeam === 1) { ui.picks[0] = null; selectScreen(0); } else if (ui.mode === 'solo') levelScreen(); else titleScreen(); break;
       case 'next': if (online()) { ui.net.send({ t: 'next' }); ui.net.nextAsked = true; roundOverAgain(); } else { ui.round += ui.G.winner >= 0 ? 1 : 0; startRound(); } break;
@@ -817,6 +939,14 @@
       ctx.font = FONT(18); ctx.textAlign = 'center'; ctx.lineWidth = 4; ctx.strokeStyle = '#1E1A2B'; ctx.strokeText(String(d.fuse), x, y - 20); ctx.fillStyle = d.fuse <= 1 ? '#FF4D5E' : '#FFD34D'; ctx.fillText(String(d.fuse), x, y - 20);
     }
   }
+  // a map hazard (oil drum, gas canister, spore pod...): a drum in the theme's hazard colour with a warning band
+  function drawBarrel(b) {
+    const x = b.x * CELL, y = b.y * CELL;
+    ctx.fillStyle = theme().hazard; ctx.strokeStyle = '#1E1A2B'; ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.rect(x - 8, y - 18, 16, 18); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#FFD34D'; ctx.fillRect(x - 7, y - 11, 14, 4);
+    ctx.fillStyle = 'rgba(255,255,255,.25)'; ctx.fillRect(x - 5, y - 16, 3, 12);
+  }
   function drawProj(p, t) {
     if (p.wait > 0) return; // Double Tap's second dart hasn't left yet
     const x = p.x * CELL, y = p.y * CELL;
@@ -859,11 +989,11 @@
   }
   function drawWater(t) {
     const wy = ui.G.water * CELL;
-    const g = ctx.createLinearGradient(0, wy, 0, H); g.addColorStop(0, THEME.water[0]); g.addColorStop(1, THEME.water[1]);
+    const L = theme().liquid, g = ctx.createLinearGradient(0, wy, 0, H); g.addColorStop(0, L.top); g.addColorStop(1, L.deep);
     ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(0, H);
     for (let x = 0; x <= W; x += 16) ctx.lineTo(x, wy + (reduced ? 0 : Math.sin(x / 40 + t * 2) * 3 + Math.sin(x / 17 - t * 3) * 1.5));
     ctx.lineTo(W, H); ctx.closePath(); ctx.fill();
-    ctx.strokeStyle = 'rgba(200,255,250,.7)'; ctx.lineWidth = 2; ctx.beginPath();
+    ctx.strokeStyle = L.foam; ctx.lineWidth = 2; ctx.beginPath();
     for (let x = 0; x <= W; x += 16) { const y = wy + (reduced ? 0 : Math.sin(x / 40 + t * 2) * 3 + Math.sin(x / 17 - t * 3) * 1.5); x ? ctx.lineTo(x, y) : ctx.moveTo(x, y); } ctx.stroke();
   }
   function draw(t, dt) {
@@ -884,6 +1014,7 @@
       if (d.x > W) d.x = 0; if (d.x < 0) d.x = W;
       ctx.fillStyle = `rgba(255,236,200,${0.15 + d.z * 0.25})`; ctx.fillRect(d.x, d.y, 2 + d.z * 6 * Math.min(1, Math.abs(G.wind) / 3), 2);
     }
+    for (const b of G.barrels) drawBarrel(b);
     for (const d of G.duds) drawDud(d, t, false);
     const cur = WB.current(G);
     for (const u of G.units) if (!u.alive) drawUnit(u, false, t);
