@@ -43,34 +43,106 @@
   const ui = {
     screen: 'title', G: null, matchSeed: 0, round: 1, wins: [0, 0], aim: {}, weapon: 'shot1', lob: false, picks: [null, null], pickTeam: 0, cursor: 2,
     mode: 'duel', level: 'medium', cpu: null, mapPick: startMap(), net: null, you: 0, remoteAim: null,
+    sq: { size: clamp(+lsGet('wb-crew') || 3, 2, 5), vs: lsGet('wb-crewvs') === 'p2' ? 'p2' : 'cpu' },
+    cam: { on: false, x: 0, y: 0, z: 1, cx: 0, cy: 0, tx: 0, ty: 0, zoom: 1, manual: false, over: false },
     drag: null, acc: 0, last: 0, slow: 0, shake: 0, parts: [], trails: {}, scorch: [], clouds: [], dust: [], pops: [],
     tLeft: TURN_SECONDS, timerOn: lsGet('wb-timer') !== 'off', sound: lsGet('wb-sound') !== 'off', coach: lsGet('wb-coach') !== 'off',
     fast: false, tester: false, overAt: 0, turnsSeen: 0, paused: false, fb: { q: {}, text: '', nm: '', saved: null },
   };
   // Map choice: 'shuffle', a preset id (theme maps and modes) or a share code from the Map Lab. ?map=<code or preset> in the
   // page address picks it (the Map Lab's "Play this map" link) and is remembered like a pick from the menu.
-  function okMap(m) { return m === 'shuffle' || !!WB.MapGen.PRESETS[m] || !!WB.MapGen.decode(m); }
+  function okMap(m) { return m === 'fresh' || m === 'shuffle' || !!WB.MapGen.PRESETS[m] || !!WB.MapGen.decode(m); }
   function startMap() {
     let q = null; try { q = new URLSearchParams(location.search).get('map'); } catch (e) { /* no address bar (tests) */ }
     if (q && okMap(q.trim().toLowerCase())) { lsSet('wb-map', q.trim().toLowerCase()); return q.trim().toLowerCase(); }
-    const m = lsGet('wb-map'); return m && okMap(m) ? m : 'shuffle';
+    const m = lsGet('wb-map'); return m && okMap(m) && m !== 'shuffle' ? m : 'fresh'; // v2: a fresh map every round unless you chose one
   }
   const nSides = () => (ui.mode === 'solo' ? 4 : 2);
-  const isCPU = (t) => ui.mode === 'solo' && t !== 0;
+  const crew = () => (ui.mode === 'squads' ? ui.sq.size : 1); // units a side
+  const isCPU = (t) => (ui.mode === 'solo' && t !== 0) || (ui.mode === 'squads' && ui.sq.vs === 'cpu' && t === 1);
+  const vsCPU = () => ui.mode === 'solo' || (ui.mode === 'squads' && ui.sq.vs === 'cpu');
   const online = () => ui.mode === 'online';
   // in a match, side t sits in seat teamSeat[t] (free-for-all seats can have gaps); the lobby works in seats
   const roomSeat = (t) => { const R = ui.net && ui.net.room; if (!R) return null; const ts = R.teamSeat && R.teamSeat.length ? R.teamSeat : null; return R.seats[ts ? ts[t] : t] || null; };
   const ffaRoom = () => !!(online() && ui.net && ui.net.room && ui.net.room.mode === 'ffa');
   const needWins = () => (online() && ui.net && ui.net.room && ui.net.room.need) || Math.ceil(BEST_OF / 2);
   // what a side is called: "You" and "Tide CPU" in 1 Player, "Player 1" and "Player 2" in 1v1
-  const sideLabel = (t) => ui.mode === 'solo' ? (t === 0 ? 'You' : `${TEAMS[t].name} CPU`) : online() ? (t === ui.you ? 'You' : (roomSeat(t) && roomSeat(t).name) || 'Opponent') : `Player ${t + 1}`;
-  const unitName = (u) => sideLabel(u.team);
-  const charName = (t) => WB.CHARS[ui.G.chars[t]].name;
+  const sideLabel = (t) => ui.mode === 'solo' ? (t === 0 ? 'You' : `${TEAMS[t].name} CPU`) : ui.mode === 'squads' && ui.sq.vs === 'cpu' ? (t === 0 ? 'You' : 'Computer') : online() ? (t === ui.you ? 'You' : (roomSeat(t) && roomSeat(t).name) || 'Opponent') : `Player ${t + 1}`;
+  // a unit's label: its character in a crew (the colour says whose it is), its side's name when it's one a side
+  const unitName = (u) => (ui.G && ui.G.size > 1 ? WB.CHARS[u.char].name : sideLabel(u.team));
+  const charName = (t) => { const G = ui.G; if (G.size > 1) { const n = WB.teamUnits(G, t).length; return n + (n === 1 ? ' unit left' : ' units left'); } return WB.CHARS[G.chars[t]].name; };
+  const curName = () => { const u = ui.G && WB.current(ui.G); return u ? WB.CHARS[u.char].name : ''; };
+  // online: is the unit whose turn it is mine? (a team room gives every unit its own player; otherwise I play a whole side)
+  const myTurn = () => { const G = ui.G, R = ui.net && ui.net.room; return !!G && (R && R.mode === 'teams' ? WB.owner(G) === ui.seat : G.team === ui.you); };
 
   // ---------- stage fit ----------
   function fit() {
     const s = Math.min(innerWidth / W, innerHeight / H);
     $('#stage').style.transform = `translate(-50%, -50%) scale(${s})`;
+  }
+
+
+  // ---------- camera (maps bigger than one screen) ----------
+  // The world is G.cols × G.rows cells of CELL px. A one-screen map (160 × 90) never moves. On a bigger one the camera
+  // follows whoever's turn it is, then the shot, then anyone falling. Drag with the right button (or two fingers, or the
+  // left button when it isn't your turn) to look around, wheel or − / = to zoom, M for the whole map, C to come back.
+  const worldW = () => (ui.G ? ui.G.cols : WB.COLS) * CELL, worldH = () => (ui.G ? ui.G.rows : WB.ROWS) * CELL;
+  const zoomMin = () => Math.min(W / worldW(), H / worldH());
+  const MINI = { x: 14, y: 118, w: 208 };
+  const miniH = () => Math.round(MINI.w * worldH() / worldW());
+  function camReset() { const c = ui.cam; Object.assign(c, { on: zoomMin() < 0.999, z: 1, zoom: 1, manual: false, over: false }); const u = ui.G && WB.current(ui.G); c.cx = c.tx = u ? u.x * CELL : W / 2; c.cy = c.ty = u ? u.y * CELL : H / 2; camClamp(); $('#camctl').hidden = !c.on; }
+  function camClamp() {
+    const c = ui.cam; c.z = clamp(c.z, zoomMin(), 1.5);
+    const vw = W / c.z, vh = H / c.z, ww = worldW(), wh = worldH();
+    c.cx = vw >= ww ? ww / 2 : clamp(c.cx, vw / 2, ww - vw / 2); c.cy = vh >= wh ? wh / 2 : clamp(c.cy, vh / 2, wh - vh / 2);
+    c.x = c.cx - vw / 2; c.y = c.cy - vh / 2;
+  }
+  function camStep(dt) {
+    const c = ui.cam, G = ui.G; if (!G || !c.on) { c.x = 0; c.y = 0; c.z = 1; return; }
+    let tz = c.zoom, quick = false;
+    if (c.over) { tz = zoomMin(); c.tx = worldW() / 2; c.ty = worldH() / 2; }
+    else if (!c.manual) {
+      let f = null;
+      if (G.phase === 'flight') { const p = G.proj.find((q) => !(q.wait > 0)), u = p ? null : G.units.find((v) => v.alive && v.air); f = p || u; quick = !!p; }
+      else if (G.phase === 'aim') f = WB.current(G);
+      if (f) { c.tx = f.x * CELL; c.ty = (f.y - 4) * CELL; }
+    }
+    const k = reduced ? 1 : 1 - Math.pow(quick ? 1e-5 : 0.002, dt);
+    c.z += (tz - c.z) * k; c.cx += (c.tx - c.cx) * k; c.cy += (c.ty - c.cy) * k; camClamp();
+  }
+  const toWorld = (sx, sy) => [ui.cam.x + sx / ui.cam.z, ui.cam.y + sy / ui.cam.z];
+  function camZoom(f, sx = W / 2, sy = H / 2) { // zoom about a point on the screen
+    const c = ui.cam; if (!c.on) return; const [wx, wy] = toWorld(sx, sy);
+    c.over = false; c.zoom = clamp(c.zoom * f, zoomMin(), 1.5); c.z = c.zoom;
+    c.cx = c.tx = wx - (sx - W / 2) / c.z; c.cy = c.ty = wy - (sy - H / 2) / c.z; c.manual = true; camClamp(); c.tx = c.cx; c.ty = c.cy;
+  }
+  function camPan(dx, dy) { const c = ui.cam; if (!c.on) return; c.over = false; c.manual = true; c.cx = c.tx = c.cx - dx / c.z; c.cy = c.ty = c.cy - dy / c.z; camClamp(); c.tx = c.cx; c.ty = c.cy; }
+  function camAct(a) {
+    const c = ui.cam; if (!c.on) return false;
+    if (a === 'over') c.over = !c.over; else if (a === 'home') { c.over = false; c.manual = false; c.zoom = 1; } else if (a === 'in') camZoom(1.25); else if (a === 'out') camZoom(0.8); else return false;
+    return true;
+  }
+  const inMini = (x, y) => ui.cam.on && !ui.cam.over && x >= MINI.x && x <= MINI.x + MINI.w && y >= MINI.y && y <= MINI.y + miniH();
+  function miniJump(x, y) { const c = ui.cam; c.manual = true; c.cx = c.tx = (x - MINI.x) / MINI.w * worldW(); c.cy = c.ty = (y - MINI.y) / miniH() * worldH(); camClamp(); c.tx = c.cx; c.ty = c.cy; }
+  // on top of the world: a minimap (ground, units, the part you're looking at) and arrows to units off the screen
+  function drawOverlay() {
+    const c = ui.cam, G = ui.G; if (!c.on || c.over) return;
+    const mh = miniH(), k = MINI.w / worldW();
+    ctx.fillStyle = 'rgba(30,26,43,.78)'; ctx.fillRect(MINI.x - 3, MINI.y - 3, MINI.w + 6, mh + 6);
+    ctx.drawImage(terrCv, MINI.x, MINI.y, MINI.w, mh);
+    ctx.fillStyle = theme().liquid.top; ctx.fillRect(MINI.x, MINI.y + G.water * CELL * k, MINI.w, mh - G.water * CELL * k);
+    const cur = WB.current(G);
+    for (const u of G.units) if (u.alive) { ctx.fillStyle = TEAMS[u.team].c; ctx.beginPath(); ctx.arc(MINI.x + u.x * CELL * k, MINI.y + (u.y - 1.5) * CELL * k, u === cur ? 4.5 : 3, 0, 7); ctx.fill(); if (u === cur) { ctx.strokeStyle = '#FFD34D'; ctx.lineWidth = 2; ctx.stroke(); } }
+    for (const p of G.proj) { ctx.fillStyle = '#FFF3E0'; ctx.fillRect(MINI.x + p.x * CELL * k - 1.5, MINI.y + p.y * CELL * k - 1.5, 3, 3); }
+    ctx.strokeStyle = '#FFF3E0'; ctx.lineWidth = 1.5; ctx.strokeRect(MINI.x + c.x * k, MINI.y + c.y * k, W / c.z * k, H / c.z * k);
+    for (const u of G.units) { // an arrow on the edge of the screen for every living unit you can't see
+      if (!u.alive) continue;
+      const sx = (u.x * CELL - c.x) * c.z, sy = ((u.y - 1.5) * CELL - c.y) * c.z; if (sx >= 0 && sx <= W && sy >= 80 && sy <= H - 90) continue;
+      const ex = clamp(sx, 26, W - 26), ey = clamp(sy, 104, H - 110), a = Math.atan2(sy - ey, sx - ex);
+      ctx.save(); ctx.translate(ex, ey); ctx.rotate(a); ctx.fillStyle = TEAMS[u.team].c; ctx.strokeStyle = '#1E1A2B'; ctx.lineWidth = 2.5;
+      ctx.beginPath(); ctx.moveTo(14, 0); ctx.lineTo(-8, -10); ctx.lineTo(-3, 0); ctx.lineTo(-8, 10); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.restore();
+      if (u === cur) { ctx.strokeStyle = '#FFD34D'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(ex, ey, 17, 0, 7); ctx.stroke(); }
+    }
   }
 
   // ---------- sound: tiny Web Audio effects, nothing licensed ----------
@@ -139,8 +211,9 @@
   const hash2 = (x, y) => { let h = (x * 374761393 + y * 668265263) >>> 0; h = (h ^ (h >>> 13)) * 1274126177 >>> 0; return (h >>> 16) & 255; };
   function shadeFor(depth) { return depth === 0 ? 0 : depth === 1 ? 1 : depth < 5 ? 2 : depth < 10 ? 3 : depth < 18 ? 4 : 5; }
   function renderTerrain() {
-    const G = ui.G, T = G.T, C = WB.COLS, R = WB.ROWS;
-    tctx.clearRect(0, 0, W, H);
+    const G = ui.G, T = G.T, C = G.cols, R = G.rows;
+    if (terrCv.width !== C * CELL || terrCv.height !== R * CELL) { terrCv.width = C * CELL; terrCv.height = R * CELL; }
+    tctx.clearRect(0, 0, terrCv.width, terrCv.height);
     for (let x = 0; x < C; x++) {
       let depth = -1;
       for (let y = 0; y < R; y++) {
@@ -190,7 +263,7 @@
       else { p.vy += 900 * dt; }
       p.x += p.vx * dt; p.y += p.vy * dt;
     }
-    ui.parts = ui.parts.filter((p) => p.t < p.life && p.y < H + 40);
+    ui.parts = ui.parts.filter((p) => p.t < p.life && p.y < worldH() + 40);
     for (const p of ui.pops) p.t += dt; ui.pops = ui.pops.filter((p) => p.t < 1.2);
   }
 
@@ -216,7 +289,7 @@
       else if (e.k === 'quake') {
         if (!reduced) ui.shake = Math.min(34, ui.shake + 22);
         noise(1.1, 300, 40, 0.5); tone(55, 30, 0.9, 0.4);
-        for (let x = 40; x < W; x += 80) burst(x, WB.surfaceY(ui.G, x / CELL) * CELL, 3, 'chunk');
+        for (let x = 40; x < worldW(); x += 80) burst(x, WB.surfaceY(ui.G, x / CELL) * CELL, 3, 'chunk');
         for (const id of e.hits) { const u = ui.G.units.find((v) => v.id === id); if (u) { burst(u.x * CELL, u.y * CELL, 10, 'smoke'); ui.pops.push({ x: u.x * CELL, y: u.y * CELL - 50, t: 0, text: 'QUAKE!', c: '#FFB86B' }); } }
       }
       else if (e.k === 'tornado') {
@@ -238,7 +311,8 @@
     const ss = WB.ssReady(G);
     ui.tLeft = TURN_SECONDS; ui.lob = false; ui.weapon = ss ? 'ss' : 'shot1'; ui.cpu = null;
     if (!isCPU(G.team)) ui.turnsSeen++;
-    banner(sideLabel(G.team), `${charName(G.team)}${ss ? ' · SS READY!' : ''}${isCPU(G.team) ? '' : ui.mode === 'solo' || (online() && G.team === ui.you) ? ' · your turn' : ''}`, TEAMS[G.team].c);
+    banner(sideLabel(G.team), `${curName()}${ss ? ' · SS READY!' : ''}${isCPU(G.team) ? '' : vsCPU() || (online() && myTurn()) ? ' · your turn' : ''}`, TEAMS[G.team].c);
+    ui.cam.manual = false;
     if (ss) tone(660, 990, 0.25, 0.12, 'triangle');
     renderHUD(); renderCtl(); coachLine();
   }
@@ -250,11 +324,11 @@
 
   // ---------- aiming ----------
   function aimOf(u) {
-    if (!ui.aim[u.id]) ui.aim[u.id] = { angle: u.x < WB.COLS / 2 ? 50 : 130, power: 0.62 };
+    if (!ui.aim[u.id]) ui.aim[u.id] = { angle: u.x < ui.G.cols / 2 ? 50 : 130, power: 0.62 };
     return ui.aim[u.id];
   }
   function canAct() {
-    if (online()) return ui.screen === 'game' && ui.G && ui.G.phase === 'aim' && ui.G.team === ui.you && ui.net && ui.net.queue.length === 0 && !ui.net.waiting;
+    if (online()) return ui.screen === 'game' && ui.G && ui.G.phase === 'aim' && myTurn() && ui.net && ui.net.queue.length === 0 && !ui.net.waiting;
     return ui.screen === 'game' && !ui.paused && ui.G && ui.G.phase === 'aim' && !isCPU(ui.G.team);
   }
   // Every move goes through here. Offline it changes the game at once; online it goes to the server, and the game
@@ -295,6 +369,7 @@
       if (G.weapon !== ui.weapon) play({ k: 'weapon', w: ui.weapon });
       ok = play({ k: 'fire', angle: a.angle, power: a.power });
     }
+    if (ok) { ui.cam.manual = false; ui.cam.over = false; }
     if (ok && !online()) { SFX.fire(); burst(...muzzle(u, a), 8, 'spark'); renderCtl(); coachLine(); }
     return ok;
   }
@@ -303,12 +378,30 @@
   function pass() { if (canAct()) { play({ k: 'pass' }); renderCtl(); } }
 
   function stagePoint(e) { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) * W / r.width, (e.clientY - r.top) * H / r.height]; }
+  const touches = new Map(); // fingers on the map: two of them pan and pinch
+  cv.addEventListener('contextmenu', (e) => e.preventDefault());
+  cv.addEventListener('wheel', (e) => { if (!ui.cam.on || ui.screen !== 'game') return; e.preventDefault(); const [x, y] = stagePoint(e); camZoom(e.deltaY < 0 ? 1.12 : 1 / 1.12, x, y); }, { passive: false });
   cv.addEventListener('pointerdown', (e) => {
-    audio(); if (!canAct()) return;
-    const [x, y] = stagePoint(e); ui.drag = { x0: x, y0: y, x, y, id: e.pointerId };
+    audio();
+    const [x, y] = stagePoint(e);
+    if (ui.cam.on && ui.screen === 'game') {
+      if (e.pointerType === 'touch') { touches.set(e.pointerId, [x, y]); if (touches.size === 2) { ui.drag = null; ui.pan = null; return; } }
+      if (inMini(x, y)) { miniJump(x, y); ui.pan = { id: e.pointerId, x, y, mini: true }; return; }
+      if (e.button === 1 || e.button === 2 || !canAct()) { ui.pan = { id: e.pointerId, x, y }; try { cv.setPointerCapture(e.pointerId); } catch (err) { /* old browsers */ } return; }
+    }
+    if (!canAct() || e.button > 0) return;
+    ui.drag = { x0: x, y0: y, x, y, id: e.pointerId };
     try { cv.setPointerCapture(e.pointerId); } catch (err) { /* old browsers */ }
   });
   cv.addEventListener('pointermove', (e) => {
+    if (touches.has(e.pointerId) && touches.size === 2) { // two fingers: drag to pan, pinch to zoom
+      const [x, y] = stagePoint(e), was = touches.get(e.pointerId), other = [...touches.entries()].find(([id]) => id !== e.pointerId)[1];
+      const d0 = Math.hypot(was[0] - other[0], was[1] - other[1]), d1 = Math.hypot(x - other[0], y - other[1]);
+      camPan((x - was[0]) / 2, (y - was[1]) / 2); if (d0 > 20 && d1 > 20) camZoom(d1 / d0, (x + other[0]) / 2, (y + other[1]) / 2);
+      touches.set(e.pointerId, [x, y]); return;
+    }
+    if (touches.has(e.pointerId)) touches.set(e.pointerId, stagePoint(e));
+    if (ui.pan && e.pointerId === ui.pan.id) { const [x, y] = stagePoint(e); if (ui.pan.mini) miniJump(x, y); else camPan(x - ui.pan.x, y - ui.pan.y); ui.pan.x = x; ui.pan.y = y; return; }
     if (!ui.drag || e.pointerId !== ui.drag.id) return;
     [ui.drag.x, ui.drag.y] = stagePoint(e);
     const dx = ui.drag.x0 - ui.drag.x, dy = ui.drag.y0 - ui.drag.y, len = Math.hypot(dx, dy);
@@ -320,6 +413,7 @@
     shareAim(a);
   });
   const endDrag = (e) => {
+    touches.delete(e.pointerId); if (ui.pan && e.pointerId === ui.pan.id) { ui.pan = null; return; }
     if (!ui.drag || e.pointerId !== ui.drag.id) return;
     const len = Math.hypot(ui.drag.x0 - ui.drag.x, ui.drag.y0 - ui.drag.y); ui.drag = null;
     if (len >= DRAG_MIN) doFire();
@@ -341,6 +435,7 @@
       return;
     }
     if (k === 'Escape' || k === 'p' || k === 'P') { if (ui.screen === 'game') { e.preventDefault(); toggleMenu(); } return; }
+    if (ui.screen === 'game' && camAct(k === 'm' || k === 'M' ? 'over' : k === 'c' || k === 'C' ? 'home' : k === '=' || k === '+' ? 'in' : k === '-' ? 'out' : '')) return;
     if (!canAct()) return;
     const a = aimOf(WB.current(ui.G)), fine = e.shiftKey ? 0.5 : 2;
     if (k === 'ArrowLeft' || k === 'a' || k === 'A') { e.preventDefault(); walk(-1); }
@@ -357,7 +452,7 @@
     if (/^(Arrow(Up|Down)|[wWsSqQeEfF])$/.test(k)) shareAim(a);
     else if (k === 'x' || k === 'X') pass();
   });
-  function pickWeapon(w) { if (!canAct() || (w === 'ss' ? !WB.ssReady(ui.G) : ui.G.ammo[ui.G.team][w] === 0)) return; ui.weapon = w; ui.lob = false; SFX.click(); renderCtl(); coachLine(); }
+  function pickWeapon(w) { if (!canAct() || (w === 'ss' ? !WB.ssReady(ui.G) : WB.ammoOf(ui.G)[w] === 0)) return; ui.weapon = w; ui.lob = false; SFX.click(); renderCtl(); coachLine(); }
   function toggleLob() { if (!canAct() || !WB.lobbable(ui.G).length) return; ui.lob = !ui.lob; SFX.click(); renderCtl(); coachLine(); }
 
   // ---------- HUD and controls (DOM) ----------
@@ -368,7 +463,7 @@
       const us = G.units.filter((u) => u.team === t), hp = us.reduce((a, u) => a + Math.max(0, u.hp), 0), max = us.reduce((a, u) => a + u.maxHp, 0);
       const out = !us.some((u) => u.alive), cur = t === G.team && G.phase !== 'over';
       return `<div class="team ${TEAMS[t].key}${t >= half ? ' r' : ''}${n > 2 ? ' sm' : ''}${n > 4 ? ' xs' : ''}${out ? ' out' : ''}${cur ? ' cur' : ''}"><div><div class="nm">${esc(sideLabel(t))} <span class="cn">· ${esc(charName(t))}</span></div><div class="bar"><i style="width:${(100 * hp / max).toFixed(1)}%"></i></div></div>
-        <div class="ssm${WB.ssReady(G, t) ? ' on' : ''}" title="SS charge: ready every ${WB.SS_CHARGE} turns"><span>SS</span>${Array.from({ length: WB.SS_CHARGE }, (_, i) => `<b class="${G.ss[t] > i ? 'f' : ''}"></b>`).join('')}</div>
+        <div class="ssm${WB.ssReady(G, t) ? ' on' : ''}" title="SS charge: ready every ${WB.SS_CHARGE} turns"><span>SS</span>${Array.from({ length: WB.SS_CHARGE }, (_, i) => `<b class="${WB.ssOf(G, t) > i ? 'f' : ''}"></b>`).join('')}</div>
         <div class="pips" title="rounds won">${Array.from({ length: needWins() }, (_, i) => `<b class="${ui.wins[t] > i ? 'on' : ''}"></b>`).join('')}</div></div>`;
     };
     const w = G.wind, arrows = Math.round(Math.abs(w) / WB.WIND_MAX * 4);
@@ -382,22 +477,22 @@
     const G = ui.G; if (!G || G.phase !== 'aim') return '<div class="order"></div>';
     const w = ui.lob ? 'lob' : ui.weapon, d = G.units.filter((u) => u.alive).map((u) => ({ u, d: u.id === G.actor ? WB.delayIf(G, w) : u.delay }));
     const seq = [];
-    for (let i = 0; i < 6 && d.length; i++) { d.sort((a, b) => a.d - b.d || a.u.id - b.u.id); const x = d[0]; seq.push(x.u.team); x.d += WB.shotSpec(G, x.u.team, 'shot1').delay; }
-    return `<div class="order" title="Who plays next, if everyone fires their Shot 1 after this">NEXT ${seq.map((t) => `<b style="background:${TEAMS[t].c}">${esc(sideLabel(t) === 'You' ? 'You' : ui.mode === 'solo' ? TEAMS[t].name[0] : online() ? sideLabel(t).slice(0, 6) : 'P' + (t + 1))}</b>`).join('')}</div>`;
+    for (let i = 0; i < 6 && d.length; i++) { d.sort((a, b) => a.d - b.d || a.u.id - b.u.id); const x = d[0]; seq.push(x.u.team); x.d += WB.shotSpec(G, x.u, 'shot1').delay; }
+    return `<div class="order" title="Who plays next, if everyone fires their Shot 1 after this">NEXT ${seq.map((t) => `<b style="background:${TEAMS[t].c}">${esc(sideLabel(t) === 'You' ? 'You' : ui.mode === 'solo' ? TEAMS[t].name[0] : online() ? sideLabel(t).slice(0, 6) : isCPU(t) ? 'CPU' : 'P' + (t + 1))}</b>`).join('')}</div>`;
   }
   function renderCtl() {
     const G = ui.G; $('#bMenu').hidden = !G || ui.screen !== 'game';
     if (!G || ui.screen !== 'game') { $('#ctl').innerHTML = ''; return; }
     const o = $('.order'); if (o) o.outerHTML = orderHTML();
-    if (isCPU(G.team) && G.phase === 'aim') { $('#ctl').innerHTML = `<span class="cputag" style="--tc:${TEAMS[G.team].c}">${esc(sideLabel(G.team))} (${esc(charName(G.team))}) is taking its turn…</span>`; return; }
-    if (online() && G.team !== ui.you && G.phase === 'aim') { const s = roomSeat(G.team); $('#ctl').innerHTML = `<span class="cputag" style="--tc:${TEAMS[G.team].c}">${esc(sideLabel(G.team))} (${esc(charName(G.team))}) is aiming…${s && !s.connected ? ' (disconnected: their turn passes soon)' : ''}</span>`; return; }
-    const aim = G.phase === 'aim', am = G.ammo[G.team], lob = WB.lobbable(G).length > 0;
-    const wb = (w, key) => { const S = WB.shotSpec(G, G.team, w);
+    if (isCPU(G.team) && G.phase === 'aim') { $('#ctl').innerHTML = `<span class="cputag" style="--tc:${TEAMS[G.team].c}">${esc(sideLabel(G.team))} (${esc(curName())}) is taking its turn…</span>`; return; }
+    if (online() && !myTurn() && G.phase === 'aim') { const s = roomSeat(G.team); $('#ctl').innerHTML = `<span class="cputag" style="--tc:${TEAMS[G.team].c}">${esc(sideLabel(G.team))} (${esc(curName())}) is aiming…${s && !s.connected ? ' (disconnected: their turn passes soon)' : ''}</span>`; return; }
+    const aim = G.phase === 'aim', am = WB.ammoOf(G), lob = WB.lobbable(G).length > 0;
+    const wb = (w, key) => { const S = WB.shotSpec(G, WB.current(G), w);
       return `<button class="btn wpn${ui.weapon === w && !ui.lob ? '' : ' ghost'}" type="button" data-w="${w}" aria-pressed="${ui.weapon === w && !ui.lob}" title="${esc(S.desc)} Turn delay +${S.delay}." ${!aim || am[w] === 0 ? 'disabled' : ''}>${esc(S.name)}<small>${key} · ${am[w] < 0 ? '∞' : am[w] + ' left'} · ⏱${S.delay}</small></button>`; };
     $('#ctl').innerHTML = `<button class="btn ghost" type="button" data-walk="-1" aria-label="Walk left" ${aim && G.moves ? '' : 'disabled'}>◀</button>
       <span class="steps">${G.moves} steps</span>
       <button class="btn ghost" type="button" data-walk="1" aria-label="Walk right" ${aim && G.moves ? '' : 'disabled'}>▶</button>
-      ${WB.ssReady(G) ? `<button class="btn wpn ss${ui.weapon === 'ss' && !ui.lob ? '' : ' dim'}" type="button" data-w="ss" aria-pressed="${ui.weapon === 'ss' && !ui.lob}" title="${esc(WB.shotSpec(G, G.team, 'ss').desc)}" ${aim ? '' : 'disabled'}>SS · ${esc(WB.shotSpec(G, G.team, 'ss').name)}<small>1 · ready · ⏱${WB.shotSpec(G, G.team, 'ss').delay}</small></button>` : wb('shot1', '1')}${wb('shot2', '2')}${wb('dud', '3')}
+      ${WB.ssReady(G) ? `<button class="btn wpn ss${ui.weapon === 'ss' && !ui.lob ? '' : ' dim'}" type="button" data-w="ss" aria-pressed="${ui.weapon === 'ss' && !ui.lob}" title="${esc(WB.shotSpec(G, WB.current(G), 'ss').desc)}" ${aim ? '' : 'disabled'}>SS · ${esc(WB.shotSpec(G, WB.current(G), 'ss').name)}<small>1 · ready · ⏱${WB.shotSpec(G, WB.current(G), 'ss').delay}</small></button>` : wb('shot1', '1')}${wb('shot2', '2')}${wb('dud', '3')}
       <button class="btn teal" type="button" data-act="lob" aria-pressed="${ui.lob}" ${aim && lob ? '' : 'disabled'} title="Pick up a live dud in reach (L)">LOB</button>
       <button class="btn fire" type="button" data-act="fire" ${aim ? '' : 'disabled'}>FIRE</button>
       <button class="btn ghost sm" type="button" data-act="pass" ${aim ? '' : 'disabled'} title="End your turn (X)">Skip</button>`;
@@ -405,7 +500,7 @@
   function coachLine() {
     const el = $('#coach'); if (!ui.coach || ui.screen !== 'game' || !ui.G) { el.innerHTML = ''; return; }
     const G = ui.G, u = WB.current(G); if (!u || G.phase !== 'aim') { el.innerHTML = ''; return; }
-    if (isCPU(G.team) || (online() && G.team !== ui.you)) { el.innerHTML = ''; return; }
+    if (isCPU(G.team) || (online() && !myTurn())) { el.innerHTML = ''; return; }
     const danger = G.duds.find((d) => d.fuse <= 1 && Math.hypot(d.x - u.x, d.y - u.y) < WB.DUD.r * WB.DMG_SPREAD);
     let t;
     if (danger && WB.lobbable(G).includes(danger)) t = '<b>That dud blows at the end of this turn!</b> Tap LOB (L), then drag to throw it away.';
@@ -415,8 +510,8 @@
     else if (ui.turnsSeen <= 2) t = '<b>Drag back</b> from your glowing unit and <b>let go</b> to fire. Further back = more power. Watch the wind.';
     else if (ui.turnsSeen === 3) t = '<b>Turn delay:</b> every shot has a cost (⏱ on the buttons). Light shots bring your next turn sooner. The NEXT strip up top shows who plays next.';
     else if (ui.turnsSeen <= 5) t = 'Keys: <b>◀ ▶</b> walk · <b>▲ ▼</b> angle · <b>Q/E</b> power · <b>1 2 3</b> shots · <b>Space</b> fire.';
-    else if (ui.weapon === 'ss') t = `<b>SS ready: ${esc(WB.shotSpec(G, G.team, 'ss').name)}!</b> ${esc(WB.shotSpec(G, G.team, 'ss').desc)} It replaces Shot 1 until you use it.`;
-    else if (ui.weapon === 'shot2') t = `<b>${esc(WB.shotSpec(G, G.team, 'shot2').name)}:</b> ${esc(WB.shotSpec(G, G.team, 'shot2').desc)} (${G.ammo[G.team].shot2} left this match)`;
+    else if (ui.weapon === 'ss') t = `<b>SS ready: ${esc(WB.shotSpec(G, WB.current(G), 'ss').name)}!</b> ${esc(WB.shotSpec(G, WB.current(G), 'ss').desc)} It replaces Shot 1 until you use it.`;
+    else if (ui.weapon === 'shot2') t = `<b>${esc(WB.shotSpec(G, WB.current(G), 'shot2').name)}:</b> ${esc(WB.shotSpec(G, WB.current(G), 'shot2').desc)} (${WB.ammoOf(G).shot2} left this match)`;
     else if (ui.weapon === 'dud') t = 'A live dud lands and ticks for <b>3 turns</b>. Anyone close can lob it back, so drop it where they can\'t reach.';
     else t = '';
     el.innerHTML = t;
@@ -439,19 +534,20 @@
       <p>Pick a character, read the wind, blast the ground, and throw their own duds back at them. Best of three.</p>${HOW}
       <div class="row"><button class="btn fire" type="button" data-act="mode" data-mode="solo">1 PLAYER<small style="display:block;font-family:var(--body);font-size:12px">you vs 3 computers</small></button>
       <button class="btn teal" type="button" data-act="mode" data-mode="duel">2 PLAYERS<small style="display:block;font-family:var(--body);font-size:12px">1v1 on one keyboard</small></button>
-      <button class="btn gold" type="button" data-act="online">ONLINE<small style="display:block;font-family:var(--body);font-size:12px">1v1 or up to 6 players</small></button></div>
+      <button class="btn plum" type="button" data-act="squads">SQUADS<small style="display:block;font-family:var(--body);font-size:12px">crews of 2 to 5, big maps</small></button>
+      <button class="btn gold" type="button" data-act="online">ONLINE<small style="display:block;font-family:var(--body);font-size:12px">1v1, free-for-all, 5v5</small></button></div>
       ${mapRow()}`);
     wide();
   }
   // The map row: Shuffle, the theme maps, classic maps and modes in one list, a box for a share code, and the
   // Custom Map screen.
   function mapRow() {
-    const P = WB.MapGen.PRESETS, code = !P[ui.mapPick] && ui.mapPick !== 'shuffle';
+    const P = WB.MapGen.PRESETS, code = !P[ui.mapPick] && ui.mapPick !== 'shuffle' && ui.mapPick !== 'fresh';
     const opt = (v, label) => `<option value="${esc(v)}"${v === ui.mapPick ? ' selected' : ''}>${esc(label)}</option>`;
     const groups = {}; for (const id of WB.MapGen.PRESET_IDS) (groups[P[id].group] = groups[P[id].group] || []).push(opt(id, P[id].name));
-    const about = ui.mapPick === 'shuffle' ? 'A different theme map every round.' : code ? `Your custom map (${WB.MapGen.THEMES[WB.MapGen.decode(ui.mapPick).theme].name}).` : P[ui.mapPick].blurb;
+    const about = ui.mapPick === 'fresh' ? 'A new map every round, rolled for the mode you play: any theme, its own caves, hazards, wind and water.' : ui.mapPick === 'shuffle' ? 'A different theme map every round, each with its usual settings.' : code ? `Your custom map (${WB.MapGen.THEMES[WB.MapGen.decode(ui.mapPick).theme].name}).` : P[ui.mapPick].blurb;
     return `<div class="row maps"><label for="mapSel" style="align-self:center;font-size:13px;opacity:.8">MAP</label>
-      <select id="mapSel" class="mapsel">${opt('shuffle', 'Shuffle')}${Object.entries(groups).map(([g, o]) => `<optgroup label="${esc(g)}">${o.join('')}</optgroup>`).join('')}${code ? opt(ui.mapPick, 'Custom map') : ''}</select>
+      <select id="mapSel" class="mapsel">${opt('fresh', 'Fresh map every round')}${opt('shuffle', 'Shuffle the 10 themes')}${Object.entries(groups).map(([g, o]) => `<optgroup label="${esc(g)}">${o.join('')}</optgroup>`).join('')}${code ? opt(ui.mapPick, 'Custom map') : ''}</select>
       <input id="mapCode" class="mapcode" type="text" placeholder="or paste a map code" value="${code ? esc(ui.mapPick) : ''}" aria-label="Map share code" spellcheck="false">
       <button class="btn ghost sm" type="button" data-act="mapcode">Use code</button>
       <button class="btn gold sm" type="button" data-act="mapedit">Custom map</button></div>
@@ -466,7 +562,7 @@
   const edCode = (E) => MG.encode(Object.assign({}, E.s, { size: 'medium', seed: E.lock ? E.seed : 0 }));
   function edFrom(pick) { // the editor starts from the current pick: a code, a preset, or Crater Hills for Shuffle
     const d = MG.PRESETS[pick] ? null : MG.decode(pick), seed = (d && d.seed) || 1 + Math.floor(Math.random() * 999999);
-    return { s: d || MG.resolve(MG.PRESETS[pick] ? pick : 'hills'), preset: d ? '' : MG.PRESETS[pick] ? pick : 'hills', seed, lock: d ? !!d.seed : true };
+    return { s: d || MG.resolve(MG.PRESETS[pick] ? pick : 'hills'), preset: d ? '' : MG.PRESETS[pick] ? pick : 'hills', seed, lock: d ? !!d.seed : false };
   }
   function mapEditScreen() {
     ui.screen = 'mapedit'; ui.G = null; renderHUD(); renderCtl(); coachLine();
@@ -541,11 +637,26 @@
   document.addEventListener('change', (e) => { if (e.target && e.target.id === 'mapSel') setMap(e.target.value); });
   // Shuffle: every map once (in a seeded order) before any repeats, so a best-of-3 shows three different maps.
   function mapFor(round) {
+    if (ui.mapPick === 'fresh') return undefined; // the engine rolls one from the mode's recipe and the round's seed
     if (ui.mapPick !== 'shuffle') return ui.mapPick;
     let s = ui.matchSeed >>> 0; const r = () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
     const ids = WB.MAP_IDS.slice(); for (let i = ids.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [ids[i], ids[j]] = [ids[j], ids[i]]; }
     return ids[(round - 1) % ids.length];
   }
+
+  // ---------- Squads: crews of 2 to 5 a side on a bigger map, against a friend or the computer ----------
+  function squadScreen() {
+    ui.screen = 'squad'; ui.mode = 'squads'; ui.G = null; renderHUD(); renderCtl(); coachLine();
+    const Z = WB.MapGen.SIZES[WB.MapGen.sizeFor(ui.sq.size * 2)], vs = ui.sq.vs;
+    show(`<div class="tag">Squads · step 1 of 2</div><h2>Build a crew</h2>
+      <p>Each side fields a crew. Every unit has its own shots, ammo and SS, and takes its own turns. The map grows with the crews, and the camera follows the action.</p>
+      <div class="sqrow"><span>Units a side</span>${[2, 3, 4, 5].map((n) => `<button class="btn sm ${n === ui.sq.size ? 'gold' : 'ghost'}" type="button" data-act="sqsize" data-n="${n}" aria-pressed="${n === ui.sq.size}">${n} v ${n}</button>`).join('')}</div>
+      <div class="sqrow"><span>Against</span><button class="btn sm ${vs === 'p2' ? 'gold' : 'ghost'}" type="button" data-act="sqvs" data-vs="p2" aria-pressed="${vs === 'p2'}">Player 2, same keyboard</button>
+        ${Object.entries(LEVELS).map(([k, L]) => `<button class="btn sm ${vs === 'cpu' && ui.level === k ? 'gold' : 'ghost'}" type="button" data-act="sqvs" data-vs="cpu" data-level="${k}" aria-pressed="${vs === 'cpu' && ui.level === k}">${L.name} computer</button>`).join('')}</div>
+      <p class="mapabout">Map: ${Z.name} (${Z.w} × ${Z.h})${Z.w > WB.COLS ? ' with a camera: wheel to zoom, right-drag to look around, M for the whole map' : ', all on one screen'}. A fresh one every round.</p>
+      <div class="row"><button class="btn ghost sm" type="button" data-act="quit">Back</button><button class="btn fire" type="button" data-act="sqgo">PICK THE CREWS</button></div>`);
+  }
+  const randomCrew = (n) => { const ids = WB.CHAR_IDS.slice().sort(() => Math.random() - 0.5); return Array.from({ length: n }, (_, i) => ids[i % ids.length]); };
   function levelScreen() {
     ui.screen = 'level'; ui.G = null; renderHUD(); renderCtl(); coachLine();
     show(`<div class="tag">1 Player · step 1 of 2</div><h2>How tough should the computers be?</h2>
@@ -558,8 +669,10 @@
   function selectScreen(team) {
     ui.screen = 'select'; ui.pickTeam = team; ui.G = null; ui.paused = false;
     renderHUD(); renderCtl(); coachLine();
-    const T = TEAMS[team], other = ui.mode === 'duel' && team === 1 && ui.picks[0] ? `Player 1 picked <b style="color:${TEAMS[0].c}">${esc(WB.CHARS[ui.picks[0]].name)}</b>. ` : '';
-    const mul = ui.mode === 'solo' ? WB.HP_MUL.ffa : WB.HP_MUL.duel;
+    const T = TEAMS[team], sq = ui.mode === 'squads', mine = sq ? (ui.picks[team] || (ui.picks[team] = [])) : null;
+    const other = ui.mode === 'duel' && team === 1 && ui.picks[0] ? `Player 1 picked <b style="color:${TEAMS[0].c}">${esc(WB.CHARS[ui.picks[0]].name)}</b>. ` : '';
+    const mul = sq ? WB.CREW_HP[ui.sq.size] : ui.mode === 'solo' ? WB.HP_MUL.ffa : WB.HP_MUL.duel;
+    const who = sq ? (ui.sq.vs === 'cpu' ? 'Your crew' : `Player ${team + 1}'s crew`) : '';
     const cards = WB.CHAR_IDS.map((id, i) => {
       const C = WB.CHARS[id];
       return `<button class="char${i === ui.cursor ? ' cur' : ''}" type="button" data-act="pick" data-char="${id}" style="--tc:${T.c}" aria-label="${esc(C.name)}, ${esc(C.role)}">
@@ -572,14 +685,21 @@
         <span class="sh ss"><b>SS · ${esc(C.ss.name)}</b> ${esc(C.ss.desc)} <em>every ${WB.SS_CHARGE} turns</em></span></button>`;
     }).join('');
     $('#screen').innerHTML = `<div class="screen"><div class="pick" role="dialog" aria-modal="true">
-      <div class="tag">${ui.mode === 'solo' ? `1 Player · ${LEVELS[ui.level].name} · step 2 of 2` : `2 Players · step ${team + 1} of 2`} · everyone also carries 2 Live duds</div>
-      <h2 style="color:${T.c}">${ui.mode === 'solo' ? 'Pick your character' : `Player ${team + 1}, pick your character`}</h2>
-      <p class="sub">${other}${ui.mode === 'solo' ? 'The three computers get random characters.' : 'Same pick as the other player is fine.'}</p>
+      <div class="tag">${sq ? `Squads · ${ui.sq.size} v ${ui.sq.size} · step 2 of 2` : ui.mode === 'solo' ? `1 Player · ${LEVELS[ui.level].name} · step 2 of 2` : `2 Players · step ${team + 1} of 2`} · everyone also carries 2 Live duds</div>
+      <h2 style="color:${T.c}">${sq ? `${who}: pick unit ${mine.length + 1} of ${ui.sq.size}` : ui.mode === 'solo' ? 'Pick your character' : `Player ${team + 1}, pick your character`}</h2>
+      <p class="sub">${sq ? `<span class="crewslots">${Array.from({ length: ui.sq.size }, (_, i) => `<b style="--tc:${T.c}" class="${mine[i] ? 'on' : ''}">${mine[i] ? esc(WB.CHARS[mine[i]].name) : i + 1}</b>`).join('')}</span> The same character twice is fine. ${ui.sq.vs === 'cpu' ? 'The computer picks its own crew.' : ''}` : other + (ui.mode === 'solo' ? 'The three computers get random characters.' : 'Same pick as the other player is fine.')}</p>
       <div class="chars">${cards}</div>
-      <div class="row"><button class="btn ghost sm" type="button" data-act="pickback">Back</button><span class="keys">← → choose · Enter to pick · or press 1–5</span></div></div></div>`;
+      <div class="row"><button class="btn ghost sm" type="button" data-act="pickback">Back</button>${sq ? '<button class="btn gold sm" type="button" data-act="crewfill">Fill the rest for me</button>' : ''}<span class="keys">← → choose · Enter to pick · or press 1–5</span></div></div></div>`;
   }
   function choose(id) {
     if (!WB.CHARS[id] || ui.screen !== 'select') return;
+    if (ui.mode === 'squads') { // a crew fills up one unit at a time; then the other side picks (the computer picks its own)
+      const mine = ui.picks[ui.pickTeam] || (ui.picks[ui.pickTeam] = []); mine.push(id); SFX.click();
+      if (mine.length < ui.sq.size) { selectScreen(ui.pickTeam); return; }
+      if (ui.pickTeam === 0 && ui.sq.vs === 'p2') { ui.cursor = 2; selectScreen(1); return; }
+      if (ui.sq.vs === 'cpu') ui.picks[1] = randomCrew(ui.sq.size);
+      startMatch(); return;
+    }
     ui.picks[ui.pickTeam] = id; SFX.click();
     if (ui.mode === 'solo') { // the computers take random characters, different from each other where possible
       const rest = WB.CHAR_IDS.filter((c) => c !== id).sort(() => Math.random() - 0.5);
@@ -607,11 +727,11 @@
     const done = ffa || ui.wins.some((x) => x >= need);
     ui.screen = done ? 'end' : 'round'; renderCtl(); coachLine(); renderHUD();
     if (done && ui.lastWinSound !== ui.round + '/' + G.seed) { ui.lastWinSound = ui.round + '/' + G.seed; SFX.win(); }
-    const you = (ui.mode === 'solo' || online()) && w === (online() ? ui.you : 0);
+    const you = (vsCPU() || online()) && w === (online() ? ui.you : 0);
     const head = w < 0 ? 'Draw!' : you ? (done ? (ffa ? 'You win!' : 'You win the match!') : `You take round ${ui.round}!`) : `${sideLabel(w)} ${done ? (ffa ? 'wins!' : 'wins the match!') : `takes round ${ui.round}`}`;
     const col = w < 0 ? '#FFF3E0' : TEAMS[w].c;
     const st = G.stats;
-    ui.endHTML = `<div class="tag">${ffa ? `${G.teams}-player free-for-all` : done ? 'Match over' : `Round ${ui.round} of ${BEST_OF}`}${ui.tester ? ' · TESTER' : ''}</div><h2 style="color:${col}">${esc(head)}</h2>${ui.mode === 'solo' ? `<p style="margin:0">vs three ${LEVELS[ui.level].name} computers</p>` : ''}
+    ui.endHTML = `<div class="tag">${ffa ? `${G.teams}-player free-for-all` : done ? 'Match over' : `Round ${ui.round} of ${BEST_OF}`}${ui.tester ? ' · TESTER' : ''}</div><h2 style="color:${col}">${esc(head)}</h2>${ui.mode === 'solo' ? `<p style="margin:0">vs three ${LEVELS[ui.level].name} computers</p>` : ui.mode === 'squads' ? `<p style="margin:0">${ui.sq.size} v ${ui.sq.size}${ui.sq.vs === 'cpu' ? ` against the ${LEVELS[ui.level].name} computer` : ''}</p>` : ''}
       ${ffa ? '' : `<div class="score">`}${ffa ? '' : ui.wins.map((x, t) => `<span style="color:${TEAMS[t].c}" title="${esc(sideLabel(t))} · ${esc(charName(t))}">${x}</span>`).join(' – ')}${ffa ? '' : '</div>'}
       <p style="margin:0;font-size:15px">${ui.wins.map((x, t) => `<b style="color:${TEAMS[t].c}${ffa && t !== w ? ';opacity:.6' : ''}">${esc(sideLabel(t))}</b> ${esc(charName(t))}`).join(' · ')}</p>
       <p>${done && !ffa ? 'Last round: ' : ''}${G.turn} turns · ${st.shots} shots · ${st.lobs} lobs · ${st.dudBlasts} dud blasts${st.chains ? ` · ${st.chains} chain reaction${st.chains > 1 ? 's' : ''}` : ''}${st.drowned ? ` · ${st.drowned} splashed out` : ''}</p>
@@ -758,7 +878,7 @@
     const net = ui.net; net.queue = []; net.expect = null; net.waiting = false;
     ui.G = G; ui.wins = wins.slice(); ui.round = round; ui.picks = G.chars.slice();
     ui.aim = {}; ui.cpu = null; ui.parts = []; ui.trails = {}; ui.scorch = []; ui.pops = []; ui.acc = 0; ui.slow = 0; ui.shake = 0; ui.overAt = 0; ui.paused = false; ui.remoteAim = null;
-    bakeBackground(G.seed); renderTerrain();
+    bakeBackground(G.seed); renderTerrain(); camReset();
     ui.screen = 'game'; hide(); onTurn();
   }
   function lobbyScreen(status) {
@@ -783,13 +903,15 @@
   // ---------- match flow ----------
   function startRound() {
     const first = (ui.round - 1) % nSides();
-    ui.G = WB.newGame((ui.matchSeed + ui.round * 7919) >>> 0, { teams: nSides(), first, chars: ui.picks, map: mapFor(ui.round) });
+    const sq = ui.mode === 'squads';
+    ui.G = WB.newGame((ui.matchSeed + ui.round * 7919) >>> 0, { teams: nSides(), size: crew(), first, chars: sq ? ui.picks[0].concat(ui.picks[1]) : ui.picks, map: mapFor(ui.round), recipe: ui.mode === 'solo' ? 'solo' : undefined });
     ui.aim = {}; ui.cpu = null; ui.parts = []; ui.trails = {}; ui.scorch = []; ui.pops = []; ui.acc = 0; ui.slow = 0; ui.shake = 0; ui.overAt = 0; ui.paused = false;
-    bakeBackground(ui.G.seed); renderTerrain();
+    bakeBackground(ui.G.seed); renderTerrain(); camReset();
     ui.screen = 'game'; hide(); onTurn();
   }
   function startMatch() {
-    if (ui.picks.length !== nSides() || ui.picks.some((c) => !c)) { ui.cursor = 2; selectScreen(0); return; }
+    const full = (c) => (ui.mode === 'squads' ? Array.isArray(c) && c.length === ui.sq.size : !!c && !Array.isArray(c));
+    if (ui.picks.length !== nSides() || !ui.picks.every(full)) { ui.picks = new Array(nSides()).fill(null); ui.cursor = 2; selectScreen(0); return; }
     ui.matchSeed = (Date.now() ^ Math.floor(Math.random() * 1e9)) >>> 0;
     if (window.__WB_SEED != null) ui.matchSeed = window.__WB_SEED >>> 0; // tests pin the seed
     ui.round = 1; ui.wins = new Array(nSides()).fill(0); ui.tester = false; ui.fb = { q: {}, text: '', nm: '', saved: null };
@@ -809,13 +931,20 @@
     }
     if (edAct(act, b)) return;
     switch (act) {
+      case 'squads': squadScreen(); break;
+      case 'sqsize': ui.sq.size = clamp(+b.dataset.n || 3, 2, 5); lsSet('wb-crew', ui.sq.size); squadScreen(); break;
+      case 'sqvs': ui.sq.vs = b.dataset.vs === 'p2' ? 'p2' : 'cpu'; lsSet('wb-crewvs', ui.sq.vs); if (LEVELS[b.dataset.level]) { ui.level = b.dataset.level; lsSet('wb-level', ui.level); } squadScreen(); break;
+      case 'sqgo': ui.picks = [null, null]; ui.cursor = 2; selectScreen(0); break;
+      case 'crewfill': { const mine = ui.picks[ui.pickTeam] || (ui.picks[ui.pickTeam] = []); const left = WB.CHAR_IDS.filter((c) => !mine.includes(c)).sort(() => Math.random() - 0.5); while (mine.length < ui.sq.size - 1) mine.push(left.length ? left.pop() : WB.CHAR_IDS[Math.floor(Math.random() * 5)]); choose(left.length ? left.pop() : WB.CHAR_IDS[Math.floor(Math.random() * 5)]); break; }
+      case 'cam': camAct(b.dataset.cam); break;
       case 'mode': ui.mode = b.dataset.mode === 'solo' ? 'solo' : 'duel'; ui.picks = new Array(nSides()).fill(null); if (ui.mode === 'solo') levelScreen(); else { ui.cursor = 2; selectScreen(0); } break;
       case 'level': ui.level = LEVELS[b.dataset.level] ? b.dataset.level : 'medium'; lsSet('wb-level', ui.level); ui.cursor = 2; selectScreen(0); break;
       case 'start': case 'pickagain': ui.picks = new Array(nSides()).fill(null); ui.cursor = 2; selectScreen(0); break;
       case 'rematch': if (online()) { ui.net.send({ t: 'rematch' }); ui.net.rematchAsked = true; roundOverAgain(); } else startMatch(); break;
       case 'mapcode': { const inp = $('#mapCode'); if (!setMap(inp && inp.value)) { const a = $('#mapAbout'); if (a) a.textContent = "That code doesn't look right. Copy it again from the Map Lab."; } break; }
       case 'pick': choose(b.dataset.char); break;
-      case 'pickback': if (ui.mode === 'duel' && ui.pickTeam === 1) { ui.picks[0] = null; selectScreen(0); } else if (ui.mode === 'solo') levelScreen(); else titleScreen(); break;
+      case 'pickback': if (ui.mode === 'squads') { const mine = ui.picks[ui.pickTeam] || []; if (mine.length) { mine.pop(); selectScreen(ui.pickTeam); } else if (ui.pickTeam === 1) { ui.picks[0].pop(); selectScreen(0); } else squadScreen(); }
+        else if (ui.mode === 'duel' && ui.pickTeam === 1) { ui.picks[0] = null; selectScreen(0); } else if (ui.mode === 'solo') levelScreen(); else titleScreen(); break;
       case 'next': if (online()) { ui.net.send({ t: 'next' }); ui.net.nextAsked = true; roundOverAgain(); } else { ui.round += ui.G.winner >= 0 ? 1 : 0; startRound(); } break;
       case 'online': onlineScreen(); break;
       case 'ocreate': netStart('create', 'duel'); break;
@@ -988,7 +1117,7 @@
     if (ui.lob) { ctx.strokeStyle = 'rgba(34,195,181,.6)'; ctx.setLineDash([6, 6]); ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(ox, oy, WB.LOB_RANGE * CELL, 0, 7); ctx.stroke(); ctx.setLineDash([]); }
   }
   function drawWater(t) {
-    const wy = ui.G.water * CELL;
+    const wy = ui.G.water * CELL, W = worldW(), H = worldH(); // the whole world, not just the screen
     const L = theme().liquid, g = ctx.createLinearGradient(0, wy, 0, H); g.addColorStop(0, L.top); g.addColorStop(1, L.deep);
     ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(0, H);
     for (let x = 0; x <= W; x += 16) ctx.lineTo(x, wy + (reduced ? 0 : Math.sin(x / 40 + t * 2) * 3 + Math.sin(x / 17 - t * 3) * 1.5));
@@ -1001,25 +1130,29 @@
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     if (!G) { ctx.drawImage(bgCv, 0, 0); return; }
     if (ui.terrainDirty) renderTerrain();
-    const sh = ui.shake; if (sh > 0.3) { ctx.setTransform(1, 0, 0, 1, (Math.random() - 0.5) * sh, (Math.random() - 0.5) * sh); }
-    ctx.drawImage(bgCv, -20, -20, W + 40, H + 40);
+    camStep(dt);
+    const sh = ui.shake, shx = sh > 0.3 ? (Math.random() - 0.5) * sh : 0, shy = sh > 0.3 ? (Math.random() - 0.5) * sh : 0, cam = ui.cam;
+    ctx.setTransform(1, 0, 0, 1, shx, shy);
+    const par = cam.on ? (cam.cx / worldW() - 0.5) * -30 : 0; // the far background slides a little as you look around
+    ctx.drawImage(bgCv, -40 + par, -20, W + 80, H + 40);
     // clouds and dust drift with the wind: you can see it
     for (const c of ui.clouds) {
       c.x += G.wind * 2.2 * c.s * dt; if (c.x > W + 120) c.x = -120; if (c.x < -120) c.x = W + 120;
       ctx.fillStyle = 'rgba(255,230,210,.18)'; for (const [dx, dy, r] of [[0, 0, 26], [24, 6, 20], [-24, 8, 18], [8, -10, 18]]) { ctx.beginPath(); ctx.arc(c.x + dx * c.s, c.y + dy * c.s, r * c.s, 0, 7); ctx.fill(); }
     }
-    ctx.drawImage(terrCv, 0, 0);
     for (const d of ui.dust) {
       d.x += (G.wind * 22 + 6) * d.z * dt; d.y += Math.sin(t + d.x / 90) * 6 * dt;
       if (d.x > W) d.x = 0; if (d.x < 0) d.x = W;
       ctx.fillStyle = `rgba(255,236,200,${0.15 + d.z * 0.25})`; ctx.fillRect(d.x, d.y, 2 + d.z * 6 * Math.min(1, Math.abs(G.wind) / 3), 2);
     }
+    ctx.setTransform(cam.z, 0, 0, cam.z, -cam.x * cam.z + shx, -cam.y * cam.z + shy); // from here on: world pixels
+    ctx.drawImage(terrCv, 0, 0);
     for (const b of G.barrels) drawBarrel(b);
     for (const d of G.duds) drawDud(d, t, false);
     const cur = WB.current(G);
     for (const u of G.units) if (!u.alive) drawUnit(u, false, t);
     for (const u of G.units) if (u.alive) drawUnit(u, u === cur && G.phase === 'aim', t);
-    if (online() && cur && G.phase === 'aim' && G.team !== ui.you) { if (ui.remoteAim && performance.now() - ui.remoteAim.at < 4000) { const a = aimOf(cur); a.angle = ui.remoteAim.angle; a.power = ui.remoteAim.power; drawAim(cur, t); } }
+    if (online() && cur && G.phase === 'aim' && !myTurn()) { if (ui.remoteAim && performance.now() - ui.remoteAim.at < 4000) { const a = aimOf(cur); a.angle = ui.remoteAim.angle; a.power = ui.remoteAim.power; drawAim(cur, t); } }
     else if (cur && G.phase === 'aim' && ui.screen === 'game' && !ui.paused && (!isCPU(G.team) || (ui.cpu && ui.cpu.aimed))) drawAim(cur, t);
     for (const p of G.proj) drawProj(p, t);
     for (const id of Object.keys(ui.trails)) if (!G.proj.some((p) => String(p.id) === id)) delete ui.trails[id];
@@ -1047,6 +1180,8 @@
       const k = p.t / 1.2; ctx.globalAlpha = 1 - k * k; ctx.font = FONT(26 + (1 - k) * 8); ctx.textAlign = 'center'; ctx.lineWidth = 5; ctx.strokeStyle = '#1E1A2B';
       ctx.strokeText(p.text, p.x, p.y - k * 40); ctx.fillStyle = p.c; ctx.fillText(p.text, p.x, p.y - k * 40); ctx.globalAlpha = 1;
     }
+    ctx.setTransform(1, 0, 0, 1, 0, 0); // back to the screen
+    drawOverlay();
     if (ui.slow > 0 && !reduced) { ctx.fillStyle = `rgba(30,26,43,${Math.min(0.25, ui.slow * 0.3)})`; ctx.fillRect(0, 0, 8 + W, 40); ctx.fillRect(0, H - 40, W + 8, 40); }
   }
 
@@ -1066,7 +1201,7 @@
       } else if (G.phase === 'aim' && isCPU(G.team)) {
         if (!ui.cpu) cpuStart();
         cpuStep(dt);
-      } else if (G.phase === 'aim' && ui.timerOn && (!online() || G.team === ui.you)) {
+      } else if (G.phase === 'aim' && ui.timerOn && (!online() || myTurn())) {
         const before = Math.ceil(ui.tLeft); ui.tLeft -= dt;
         if (Math.ceil(ui.tLeft) !== before && ui.tLeft <= 5 && ui.tLeft > 0) SFX.tick();
         if (ui.tLeft <= 0) { ui.tLeft = 0; pass(); }
@@ -1087,7 +1222,7 @@
 
   // ---------- boot ----------
   window.WBUI = {
-    get G() { return ui.G; }, ui, startMatch, levelScreen, onlineScreen, netStart, play, selectScreen, choose, startRound, roundOver, doFire, walk, pass, botTurn, renderAll: () => { renderHUD(); renderCtl(); coachLine(); },
+    get G() { return ui.G; }, ui, startMatch, levelScreen, squadScreen, camAct, camZoom, camPan, toWorld, onlineScreen, netStart, play, selectScreen, choose, startRound, roundOver, doFire, walk, pass, botTurn, renderAll: () => { renderHUD(); renderCtl(); coachLine(); },
     aim: (angle, power) => { const u = WB.current(ui.G); const a = aimOf(u); a.angle = angle; a.power = power; },
   };
   fit(); addEventListener('resize', fit);

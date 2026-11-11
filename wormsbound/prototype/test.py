@@ -117,7 +117,7 @@ with sync_playwright() as p:
     for c in ['brick', 'zip', 'volt', 'digger', 'gale']:
         pg.evaluate(f"() => {{ WBUI.ui.picks = ['{c}', 'volt']; WBUI.startMatch(); WBUI.ui.fast = false; }}"); pg.wait_for_timeout(120)
         assert pg.locator('[data-w=ss]').count() == 0, 'SS slot shown before it is charged'
-        pg.evaluate('() => { WBUI.G.ss[WBUI.G.team] = WB.SS_CHARGE; WBUI.ui.weapon = "shot1"; WBUI.renderAll(); }')
+        pg.evaluate('() => { WB.current(WBUI.G).ss = WB.SS_CHARGE; WBUI.ui.weapon = "shot1"; WBUI.renderAll(); }')
         assert pg.locator('[data-w=ss]').count() == 1 and pg.locator('[data-w=shot1]').count() == 0, 'SS should replace Shot 1'
         pg.keyboard.press('1'); assert pg.evaluate('() => WBUI.ui.weapon') == 'ss'
         if c == 'brick': pg.screenshot(path=str(shots / 'd12_ss_ready.png'))
@@ -127,7 +127,7 @@ with sync_playwright() as p:
             pg.wait_for_function("() => WBUI.G.phase !== 'flight' || WBUI.ui.parts.some(p => p.kind === 'bolt' || p.kind === 'swirl' || p.kind === 'flash')", timeout=15000)
             pg.wait_for_timeout(120); pg.screenshot(path=str(shots / f'd13_ss_{c}.png'))
         pg.evaluate('() => { WBUI.ui.fast = true; }'); wait_aim(pg)
-        print(c, 'SS fired:', pg.evaluate('() => WBUI.G.stats.ss'), '· charge after:', pg.evaluate('() => WBUI.G.ss.join("/")'))
+        print(c, 'SS fired:', pg.evaluate('() => WBUI.G.stats.ss'), '· charge after:', pg.evaluate('() => WBUI.G.units.map(u => u.ss).join("/")'))
         assert pg.locator('[data-w=ss]').count() == 0 or pg.evaluate('() => WB.ssReady(WBUI.G)'), 'SS slot should go back to Shot 1 after use'
     pg.evaluate("() => { WBUI.ui.fast = false; }")
     pg.keyboard.press('Escape'); pg.click('[data-act=quit]')
