@@ -326,6 +326,48 @@ for (const m of WB.MAP_IDS) {
   ok(!bad.length, `a match with every character carrying each gear it can finishes and replays exactly (60 loadouts) ${bad.slice(0, 3)}`);
 }
 
+// 8d. v2 mid-match: supply crates and crew combos.
+{
+  const flat = (o) => { const G = WB.newGame(11, Object.assign({ map: { preset: 'hills', hazards: 0, caves: 0, props: 0 } }, o)); for (let x = 0; x < G.cols; x++) for (let y = 0; y < G.rows; y++) G.T[y * G.cols + x] = y >= 60 ? 1 : 0; G.units.forEach((u, i) => { u.y = 60; u.air = false; u.x = 30.5 + i * (100 / Math.max(1, G.units.length - 1)); }); return G; };
+  const pass = (G) => { WB.act(G, { k: 'pass' }); WB.resolve(G); };
+  { // a crate lands once everyone has had a turn, between the sides, clear of everyone
+    const G = flat({}); ok(G.crates.length === 0 && WB.crateFirst(G) === 2, 'no crate at the start; the first is due on turn 2 of a 1v1');
+    pass(G); pass(G);
+    const c = G.crates[0];
+    ok(G.crates.length === 1 && WB.CRATE_KINDS.includes(c.kind) && c.x > 30 && c.x < 131 && G.units.every((u) => Math.abs(u.x - c.x) >= 3) && WB.solidAt(G, c.x, c.y + 0.5), `a ${c && c.kind} crate lands at x ${c && c.x}, between the two units`);
+    ok(G.units.some((u) => Math.abs(u.x - c.x) <= 16), 'within a turn\'s walk of one of them');
+    // walk onto it
+    const u = G.units.reduce((a, b) => (Math.abs(a.x - c.x) < Math.abs(b.x - c.x) ? a : b)); while (WB.current(G) !== u) pass(G);
+    const before = { gear: u.gear, ss: u.ss, hp: (u.hp = Math.round(u.maxHp / 2)) }, dir = c.x > u.x ? 1 : -1, kind = c.kind;
+    G.moves = 30; let guard = 0; while (G.crates.some((q) => q.id === c.id) && guard++ < 30) WB.act(G, { k: 'move', dir });
+    ok(!G.crates.some((q) => q.id === c.id) && G.stats.crates[u.team] === 1, 'walking onto a crate opens it');
+    ok(kind === 'gear' ? u.gear !== before.gear && WB.gearFor(u.char).includes(u.gear) && u.ammo.gear === WB.GEAR[u.gear].ammo : kind === 'ss' ? u.ss === Math.min(WB.SS_CHARGE, before.ss + WB.CRATE.ss) : u.hp > before.hp, `and gives what it showed (${kind})`);
+  }
+  { // a blast right on a crate destroys it; a nearby one doesn't
+    const G = flat({}); pass(G); pass(G); const c = G.crates[0];
+    G.phase = 'flight'; G.proj.push({ id: 960, w: 'shot1', team: 0, char: 'volt', from: -1, age: 9, x: c.x + 7, y: 58, vx: 0, vy: 3, wm: 1 }); WB.resolve(G);
+    ok(G.crates.some((q) => q.id === c.id), 'a blast 7 cells away leaves the crate');
+    G.phase = 'flight'; G.proj.push({ id: 961, w: 'shot1', team: 0, char: 'volt', from: -1, age: 9, x: c.x, y: c.y - 3, vx: 0, vy: 3, wm: 1 }); WB.resolve(G);
+    ok(!G.crates.some((q) => q.id === c.id) && G.stats.cratesLost === 1, 'a blast on the crate destroys it: nobody gets it');
+  }
+  { const G = flat({ crates: false }); for (let i = 0; i < 8; i++) pass(G); ok(G.crates.length === 0, 'opts.crates: false turns them off'); }
+  { // crates lean towards the side that is behind
+    let near = 0, n = 0;
+    for (let s = 1; s <= 40; s++) { const G = WB.newGame(s * 977, { map: 'hills' }); G.units[0].hp = Math.round(G.units[0].maxHp * 0.3); pass(G); pass(G); const c = G.crates[0]; if (!c) continue; n++; if (Math.abs(c.x - G.units[0].x) < Math.abs(c.x - G.units[1].x)) near++; }
+    ok(n > 25 && near / n > 0.8, `a crate lands nearer the unit that's behind on health (${near} of ${n})`);
+  }
+  { // combo: a second crewmate's hit on the same enemy, before that enemy's next turn, charges the shooter's SS
+    const G = flat({ size: 2, crates: false }), foe = G.units.find((u) => u.team === 1), a = G.units.find((u) => u.team === 0), b = G.units.find((u) => u.team === 0 && u !== a);
+    const hit = (by) => { G.actor = by.id; G.team = by.team; G.shooter = by.id; G.combo = false; G.phase = 'flight'; G.proj.push({ id: ++G._id, w: 'shot1', team: by.team, char: by.char, from: -1, age: 9, x: foe.x + 3, y: 57, vx: 0, vy: 3, wm: 1 }); const ss = by.ss; let t = 0; while (G.proj.length && t++ < 4000) WB.step(G); return by.ss - ss; };
+    foe.hp = foe.maxHp = 9999;
+    const first = hit(a), again = hit(a), second = hit(b);
+    ok(first === 0 && again === 0 && second === 1 && G.stats.combos === 1, `a crewmate following up on the same enemy gets a notch of SS (first hit ${first}, same unit again ${again}, crewmate ${second})`);
+  }
+  let bad = 0, opened = 0;
+  for (let s = 1; s <= 30; s++) { const o = { chars: [WB.CHAR_IDS[s % 10], WB.CHAR_IDS[(s * 3) % 10]] }, { G: F, log } = WB.playOut(WB.newGame(s * 5557, o), ['smart', 'smart']); opened += F.stats.crates[0] + F.stats.crates[1]; if (F.phase !== 'over' || WB.hash(WB.replay(s * 5557, log, o)) !== WB.hash(F)) bad++; }
+  ok(bad === 0 && opened > 5, `30 matches with crates finish and replay exactly (${opened} crates opened)`);
+}
+
 // 9. The map generator (mapgen.js) on its own: settings, codes, every preset, random settings, sizes.
 {
   const MG = WB.MapGen, same = (a, b) => a.T.join('') === b.T.join('') && JSON.stringify(a.features) === JSON.stringify(b.features);

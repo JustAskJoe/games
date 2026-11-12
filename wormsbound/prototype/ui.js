@@ -43,7 +43,7 @@
   const ui = {
     screen: 'title', G: null, matchSeed: 0, round: 1, wins: [0, 0], aim: {}, weapon: 'shot1', lob: false, picks: [null, null], pickTeam: 0, cursor: 2,
     mode: 'duel', level: 'medium', cpu: null, mapPick: startMap(), net: null, you: 0, remoteAim: null,
-    gear: [], pendingChar: null,
+    gear: [], pendingChar: null, crateAt: {},
     sq: { size: clamp(+lsGet('wb-crew') || 3, 2, 5), vs: lsGet('wb-crewvs') === 'p2' ? 'p2' : 'cpu' },
     cam: { on: false, x: 0, y: 0, z: 1, cx: 0, cy: 0, tx: 0, ty: 0, zoom: 1, manual: false, over: false },
     drag: null, acc: 0, last: 0, slow: 0, shake: 0, parts: [], trails: {}, scorch: [], clouds: [], dust: [], pops: [],
@@ -138,6 +138,7 @@
     ctx.fillStyle = theme().liquid.top; ctx.fillRect(MINI.x, MINI.y + G.water * CELL * k, MINI.w, mh - G.water * CELL * k);
     const cur = WB.current(G);
     for (const u of G.units) if (u.alive) { ctx.fillStyle = TEAMS[u.team].c; ctx.beginPath(); ctx.arc(MINI.x + u.x * CELL * k, MINI.y + (u.y - 1.5) * CELL * k, u === cur ? 4.5 : 3, 0, 7); ctx.fill(); if (u === cur) { ctx.strokeStyle = '#FFD34D'; ctx.lineWidth = 2; ctx.stroke(); } }
+    for (const c of G.crates || []) { ctx.fillStyle = '#FFD34D'; ctx.fillRect(MINI.x + c.x * CELL * k - 2.5, MINI.y + (c.y - 1) * CELL * k - 2.5, 5, 5); }
     for (const p of G.proj) { ctx.fillStyle = '#FFF3E0'; ctx.fillRect(MINI.x + p.x * CELL * k - 1.5, MINI.y + p.y * CELL * k - 1.5, 3, 3); }
     ctx.strokeStyle = '#FFF3E0'; ctx.lineWidth = 1.5; ctx.strokeRect(MINI.x + c.x * k, MINI.y + c.y * k, W / c.z * k, H / c.z * k);
     for (const u of G.units) { // an arrow on the edge of the screen for every living unit you can't see
@@ -305,6 +306,10 @@
         ui.pops.push({ x: e.x * CELL, y: e.y * CELL - 60, t: 0, text: 'TORNADO!', c: '#7BE07A' });
       }
       else if (e.k === 'dud') { SFX.thunk(); ui.pops.push({ x: e.x * CELL, y: e.y * CELL - 22, t: 0, text: 'LIVE DUD!', c: '#FFD34D' }); }
+      else if (e.k === 'crate') { ui.crateAt[e.id] = performance.now() / 1000; banner('Supply drop', (CRATE_LOOK[e.kind] || CRATE_LOOK.gear)[1] + ' · walk onto it, or blow it up', '#FFD34D'); tone(520, 780, 0.2, 0.1, 'triangle'); }
+      else if (e.k === 'open') { const X = e.kind === 'gear' ? WB.GEAR[e.got] : null; ui.pops.push({ x: e.x * CELL, y: e.y * CELL - 30, t: 0, text: X ? X.name + '!' : e.kind === 'ss' ? '+2 SS' : '+HEALTH', c: (CRATE_LOOK[e.kind] || CRATE_LOOK.gear)[0] }); burst(e.x * CELL, e.y * CELL - 8, 12, 'spark'); tone(660, 1320, 0.18, 0.12, 'triangle'); renderCtl(); }
+      else if (e.k === 'cratepop') { burst(e.x * CELL, e.y * CELL - 8, 10, 'chunk'); ui.pops.push({ x: e.x * CELL, y: e.y * CELL - 30, t: 0, text: 'CRATE LOST', c: '#9C8AA8' }); }
+      else if (e.k === 'combo') { ui.pops.push({ x: e.x * CELL, y: e.y * CELL - 64, t: 0, text: 'COMBO! +SS', c: '#FFD34D' }); tone(880, 1320, 0.16, 0.1, 'square'); }
       else if (e.k === 'ko') {
         const u = ui.G.units.find((x) => x.id === e.id);
         ui.pops.push({ x: e.x * CELL, y: e.y * CELL - 40, t: 0, text: e.why === 'water' ? (theme().liquid.name === 'lava' ? 'MELTED!' : 'SPLASH OUT!') : 'K.O.!', c: '#FF4D5E' });
@@ -523,6 +528,7 @@
     if (danger && WB.lobbable(G).includes(danger)) t = '<b>That dud blows at the end of this turn!</b> Tap LOB (L), then drag to throw it away.';
     else if (danger) t = '<b>That dud blows at the end of this turn!</b> Walk away with ◀ ▶, or lob it if you can reach it.';
     else if (ui.lob) t = 'Lob armed: drag back from your unit and let go to throw the dud. It keeps its countdown.';
+    else if ((G.crates || []).some((c) => Math.abs(c.x - u.x) <= G.moves + 2 && Math.abs(c.y - u.y) < 10)) t = 'A <b>supply crate</b> is in reach: walk onto it with ◀ ▶ before you fire. The mark shows what is inside.';
     else if (WB.lobbable(G).length) t = 'A <b>live dud</b> is in reach. Tap <b>LOB</b> (L) to throw it at them instead of firing.';
     else if (ui.turnsSeen <= 2) t = '<b>Drag back</b> from your glowing unit and <b>let go</b> to fire. Further back = more power. Watch the wind.';
     else if (ui.turnsSeen === 3) t = '<b>Turn delay:</b> every shot has a cost (⏱ on the buttons). Light shots bring your next turn sooner. The NEXT strip up top shows who plays next.';
@@ -543,7 +549,8 @@
     <div><b>2 · Wind</b>The arrow up top pushes every shot. It changes each turn.</div>
     <div><b>3 · Ground</b>Blasts carve the map. Knock them into the water or off a cliff.</div>
     <div><b>4 · Live duds</b>A dud ticks for 3 turns. Walk up to one and LOB it back.</div>
-    <div style="grid-column:1/-1"><b>5 · SS (Special Shot)</b>Your character's ultimate. It charges one notch a turn (the SS meter up top) and takes over Shot 1 when it's full. Using it starts the charge again.</div></div>
+    <div style="grid-column:1/-1"><b>5 · Supply crates</b>They land mid-match near whoever is behind: new gear, SS charge or health. Walk onto one to open it, or blast it so nobody gets it.</div>
+    <div style="grid-column:1/-1"><b>6 · SS (Special Shot)</b>Your character's ultimate. It charges one notch a turn (the SS meter up top) and takes over Shot 1 when it's full. Using it starts the charge again.</div></div>
     <p class="keys">Keys: ◀ ▶ / A D walk · ▲ ▼ / W S angle (Shift = fine) · Q E power · F flip · 1 2 3 shots · 4 gear · L lob · Space fire · X skip · Esc menu</p>`;
   function titleScreen() {
     ui.screen = 'title'; renderCtl(); coachLine();
@@ -1176,6 +1183,22 @@
     }
   }
   // a map hazard (oil drum, gas canister, spore pod...): a drum in the theme's hazard colour with a warning band
+  // Supply crates: a wooden box with a band and a mark that says what's inside (gold wrench: gear · blue star: SS · green cross: health).
+  // A new one floats down under a little parachute for a moment (the engine has already put it on the ground).
+  const CRATE_LOOK = { gear: ['#FFD34D', 'GEAR'], ss: ['#8FD8FF', 'SS'], heal: ['#7BE07A', 'HEALTH'] };
+  function drawCrate(c, t) {
+    const born = ui.crateAt[c.id], age = born == null ? 9 : performance.now() / 1000 - born, drop = reduced ? 0 : Math.max(0, 1 - age / 0.9);
+    const x = Math.round(c.x * CELL), y = Math.round(c.y * CELL - drop * 150), L = CRATE_LOOK[c.kind] || CRATE_LOOK.gear;
+    if (drop > 0) { ctx.strokeStyle = 'rgba(255,243,224,.8)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(x - 9, y - 18); ctx.lineTo(x - 16, y - 40); ctx.moveTo(x + 9, y - 18); ctx.lineTo(x + 16, y - 40); ctx.stroke();
+      ctx.fillStyle = L[0]; ctx.strokeStyle = '#1E1A2B'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(x, y - 40, 18, Math.PI, 0); ctx.closePath(); ctx.fill(); ctx.stroke(); }
+    else { const g = ctx.createRadialGradient(x, y - 9, 2, x, y - 9, 30); g.addColorStop(0, L[0] + '66'); g.addColorStop(1, L[0] + '00'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y - 9, 30 + (reduced ? 0 : Math.sin(t * 4) * 3), 0, 7); ctx.fill(); }
+    ctx.fillStyle = '#8A5A3C'; ctx.strokeStyle = '#1E1A2B'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.rect(x - 10, y - 18, 20, 18); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#B8845C'; ctx.fillRect(x - 8, y - 16, 16, 3); ctx.fillStyle = '#54341F'; ctx.fillRect(x - 8, y - 4, 16, 2);
+    ctx.fillStyle = L[0]; ctx.fillRect(x - 10, y - 12, 20, 6); ctx.fillStyle = '#1E1A2B';
+    if (c.kind === 'heal') { ctx.fillRect(x - 1, y - 12, 2, 6); ctx.fillRect(x - 3, y - 10, 6, 2); }
+    else if (c.kind === 'ss') { ctx.fillRect(x - 1, y - 12, 2, 6); ctx.fillRect(x - 3, y - 10, 6, 2); ctx.fillRect(x - 2, y - 11, 4, 4); }
+    else { ctx.fillRect(x - 4, y - 10, 8, 2); ctx.fillRect(x - 5, y - 11, 2, 4); ctx.fillRect(x + 3, y - 11, 2, 4); }
+  }
   function drawBarrel(b) {
     const x = b.x * CELL, y = b.y * CELL;
     ctx.fillStyle = theme().hazard; ctx.strokeStyle = '#1E1A2B'; ctx.lineWidth = 2.5;
@@ -1256,6 +1279,7 @@
     ctx.setTransform(cam.z, 0, 0, cam.z, -cam.x * cam.z + shx, -cam.y * cam.z + shy); // from here on: world pixels
     ctx.drawImage(terrCv, 0, 0);
     for (const b of G.barrels) drawBarrel(b);
+    for (const c of G.crates || []) drawCrate(c, t);
     for (const d of G.duds) drawDud(d, t, false);
     const cur = WB.current(G);
     for (const u of G.units) if (!u.alive) drawUnit(u, false, t);

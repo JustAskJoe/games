@@ -19,6 +19,8 @@ Bigger fights on maps made for them. A proposal for Louiemark: it sits on top of
 - **Online team battle** (ONLINE → MAKE A TEAM BATTLE): up to 5 v 5 with **one player per unit**. Computers play the empty slots, so one person can start a 5v5, and a computer covers for anyone who drops out until they're back.
 - Online free-for-alls with 5 or 6 players get a Large map and the camera.
 - Computers walk towards the fight on big maps instead of standing out of range, and never into the water.
+- **Supply crates.** Once everyone has had a turn, crates start landing between the two sides, nearer whoever is behind. The mark shows what's inside: **new gear**, **SS charge** or **health**. Walk onto one to open it, or blast it so nobody gets it.
+- **Combos** in crew modes: hit an enemy a crewmate just hit and your SS gains a notch. Focus a target together.
 - **Five new characters, ten in all,** in five classes of two: **Tusk** (Tank: every shot shoves), **Hopper** (Scout: climbs anything, shots that skip), **Flint** (Gunner: fans of flares), **Patch** (Engineer: wide digs and a sinkhole) and **Nimbus** (Controller: her Vacuum pulls people towards the blast).
 - **Gear:** every unit carries one extra weapon in a 4th slot (key 4), picked after its character. Four anyone can carry, two more for each class; 14 so far, all from the 100-weapon list (Popcorn Bomb, Crater Maker, Dirt Cannon, Gravity Well, Delay Ray...). Press Enter to take the usual one.
 - **Pixel art for every character,** drawn in code the way Rogue Shooter's is: the round placeholder units are now sprites, in every team colour.
@@ -42,7 +44,10 @@ Bigger fights on maps made for them. A proposal for Louiemark: it sits on top of
 - [ ] **Vacuum and Gravity Well pull units off ledges and into the liquid.** That's the point, but it may feel unfair in play; not tested with people.
 - [ ] The sprites are a first pass: three frames a character, no walk or aim frames, and the old code-drawn launcher is still on top. Terrain and backgrounds are unchanged.
 - [ ] The crew-size sim numbers above were measured before the new characters; the final run's are in the pull request.
-- [ ] **A 5v5 is long:** a median of 63 turns in the bot sim (six turns a unit), and over half reach sudden death. Crews of 5 have 10% less health and earlier sudden death to get there; a first pass was 78.
+- [ ] **A 5v5 is still long:** a median of about 50 turns in the bot sim (63 before combos; 78 in the first pass). 2v2 and 3v3 run 23 to 30 turns and are the better first test with people.
+- [ ] **Crates are tuned for bots that barely want them.** A crate-taking bot wins 53% of 1v1s against one that ignores them, and it's about even in crews. People will fight over them more; the numbers (how often, how close to the side that's behind, how sturdy) are first guesses.
+- [ ] **Crates lean towards the side that's behind.** That's on purpose, as a comeback, but it might feel like punishing the leader. Ask players.
+- [ ] A gear crate replaces the gear you chose, even if you'd rather keep yours. There's no "leave it" except not walking onto it.
 - [ ] **Touch:** two-finger pan and pinch are written but untested on a real phone. On a phone the whole stage is small, so a Giant map is hard to read.
 - [ ] **Per-unit SS changes crews:** a unit charges only on its own turns, so the first SS in a 5v5 arrives around turn 30.
 - [ ] **Old 1v1 numbers moved a little:** 1v1 rounds now roll from the `duel` recipe instead of a theme's defaults. The balance bands still pass, but seeds and replays from before don't match.

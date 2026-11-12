@@ -94,6 +94,11 @@ button { font: inherit; color: inherit; }
 .card.title .row.maps .mapcode { width: 170px; }
 .card.title .row .btn { padding-left: 14px; padding-right: 14px; }
 .card.scroll { max-height: 690px; overflow-y: auto; }
+/* the title has six how-to boxes and four modes: three columns, smaller boxes, mode buttons stacked label over hint */
+.card.title h1 { font-size: 68px; } .card.title > p { margin: 6px 0; }
+.card.title .how { grid-template-columns: repeat(3, 1fr); gap: 8px 10px; margin: 10px 0 2px; } .card.title .how div { grid-column: auto !important; padding: 7px 10px; font-size: 13px; } .card.title .how b { font-size: 17px; }
+.card.title .keys { font-size: 13px; margin: 8px 0 0; }
+.card.title > .row:not(.maps) { flex-wrap: nowrap; gap: 10px; margin-top: 12px; } .card.title > .row:not(.maps) .btn { flex-direction: column; flex: 1; font-size: 23px; line-height: 1.05; }
 /* character select with ten characters: small cards, one detail panel */
 .chars.ten { grid-template-columns: repeat(10, 1fr); gap: 8px; }
 .char.mini { padding: 6px; gap: 1px; text-align: center; align-items: center; } .char.mini img { height: 62px; } .char.mini .cn { font-size: 18px; } .char.mini .role { font-size: 9px; letter-spacing: 1px; margin: 0; }

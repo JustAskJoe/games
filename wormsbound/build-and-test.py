@@ -90,6 +90,9 @@ maps = {m[1]: (int(m[2]), int(m[3])) for m in re.finditer(r'^map (\w+)\s+turns.*
 if len(maps) < 20: fails.append(f'sim output has {len(maps)} map lines, expected 20 (every preset + custom)')
 for m, (to, st) in maps.items():  # every match on every map has to finish (the same rule as the mirror line)
     if to or st: fails.append(f'maps: {m} had {to} timeouts and {st} stuck matches')
+cv = re.search(r'^crate value\s+taker wins (\d+)%', out, re.M)
+if not cv: fails.append('sim output missing the "crate value" line')
+elif not quick and not 44 <= int(cv[1]) <= 66: fails.append(f'crates: the bot that takes them wins {cv[1]}% against one that ignores them (band 44-66%)')
 crews = {m[1]: (int(m[2]), int(m[3])) for m in re.finditer(r'^crew (\w+)\s+map.*?timeouts (\d+)\s+stuck (\d+)', out, re.M)}
 if len(crews) != 6: fails.append(f'sim output has {len(crews)} crew lines, expected 6 (2v2, 3v3, 5v5, teams5, ffa6, 4x3)')
 for c, (to, st) in crews.items():  # v2: every crew format has to finish on its own map size

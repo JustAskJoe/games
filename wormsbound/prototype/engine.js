@@ -59,6 +59,11 @@
   // Health scale by format: characters' hp numbers are for a crew of two; one unit a side needs more to last.
   const HP_MUL = { duel: 2.6, ffa: 1.8, crew: 1 };
   const CREW_HP = [0, 0, 1.5, 1.25, 1.05, 0.9]; // by units a side (2 to 5): small crews need a bit more health each
+  // Supply crates (v2): the middle of a match. One lands between the sides once everyone has had a turn, then every
+  // few turns. Walk onto it to open it; a blast destroys it, so you can deny one instead. What's inside shows on the crate.
+  const CRATE = { max: 3, reach: 2.2, heal: 0.25, ss: 2, r: 1.5 };
+  const CRATE_KINDS = ['gear', 'gear', 'ss', 'heal']; // gear: a new item for your class, full ammo · ss: +2 notches · heal: +25% health
+  const crateFirst = (G) => G.units.length, crateEvery = (G) => Math.max(3, Math.round(G.units.length * 0.75));
   const START_GAP = 10;         // starting delays alternate teams 0, 10, 20, 30 so the first round goes A B A B
 
   // The Live dud: every character has 2. Lands without exploding, ticks down 3 turns, anyone near can lob it.
@@ -200,9 +205,9 @@
       v: 3, seed: seed >>> 0, _s: (seed >>> 0) || 1, _id: 0, cols: COLS, rows: ROWS, map: 'hills', mapName: '', theme: 'hills', windMul: 1, mirror: false,
       phase: 'aim', turn: 0, team: 0, teams, size, actor: 0, spent: 0, chars,
       wind: 0, water: WATER0, moves: 0, weapon: 'shot1',
-      T: null, units: [], proj: [], duds: [], barrels: [], fx: [],
+      T: null, units: [], proj: [], duds: [], barrels: [], crates: [], fx: [], crateOn: opts.crates !== false, shooter: 0, combo: false,
       fused: false, winner: null,
-      stats: { shots: 0, shot2: 0, ss: 0, lobs: 0, dudBlasts: 0, chains: 0, strikes: 0, drowned: 0, fallKOs: 0, selfDmg: new Array(teams).fill(0), dmg: new Array(teams).fill(0) },
+      stats: { crates: new Array(teams).fill(0), cratesLost: 0, combos: 0, shots: 0, shot2: 0, ss: 0, lobs: 0, dudBlasts: 0, chains: 0, strikes: 0, drowned: 0, fallKOs: 0, selfDmg: new Array(teams).fill(0), dmg: new Array(teams).fill(0) },
     };
     const recipe = MapGen.RECIPES[opts.recipe] ? opts.recipe : recipeFor(teams, size), Rc = MapGen.RECIPES[recipe];
     const Z = MapGen.SIZES[opts.mapSize] || MapGen.SIZES[MapGen.sizeFor(spots)];
@@ -374,10 +379,12 @@
     for (const d of G.duds) if (!d.gone && Math.hypot(d.x - x, d.y - y) <= r + 1.5) d.chain = true;
     for (const p of G.proj) if (p.w === 'dud' && !p.gone && Math.hypot(p.x - x, p.y - y) <= r + 1.5) p.chain = true;
     for (const b of G.barrels) if (!b.gone && Math.hypot(b.x - x, b.y - 1 - y) <= r + 1.5) b.chain = true;
+    for (const c of G.crates) if (!c.gone && Math.hypot(c.x - x, c.y - 1 - y) <= r * 0.6 + 0.8) { /* a crate is sturdy: only a blast close to it breaks it */ c.gone = true; G.stats.cratesLost++; G.fx.push({ k: 'cratepop', x: c.x, y: c.y }); }
     // anything standing on carved ground may now fall
     for (const u of G.units) if (u.alive && !supported(G, u)) u.air = true;
     for (const d of G.duds) if (!d.gone && !solidAt(G, d.x, d.y + 0.6)) d.air = true;
     for (const b of G.barrels) if (!b.gone && !solidAt(G, b.x, b.y + 0.6)) b.air = true;
+    for (const c of G.crates) if (!c.gone && !solidAt(G, c.x, c.y + 0.6)) c.air = true;
   }
   // Dirt Cannon: add ground in a circle (never over a unit, a dud, a barrel, hard rock or the sky band at the top)
   function fillGround(G, cx, cy, r) {
@@ -390,6 +397,12 @@
     if (hit <= 0 || !u.alive) return;
     u.hp -= hit;
     if (byTeam != null) { if (byTeam === u.team) G.stats.selfDmg[byTeam] += hit; else G.stats.dmg[byTeam] += hit; }
+    // Combo (crews): hit an enemy a crewmate has hit since that enemy last had a turn, and the shooter gets a notch of SS. Once a turn.
+    if (byTeam != null && byTeam !== u.team && G.shooter && G.size > 1) {
+      const sh = G.units.find((v) => v.id === G.shooter);
+      if (sh && sh.alive && u.mark && u.mark.team === byTeam && u.mark.by !== sh.id && !G.combo) { G.combo = true; sh.ss = Math.min(SS_CHARGE, sh.ss + 1); G.stats.combos++; G.fx.push({ k: 'combo', x: u.x, y: u.y, by: sh.id }); }
+      if (sh) u.mark = { team: byTeam, by: sh.id };
+    }
     if (u.hp <= 0) ko(G, u, 'blast');
   }
   // Thunderstrike: lightning straight down at x hits every unit within w cells sideways, whatever is above them.
@@ -446,8 +459,15 @@
       if (solidAt(G, b.x, b.y + 0.6)) { while (solidAt(G, b.x, b.y + 0.5) && b.y > 0) b.y -= 0.25; b.vy = 0; b.air = false; }
     }
     G.barrels = G.barrels.filter((b) => !b.gone);
+    for (const c of G.crates) { // crates fall when the ground under them goes, and sink
+      if (c.gone || !c.air) continue;
+      c.vy += GRAV * TICK; c.y += c.vy * TICK;
+      if (c.y >= G.water) { c.gone = true; G.stats.cratesLost++; G.fx.push({ k: 'splash', x: c.x, y: G.water }); continue; }
+      if (solidAt(G, c.x, c.y + 0.6)) { while (solidAt(G, c.x, c.y + 0.5) && c.y > 0) c.y -= 0.25; c.vy = 0; c.air = false; for (const u of G.units) if (u.alive) openCrates(G, u); }
+    }
+    G.crates = G.crates.filter((c) => !c.gone);
     for (const u of G.units) if (u.alive && u.air) unitPhysics(G, u);
-    if (!G.proj.length && !G.units.some((u) => u.alive && u.air) && !G.duds.some((d) => d.air || d.chain || d.fuseOut) && !G.barrels.some((b) => b.air || b.chain)) settle(G);
+    if (!G.proj.length && !G.units.some((u) => u.alive && u.air) && !G.duds.some((d) => d.air || d.chain || d.fuseOut) && !G.barrels.some((b) => b.air || b.chain) && !G.crates.some((c) => c.air)) settle(G);
     return G.fx;
   }
   function land(G, p) {
@@ -495,6 +515,7 @@
         while (solidAt(G, u.x, u.y - 0.01) && u.y > 0) u.y -= 0.25;
         const v = u.vy; u.vy = 0; u.vx = 0; u.air = false;
         if (v > SAFE_FALL) { u.hp -= Math.round((v - SAFE_FALL) * FALL_DMG); if (u.hp <= 0) ko(G, u, 'fall'); }
+        if (u.alive) openCrates(G, u); // knocked onto a crate: it's yours
         break;
       } else u.y = ny;
     }
@@ -529,7 +550,7 @@
       for (const u of G.units) if (u.alive && u.y >= G.water) ko(G, u, 'water');
       for (const d of G.duds) if (d.y >= G.water) d.gone = true;
       G.duds = G.duds.filter((d) => !d.gone);
-      G.barrels = G.barrels.filter((b) => b.y < G.water);
+      G.barrels = G.barrels.filter((b) => b.y < G.water); G.crates = G.crates.filter((c) => c.y < G.water);
       checkWin(G); if (G.phase === 'over') return;
     }
     if (G.turn >= maxTurns(G)) { // a stalemate nobody can break: the side with more health left (as a share) wins
@@ -537,10 +558,42 @@
       G.phase = 'over'; G.winner = hp.filter((h) => h === top).length > 1 ? -1 : hp.indexOf(top); G.timeout = true; return;
     }
     const nx = nextActor(G, was ? was.team : -1); G.actor = nx.id; G.team = nx.team;
+    nx.mark = null; G.shooter = 0; G.combo = false;
+    if (G.crateOn && G.turn >= crateFirst(G) && (G.turn - crateFirst(G)) % crateEvery(G) === 0 && G.crates.length < CRATE.max + (G.cols > COLS ? 1 : 0)) dropCrate(G);
     G.phase = 'aim'; G.moves = CHARS[nx.char].steps; G.fused = false; G.weapon = 'shot1';
     chargeSS(G);
     G.wind = rollWind(G);
     G.fx.push({ k: 'turn', team: G.team, turn: G.turn });
+  }
+
+  // ---------- supply crates ----------
+  // A crate lands where the fight is: between the two closest enemies, but nearer the one whose side is behind on health
+  // (8 to 14 cells from them: one turn's walk for most characters). So crates lean towards a comeback, and the side
+  // that's ahead has to choose between its own shot and blowing the crate up.
+  function dropCrate(G) {
+    const live = G.units.filter((u) => u.alive); if (live.length < 2) return;
+    let best = null;
+    for (const a of live) for (const b of live) if (a.team < b.team) { const d = Math.abs(a.x - b.x); if (!best || d < best.d) best = { d, a, b }; }
+    const share = (t) => teamUnits(G, t).reduce((n, u) => n + u.hp / u.maxHp, 0) / G.size, kind = CRATE_KINDS[Math.floor(R(G) * CRATE_KINDS.length)], coin = R(G), off = 8 + R(G) * 6;
+    if (!best) return;
+    const sa = share(best.a.team), sb = share(best.b.team), near = sa < sb || (sa === sb && coin < 0.5) ? best.a : best.b, far = near === best.a ? best.b : best.a;
+    let x = Math.round(near.x + Math.sign(far.x - near.x || 1) * Math.min(off, best.d * 0.45));
+    x = dryLand(G, clamp(x, 6, G.cols - 7), live.map((u) => Math.floor(u.x)), 4);
+    if (surfaceY(G, x) >= G.water - 2 || live.some((u) => Math.abs(u.x - x - 0.5) < 3)) return; // nowhere good this time
+    const c = { id: ++G._id, x: x + 0.5, y: surfaceY(G, x), kind, air: false, vy: 0 };
+    G.crates.push(c); G.fx.push({ k: 'crate', id: c.id, x: c.x, y: c.y, kind });
+  }
+  // A unit standing on (or next to) a crate opens it.
+  function openCrates(G, u) {
+    for (const c of G.crates) {
+      if (c.gone || c.air || Math.abs(c.x - u.x) > CRATE.reach || Math.abs(c.y - u.y) > 3.5) continue;
+      c.gone = true; G.stats.crates[u.team]++; let got = c.kind;
+      if (c.kind === 'gear') { const pool = gearFor(u.char).filter((g) => g !== u.gear); u.gear = pool[Math.floor(R(G) * pool.length)]; u.ammo.gear = GEAR[u.gear].ammo; got = u.gear; }
+      else if (c.kind === 'ss') u.ss = Math.min(SS_CHARGE, u.ss + CRATE.ss);
+      else u.hp = Math.min(u.maxHp, u.hp + Math.round(u.maxHp * CRATE.heal));
+      G.fx.push({ k: 'open', id: c.id, unit: u.id, x: c.x, y: c.y, kind: c.kind, got });
+    }
+    G.crates = G.crates.filter((c) => !c.gone);
   }
 
   // ---------- moving in the aim phase ----------
@@ -573,6 +626,7 @@
         if (!walk(G, u, it.dir)) return false;
         G.moves--; G.spent += DELAY.move;
         if (!u.alive) G.phase = 'flight'; // walked into the water: end the turn
+        else openCrates(G, u);
         return true;
       }
       case 'weapon': {
@@ -585,7 +639,7 @@
         const w = G.weapon, am = u.ammo;
         if (w === 'ss') { if (!ssReady(G)) return false; u.ss = 0; G.stats.ss++; }
         else { if (am[w] === 0) return false; if (am[w] > 0) am[w]--; }
-        const sp = shotSpec(G, u, w);
+        const sp = shotSpec(G, u, w); G.shooter = u.id;
         G.spent += sp.delay; if (w === 'gear') G.stats.gear = (G.stats.gear || 0) + 1; if (w === 'shot2') G.stats.shot2++;
         if (sp.rain) { // Bullet Rain: a fan of darts, one after another
           const n = sp.rain.n;
@@ -606,7 +660,7 @@
         if (!d || !canLob(G, u, d)) return false;
         G.duds = G.duds.filter((x) => x !== d);
         const p = Object.assign(launch(u, it.angle, Math.min(it.power, 1) * LOB_POWER), { id: ++G._id, w: 'dud', dudId: d.id, fuse: d.fuse, team: G.team, from: u.id, age: 0, wm: 1 });
-        G.proj.push(p); G.stats.lobs++; G.spent += DELAY.lob;
+        G.proj.push(p); G.stats.lobs++; G.spent += DELAY.lob; G.shooter = u.id;
         G.phase = 'flight'; return true;
       }
       case 'pass': G.spent += DELAY.pass; G.phase = 'flight'; return true;
@@ -646,14 +700,15 @@
   // style: smart (good aim, uses everything) · sloppy (few tries, shaky hands) · nodud (smart, never fires or lobs duds)
   // · duder (smart, loves duds: shows whether the mechanic is too strong).
   const STYLES = {
-    smart:  { tries: 36, refine: 14, noiseA: 1.4, noiseP: 0.018, dud: 1, lob: 1, dodge: 1 },
-    sloppy: { tries: 10, refine: 0,  noiseA: 5.0, noiseP: 0.07,  dud: 1, lob: 1, dodge: 0 },
-    nodud:  { tries: 36, refine: 14, noiseA: 1.4, noiseP: 0.018, dud: 0, lob: 0, dodge: 1 },
-    duder:  { tries: 36, refine: 14, noiseA: 1.4, noiseP: 0.018, dud: 2.2, lob: 1, dodge: 1 },
+    smart:  { tries: 36, refine: 14, noiseA: 1.4, noiseP: 0.018, dud: 1, lob: 1, dodge: 1, crate: 1 },
+    sloppy: { tries: 10, refine: 0,  noiseA: 5.0, noiseP: 0.07,  dud: 1, lob: 1, dodge: 0, crate: 1 },
+    nodud:  { tries: 36, refine: 14, noiseA: 1.4, noiseP: 0.018, dud: 0, lob: 0, dodge: 1, crate: 1 },
+    duder:  { tries: 36, refine: 14, noiseA: 1.4, noiseP: 0.018, dud: 2.2, lob: 1, dodge: 1, crate: 1 },
+    nocrate: { tries: 36, refine: 14, noiseA: 1.4, noiseP: 0.018, dud: 1, lob: 1, dodge: 1, crate: 0 }, // smart, but never goes for a crate
     // the computer opponents in 1 Player mode
-    easy:   { tries: 8,  refine: 0,  noiseA: 7.5, noiseP: 0.10,  dud: 0.6, lob: 0, dodge: 0, ssSkip: 0.5 },
-    medium: { tries: 18, refine: 6,  noiseA: 3.2, noiseP: 0.04,  dud: 1, lob: 1, dodge: 1 },
-    hard:   { tries: 36, refine: 14, noiseA: 1.4, noiseP: 0.018, dud: 1, lob: 1, dodge: 1 },
+    easy:   { tries: 8,  refine: 0,  noiseA: 7.5, noiseP: 0.10,  dud: 0.6, lob: 0, dodge: 0, ssSkip: 0.5, crate: 1 },
+    medium: { tries: 18, refine: 6,  noiseA: 3.2, noiseP: 0.04,  dud: 1, lob: 1, dodge: 1, crate: 1 },
+    hard:   { tries: 36, refine: 14, noiseA: 1.4, noiseP: 0.018, dud: 1, lob: 1, dodge: 1, crate: 1 },
   };
   function botRng(G) { let s = (G.seed ^ Math.imul(G.turn + 1, 2654435761)) >>> 0; return () => { s = (s + 0x6D2B79F5) >>> 0; let t = s; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
   const gauss = (r) => (r() + r() + r() - 1.5) * 1.15;
@@ -724,6 +779,11 @@
       if (near && !(st.lob && canLob(G, u, near))) { const dir = u.x < near.x ? -1 : 1; for (let i = 0; i < 30 && G.phase === 'aim'; i++) if (!act(G, { k: 'move', dir })) break; else sent.push({ k: 'move', dir }); }
       if (G.phase !== 'aim') return sent;
     }
+    if (st.crate && G.crates.length) { // a crate within this turn's steps, on a path that's safe all the way: go and get it, then shoot
+      const c = G.crates.filter((q) => !q.air && Math.abs(q.x - u.x) <= Math.min(G.moves, 14) + CRATE.reach && Math.abs(q.y - u.y) < 12).sort((a, b) => Math.abs(a.x - u.x) - Math.abs(b.x - u.x))[0];
+      if (c) { const dir = c.x > u.x ? 1 : -1, id = c.id; while (G.phase === 'aim' && G.moves > 0 && G.crates.some((q) => q.id === id) && Math.abs(c.x - u.x) > 0.6 && safeStep(G, u, dir) && act(G, { k: 'move', dir })) sent.push({ k: 'move', dir }); }
+      if (G.phase !== 'aim') return sent;
+    }
     const opts = [];
     let s1 = bestShot(G, u, 'shot1', st, rnd, 0);
     if (!(s1.score > 0) && G.cols > COLS) { // big maps: nobody in reach, so walk towards the nearest enemy first (never into the water or off a cliff)
@@ -770,7 +830,7 @@
     const r = (v) => Math.round(v * 100);
     const parts = [G.map, G.cols, G.turn, G.team, G.actor, G.spent, G.units.map((u) => u.delay).join(','), G.phase, r(G.wind), G.water, G.moves, G.winner, G.chars.join(','),
       G.units.map((u) => `${u.id}:${r(u.x)},${r(u.y)},${u.hp},${u.alive ? 1 : 0}`).join(';'),
-      G.duds.map((d) => `${d.id}:${r(d.x)},${r(d.y)},${d.fuse}`).join(';'), G.barrels.map((b) => `${b.id}:${r(b.x)},${r(b.y)}`).join(';'),
+      G.duds.map((d) => `${d.id}:${r(d.x)},${r(d.y)},${d.fuse}`).join(';'), G.barrels.map((b) => `${b.id}:${r(b.x)},${r(b.y)}`).join(';'), G.crates.map((c) => `${c.id}:${r(c.x)},${r(c.y)},${c.kind}`).join(';'),
       G.units.map((u) => `${u.char},${u.gear || '-'},${u.ammo.shot2},${u.ammo.dud},${u.ammo.gear},${u.ss}`).join(';'), G.T.join('')];
     let h = 2166136261; const s = parts.join('|');
     for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
@@ -785,7 +845,7 @@
   }
 
   const WB = { TICK, COLS, ROWS, WATER0, GRAV, VMAX, WIND_MAX, UNIT_R, UNITS_PER_TEAM, HP, MOVE_STEPS, LOB_RANGE, LOB_POWER, SUDDEN_ROUNDS, MAX_ROUNDS, suddenTurn, maxTurns, DMG_SPREAD, SS_CHARGE, DELAY, HP_MUL, CREW_HP,
-    MAX_TEAMS, MAX_SIZE, MAX_UNITS, DUD, BARREL, CHARS, CHAR_IDS, CLASSES, GEAR, GEAR_IDS, gearFor, WEAPON_IDS, MAPS, MAP_IDS, pickMap, recipeFor, MapGen, STYLES, newGame, act, step, resolve, current, owner, teamUnits, charOf, shotSpec, ssReady, ssOf, ammoOf, safeStep, turnOrder, delayIf, solidAt, surfaceY, center, lobbable, canLob,
+    MAX_TEAMS, MAX_SIZE, MAX_UNITS, DUD, BARREL, CHARS, CHAR_IDS, CLASSES, GEAR, GEAR_IDS, gearFor, CRATE, CRATE_KINDS, crateFirst, crateEvery, WEAPON_IDS, MAPS, MAP_IDS, pickMap, recipeFor, MapGen, STYLES, newGame, act, step, resolve, current, owner, teamUnits, charOf, shotSpec, ssReady, ssOf, ammoOf, safeStep, turnOrder, delayIf, solidAt, surfaceY, center, lobbable, canLob,
     predict, blastScore, botTurn, playOut, hash, replay };
   if (typeof module !== 'undefined' && module.exports) module.exports = WB; else root.WB = WB;
 })(typeof window !== 'undefined' ? window : globalThis);
