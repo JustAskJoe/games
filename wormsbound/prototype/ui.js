@@ -927,7 +927,7 @@
   function startRound() {
     const first = (ui.round - 1) % nSides();
     const sq = ui.mode === 'squads';
-    ui.G = WB.newGame((ui.matchSeed + ui.round * 7919) >>> 0, { teams: nSides(), size: crew(), first, chars: sq ? ui.picks[0].concat(ui.picks[1]) : ui.picks, map: mapFor(ui.round), recipe: ui.mode === 'solo' ? 'solo' : undefined });
+    ui.G = WB.newGame((ui.matchSeed + ui.round * 7919 + (ui.draws || 0) * 104729) >>> 0, { teams: nSides(), size: crew(), first, chars: sq ? ui.picks[0].concat(ui.picks[1]) : ui.picks, map: mapFor(ui.round), recipe: ui.mode === 'solo' ? 'solo' : undefined });
     ui.aim = {}; ui.cpu = null; ui.parts = []; ui.trails = {}; ui.scorch = []; ui.pops = []; ui.acc = 0; ui.slow = 0; ui.shake = 0; ui.overAt = 0; ui.paused = false;
     bakeBackground(ui.G.seed); renderTerrain(); camReset();
     ui.screen = 'game'; hide(); onTurn();
@@ -937,7 +937,7 @@
     if (ui.picks.length !== nSides() || !ui.picks.every(full)) { ui.picks = new Array(nSides()).fill(null); ui.cursor = 2; selectScreen(0); return; }
     ui.matchSeed = (Date.now() ^ Math.floor(Math.random() * 1e9)) >>> 0;
     if (window.__WB_SEED != null) ui.matchSeed = window.__WB_SEED >>> 0; // tests pin the seed
-    ui.round = 1; ui.wins = new Array(nSides()).fill(0); ui.tester = false; ui.fb = { q: {}, text: '', nm: '', saved: null };
+    ui.round = 1; ui.draws = 0; ui.wins = new Array(nSides()).fill(0); ui.tester = false; ui.fb = { q: {}, text: '', nm: '', saved: null };
     startRound();
   }
   function botTurn() { if (online()) return; if (!canAct() && !(ui.paused && ui.G && ui.G.phase === 'aim')) return; ui.tester = true; ui.paused = false; hide(); WB.botTurn(ui.G, 'smart'); renderCtl(); }
@@ -968,7 +968,7 @@
       case 'pick': choose(b.dataset.char); break;
       case 'pickback': if (ui.mode === 'squads') { const mine = ui.picks[ui.pickTeam] || []; if (mine.length) { mine.pop(); selectScreen(ui.pickTeam); } else if (ui.pickTeam === 1) { ui.picks[0].pop(); selectScreen(0); } else squadScreen(); }
         else if (ui.mode === 'duel' && ui.pickTeam === 1) { ui.picks[0] = null; selectScreen(0); } else if (ui.mode === 'solo') levelScreen(); else titleScreen(); break;
-      case 'next': if (online()) { ui.net.send({ t: 'next' }); ui.net.nextAsked = true; roundOverAgain(); } else { ui.round += ui.G.winner >= 0 ? 1 : 0; startRound(); } break;
+      case 'next': if (online()) { ui.net.send({ t: 'next' }); ui.net.nextAsked = true; roundOverAgain(); } else { if (ui.G.winner >= 0) ui.round++; else ui.draws = (ui.draws || 0) + 1; startRound(); } break; // a drawn round is played again on a new map
       case 'online': onlineScreen(); break;
       case 'ocreate': netStart('create', 'duel'); break;
       case 'ocreateffa': netStart('create', 'ffa'); break;

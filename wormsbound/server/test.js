@@ -206,5 +206,15 @@ function botMove(P, style = 'smart') {
   ok(room.phase === 'lobby' && A.desyncs === 0 && WB.hash(A.G) === WB.hash(room.G), `and it finishes in step with the server (${room.G.turn} turns)`);
 }
 
+{ // a drawn 1v1 round is played again, on a new map
+  const room = new Room('DRAW', { seed: 99 });
+  const A = player(room, 'Ana'), B = player(room, 'Ben');
+  A.send({ t: 'create', name: 'Ana' }); B.send({ t: 'join', name: 'Ben' });
+  for (const P of [A, B]) { P.send({ t: 'pick', char: 'volt' }); P.send({ t: 'ready', on: true }); }
+  const seed1 = room.gameSeed; for (const u of room.G.units) u.alive = false; room.G.phase = 'over'; room.G.winner = -1; room.roundOver();
+  A.send({ t: 'next' }); B.send({ t: 'next' });
+  ok(room.phase === 'playing' && room.round === 1 && room.gameSeed !== seed1 && room.wins.join() === '0,0', 'after a draw the same round number starts again with a new seed');
+}
+
 console.log(`${passes} passed, ${fails} failed`);
 process.exit(fails ? 1 : 0);

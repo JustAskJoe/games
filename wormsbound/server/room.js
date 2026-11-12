@@ -200,12 +200,12 @@ class Room {
     this.startMatch();
     return {};
   }
-  startMatch() { this.round = 1; this.wins = new Array(this.teams() ? 2 : this.teamSeat.length).fill(0); this.startRound(); }
+  startMatch() { this.round = 1; this.draws = 0; this.wins = new Array(this.teams() ? 2 : this.teamSeat.length).fill(0); this.startRound(); }
   startRound() {
     this.phase = 'playing'; this.seq = 0; this.next = [false, false]; this.rematch = [false, false];
     const n = this.teams() ? 2 : this.teamSeat.length;
     if (this.oneRound()) { this.seed = (this.seed * 1664525 + 1013904223) >>> 0; this.matches = (this.matches || 0) + 1; }
-    const seed = (this.seed + this.round * 7919) >>> 0;
+    const seed = (this.seed + this.round * 7919 + (this.draws || 0) * 104729) >>> 0; // a drawn round is played again on a new map
     const first = this.oneRound() ? (this.matches - 1) % n : (this.round - 1) % 2; // who goes first rotates
     if (this.teams()) { // one unit per slot: the player sitting there, or a computer with a character picked from the seed
       let r = seed; const rnd = () => { r = (r * 1664525 + 1013904223) >>> 0; return r / 4294967296; };
@@ -265,7 +265,7 @@ class Room {
   nextRound(i) {
     if (this.phase !== 'roundover' || this.oneRound()) return { error: 'not now' };
     this.next[i] = true;
-    if (this.next.every(Boolean)) { this.round += this.G && this.G.winner >= 0 ? 1 : 0; this.startRound(); }
+    if (this.next.every(Boolean)) { if (this.G && this.G.winner >= 0) this.round++; else this.draws = (this.draws || 0) + 1; this.startRound(); }
     return {};
   }
   wantRematch(i) {
@@ -285,7 +285,7 @@ class Room {
     if (this.phase === 'playing' && this.G && this.G.phase === 'aim') this.deadline = Math.min(this.deadline, this.turnAt + this.turnLimit());
     if (!this.deadline || now < this.deadline) return;
     if (this.phase === 'playing' && this.G && this.G.phase === 'aim') this.act(this.seatOf(this.G.team), { k: 'pass' });
-    else if (this.phase === 'roundover') { this.next = [true, true]; this.round += this.G && this.G.winner >= 0 ? 1 : 0; this.startRound(); }
+    else if (this.phase === 'roundover') { this.next = [true, true]; if (this.G && this.G.winner >= 0) this.round++; else this.draws = (this.draws || 0) + 1; this.startRound(); }
   }
   state(i) {
     const live = this.G && this.phase !== 'lobby';

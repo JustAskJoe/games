@@ -2,17 +2,18 @@
 
 © 2026 justaskjoe. All rights reserved.
 
-The server for **Online** play (title screen → ONLINE): a **1v1** (best of 3) or a **free-for-all for 2 to 6 players** (one round a game). One player makes a room and gets a 4-letter code; the others join with it. In a free-for-all the room's host presses Start once everyone has picked and is ready, and after each game everyone is back in the room for the next (new players can join then). The server is the referee: it runs the same `../prototype/engine.js` the game runs, checks every move, plays each shot through, and tells both players what was played plus the checksum the game should have afterwards. Each browser replays the move on its own copy (to animate it) and checks the checksum; if they ever differ it asks for the server's copy. So nobody can cheat with a modified page, and small differences between browsers can't split the game.
+The server for **Online** play (title screen → ONLINE): a **1v1** (best of 3), a **free-for-all for 2 to 6 players** or a **team battle of up to 5 v 5** (one round a game each). One player makes a room and gets a 4-letter code; the others join with it. In a free-for-all the room's host presses Start once everyone has picked and is ready, and after each game everyone is back in the room for the next (new players can join then). The server is the referee: it runs the same `../prototype/engine.js` the game runs, checks every move, plays each shot through, and tells both players what was played plus the checksum the game should have afterwards. Each browser replays the move on its own copy (to animate it) and checks the checksum; if they ever differ it asks for the server's copy. So nobody can cheat with a modified page, and small differences between browsers can't split the game.
 
 | File | What |
 |---|---|
 | `room.js` | One match: seats, picks, ready, start (free-for-all), moves, rounds, rematch, rejoin, the turn clock. No I/O, so both servers below share it. The message protocol is at the top of the file. |
 | `node-server.js` | The local server for testing (`npm start` → `ws://localhost:8431`). |
 | `worker.js` + `wrangler.toml` | The same room on **Cloudflare**: a Worker plus one Durable Object per room code. |
-| `test.js` | Room rules with in-process players (54 checks: a full 1v1 best-of-3 and a full 6-player free-for-all with matching checksums, cheating attempts, host start and handover, joining between games, rejoin, the clock, rematch). |
+| `test.js` | Room rules with in-process players (70 checks, including a team battle with computers and a dropped player: a full 1v1 best-of-3 and a full 6-player free-for-all with matching checksums, cheating attempts, host start and handover, joining between games, rejoin, the clock, rematch). |
 | `smoke.js` | Real WebSocket players play a whole match against the local server, or a deployed one: `node smoke.js https://…workers.dev` (1v1), add `--ffa 6` for a 6-player free-for-all. |
 | `../prototype/test-online.py` | Two real browser pages play a whole 1v1 through the local server (run by `../build-and-test.py`). |
 | `../prototype/test-online-ffa.py` | Six real browser pages play a whole free-for-all through the local server (run by `../build-and-test.py`). |
+| `../prototype/test-online-teams.py` | Three real browser pages play a 2 v 2 team battle (one unit each; the server's computer plays the fourth) through the local server (run by `../build-and-test.py`). |
 
 ## Play it on your own machine
 ```bash
@@ -45,3 +46,4 @@ First deploy on a new Cloudflare account: the account needs a `workers.dev` subd
 - Rooms live in memory. If both players leave and Cloudflare evicts the room, it's gone. A dropped player can rejoin while the other is still connected.
 - The server passes a turn after 50 seconds with no move (the game's own timer is 30), or after 8 seconds if that player has disconnected, and starts the next 1v1 round 30 seconds after one ends if someone didn't tap Next.
 - Free-for-all: up to 6 players; nobody can join once a game has started (wait for the next). Seats of players who left are given to newcomers between games.
+- Team battle (v2): two teams of 2 to 5 unit slots, one player per unit, one round a game. A slot nobody sits in is played by a Medium computer on the server, and so is a player's unit while they're disconnected. The server waits for each shot to land on players' screens (plus 1.5 seconds) before a computer moves; on Cloudflare the clock ticks every 3 seconds, so a computer's turn can start up to 3 seconds late. Nobody can join once a game has started.

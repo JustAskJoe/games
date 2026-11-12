@@ -49,8 +49,8 @@
   const SUDDEN_ROUNDS = 12;     // after this many rounds (a round = one turn per side) the water rises
   const SUDDEN_RISE = 2;        // rows per turn
   const MAX_ROUNDS = 40;        // hard stop (the rising water should end it well before this)
-  // a round is one turn per side; bigger crews get more turns before the water rises (2 a side: ×1.5 ... 5 a side: ×3)
-  const crewTurns = (G) => G.teams * (1 + 0.5 * ((G.size || 1) - 1));
+  // a round is one turn per side; bigger crews get more turns before the water rises (2 a side: ×1.35 ... 5 a side: ×2.4)
+  const crewTurns = (G) => G.teams * (1 + 0.35 * ((G.size || 1) - 1));
   const suddenTurn = (G) => Math.round(SUDDEN_ROUNDS * crewTurns(G)), maxTurns = (G) => Math.round(MAX_ROUNDS * crewTurns(G));
   const DMG_SPREAD = 1.6;       // damage falls off to 0 at r × 1.6
   const SS_CHARGE = 4;          // the SS is ready on your 4th turn, then every 4th turn after you use it
@@ -58,7 +58,7 @@
   const DELAY = { move: 12, pass: 520, lob: 620, dud: 720 };
   // Health scale by format: characters' hp numbers are for a crew of two; one unit a side needs more to last.
   const HP_MUL = { duel: 2.6, ffa: 1.8, crew: 1 };
-  const CREW_HP = [0, 0, 1.5, 1.25, 1.1, 1]; // by units a side (2 to 5): small crews need a bit more health each
+  const CREW_HP = [0, 0, 1.5, 1.25, 1.05, 0.9]; // by units a side (2 to 5): small crews need a bit more health each
   const START_GAP = 10;         // starting delays alternate teams 0, 10, 20, 30 so the first round goes A B A B
 
   // The Live dud: every character has 2. Lands without exploding, ticks down 3 turns, anyone near can lob it.
