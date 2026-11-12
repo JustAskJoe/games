@@ -3,6 +3,10 @@
 import pathlib
 here = pathlib.Path(__file__).parent
 parts = [(here / 'head.html').read_text(encoding='utf-8'), (here / 'body.html').read_text(encoding='utf-8')]
+# art: the unit sprite sheet (art/sprites/units.png, drawn by art/tools/units.py) goes in as a data URL
+import base64
+units = here.parent / 'art' / 'sprites' / 'units.png'
+if units.exists(): parts.append('<script>\nwindow.WB_ART = { units: "data:image/png;base64,' + base64.b64encode(units.read_bytes()).decode() + '" };\n</script>\n')
 for f in ['mapgen.js', 'engine.js', 'ui.js']:
     parts.append('<script>\n' + (here / f).read_text(encoding='utf-8') + '\n</script>\n')
 out = here.parent / 'builds' / 'wormsbound.html'

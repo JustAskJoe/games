@@ -49,7 +49,7 @@ try:
         first.wait_for_timeout(600); first.screenshot(path=str(shots / 'o4_shot.png'))
         # the rest by bots on each page, still through the server
         pages_fast = [pg.evaluate('() => { WBUI.ui.fast = true; WBUI.ui.timerOn = false; }') for pg in pages]
-        deadline = time.time() + 240
+        deadline = time.time() + 420
         while time.time() < deadline:
             scr = [pg.evaluate('() => WBUI.ui.screen') for pg in pages]
             if all(x == 'end' for x in scr): break

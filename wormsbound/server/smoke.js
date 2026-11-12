@@ -15,7 +15,7 @@ const N = FFA || 2, NAMES = ['Ana', 'Ben', 'Cy', 'Dee', 'Eli', 'Fay'];
 const s = LIVE ? { close: async () => {} } : serve(0);
 const http = LIVE || `http://localhost:${s.server.address().port}`, url = http.replace(/^http/, 'ws');
 const fail = (m) => { console.log('FAIL', m); s.close().then(() => process.exit(1)); };
-setTimeout(() => fail('timed out'), FFA ? 240000 : 120000).unref();
+setTimeout(() => fail("timed out " + JSON.stringify(clients.map((c) => c.G && ({ turn: c.G.turn, phase: c.G.phase, team: c.G.team, side: c.side, planned: c.planned, round: c.round, room: c.room && c.room.phase })))), +process.env.SMOKE_MS || (FFA ? 240000 : 120000)).unref();
 
 let code, clients = [], finished = 0;
 function client(i) {
@@ -42,7 +42,7 @@ function client(i) {
 }
 function maybePlay(C) {
   if (!C.G || C.G.phase !== 'aim' || C.G.team !== C.side) return;
-  const key = C.round + '/' + C.G.turn; if (C.planned === key) return; C.planned = key; // plan once per turn
+  const key = C.G.seed + '/' + C.G.turn; if (C.planned === key) return; C.planned = key; // plan once per turn
   for (const it of WB.botTurn(JSON.parse(JSON.stringify(C.G)), 'smart')) C.send({ t: 'act', it });
 }
 function finish() {

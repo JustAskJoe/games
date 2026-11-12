@@ -88,4 +88,44 @@ for (const m of WB.MapGen.PRESET_IDS.concat(['custom'])) {
   const played = mapN - r.stuck;
   console.log(`map ${m.padEnd(11)} turns p10 ${q(r.turns, .1)} p50 ${q(r.turns, .5)} p90 ${q(r.turns, .9)}  sudden death ${pct(r.sudden, played)}%  drowned ${(r.drowned / played).toFixed(1)}  barrels ${(r.barrels / played).toFixed(1)}  timeouts ${r.timeouts}  stuck ${r.stuck}  most wins ${Object.entries(r.wins).sort((x, y) => y[1] - x[1]).map(([c, w]) => c + ' ' + w).slice(0, 2).join(', ')}`);
 }
+// Gear (v2): a character carrying each gear against the same character with none (seats and first turn swap). Gear is
+// meant to be an option, not an upgrade: near 50% is right. "used" is how often the bot fired it per match.
+const gearN = Math.max(40, n);
+console.log(`gear: ${gearN} smart-vs-smart mirror matches per item, with it vs without`);
+for (const g of WB.GEAR_IDS) {
+  const users = WB.CHAR_IDS.filter((c) => WB.gearFor(c).includes(g)); let w = 0, used = 0, d = 0;
+  for (let k = 0; k < gearN; k++) {
+    const c = users[k % users.length], side = k % 2;
+    const G = WB.playOut(WB.newGame(6100 + k * 7919, { chars: [c, c], gear: side ? ['none', g] : [g, 'none'], first: (k >> 1) % 2 }), ['smart', 'smart']).G;
+    if (G.winner === side) w++; if (G.winner < 0) d++; used += G.stats.gear || 0;
+  }
+  console.log(`gear ${g.padEnd(9)} ${WB.GEAR[g].cls.padEnd(8)} wins ${pct(w, gearN)}%  draws ${pct(d, gearN)}%  used ${(used / gearN).toFixed(1)} a match`);
+}
+// Crates (v2): a smart bot that goes for crates against one that never does ("nocrate"), same character both sides.
+// Crates should be worth having without deciding the match: a little over 50% for the taker is right.
+{
+  const N = Math.max(60, n); let w = 0, d = 0, took = 0, left = 0, lost = 0;
+  for (let k = 0; k < N; k++) {
+    const c = WB.CHAR_IDS[k % WB.CHAR_IDS.length], side = k % 2;
+    const G = WB.playOut(WB.newGame(7300 + k * 7919, { chars: [c, c], first: (k >> 1) % 2 }), side ? ['nocrate', 'smart'] : ['smart', 'nocrate']).G;
+    if (G.winner === side) w++; if (G.winner < 0) d++; took += G.stats.crates[side]; left += G.stats.crates[1 - side]; lost += G.stats.cratesLost;
+  }
+  console.log(`crates: ${N} mirror matches, a bot that takes crates vs one that ignores them`);
+  console.log(`crate value      taker wins ${pct(w, N)}%  draws ${pct(d, N)}%  opened ${(took / N).toFixed(2)} a match (ignorer ${(left / N).toFixed(2)})  destroyed ${(lost / N).toFixed(2)}`);
+}
+// Crews (v2): smart-vs-smart with one of each character where it fits, on the map size the match gets and a fresh map
+// from the mode's recipe every match. Every one has to finish; side 0's share shows whether a spawn layout favours a side.
+const crewN = Math.max(10, Math.round(n / 10)), one = WB.CHAR_IDS;
+console.log(`crews: ${crewN} smart-vs-smart matches per format, fresh maps`);
+for (const [label, o] of [['2v2', { size: 2 }], ['3v3', { size: 3 }], ['5v5', { size: 5 }], ['teams5', { size: 5, recipe: 'teams' }], ['ffa6', { teams: 6 }], ['4x3', { teams: 4, size: 3 }]]) {
+  const r = { turns: [], sudden: 0, timeouts: 0, stuck: 0, drowned: 0, side0: 0 }, units = (o.teams || 2) * (o.size || 1);
+  let dims = '';
+  for (let k = 0; k < crewN; k++) {
+    const chars = Array.from({ length: units }, (_, i) => one[(i + k) % one.length]);
+    let G; try { G = WB.playOut(WB.newGame(8800 + k * 7919, Object.assign({ chars: o.size > 1 ? chars : chars.slice(0, o.teams || 2), first: k % (o.teams || 2) }, o)), new Array(6).fill('smart')).G; } catch (e) { r.stuck++; continue; }
+    dims = G.cols + 'x' + G.rows; r.turns.push(G.turn); if (G.turn >= WB.suddenTurn(G)) r.sudden++; if (G.timeout) r.timeouts++; r.drowned += G.stats.drowned; if (G.winner === 0) r.side0++; r.combos = (r.combos || 0) + G.stats.combos;
+  }
+  const played = crewN - r.stuck;
+  console.log(`crew ${label.padEnd(7)} map ${dims.padEnd(8)} turns p10 ${q(r.turns, .1)} p50 ${q(r.turns, .5)} p90 ${q(r.turns, .9)}  sudden death ${pct(r.sudden, played)}%  drowned ${(r.drowned / played).toFixed(1)}  side 0 wins ${pct(r.side0, played)}%  combos ${((r.combos || 0) / played).toFixed(1)}  timeouts ${r.timeouts}  stuck ${r.stuck}`);
+}
 console.log(`done in ${((Date.now() - t0) / 1000).toFixed(1)}s`);

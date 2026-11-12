@@ -6,6 +6,58 @@ Newest on top. See the repo's CLAUDE.md for how patch notes work.
 
 ---
 
+## v2: crews, big maps, a fresh map every match · 2026-11-11 · Hunter (with Claude)
+Bigger fights on maps made for them. A proposal for Louiemark: it sits on top of the map generator pull request and should land after it. Full write-up: [`design/v2.md`](design/v2.md).
+
+### What's new
+- **A fresh map every round, in every mode.** Each mode has a recipe (1v1, 1 Player, free-for-all, Squads, team battle) and rolls a new map from it: any theme, with its own caves, hazards, wind and water. "Fresh map every round" is the new default in the map list. Shuffle, the presets, Custom Map and share codes still work.
+- **Squads** (new mode on the title screen): crews of **2 to 5 units a side**, against Player 2 on the same keyboard or an Easy, Medium or Hard computer. Pick each crew one unit at a time, or tap "Fill the rest for me".
+- **Every unit has its own kit:** its own character, Shot 2 and dud ammo, and its own SS charge.
+- **Maps grow with the fight.** 1v1 still fits one screen. Five or six units get a Large map, seven or eight a Huge one, and a 5v5 a new **Giant** map (320 × 180, two screens wide).
+- **A camera** for the bigger maps: it follows whose turn it is, then the shot. Right-drag (or two fingers) to look around, wheel or pinch to zoom, **M** for the whole map, **C** to come back. A minimap shows everyone, and arrows on the edge point to units you can't see.
+- **Smarter starts.** Spawns are planned for each map: crews start together or dealt in among each other, and some units start under cover on a ledge or in a cave.
+- **Online team battle** (ONLINE → MAKE A TEAM BATTLE): up to 5 v 5 with **one player per unit**. Computers play the empty slots, so one person can start a 5v5, and a computer covers for anyone who drops out until they're back.
+- Online free-for-alls with 5 or 6 players get a Large map and the camera.
+- Computers walk towards the fight on big maps instead of standing out of range, and never into the water.
+- **Supply crates.** Once everyone has had a turn, crates start landing between the two sides, nearer whoever is behind. The mark shows what's inside: **new gear**, **SS charge** or **health**. Walk onto one to open it, or blast it so nobody gets it.
+- **Combos** in crew modes: hit an enemy a crewmate just hit and your SS gains a notch. Focus a target together.
+- **Five new characters, ten in all,** in five classes of two: **Tusk** (Tank: every shot shoves), **Hopper** (Scout: climbs anything, shots that skip), **Flint** (Gunner: fans of flares), **Patch** (Engineer: wide digs and a sinkhole) and **Nimbus** (Controller: her Vacuum pulls people towards the blast).
+- **Gear:** every unit carries one extra weapon in a 4th slot (key 4), picked after its character. Four anyone can carry, two more for each class; 14 so far, all from the 100-weapon list (Popcorn Bomb, Crater Maker, Dirt Cannon, Gravity Well, Delay Ray...). Press Enter to take the usual one.
+- **Pixel art for every character,** drawn in code the way Rogue Shooter's is: the round placeholder units are now sprites, in every team colour.
+- The character screen shows all ten as small cards with one detail panel; the feedback form scrolls.
+- **Fixed:** a drawn round used to be replayed on exactly the same map (and two bots would draw it again, forever). A replayed round now gets a new map, online and offline.
+
+### Next up
+- [ ] @Louiemark: read `design/v2.md` and answer its seven questions (5v5 length, shared SS, reinforcements, more crews, closing bot slots, host-picked maps online, recipes).
+- [ ] @Louiemark: play Squads 3v3 and a team battle on the preview, then decide whether v2 merges.
+- [ ] @Louiemark: **redeploy the room server** when this merges (the protocol gained team rooms; old pages against a new server are fine, new pages against the old server can't make a team battle).
+- [ ] Art rework: the Lead Artist plan for Wormsbound is its own pull request. The Artist can't start concepts until it's merged.
+- [ ] Let the online host pick a map or a share code.
+- [ ] A gear picker in the online lobbies (online uses each character's usual gear for now).
+- [ ] More of the weapons list as gear; then crates and in-match levelling on top of it.
+- [ ] After v2: characters with builds (the "champion" layer).
+
+### Watch out
+- [ ] **Nobody has played any of this.** Bots, in-process players and headless browsers only. The camera, right-drag, pinch and the minimap have never been used by a hand.
+- [ ] **The new five and all the gear are first guesses.** Bot sim only: characters win 44 to 56% each, and carrying a gear item wins 43 to 57% against not carrying it. Nobody has played them.
+- [ ] **Bots can't judge everything:** they never fire the Dirt Cannon, and they value the Delay Ray and the pull by rule of thumb. Those three need people.
+- [ ] **Vacuum and Gravity Well pull units off ledges and into the liquid.** That's the point, but it may feel unfair in play; not tested with people.
+- [ ] The sprites are a first pass: three frames a character, no walk or aim frames, and the old code-drawn launcher is still on top. Terrain and backgrounds are unchanged.
+- [ ] The crew-size sim numbers above were measured before the new characters; the final run's are in the pull request.
+- [ ] **A 5v5 is still long:** a median of about 50 turns in the bot sim (63 before combos; 78 in the first pass). 2v2 and 3v3 run 23 to 30 turns and are the better first test with people.
+- [ ] **Crates are tuned for bots that barely want them.** A crate-taking bot wins 53% of 1v1s against one that ignores them, and it's about even in crews. People will fight over them more; the numbers (how often, how close to the side that's behind, how sturdy) are first guesses.
+- [ ] **Crates lean towards the side that's behind.** That's on purpose, as a comeback, but it might feel like punishing the leader. Ask players.
+- [ ] A gear crate replaces the gear you chose, even if you'd rather keep yours. There's no "leave it" except not walking onto it.
+- [ ] **Touch:** two-finger pan and pinch are written but untested on a real phone. On a phone the whole stage is small, so a Giant map is hard to read.
+- [ ] **Per-unit SS changes crews:** a unit charges only on its own turns, so the first SS in a 5v5 arrives around turn 30.
+- [ ] **Old 1v1 numbers moved a little:** 1v1 rounds now roll from the `duel` recipe instead of a theme's defaults. The balance bands still pass, but seeds and replays from before don't match.
+- [ ] **Bigger maps cost more:** the terrain is redrawn after every blast (57,600 cells on a Giant map) and the checksum covers every cell. Fine on a laptop in tests; not measured on a slow phone.
+- [ ] **Team battle pacing on Cloudflare:** the server's clock ticks every 3 seconds there, so a computer's turn can start up to 3 seconds late. A full 5v5 with nine computers will feel slow.
+- [ ] Bots on big maps only walk when they have no shot at all. They don't take cover, climb to high ground or dig.
+- [ ] Units that start under cover can be hard to hit, and Digger is the only one who digs. Not checked per character.
+- [ ] The Custom Map screen still previews at one-screen size, whatever the match will use.
+- [ ] `server/smoke.js` prints each client's state when it times out (added while chasing the draw bug). `SMOKE_MS` shortens its timeout.
+
 ## Map generator replaces the three maps · 2026-11-11 · Hunter (with Claude)
 Louiemark chose to replace his three maps with the map generator, and map making now lives inside the game.
 

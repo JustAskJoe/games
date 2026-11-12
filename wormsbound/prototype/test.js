@@ -48,7 +48,7 @@ for (const seed of [11, 222, 3333]) {
   ok(!WB.act(G, { k: 'fire', angle: 60, power: 0.5 }), 'no second shot while the first is flying');
   WB.resolve(G);
   ok(G.phase === 'aim' && G.team === 1, 'the turn passes to the other team');
-  ok(G.ammo[0].dud === WB.DUD.ammo - 1, 'firing a dud uses one');
+  ok(G.units[0].ammo.dud === WB.DUD.ammo - 1, 'firing a dud uses one');
 }
 
 // 6. A dud ticks down and goes off; a dud in reach can be lobbed.
@@ -85,7 +85,7 @@ for (const a of WB.CHAR_IDS) {
   const G = WB.newGame(500, opts);
   const hp = Math.round(WB.CHARS[a].hp * WB.HP_MUL.duel);
   ok(G.units.filter((u) => u.team === 0).every((u) => u.char === a && u.hp === hp), `${a}: side 0 is ${a} with ${hp} hp (×${WB.HP_MUL.duel} in a 1v1)`);
-  ok(G.moves === WB.CHARS[a].steps && G.ammo[0].shot2 === 2 && G.ammo[0].dud === 2, `${a}: steps ${WB.CHARS[a].steps}, 2 Shot 2s, 2 duds`);
+  ok(G.moves === WB.CHARS[a].steps && G.units[0].ammo.shot2 === 2 && G.units[0].ammo.dud === 2, `${a}: steps ${WB.CHARS[a].steps}, 2 Shot 2s, 2 duds`);
   const { G: F, log } = WB.playOut(WB.newGame(600, opts), ['smart', 'smart']);
   ok(WB.hash(WB.replay(600, log, opts)) === WB.hash(F), `${a} vs ${b}: a bot match replays exactly`);
 }
@@ -96,7 +96,7 @@ const shoot = (chars, w, angle, power, setup) => {
 { // Double Tap: two darts from one shot
   const G = shoot(['zip', 'volt'], 'shot2', 45, 0.8);
   ok(G.proj.length === 2 && G.proj[1].wait > 0, 'Double Tap fires two darts, the second a moment later');
-  WB.resolve(G); ok(G.ammo[0].shot2 === 1, 'Double Tap uses one Shot 2');
+  WB.resolve(G); ok(G.units[0].ammo.shot2 === 1, 'Double Tap uses one Shot 2');
 }
 { // Drill: tunnels through ground. Fire straight down into the hill you stand on.
   const G = shoot(['digger', 'volt'], 'shot2', 270, 0.6);
@@ -145,17 +145,17 @@ const shoot = (chars, w, angle, power, setup) => {
 // 9. SS (Special Shot): charges one notch a turn, ready on your 4th turn, and each one does its thing.
 {
   const G = WB.newGame(321, { chars: ['volt', 'volt'] });
-  ok(G.ss[0] === 1 && !WB.ssReady(G), 'SS starts with one notch on your first turn, not ready');
-  ok(G.ss[1] === 1, 'the team going second starts with a one-notch head start');
+  ok(G.units[0].ss === 1 && !WB.ssReady(G), 'SS starts with one notch on your first turn, not ready');
+  ok(G.units[1].ss === 1, 'the team going second starts with a one-notch head start');
   ok(!WB.act(G, { k: 'weapon', w: 'ss' }), 'SS can\'t be picked before it is charged');
   for (let i = 0; i < 6; i++) { WB.act(G, { k: 'pass' }); WB.resolve(G); }
-  ok(G.team === 0 && WB.ssReady(G) && G.ss[0] === WB.SS_CHARGE, `ready on your ${WB.SS_CHARGE}th turn`);
+  ok(G.team === 0 && WB.ssReady(G) && G.units[0].ss === WB.SS_CHARGE, `ready on your ${WB.SS_CHARGE}th turn`);
   ok(WB.act(G, { k: 'weapon', w: 'ss' }) && WB.act(G, { k: 'fire', angle: 60, power: 0.6 }), 'fire the SS');
-  ok(G.ss[0] === 0 && G.stats.ss === 1, 'firing it empties the charge');
+  ok(G.units[0].ss === 0 && G.stats.ss === 1, 'firing it empties the charge');
   WB.resolve(G); let g = 0; while (G.team !== 0 && g++ < 6) { WB.act(G, { k: 'pass' }); WB.resolve(G); } // the delay may give side 1 two turns
-  ok(G.ss[0] === 1, 'and it starts charging again on your next turn');
+  ok(G.units[0].ss === 1, 'and it starts charging again on your next turn');
 }
-const ssGame = (chars, seed = 11) => { const G = WB.newGame(seed, { chars }); G.ss[G.team] = WB.SS_CHARGE; WB.act(G, { k: 'weapon', w: 'ss' }); return G; };
+const ssGame = (chars, seed = 11) => { const G = WB.newGame(seed, { chars }); WB.current(G).ss = WB.SS_CHARGE; WB.act(G, { k: 'weapon', w: 'ss' }); return G; };
 { // Bullet Rain: five darts
   const G = ssGame(['zip', 'volt']); WB.act(G, { k: 'fire', angle: 50, power: 0.7 });
   ok(G.proj.length === 5 && G.proj.filter((p) => p.wait > 0).length === 4, 'Bullet Rain fires a fan of 5 darts');
@@ -205,7 +205,7 @@ const ssGame = (chars, seed = 11) => { const G = WB.newGame(seed, { chars }); G.
   const G = WB.newGame(57, { chars: ['volt', 'volt'] }); let twice = false, last = -1;
   for (let i = 0; i < 16 && G.phase !== 'over'; i++) {
     if (G.team === last) twice = true; last = G.team;
-    if (G.team === 1) { G.ss[1] = WB.SS_CHARGE; WB.act(G, { k: 'weapon', w: 'ss' }); WB.act(G, { k: 'fire', angle: 4, power: 1 }); } else WB.act(G, { k: 'fire', angle: 176, power: 1 });
+    if (G.team === 1) { G.units[1].ss = WB.SS_CHARGE; WB.act(G, { k: 'weapon', w: 'ss' }); WB.act(G, { k: 'fire', angle: 4, power: 1 }); } else WB.act(G, { k: 'fire', angle: 176, power: 1 });
     WB.resolve(G);
   }
   ok(twice, 'heavy shots on one side let the other side play twice in a row');
@@ -217,7 +217,7 @@ const ssGame = (chars, seed = 11) => { const G = WB.newGame(seed, { chars }); G.
   ok(G.units.length === 4 && new Set(G.units.map((u) => u.team)).size === 4, 'four sides, one unit each');
   ok(G.units.every((u) => u.char === G.chars[u.team] && WB.solidAt(G, u.x, u.y + 0.05)), 'each stands on the ground as its own character');
   ok(WB.turnOrder(G).map((x) => x.team).join('') === '2301', 'the first round goes round the table from the side that starts');
-  ok(G.ss.filter((v) => v === 1).length === 4, 'everyone starts with one SS notch (the first side charges on its turn)');
+  ok(G.units.filter((u) => u.ss === 1).length === 4, 'everyone starts with one SS notch (the first side charges on its turn)');
   const xs = Array.from({ length: 40 }, (_, s2) => WB.newGame(s2 + 1, { teams: 4 }).units.find((u) => u.team === 0).x);
   const quarters = [0, 1, 2, 3].map((q) => xs.filter((x) => Math.floor(x / 40) === q).length);
   ok(quarters.every((k) => k >= 5), `side 0 starts all over the map (by quarter over 40 seeds: ${quarters})`);
@@ -244,12 +244,14 @@ for (const m of WB.MAP_IDS) {
   const opts = { map: m, chars: ['gale', 'brick'] }, { G: F, log } = WB.playOut(WB.newGame(808, opts), ['smart', 'smart']);
   ok(F.phase === 'over' && WB.hash(WB.replay(808, log, opts)) === WB.hash(F), `${m}: a bot match finishes and replays exactly (${F.turn} turns)`);
 }
-// With no map given, the round's map comes from its seed (the online server sends no map), so every copy builds the same one.
+// With no map given, every round rolls a fresh map from its mode's recipe and the round's seed (the online server sends
+// no map), so every copy builds the same one.
 {
-  const seen = {};
-  for (let s = 1; s <= 300; s++) seen[WB.newGame(s * 7919).map] = 1;
-  ok(WB.MAP_IDS.every((m) => seen[m]), `all ${WB.MAP_IDS.length} theme maps come up from random seeds`);
-  ok(WB.hash(WB.newGame(4242)) === WB.hash(WB.newGame(4242)) && WB.newGame(4242).map === WB.pickMap(4242), 'the same seed always gives the same map and terrain');
+  const seen = {}, codes = {};
+  for (let s = 1; s <= 300; s++) { const G = WB.newGame(s * 7919); seen[G.theme] = 1; codes[G.map] = 1; }
+  ok(WB.MapGen.THEME_IDS.every((m) => seen[m]), `all ${WB.MapGen.THEME_IDS.length} themes come up from random seeds`);
+  ok(Object.keys(codes).length > 100, `rounds roll different settings, not just different layouts (${Object.keys(codes).length} setups in 300 rounds)`);
+  ok(WB.hash(WB.newGame(4242)) === WB.hash(WB.newGame(4242)) && !!WB.MapGen.decode(WB.newGame(4242).map), 'the same seed always gives the same map, and G.map is a share code that rebuilds it');
   ok(WB.MAP_IDS.includes(WB.newGame(13, { map: 'nope' }).map), 'an unknown map id falls back to a theme map');
   let wet = 0, close = 0;
   for (const m of WB.MAP_IDS) for (let s = 1; s <= 30; s++) for (const n of [2, 4, 6]) {
@@ -258,6 +260,112 @@ for (const m of WB.MAP_IDS) {
     const xs = G.units.map((u) => u.x).sort((a, b) => a - b); for (let i = 1; i < xs.length; i++) if (xs[i] - xs[i - 1] < 7) close++;
   }
   ok(wet === 0 && close === 0, `every theme, 2, 4 and 6 sides, 30 seeds: everyone starts on dry ground, nobody on top of anyone (${wet} wet, ${close} close)`);
+}
+
+// 8b. v2: map size grows with the match, squads of up to five, a kit per unit, planned spawns.
+{
+  const dims = (o) => { const G = WB.newGame(7, o); return G.cols + 'x' + G.rows; };
+  ok(dims({}) === '160x90' && dims({ teams: 4 }) === '160x90' && dims({ teams: 6 }) === '200x112' && dims({ size: 4 }) === '240x135' && dims({ size: 5 }) === '320x180',
+    `map size by units: 2 and 4 → ${dims({})}, 6 → ${dims({ teams: 6 })}, 8 → ${dims({ size: 4 })}, 10 → ${dims({ size: 5 })}`);
+  ok(dims({ size: 5, mapSize: 'huge' }) === '240x135', 'opts.mapSize overrides it');
+  ok(WB.newGame(1, { teams: 6, size: 5 }).units.length === 12 && WB.newGame(1, { teams: 2, size: 9 }).size === 5, `never more than ${WB.MAX_UNITS} units or ${WB.MAX_SIZE} a side`);
+  // squads: per-unit characters, kits and owners
+  const squad = ['brick', 'zip', 'volt', 'digger', 'gale'], G = WB.newGame(21, { size: 5, chars: squad.concat(squad.slice().reverse()), owners: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9] });
+  ok(G.units.length === 10 && [0, 1].every((t) => WB.teamUnits(G, t).map((u) => u.char).sort().join() === squad.slice().sort().join()), 'a 5v5 with one of each character a side');
+  ok(new Set(G.units.map((u) => u.own)).size === 10 && WB.owner(G) === WB.current(G).own, 'every unit can have its own controller; owner(G) is whose turn it is');
+  ok(WB.newGame(21, { size: 3, chars: ['gale', 'brick'] }).units.every((u) => u.char === (u.team ? 'brick' : 'gale')), 'one character per side still means the whole crew plays it');
+  const u0 = WB.current(G), mate = G.units.find((u) => u.team === u0.team && u.id !== u0.id);
+  WB.act(G, { k: 'weapon', w: 'shot2' }); WB.act(G, { k: 'fire', angle: 80, power: 0.2 });
+  ok(u0.ammo.shot2 === 1 && mate.ammo.shot2 === 2, 'ammo is per unit: one unit firing its Shot 2 leaves its crewmates full');
+  ok(WB.shotSpec(G, u0, 'shot1').name === WB.CHARS[u0.char].shot1.name, 'a unit fires its own character\'s shots');
+  WB.resolve(G);
+  // spawns: dry, apart, standing with headroom, on every size and layout; sides keeps crews together
+  let bad = 0, deep = 0, n = 0;
+  for (let s = 1; s <= 40; s++) for (const o of [{ size: 2 }, { size: 3 }, { size: 5 }, { teams: 3, size: 3 }, { teams: 4, size: 2 }, { teams: 6, size: 2 }, { size: 5, recipe: 'teams' }]) {
+    const g = WB.newGame(s * 9973, o), xs = g.units.map((u) => u.x).sort((a, b) => a - b);
+    for (let i = 1; i < xs.length; i++) if (xs[i] - xs[i - 1] < 5) bad++;
+    for (const u of g.units) {
+      n++; if (u.y >= g.water - 3 || !WB.solidAt(g, u.x, u.y + 0.5) || WB.solidAt(g, u.x, u.y - 1) || WB.solidAt(g, u.x, u.y - 3)) bad++;
+      if (u.y > WB.surfaceY(g, u.x) + 2) deep++;
+    }
+  }
+  ok(bad === 0, `squad spawns: ${n} units over 7 formats and 40 seeds all stand on dry ground with headroom, 5+ cells apart (${bad} bad)`);
+  ok(deep > 0 && deep < n * 0.4, `some units start under cover on a ledge or cave floor (${deep} of ${n})`);
+  const side = WB.newGame(5, { size: 5, spawn: 'sides' }), mix = WB.newGame(5, { size: 5, spawn: 'mixed', map: 'hills' });
+  ok(Math.max(...WB.teamUnits(side, 0).map((u) => u.x)) < Math.min(...WB.teamUnits(side, 1).map((u) => u.x)), "'sides' starts each crew together, side 0 on the left");
+  ok(Math.max(...WB.teamUnits(mix, 0).map((u) => u.x)) > Math.min(...WB.teamUnits(mix, 1).map((u) => u.x)), "'mixed' deals the two crews in among each other");
+  // whole matches on big maps finish and replay
+  for (const [label, o] of [['3v3', { size: 3, chars: ['zip', 'digger'] }], ['5v5 squads', { size: 5, chars: squad.concat(squad) }], ['5v5 team battle', { size: 5, recipe: 'teams', chars: squad.concat(squad) }], ['4 crews of 3', { teams: 4, size: 3 }]]) {
+    const { G: F, log } = WB.playOut(WB.newGame(4040, o), new Array(6).fill('smart'));
+    ok(F.phase === 'over' && WB.hash(WB.replay(4040, log, o)) === WB.hash(F), `${label} on a ${F.cols} × ${F.rows} map finishes and replays exactly (${F.turn} turns${F.timeout ? ', timed out' : ''})`);
+  }
+  // bots on a big map walk towards the fight instead of standing out of range, and never into the water
+  let walked = 0, lost = 0;
+  for (let s = 1; s <= 12; s++) { const { G: F, log } = WB.playOut(WB.newGame(s * 31337, { size: 5, recipe: 'teams' }), ['smart', 'smart']); walked += log.filter((it) => it.k === 'move').length; lost += F.stats.drowned; }
+  ok(walked > 50, `bots walk on big maps (${walked} steps in 12 matches, ${lost} units lost to the water in all)`);
+}
+
+// 8c. v2 cast and gear: ten characters in five classes, one gear item per unit.
+{
+  const cls = {}; for (const c of WB.CHAR_IDS) (cls[WB.CHARS[c].cls] = cls[WB.CHARS[c].cls] || []).push(c);
+  ok(WB.CHAR_IDS.length === 10 && Object.keys(cls).length === 5 && Object.values(cls).every((v) => v.length === 2), `10 characters, 2 in each of 5 classes (${Object.entries(cls).map(([k, v]) => k + ': ' + v.join(' + ')).join('; ')})`);
+  ok(WB.GEAR_IDS.length === 14 && WB.CHAR_IDS.every((c) => WB.gearFor(c).length === 6 && WB.gearFor(c).includes(WB.CHARS[c].gear)), 'every character can carry 6 gear items (4 anyone\'s + 2 for its class), its default among them');
+  const g0 = WB.newGame(3, { chars: ['brick', 'gale'], gear: ['thermite', 'well'] });
+  ok(g0.units[0].gear === 'ricochet' && g0.units[1].gear === 'well', 'gear from another class falls back to the character\'s own default');
+  ok(WB.newGame(3, { gear: ['none', ''] }).units.every((u) => u.gear === null && u.ammo.gear === 0), "'none' means no gear");
+  const flat = (map, o) => { const G = WB.newGame(11, Object.assign({ map: { preset: 'hills', hazards: 0, caves: 0, props: 0 } }, o)), foe = G.units[1]; for (let x = 0; x < G.cols; x++) for (let y = 0; y < G.rows; y++) G.T[y * G.cols + x] = y >= 60 ? 1 : 0; for (const u of G.units) { u.y = 60; u.air = false; } G.units[0].x = 40.5; foe.x = 110.5; return G; };
+  const shoot = (G, x, y) => { const u = WB.current(G), s = WB.shotSpec(G, u, 'gear'); G.proj.push({ id: 950, w: 'gear', team: u.team, char: u.char, gear: u.gear, from: -1, age: 9, x, y, vx: 0, vy: 3, wm: 1 }); G.phase = 'flight'; WB.resolve(G); return s; };
+  { const G = flat(0, { gear: ['pistol', 'none'] }); WB.act(G, { k: 'weapon', w: 'gear' }); const a0 = G.units[0].ammo.gear; WB.act(G, { k: 'fire', angle: 80, power: 0.3 }); ok(a0 === 3 && G.units[0].ammo.gear === 2 && G.stats.gear === 1, 'firing gear uses one of its own ammo'); WB.resolve(G); }
+  { const G = flat(0, { gear: ['none', 'none'] }); ok(!WB.act(G, { k: 'weapon', w: 'gear' }), 'a unit with no gear can\'t pick the gear slot'); }
+  { const G = flat(0, { chars: ['nimbus', 'volt'], gear: ['well', 'none'] }), foe = G.units[1], x0 = foe.x; shoot(G, foe.x - 5, 58); ok(foe.x < x0 - 0.5, `Gravity Well pulls a unit towards the blast (${x0} → ${foe.x.toFixed(1)})`); }
+  { const G = flat(0, { chars: ['nimbus', 'volt'], gear: ['delayray', 'none'] }), foe = G.units[1], d0 = foe.delay; shoot(G, foe.x, 58); ok(foe.delay >= d0 + 300, `Delay Ray adds 300 turn delay to an enemy it catches (${d0} → ${foe.delay})`); }
+  { const G = flat(0, { chars: ['patch', 'volt'], gear: ['dirt', 'none'] }), foe = G.units[1], n0 = G.T.filter((v) => v).length, hp = foe.hp; shoot(G, foe.x + 6, 57); const n1 = G.T.filter((v) => v).length; ok(n1 > n0 + 20 && foe.hp === hp && !WB.solidAt(G, foe.x, foe.y - 1.5), `Dirt Cannon adds ground (${n1 - n0} cells), hurts nobody and never buries a unit`); }
+  { const G = flat(0, { gear: ['popcorn', 'none'] }); const before = G.T.filter((v) => v).length; shoot(G, 75, 58); const booms = before - G.T.filter((v) => v).length; const G2 = flat(0, { gear: ['pistol', 'none'] }); const b2 = G2.T.filter((v) => v).length; shoot(G2, 75, 58); ok(booms > (b2 - G2.T.filter((v) => v).length) * 2, 'Popcorn Bomb\'s bomblets dig far more than one small shell'); }
+  let bad = [];
+  for (const c of WB.CHAR_IDS) for (const g of WB.gearFor(c)) { const o = { chars: [c, WB.CHAR_IDS[(WB.CHAR_IDS.indexOf(c) + 3) % 10]], gear: [g, 'none'] }, { G: F, log } = WB.playOut(WB.newGame(777, o), ['smart', 'smart']); if (F.phase !== 'over' || WB.hash(WB.replay(777, log, o)) !== WB.hash(F)) bad.push(c + '/' + g); }
+  ok(!bad.length, `a match with every character carrying each gear it can finishes and replays exactly (60 loadouts) ${bad.slice(0, 3)}`);
+}
+
+// 8d. v2 mid-match: supply crates and crew combos.
+{
+  const flat = (o) => { const G = WB.newGame(11, Object.assign({ map: { preset: 'hills', hazards: 0, caves: 0, props: 0 } }, o)); for (let x = 0; x < G.cols; x++) for (let y = 0; y < G.rows; y++) G.T[y * G.cols + x] = y >= 60 ? 1 : 0; G.units.forEach((u, i) => { u.y = 60; u.air = false; u.x = 30.5 + i * (100 / Math.max(1, G.units.length - 1)); }); return G; };
+  const pass = (G) => { WB.act(G, { k: 'pass' }); WB.resolve(G); };
+  { // a crate lands once everyone has had a turn, between the sides, clear of everyone
+    const G = flat({}); ok(G.crates.length === 0 && WB.crateFirst(G) === 2, 'no crate at the start; the first is due on turn 2 of a 1v1');
+    pass(G); pass(G);
+    const c = G.crates[0];
+    ok(G.crates.length === 1 && WB.CRATE_KINDS.includes(c.kind) && c.x > 30 && c.x < 131 && G.units.every((u) => Math.abs(u.x - c.x) >= 3) && WB.solidAt(G, c.x, c.y + 0.5), `a ${c && c.kind} crate lands at x ${c && c.x}, between the two units`);
+    ok(G.units.some((u) => Math.abs(u.x - c.x) <= 16), 'within a turn\'s walk of one of them');
+    // walk onto it
+    const u = G.units.reduce((a, b) => (Math.abs(a.x - c.x) < Math.abs(b.x - c.x) ? a : b)); while (WB.current(G) !== u) pass(G);
+    const before = { gear: u.gear, ss: u.ss, hp: (u.hp = Math.round(u.maxHp / 2)) }, dir = c.x > u.x ? 1 : -1, kind = c.kind;
+    G.moves = 30; let guard = 0; while (G.crates.some((q) => q.id === c.id) && guard++ < 30) WB.act(G, { k: 'move', dir });
+    ok(!G.crates.some((q) => q.id === c.id) && G.stats.crates[u.team] === 1, 'walking onto a crate opens it');
+    ok(kind === 'gear' ? u.gear !== before.gear && WB.gearFor(u.char).includes(u.gear) && u.ammo.gear === WB.GEAR[u.gear].ammo : kind === 'ss' ? u.ss === Math.min(WB.SS_CHARGE, before.ss + WB.CRATE.ss) : u.hp > before.hp, `and gives what it showed (${kind})`);
+  }
+  { // a blast right on a crate destroys it; a nearby one doesn't
+    const G = flat({}); pass(G); pass(G); const c = G.crates[0];
+    G.phase = 'flight'; G.proj.push({ id: 960, w: 'shot1', team: 0, char: 'volt', from: -1, age: 9, x: c.x + 7, y: 58, vx: 0, vy: 3, wm: 1 }); WB.resolve(G);
+    ok(G.crates.some((q) => q.id === c.id), 'a blast 7 cells away leaves the crate');
+    G.phase = 'flight'; G.proj.push({ id: 961, w: 'shot1', team: 0, char: 'volt', from: -1, age: 9, x: c.x, y: c.y - 3, vx: 0, vy: 3, wm: 1 }); WB.resolve(G);
+    ok(!G.crates.some((q) => q.id === c.id) && G.stats.cratesLost === 1, 'a blast on the crate destroys it: nobody gets it');
+  }
+  { const G = flat({ crates: false }); for (let i = 0; i < 8; i++) pass(G); ok(G.crates.length === 0, 'opts.crates: false turns them off'); }
+  { // crates lean towards the side that is behind
+    let near = 0, n = 0;
+    for (let s = 1; s <= 40; s++) { const G = WB.newGame(s * 977, { map: 'hills' }); G.units[0].hp = Math.round(G.units[0].maxHp * 0.3); pass(G); pass(G); const c = G.crates[0]; if (!c) continue; n++; if (Math.abs(c.x - G.units[0].x) < Math.abs(c.x - G.units[1].x)) near++; }
+    ok(n > 25 && near / n > 0.8, `a crate lands nearer the unit that's behind on health (${near} of ${n})`);
+  }
+  { // combo: a second crewmate's hit on the same enemy, before that enemy's next turn, charges the shooter's SS
+    const G = flat({ size: 2, crates: false }), foe = G.units.find((u) => u.team === 1), a = G.units.find((u) => u.team === 0), b = G.units.find((u) => u.team === 0 && u !== a);
+    const hit = (by) => { G.actor = by.id; G.team = by.team; G.shooter = by.id; G.combo = false; G.phase = 'flight'; G.proj.push({ id: ++G._id, w: 'shot1', team: by.team, char: by.char, from: -1, age: 9, x: foe.x + 3, y: 57, vx: 0, vy: 3, wm: 1 }); const ss = by.ss; let t = 0; while (G.proj.length && t++ < 4000) WB.step(G); return by.ss - ss; };
+    foe.hp = foe.maxHp = 9999;
+    const first = hit(a), again = hit(a), second = hit(b);
+    ok(first === 0 && again === 0 && second === 1 && G.stats.combos === 1, `a crewmate following up on the same enemy gets a notch of SS (first hit ${first}, same unit again ${again}, crewmate ${second})`);
+  }
+  let bad = 0, opened = 0;
+  for (let s = 1; s <= 30; s++) { const o = { chars: [WB.CHAR_IDS[s % 10], WB.CHAR_IDS[(s * 3) % 10]] }, { G: F, log } = WB.playOut(WB.newGame(s * 5557, o), ['smart', 'smart']); opened += F.stats.crates[0] + F.stats.crates[1]; if (F.phase !== 'over' || WB.hash(WB.replay(s * 5557, log, o)) !== WB.hash(F)) bad++; }
+  ok(bad === 0 && opened > 5, `30 matches with crates finish and replay exactly (${opened} crates opened)`);
 }
 
 // 9. The map generator (mapgen.js) on its own: settings, codes, every preset, random settings, sizes.

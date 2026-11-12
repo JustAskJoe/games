@@ -25,7 +25,9 @@
   'use strict';
 
   const AIR = 0, DIRT = 1, ROCK = 2, PROP = 3, ACCENT = 4;
-  const SIZES = { small: { w: 128, h: 72, name: 'Small' }, medium: { w: 160, h: 90, name: 'Medium' }, large: { w: 200, h: 112, name: 'Large' }, huge: { w: 240, h: 135, name: 'Huge' } };
+  const SIZES = { small: { w: 128, h: 72, name: 'Small' }, medium: { w: 160, h: 90, name: 'Medium' }, large: { w: 200, h: 112, name: 'Large' }, huge: { w: 240, h: 135, name: 'Huge' }, giant: { w: 320, h: 180, name: 'Giant' } };
+  // the size a match needs: more units, more room (a game with a camera; 1v1 still fits one screen)
+  const sizeFor = (units) => (units <= 4 ? 'medium' : units <= 6 ? 'large' : units <= 8 ? 'huge' : 'giant');
   const SIZE_IDS = Object.keys(SIZES);
   // tuning tables, indexed by a setting's level
   const HEIGHTS = [0.74, 0.67, 0.6, 0.52, 0.44];   // typical ground-top row, as a share of the map height
@@ -434,7 +436,7 @@
   const SETTINGS = [
     { key: 'theme', label: 'Theme', type: 'choice', options: THEME_IDS, def: 'hills', help: 'Colours, props, liquid, wind and the hazard on the map.' },
     { key: 'landform', label: 'Landform', type: 'choice', options: ['auto'].concat(LANDFORM_IDS), def: 'auto', help: "The big shape. Auto uses the theme's own." },
-    { key: 'size', label: 'Size', type: 'choice', options: SIZE_IDS, def: 'medium', help: 'Grid size. Wormsbound plays Medium (160 × 90, the whole map on one screen) until it has a camera.' },
+    { key: 'size', label: 'Size', type: 'choice', options: SIZE_IDS, def: 'medium', help: 'Grid size. Wormsbound picks it from the number of units in the match (1v1: Medium, one screen; 5v5: Giant).' },
     { key: 'height', label: 'Height', type: 'level', names: ['Very low', 'Low', 'Normal', 'High', 'Very high'], def: 2, help: 'How high the ground stands. High ground: longer falls, more to dig through.' },
     { key: 'rugged', label: 'Ruggedness', type: 'level', names: ['Smooth', 'Rolling', 'Normal', 'Rough', 'Jagged'], def: 2, help: 'Bumps and cliffs on the surface. Rough ground gives cover but blocks low shots.' },
     { key: 'land', label: 'Land', type: 'level', names: ['Sparse', 'Light', 'Normal', 'Heavy', 'Packed'], def: 2, help: 'How much ground: gaps and chasms when sparse, wide solid ground when packed.' },
@@ -512,6 +514,36 @@
     return clean(s);
   }
 
+
+  // ---------- recipes: how each mode rolls a fresh map every round ----------
+  // A recipe is a pool of themes plus a [low, high] range for any level setting (anything not listed uses the theme's
+  // own default) and fixed values. roll(recipe, seed) picks from it with the seed, so every copy of a match (server,
+  // every browser, a replay) rolls the same settings. spawn: how the engine lays the sides out ('sides' = each side
+  // together, 'mixed' = interleaved, 'any' = one of the two by seed). under: the share of units that may start on a
+  // ledge or cave floor below the surface instead of on top.
+  const RECIPES = {
+    duel: { name: 'Duel', blurb: 'A fair fight for two: any theme, moderate everything, the odd mirrored map.',
+      ranges: { rugged: [1, 3], caves: [0, 2], overhangs: [0, 2], platforms: [0, 1], props: [1, 2], hazards: [0, 2], water: [1, 1], rock: [0, 1] }, mirror: 0.2, spawn: 'sides', under: 0 },
+    solo: { name: '1 Player', blurb: 'You against the computers: any theme, gentler ground and wind so a new player can find a shot.',
+      ranges: { rugged: [1, 2], caves: [0, 2], overhangs: [0, 1], platforms: [0, 1], props: [1, 2], hazards: [0, 1], water: [1, 1], weather: [0, 2], rock: [0, 0] }, mirror: 0, spawn: 'mixed', under: 0 },
+    ffa: { name: 'Free-for-all', blurb: 'Everyone for themselves: broken ground, more caves and platforms, hazards on.',
+      ranges: { rugged: [2, 4], land: [1, 3], caves: [1, 3], overhangs: [1, 2], platforms: [0, 2], props: [1, 3], hazards: [1, 3], water: [1, 2], rock: [0, 1] }, mirror: 0, spawn: 'mixed', under: 0.15 },
+    squads: { name: 'Squads', blurb: 'Crews of two to five a side: big maps with high ground, tunnels and somewhere to hide.',
+      ranges: { height: [2, 3], rugged: [2, 4], land: [1, 3], caves: [1, 3], overhangs: [1, 3], platforms: [0, 2], props: [1, 3], hazards: [1, 2], water: [1, 2], rock: [0, 2] }, mirror: 0.15, spawn: 'any', under: 0.25 },
+    teams: { name: 'Team battle', blurb: 'Five a side with one player per unit: a wide battlefield, each team starts together.',
+      ranges: { height: [2, 3], rugged: [1, 3], land: [2, 3], caves: [1, 3], overhangs: [1, 2], platforms: [0, 2], props: [1, 2], hazards: [1, 2], water: [1, 1], rock: [0, 2] }, mirror: 0.3, spawn: 'sides', under: 0.2 },
+  };
+  const RECIPE_IDS = Object.keys(RECIPES);
+  function roll(recipe, seed) {
+    const Rc = RECIPES[recipe] || RECIPES.duel, r = rng(((seed >>> 0) ^ 0x51ED270B) >>> 0), pool = Rc.themes || THEME_IDS;
+    const theme = pool[Math.floor(r() * pool.length)], s = Object.assign({}, THEMES[theme].set, { theme });
+    for (const k of Object.keys(Rc.ranges || {})) { const [lo, hi] = Rc.ranges[k]; s[k] = lo + Math.floor(r() * (hi - lo + 1)); }
+    s.symmetry = r() < (Rc.mirror || 0) ? 1 : 0;
+    Object.assign(s, Rc.fixed || {});
+    const out = clean(s); out.seed = 0; // seed 0: the layout follows the match seed
+    return out;
+  }
+
   // ---------- generate ----------
   function build(s, w, h, seed) {
     const th = THEMES[s.theme], c = { w, h, T: new Array(w * h).fill(AIR), r: rng(seed), s, th, lf: s.landform === 'auto' ? th.landform : s.landform, sx: w / 160, sy: h / 90, feats: [] };
@@ -587,7 +619,7 @@
     return out;
   }
 
-  const MapGen = { AIR, DIRT, ROCK, PROP, ACCENT, SIZES, SIZE_IDS, THEMES, THEME_IDS, LANDFORMS, LANDFORM_IDS, SETTINGS, PRESETS, PRESET_IDS, MAP_IDS, WIND, LIQUIDS: LIQ,
-    generate, resolve, encode, decode, defaults, randomSettings, check, surfaceY, spawnOK, spawnNear, spawns, draw, rng };
+  const MapGen = { AIR, DIRT, ROCK, PROP, ACCENT, SIZES, SIZE_IDS, THEMES, THEME_IDS, LANDFORMS, LANDFORM_IDS, SETTINGS, PRESETS, PRESET_IDS, MAP_IDS, RECIPES, RECIPE_IDS, WIND, LIQUIDS: LIQ,
+    generate, resolve, encode, decode, defaults, randomSettings, roll, sizeFor, check, surfaceY, spawnOK, spawnNear, spawns, draw, rng };
   if (typeof module !== 'undefined' && module.exports) module.exports = MapGen; else root.MapGen = MapGen;
 })(typeof window !== 'undefined' ? window : globalThis);

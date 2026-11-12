@@ -71,7 +71,11 @@ if all(rows.values()):
     if rows['dud value']['a'] < 48: fails.append(f"balance: duds aren't worth using (smart vs nodud {rows['dud value']['a']}%, band 48%+)")
     if rows['dud spam']['a'] > 65: fails.append(f"balance: dud spam wins {rows['dud spam']['a']}% (band 65% at most)")
 chars = {m[1]: int(m[2]) for m in re.finditer(r'^char (\w+)\s+wins (\d+)%', out, re.M)}
-if len(chars) != 5: fails.append(f'sim output has {len(chars)} character lines, expected 5')
+if len(chars) != 10: fails.append(f'sim output has {len(chars)} character lines, expected 10')
+gear = {m[1]: int(m[2]) for m in re.finditer(r'^gear (\w+)\s+\w+\s+wins (\d+)%', out, re.M)}
+if len(gear) != 14: fails.append(f'sim output has {len(gear)} gear lines, expected 14')
+for g, w in gear.items():  # v2: gear is an option, not an upgrade. 200 mirror matches is about +-7%, so the band is wide.
+    if not quick and not 38 <= w <= 64: fails.append(f'gear: carrying {g} wins {w}% against the same character without it (band 38-64%)')
 for c, w in chars.items():  # only judged on the full run: 30 matches a pair (--quick) is too rough to call
     if not 40 <= w <= 60:
         if quick: print(f'(quick run: {c} wins {w}% of the round-robin; the full run checks the 40-60% band)')
@@ -86,6 +90,13 @@ maps = {m[1]: (int(m[2]), int(m[3])) for m in re.finditer(r'^map (\w+)\s+turns.*
 if len(maps) < 20: fails.append(f'sim output has {len(maps)} map lines, expected 20 (every preset + custom)')
 for m, (to, st) in maps.items():  # every match on every map has to finish (the same rule as the mirror line)
     if to or st: fails.append(f'maps: {m} had {to} timeouts and {st} stuck matches')
+cv = re.search(r'^crate value\s+taker wins (\d+)%', out, re.M)
+if not cv: fails.append('sim output missing the "crate value" line')
+elif not quick and not 44 <= int(cv[1]) <= 66: fails.append(f'crates: the bot that takes them wins {cv[1]}% against one that ignores them (band 44-66%)')
+crews = {m[1]: (int(m[2]), int(m[3])) for m in re.finditer(r'^crew (\w+)\s+map.*?timeouts (\d+)\s+stuck (\d+)', out, re.M)}
+if len(crews) != 6: fails.append(f'sim output has {len(crews)} crew lines, expected 6 (2v2, 3v3, 5v5, teams5, ffa6, 4x3)')
+for c, (to, st) in crews.items():  # v2: every crew format has to finish on its own map size
+    if to or st: fails.append(f'crews: {c} had {to} timeouts and {st} stuck matches')
 if 'NaN' in (r.stdout + r.stderr): fails.append('balance: NaN in a unit')
 
 if not quick:
@@ -96,6 +107,7 @@ if not quick:
             if int(got) > int(width): fails.append(f'horizontal scroll at {width}px')
         run('online 1v1 in two browser pages (local server)', [sys.executable, 'test-online.py'], proto)
         run('online free-for-all in six browser pages (local server)', [sys.executable, 'test-online-ffa.py'], proto)
+        run('online team battle in three browser pages plus a computer (local server)', [sys.executable, 'test-online-teams.py'], proto)
     except ImportError:
         print('\n!! Playwright missing: pip install playwright && python -m playwright install chromium'); fails.append('playwright')
 
