@@ -72,34 +72,84 @@
   // Numbers tuned Nov 2, 2026 (1v1, one unit a side, with SS and turn delay) so every character wins 40-60% of
   // smart-bot matches across the roster (sim.js). Health here is the base; HP_MUL scales it by format.
   const CHARS = {
-    brick: { name: 'Brick', role: 'Tank', hp: 110, armor: 0.88, steps: 10, climb: 2,
+    brick: { name: 'Brick', role: 'Tank', cls: 'tank', gear: 'ricochet', hp: 110, armor: 0.88, steps: 10, climb: 2,
       blurb: 'Big, tough and slow. Takes 12% less damage. His heavy shots barely feel the wind.',
       shot1: { name: 'Slug', ammo: -1, delay: 680, r: 3.5, dmg: 40, wind: 0.45, desc: 'A heavy shell. Wind hardly moves it.' },
       shot2: { name: 'Wrecking Ball', ammo: 2, delay: 840, r: 5, dmg: 56, wind: 0.45, bounce: 1, desc: 'Bounces once, then a big blast.' },
       ss: { name: 'Meteor Slam', delay: 1040, r: 6, dmg: 56, wind: 0.3, speed: 0.95, desc: 'A huge, heavy shell: the biggest crater in the game.' } },
-    zip: { name: 'Zip', role: 'Scout', hp: 105, armor: 1, steps: 22, climb: 3,
+    zip: { name: 'Zip', role: 'Scout', cls: 'scout', gear: 'pistol', hp: 105, armor: 1, steps: 22, climb: 3,
       blurb: 'Quick on her feet. Walks twice as far as most and climbs higher ledges.',
       shot1: { name: 'Dart', ammo: -1, delay: 560, r: 3, dmg: 46, speed: 1.15, wind: 0.8, desc: 'Fast and flat, with a small blast.' },
       shot2: { name: 'Double Tap', ammo: 2, delay: 740, r: 3, dmg: 38, speed: 1.15, wind: 0.8, double: true, desc: 'Two darts, one right after the other.' },
       ss: { name: 'Bullet Rain', delay: 960, r: 3.2, dmg: 36, speed: 1.15, wind: 0.8, rain: { n: 5, spread: 4 }, desc: 'Five darts fanned out in a quick burst.' } },
-    volt: { name: 'Volt', role: 'All-rounder', hp: 100, armor: 1, steps: 14, climb: 2,
+    volt: { name: 'Volt', role: 'All-rounder', cls: 'gunner', gear: 'lobber', hp: 100, armor: 1, steps: 14, climb: 2,
       blurb: 'Steady and simple. Calls lightning down on anyone hiding under cover.',
       shot1: { name: 'Arc Ball', ammo: -1, delay: 600, r: 3.2, dmg: 46, desc: 'A plain, reliable shell.' },
       shot2: { name: 'Thunderstrike', ammo: 2, delay: 800, r: 3, dmg: 26, strike: { w: 2.2, dmg: 34 }, desc: 'Where it lands, lightning hits everyone close by, cover or not.' },
       ss: { name: 'Storm Call', delay: 1000, r: 3, dmg: 24, storm: { gap: 7, w: 2.4, dmg: 42 }, desc: 'Three lightning bolts: where it lands and 7 cells to each side.' } },
-    digger: { name: 'Digger', role: 'Miner', hp: 110, armor: 0.95, steps: 12, climb: 2,
+    digger: { name: 'Digger', role: 'Miner', cls: 'engineer', gear: 'thermite', hp: 110, armor: 0.95, steps: 12, climb: 2,
       blurb: 'Sturdy. Can tunnel straight through hills to reach someone dug in.',
       shot1: { name: 'Pick Shell', ammo: -1, delay: 620, r: 4, dmg: 40, desc: 'Digs a wide crater.' },
       shot2: { name: 'Drill', ammo: 2, delay: 800, r: 4, dmg: 48, drill: 14, desc: 'Bores through up to 14 cells of ground, then explodes.' },
       ss: { name: 'Earthquake', delay: 1000, r: 5, dmg: 40, quake: { dmg: 20 }, desc: 'A big blast, then a quake that hits every enemy standing on the ground.' } },
-    gale: { name: 'Gale', role: 'Wind-rider', hp: 90, armor: 1, steps: 16, climb: 2,
+    gale: { name: 'Gale', role: 'Wind-rider', cls: 'control', gear: 'well', hp: 90, armor: 1, steps: 16, climb: 2,
       blurb: 'Rides the wind. Her shots curve hard, and her Gust throws people into the water.',
       shot1: { name: 'Kite Bomb', ammo: -1, delay: 600, r: 4, dmg: 42, wind: 1.7, desc: 'Strong, but the wind pushes it a lot.' },
       shot2: { name: 'Gust Bomb', ammo: 2, delay: 780, r: 4.5, dmg: 24, wind: 1.7, knock: 2.2, desc: 'Weak blast, huge knockback.' },
       ss: { name: 'Tornado', delay: 980, r: 3, dmg: 20, wind: 1.3, tornado: { reach: 11, dmg: 16, push: 26 }, desc: 'Flings everyone within 11 cells away from it, you too.' } },
+    // --- the second five (v2, Nov 11, 2026): one more for each class, built from the same shot fields ---
+    tusk: { name: 'Tusk', role: 'Bruiser', cls: 'tank', gear: 'crater', hp: 107, armor: 0.92, steps: 9, climb: 2,
+      blurb: 'A battering ram. Not as tough as Brick, but every hit shoves people where they don\'t want to be.',
+      shot1: { name: 'Ram Shell', ammo: -1, delay: 660, r: 3.3, dmg: 36, wind: 0.6, knock: 1.4, desc: 'A solid hit with a hard shove.' },
+      shot2: { name: 'Bouncer', ammo: 2, delay: 820, r: 4.6, dmg: 50, wind: 0.6, bounce: 2, desc: 'Bounces twice, so it gets round corners, then a big blast.' },
+      ss: { name: 'Stampede', delay: 1020, r: 4.2, dmg: 32, wind: 0.6, knock: 1.5, rain: { n: 3, spread: 3.5 }, desc: 'Three ram shells in a row, each with a shove.' } },
+    hopper: { name: 'Hopper', role: 'Skirmisher', cls: 'scout', gear: 'triple', hp: 107, armor: 1, steps: 20, climb: 4,
+      blurb: 'Goes anywhere: climbs the highest ledges of anyone. Light shots that skip off the ground.',
+      shot1: { name: 'Pebble', ammo: -1, delay: 540, r: 3.1, dmg: 48, speed: 1.2, wind: 0.9, desc: 'Quick and light. The cheapest turn in the game.' },
+      shot2: { name: 'Skip Shot', ammo: 2, delay: 720, r: 3.4, dmg: 46, speed: 1.1, wind: 0.9, bounce: 2, desc: 'Skips twice off the ground before it blows.' },
+      ss: { name: 'Flurry', delay: 940, r: 2.7, dmg: 30, speed: 1.2, wind: 0.9, rain: { n: 7, spread: 2.6 }, desc: 'Seven pebbles in a tight fan.' } },
+    flint: { name: 'Flint', role: 'Gunner', cls: 'gunner', gear: 'tnt', hp: 100, armor: 1, steps: 14, climb: 2,
+      blurb: 'Fills the air with shot. Great at hitting something; less good at hitting one thing hard.',
+      shot1: { name: 'Flare', ammo: -1, delay: 600, r: 3.4, dmg: 46, speed: 1.05, desc: 'A plain, slightly quick shell.' },
+      shot2: { name: 'Scatter Flares', ammo: 2, delay: 780, r: 2.9, dmg: 25, rain: { n: 4, spread: 6 }, desc: 'Four small flares in a wide fan.' },
+      ss: { name: 'Barrage', delay: 1000, r: 3.6, dmg: 36, rain: { n: 5, spread: 1.6 }, desc: 'Five shells landing almost on top of each other.' } },
+    patch: { name: 'Patch', role: 'Engineer', cls: 'engineer', gear: 'dirt', hp: 106, armor: 0.95, steps: 13, climb: 2,
+      blurb: 'Reshapes the map. Short digs with wide blasts, and a quake that shakes the ground out from under people.',
+      shot1: { name: 'Bolt', ammo: -1, delay: 610, r: 3.5, dmg: 41, desc: 'A sturdy shell with a good crater.' },
+      shot2: { name: 'Shaped Charge', ammo: 2, delay: 800, r: 5, dmg: 46, drill: 7, desc: 'Bores 7 cells in, then blows a wide hole.' },
+      ss: { name: 'Sinkhole', delay: 1000, r: 7, dmg: 28, drill: 4, quake: { dmg: 14 }, desc: 'A huge crater, and a tremor that hits every enemy on the ground.' } },
+    nimbus: { name: 'Nimbus', role: 'Storm-caller', cls: 'control', gear: 'delayray', hp: 100, armor: 1, steps: 15, climb: 2,
+      blurb: 'Moves people instead of hurting them. Her Vacuum drags everyone towards the blast: off a ledge, into a pit, onto a dud.',
+      shot1: { name: 'Cloudburst', ammo: -1, delay: 600, r: 3.8, dmg: 43, wind: 1.5, desc: 'A wide blast that the wind carries.' },
+      shot2: { name: 'Vacuum', ammo: 2, delay: 780, r: 4.6, dmg: 28, wind: 1.5, knock: -1.9, desc: 'Weak blast that pulls everyone near it towards its centre.' },
+      ss: { name: 'Thunderhead', delay: 990, r: 3, dmg: 20, wind: 1.4, storm: { gap: 5, w: 2.1, dmg: 34 }, desc: 'Three lightning bolts close together: where it lands and 5 cells to each side.' } },
   };
   const CHAR_IDS = Object.keys(CHARS);
-  const WEAPON_IDS = ['shot1', 'shot2', 'dud', 'ss'];
+  // Classes: two characters each. A class decides which gear a character can carry.
+  const CLASSES = { tank: 'Tank', scout: 'Scout', gunner: 'Gunner', engineer: 'Engineer', control: 'Controller' };
+  // Gear (v2): one extra weapon per unit, chosen before the match, in a 4th slot. Each comes from the 100-weapon list in
+  // design/weapons.md (# is its number there). cls 'any' = everyone; otherwise only that class. Same fields as shots,
+  // plus: cluster { n, r, dmg } (bomblets when it lands), fill (adds ground instead of removing it), slow (turn delay
+  // added to every enemy in the blast). A negative knock pulls towards the blast.
+  const GEAR = {
+    pistol:   { name: 'Pocket Pistol', n: 6, cls: 'any', ammo: 3, delay: 420, r: 2.6, dmg: 28, speed: 1.1, double: true, desc: 'Two quick weak shots. The cheapest turn you can take.' },
+    rivet:    { name: 'Rivet Rifle', n: 1, cls: 'any', ammo: 2, delay: 620, r: 2.4, dmg: 22, speed: 1.2, wind: 0.3, rain: { n: 3, spread: 1.5 }, desc: 'Three fast flat shots the wind hardly touches.' },
+    lobber:   { name: 'Sky Lobber', n: 7, cls: 'any', ammo: 2, delay: 700, r: 4.2, dmg: 48, speed: 0.8, wind: 0.3, desc: 'A slow, heavy lob for dropping over walls. Aim high.' },
+    popcorn:  { name: 'Popcorn Bomb', n: 35, cls: 'any', ammo: 1, delay: 820, r: 3, dmg: 22, cluster: { n: 5, r: 2.6, dmg: 20 }, desc: 'Pops into five bomblets that scatter and blow.' },
+    crater:   { name: 'Crater Maker', n: 72, cls: 'tank', ammo: 1, delay: 1100, r: 9, dmg: 46, speed: 0.9, wind: 0.4, desc: 'One shell, one enormous hole. Reshapes the map.' },
+    ricochet: { name: 'Ricochet Repeater', n: 4, cls: 'tank', ammo: 2, delay: 700, r: 3.4, dmg: 44, wind: 0.5, bounce: 3, desc: 'Bounces off the ground up to three times.' },
+    scatter:  { name: 'Scattercan', n: 2, cls: 'scout', ammo: 2, delay: 680, r: 2.3, dmg: 20, speed: 1.1, rain: { n: 6, spread: 5 }, desc: 'Six pellets in a wide fan. Strong up close.' },
+    triple:   { name: 'Triple Barrel', n: 14, cls: 'scout', ammo: 2, delay: 720, r: 3.2, dmg: 36, speed: 1.1, rain: { n: 3, spread: 5 }, desc: 'Three shells fanned five degrees apart.' },
+    tnt:      { name: 'TNT Drop', n: 37, cls: 'gunner', ammo: 1, delay: 860, r: 4, dmg: 36, speed: 0.9, rain: { n: 3, spread: 2 }, desc: 'Three heavy bombs, one after another.' },
+    pinball:  { name: 'Pinball Shot', n: 9, cls: 'gunner', ammo: 2, delay: 680, r: 3.4, dmg: 48, speed: 1.1, bounce: 4, desc: 'Extra bouncy: up to four bounces before it blows.' },
+    thermite: { name: 'Thermite Spike', n: 48, cls: 'engineer', ammo: 2, delay: 780, r: 3.8, dmg: 52, drill: 20, desc: 'Burns through 20 cells of anything, then explodes.' },
+    dirt:     { name: 'Dirt Cannon', n: 53, cls: 'engineer', ammo: 2, delay: 560, r: 5, dmg: 0, knock: 0, fill: true, desc: 'Adds ground instead of removing it: build a wall, plug a tunnel.' },
+    well:     { name: 'Gravity Well', n: 51, cls: 'control', ammo: 2, delay: 760, r: 5, dmg: 26, knock: -2, desc: 'Pulls everyone near it in, then pops.' },
+    delayray: { name: 'Delay Ray', n: 65, cls: 'control', ammo: 2, delay: 600, r: 4, dmg: 20, knock: 0.3, slow: 300, desc: 'Barely hurts, but every enemy it catches takes their next turn later.' },
+  };
+  const GEAR_IDS = Object.keys(GEAR);
+  const gearFor = (ch) => GEAR_IDS.filter((g) => GEAR[g].cls === 'any' || GEAR[g].cls === CHARS[ch].cls); // what a character may carry
+  const WEAPON_IDS = ['shot1', 'shot2', 'dud', 'ss', 'gear'];
 
   // ---------- seeded RNG (state in G._s) ----------
   function R(G) { G._s = (G._s + 0x6D2B79F5) >>> 0; let t = G._s; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }
@@ -144,6 +194,8 @@
     const perUnit = !!opts.chars && opts.chars.length === spots && size > 1;
     const charAt = (t, i) => { const c = opts.chars && (perUnit ? opts.chars[t * size + i] : opts.chars[t]); return CHARS[c] ? c : 'volt'; };
     const chars = Array.from({ length: teams }, (_, t) => charAt(t, 0)); // each side's lead character (the HUD's label)
+    // opts.gear: a gear id per side or per unit, like opts.chars; '' or 'none' = no gear. Anything a character can't carry falls back to its own default.
+    const gearAt = (t, i, ch) => { const g = opts.gear && (opts.gear.length === spots && size > 1 ? opts.gear[t * size + i] : opts.gear[t]); return g === '' || g === 'none' ? null : gearFor(ch).includes(g) ? g : CHARS[ch].gear; };
     const G = {
       v: 3, seed: seed >>> 0, _s: (seed >>> 0) || 1, _id: 0, cols: COLS, rows: ROWS, map: 'hills', mapName: '', theme: 'hills', windMul: 1, mirror: false,
       phase: 'aim', turn: 0, team: 0, teams, size, actor: 0, spent: 0, chars,
@@ -177,7 +229,8 @@
       const y = deep.length ? deep[Math.floor(R(G) * deep.length)] : surfaceY(G, x);
       const own = opts.owners && Number.isInteger(opts.owners[t * size + i]) ? opts.owners[t * size + i] : t;
       G.units.push({ id: ++G._id, team: t, own, char: ch, x: x + 0.5, y, vx: 0, vy: 0, hp, maxHp: hp, alive: true, air: false, face: x < G.cols / 2 ? 1 : -1, delay: 0,
-        ammo: { shot1: C.shot1.ammo, shot2: C.shot2.ammo, dud: DUD.ammo }, ss: 0 });
+        gear: gearAt(t, i, ch), ammo: { shot1: C.shot1.ammo, shot2: C.shot2.ammo, dud: DUD.ammo, gear: 0 }, ss: 0 });
+      const nu = G.units[G.units.length - 1]; if (nu.gear) nu.ammo.gear = GEAR[nu.gear].ammo;
     }
     G.units.sort((a, b) => a.team - b.team || a.x - b.x); // ids stay as made; keep the list grouped by side
     // the map's hazards: barrels, and old live duds (anyone can lob them; they tick from turn 1). None right by a spawn.
@@ -244,7 +297,7 @@
   // or a side (its lead character).
   function shotSpec(G, who, w) {
     const C = who && typeof who === 'object' ? CHARS[who.char] : CHARS[who] || charOf(G, who);
-    const s = w === 'dud' ? DUD : C[w];  // shot1 | shot2 | ss
+    const s = w === 'dud' ? DUD : w === 'gear' ? GEAR[who && who.gear] || GEAR.pistol : C[w];  // shot1 | shot2 | ss | gear (a unit's own)
     return Object.assign({ wind: 1, speed: 1, knock: 1 }, s);
   }
 
@@ -294,7 +347,7 @@
   }
   function newShot(G, u, w, angle, power, team) {
     const s = shotSpec(G, u, w);
-    const p = Object.assign(launch(u, angle, power, s.speed), { id: ++G._id, w, team, char: u.char, from: u.id, age: 0, wm: s.wind });
+    const p = Object.assign(launch(u, angle, power, s.speed), { id: ++G._id, w, team, char: u.char, gear: w === 'gear' ? u.gear : undefined, from: u.id, age: 0, wm: s.wind });
     if (s.bounce) p.bounce = s.bounce;
     if (s.drill) p.drill = s.drill;
     if (w === 'dud') p.fuse = DUD.fuse;
@@ -312,7 +365,9 @@
       const k = 1 - d / reach;
       hurt(G, u, Math.round(dmg * k * CHARS[u.char].armor), byTeam);
       const nx = d > 0.01 ? (cx - x) / d : 0, ny = d > 0.01 ? (cy - y) / d : -1;
-      u.vx += nx * KNOCK * k * knockMul; u.vy += (ny - 0.6) * KNOCK * k * knockMul; u.air = true;
+      if (knockMul < 0) { u.vx += -nx * KNOCK * k * -knockMul; u.vy -= 0.45 * KNOCK * k * -knockMul; } // a pull: towards the centre, with a hop
+      else { u.vx += nx * KNOCK * k * knockMul; u.vy += (ny - 0.6) * KNOCK * k * knockMul; }
+      u.air = true;
     }
     G.fx.push({ k: 'boom', x, y, r, kind });
     // live duds caught in a blast go off too: chain reactions
@@ -323,6 +378,13 @@
     for (const u of G.units) if (u.alive && !supported(G, u)) u.air = true;
     for (const d of G.duds) if (!d.gone && !solidAt(G, d.x, d.y + 0.6)) d.air = true;
     for (const b of G.barrels) if (!b.gone && !solidAt(G, b.x, b.y + 0.6)) b.air = true;
+  }
+  // Dirt Cannon: add ground in a circle (never over a unit, a dud, a barrel, hard rock or the sky band at the top)
+  function fillGround(G, cx, cy, r) {
+    const clear = (x, y) => !G.units.some((u) => u.alive && Math.abs(u.x - (x + 0.5)) < 1.6 && y + 0.5 > u.y - UNIT_R * 2 - 0.6 && y < u.y) && !G.duds.some((d) => Math.hypot(d.x - x - 0.5, d.y - y - 0.5) < 1.2) && !G.barrels.some((b) => Math.hypot(b.x - x - 0.5, b.y - 1 - y - 0.5) < 1.6);
+    for (let y = Math.max(Math.round(G.rows * 0.1), Math.floor(cy - r)); y <= Math.min(G.rows - 1, Math.ceil(cy + r)); y++) for (let x = Math.max(0, Math.floor(cx - r)); x <= Math.min(G.cols - 1, Math.ceil(cx + r)); x++) {
+      const dx = x + 0.5 - cx, dy = y + 0.5 - cy; if (dx * dx + dy * dy <= r * r && !G.T[y * G.cols + x] && clear(x, y)) G.T[y * G.cols + x] = MapGen.DIRT;
+    }
   }
   function hurt(G, u, hit, byTeam) {
     if (hit <= 0 || !u.alive) return;
@@ -396,8 +458,13 @@
       G.duds.push(d); G.fx.push({ k: 'dud', id: d.id, x, y, fuse: d.fuse });
       return;
     }
-    const s = shotSpec(G, p.char || p.team, p.w);
+    const s = p.spec || shotSpec(G, p.w === 'gear' ? p : p.char || p.team, p.w);
+    if (s.fill) { fillGround(G, p.x, p.y, s.r); G.fx.push({ k: 'fill', x: p.x, y: p.y, r: s.r }); return; }
     explode(G, p.x, p.y, s.r, s.dmg, p.team, p.w === 'ss' ? 'ss' : p.w === 'shot2' ? (p.char || G.chars[p.team]) : 'shot', s.knock);
+    if (s.slow) { const reach = s.r * DMG_SPREAD, hits = []; for (const u of G.units) { const [cx, cy] = center(u); if (u.alive && u.team !== p.team && Math.hypot(cx - p.x, cy - p.y) <= reach) { u.delay += s.slow; hits.push(u.id); } } G.fx.push({ k: 'slow', x: p.x, y: p.y, hits }); }
+    if (s.cluster) for (let i = 0; i < s.cluster.n; i++) { // bomblets: thrown up and out, each a small blast of its own
+      const a = (i + 0.5) / s.cluster.n * Math.PI; G.proj.push({ id: ++G._id, w: 'frag', team: p.team, from: -1, age: 9, x: p.x, y: p.y - 1.2, vx: Math.cos(a) * 11, vy: -14 - Math.sin(a) * 6, wm: 1, spec: { r: s.cluster.r, dmg: s.cluster.dmg, knock: 1 } });
+    }
     if (s.strike) strike(G, p.x, s.strike.w, s.strike.dmg, p.team);
     if (s.storm) for (const dx of [0, -s.storm.gap, s.storm.gap]) strike(G, p.x + dx, s.storm.w, s.storm.dmg, p.team);
     if (s.quake) { // every enemy standing on the ground takes damage and is bounced up a little
@@ -510,7 +577,7 @@
       }
       case 'weapon': {
         if (WEAPON_IDS.indexOf(it.w) < 0) return false;
-        if (it.w === 'ss' ? !ssReady(G) : u.ammo[it.w] === 0) return false;
+        if (it.w === 'ss' ? !ssReady(G) : it.w === 'gear' ? !u.gear || u.ammo.gear === 0 : u.ammo[it.w] === 0) return false;
         G.weapon = it.w; return true;
       }
       case 'fire': {
@@ -519,7 +586,7 @@
         if (w === 'ss') { if (!ssReady(G)) return false; u.ss = 0; G.stats.ss++; }
         else { if (am[w] === 0) return false; if (am[w] > 0) am[w]--; }
         const sp = shotSpec(G, u, w);
-        G.spent += sp.delay;
+        G.spent += sp.delay; if (w === 'gear') G.stats.gear = (G.stats.gear || 0) + 1;
         if (sp.rain) { // Bullet Rain: a fan of darts, one after another
           const n = sp.rain.n;
           for (let i = 0; i < n; i++) { const q = newShot(G, u, w, it.angle + (i - (n - 1) / 2) * sp.rain.spread, it.power * (1 - 0.015 * i), G.team); q.wait = i * 7; G.proj.push(q); }
@@ -592,7 +659,7 @@
   const gauss = (r) => (r() + r() + r() - 1.5) * 1.15;
 
   // Score a landing spot for `team` with weapon w (from the bot's point of view).
-  function scoreLanding(G, land, w, team, fuse, char) {
+  function scoreLanding(G, land, w, team, fuse, char) { // char: the unit firing (or a character id)
     if (land.hit === 'water' || land.hit === 'out' || land.hit === 'timeout') return -1;
     if (w === 'dud') { // a dud is a threat over time, minus the risk it gets lobbed back
       const s = blastScore(G, land.x, land.y, DUD.r, DUD.dmg, team);
@@ -601,14 +668,17 @@
     }
     const S = shotSpec(G, char || team, w);
     const s = blastScore(G, land.x, land.y, S.r, S.dmg, team);
+    if (S.fill) return -1; // bots don't build (yet)
     let sc = s.theirs - 1.4 * s.mine;
     if (S.double) sc *= 1.8;
+    if (S.cluster) { const c = blastScore(G, land.x, land.y, S.cluster.r * 2.4, S.cluster.dmg * 1.6, team); sc += c.theirs - 1.4 * c.mine; } // the bomblets, roughly: a wider, weaker blast
+    if (S.slow) for (const u of G.units) { if (!u.alive || u.team === team) continue; const [cx, cy] = center(u); if (Math.hypot(cx - land.x, cy - land.y) <= S.r * DMG_SPREAD) sc += S.slow * 0.02; }
     if (S.strike) for (const u of G.units) if (u.alive && Math.abs(u.x - land.x) <= S.strike.w) sc += (u.team === team ? -1.4 : 1) * Math.min(u.hp, S.strike.dmg * CHARS[u.char].armor);
-    if (S.knock > 1) for (const u of G.units) { // a big push near the water or a cliff is worth a lot
+    if (Math.abs(S.knock) > 1) for (const u of G.units) { // a big push near the water or a cliff is worth a lot
       if (!u.alive) continue; const [cx, cy] = center(u); if (Math.hypot(cx - land.x, cy - land.y) > S.r * DMG_SPREAD) continue;
       if (G.water - u.y < 14 || u.x < 10 || u.x > G.cols - 10) sc += (u.team === team ? -1.4 : 1) * 0.6 * u.hp;
     }
-    if (S.rain) sc *= 3.2;
+    if (S.rain) sc *= 0.64 * S.rain.n;
     if (S.storm) for (const dx of [0, -S.storm.gap, S.storm.gap]) for (const u of G.units) if (u.alive && Math.abs(u.x - land.x - dx) <= S.storm.w) sc += (u.team === team ? -1.4 : 1) * Math.min(u.hp, S.storm.dmg * CHARS[u.char].armor);
     if (S.quake) for (const u of G.units) if (u.alive && u.team !== team) sc += Math.min(u.hp, S.quake.dmg * CHARS[u.char].armor);
     if (S.tornado) for (const u of G.units) {
@@ -625,7 +695,7 @@
     const tryOne = (angle, power) => {
       power = clamp(power, 0.1, 1) * powerCap;
       const land = predict(G, u, angle, power, w);
-      const sc = scoreLanding(G, land, w, u.team, fuse, u.char);
+      const sc = scoreLanding(G, land, w, u.team, fuse, u);
       if (sc > best.score) best = { score: sc, angle, power: power / powerCap };
     };
     for (let i = 0; i < st.tries; i++) {
@@ -664,6 +734,7 @@
     }
     opts.push({ w: 'shot1', ...s1 });
     if (ssReady(G) && !(st.ssSkip && rnd() < st.ssSkip)) { const x = bestShot(G, u, 'ss', st, rnd, 0); opts.push({ w: 'ss', ...x }); }
+    if (u.gear && u.ammo.gear !== 0 && !GEAR[u.gear].fill) { const g = bestShot(G, u, 'gear', st, rnd, 0); opts.push({ w: 'gear', ...g }); }
     if (u.ammo.shot2 !== 0) { const c = bestShot(G, u, 'shot2', st, rnd, 0); opts.push({ w: 'shot2', ...c, score: c.score * 1.05 }); }
     if (st.dud && u.ammo.dud !== 0) { const d = bestShot(G, u, 'dud', st, rnd, DUD.fuse); opts.push({ w: 'dud', ...d, score: d.score * st.dud }); }
     if (st.lob) for (const d of lobbable(G)) {
@@ -700,7 +771,7 @@
     const parts = [G.map, G.cols, G.turn, G.team, G.actor, G.spent, G.units.map((u) => u.delay).join(','), G.phase, r(G.wind), G.water, G.moves, G.winner, G.chars.join(','),
       G.units.map((u) => `${u.id}:${r(u.x)},${r(u.y)},${u.hp},${u.alive ? 1 : 0}`).join(';'),
       G.duds.map((d) => `${d.id}:${r(d.x)},${r(d.y)},${d.fuse}`).join(';'), G.barrels.map((b) => `${b.id}:${r(b.x)},${r(b.y)}`).join(';'),
-      G.units.map((u) => `${u.char},${u.ammo.shot2},${u.ammo.dud},${u.ss}`).join(';'), G.T.join('')];
+      G.units.map((u) => `${u.char},${u.gear || '-'},${u.ammo.shot2},${u.ammo.dud},${u.ammo.gear},${u.ss}`).join(';'), G.T.join('')];
     let h = 2166136261; const s = parts.join('|');
     for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
     return h.toString(16);
@@ -714,7 +785,7 @@
   }
 
   const WB = { TICK, COLS, ROWS, WATER0, GRAV, VMAX, WIND_MAX, UNIT_R, UNITS_PER_TEAM, HP, MOVE_STEPS, LOB_RANGE, LOB_POWER, SUDDEN_ROUNDS, MAX_ROUNDS, suddenTurn, maxTurns, DMG_SPREAD, SS_CHARGE, DELAY, HP_MUL, CREW_HP,
-    MAX_TEAMS, MAX_SIZE, MAX_UNITS, DUD, BARREL, CHARS, CHAR_IDS, WEAPON_IDS, MAPS, MAP_IDS, pickMap, recipeFor, MapGen, STYLES, newGame, act, step, resolve, current, owner, teamUnits, charOf, shotSpec, ssReady, ssOf, ammoOf, safeStep, turnOrder, delayIf, solidAt, surfaceY, center, lobbable, canLob,
+    MAX_TEAMS, MAX_SIZE, MAX_UNITS, DUD, BARREL, CHARS, CHAR_IDS, CLASSES, GEAR, GEAR_IDS, gearFor, WEAPON_IDS, MAPS, MAP_IDS, pickMap, recipeFor, MapGen, STYLES, newGame, act, step, resolve, current, owner, teamUnits, charOf, shotSpec, ssReady, ssOf, ammoOf, safeStep, turnOrder, delayIf, solidAt, surfaceY, center, lobbable, canLob,
     predict, blastScore, botTurn, playOut, hash, replay };
   if (typeof module !== 'undefined' && module.exports) module.exports = WB; else root.WB = WB;
 })(typeof window !== 'undefined' ? window : globalThis);

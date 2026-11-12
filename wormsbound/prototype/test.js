@@ -305,6 +305,27 @@ for (const m of WB.MAP_IDS) {
   ok(walked > 50, `bots walk on big maps (${walked} steps in 12 matches, ${lost} units lost to the water in all)`);
 }
 
+// 8c. v2 cast and gear: ten characters in five classes, one gear item per unit.
+{
+  const cls = {}; for (const c of WB.CHAR_IDS) (cls[WB.CHARS[c].cls] = cls[WB.CHARS[c].cls] || []).push(c);
+  ok(WB.CHAR_IDS.length === 10 && Object.keys(cls).length === 5 && Object.values(cls).every((v) => v.length === 2), `10 characters, 2 in each of 5 classes (${Object.entries(cls).map(([k, v]) => k + ': ' + v.join(' + ')).join('; ')})`);
+  ok(WB.GEAR_IDS.length === 14 && WB.CHAR_IDS.every((c) => WB.gearFor(c).length === 6 && WB.gearFor(c).includes(WB.CHARS[c].gear)), 'every character can carry 6 gear items (4 anyone\'s + 2 for its class), its default among them');
+  const g0 = WB.newGame(3, { chars: ['brick', 'gale'], gear: ['thermite', 'well'] });
+  ok(g0.units[0].gear === 'ricochet' && g0.units[1].gear === 'well', 'gear from another class falls back to the character\'s own default');
+  ok(WB.newGame(3, { gear: ['none', ''] }).units.every((u) => u.gear === null && u.ammo.gear === 0), "'none' means no gear");
+  const flat = (map, o) => { const G = WB.newGame(11, Object.assign({ map: { preset: 'hills', hazards: 0, caves: 0, props: 0 } }, o)), foe = G.units[1]; for (let x = 0; x < G.cols; x++) for (let y = 0; y < G.rows; y++) G.T[y * G.cols + x] = y >= 60 ? 1 : 0; for (const u of G.units) { u.y = 60; u.air = false; } G.units[0].x = 40.5; foe.x = 110.5; return G; };
+  const shoot = (G, x, y) => { const u = WB.current(G), s = WB.shotSpec(G, u, 'gear'); G.proj.push({ id: 950, w: 'gear', team: u.team, char: u.char, gear: u.gear, from: -1, age: 9, x, y, vx: 0, vy: 3, wm: 1 }); G.phase = 'flight'; WB.resolve(G); return s; };
+  { const G = flat(0, { gear: ['pistol', 'none'] }); WB.act(G, { k: 'weapon', w: 'gear' }); const a0 = G.units[0].ammo.gear; WB.act(G, { k: 'fire', angle: 80, power: 0.3 }); ok(a0 === 3 && G.units[0].ammo.gear === 2 && G.stats.gear === 1, 'firing gear uses one of its own ammo'); WB.resolve(G); }
+  { const G = flat(0, { gear: ['none', 'none'] }); ok(!WB.act(G, { k: 'weapon', w: 'gear' }), 'a unit with no gear can\'t pick the gear slot'); }
+  { const G = flat(0, { chars: ['nimbus', 'volt'], gear: ['well', 'none'] }), foe = G.units[1], x0 = foe.x; shoot(G, foe.x - 5, 58); ok(foe.x < x0 - 0.5, `Gravity Well pulls a unit towards the blast (${x0} → ${foe.x.toFixed(1)})`); }
+  { const G = flat(0, { chars: ['nimbus', 'volt'], gear: ['delayray', 'none'] }), foe = G.units[1], d0 = foe.delay; shoot(G, foe.x, 58); ok(foe.delay >= d0 + 300, `Delay Ray adds 300 turn delay to an enemy it catches (${d0} → ${foe.delay})`); }
+  { const G = flat(0, { chars: ['patch', 'volt'], gear: ['dirt', 'none'] }), foe = G.units[1], n0 = G.T.filter((v) => v).length, hp = foe.hp; shoot(G, foe.x + 6, 57); const n1 = G.T.filter((v) => v).length; ok(n1 > n0 + 20 && foe.hp === hp && !WB.solidAt(G, foe.x, foe.y - 1.5), `Dirt Cannon adds ground (${n1 - n0} cells), hurts nobody and never buries a unit`); }
+  { const G = flat(0, { gear: ['popcorn', 'none'] }); const before = G.T.filter((v) => v).length; shoot(G, 75, 58); const booms = before - G.T.filter((v) => v).length; const G2 = flat(0, { gear: ['pistol', 'none'] }); const b2 = G2.T.filter((v) => v).length; shoot(G2, 75, 58); ok(booms > (b2 - G2.T.filter((v) => v).length) * 2, 'Popcorn Bomb\'s bomblets dig far more than one small shell'); }
+  let bad = [];
+  for (const c of WB.CHAR_IDS) for (const g of WB.gearFor(c)) { const o = { chars: [c, WB.CHAR_IDS[(WB.CHAR_IDS.indexOf(c) + 3) % 10]], gear: [g, 'none'] }, { G: F, log } = WB.playOut(WB.newGame(777, o), ['smart', 'smart']); if (F.phase !== 'over' || WB.hash(WB.replay(777, log, o)) !== WB.hash(F)) bad.push(c + '/' + g); }
+  ok(!bad.length, `a match with every character carrying each gear it can finishes and replays exactly (60 loadouts) ${bad.slice(0, 3)}`);
+}
+
 // 9. The map generator (mapgen.js) on its own: settings, codes, every preset, random settings, sizes.
 {
   const MG = WB.MapGen, same = (a, b) => a.T.join('') === b.T.join('') && JSON.stringify(a.features) === JSON.stringify(b.features);

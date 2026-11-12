@@ -71,7 +71,11 @@ if all(rows.values()):
     if rows['dud value']['a'] < 48: fails.append(f"balance: duds aren't worth using (smart vs nodud {rows['dud value']['a']}%, band 48%+)")
     if rows['dud spam']['a'] > 65: fails.append(f"balance: dud spam wins {rows['dud spam']['a']}% (band 65% at most)")
 chars = {m[1]: int(m[2]) for m in re.finditer(r'^char (\w+)\s+wins (\d+)%', out, re.M)}
-if len(chars) != 5: fails.append(f'sim output has {len(chars)} character lines, expected 5')
+if len(chars) != 10: fails.append(f'sim output has {len(chars)} character lines, expected 10')
+gear = {m[1]: int(m[2]) for m in re.finditer(r'^gear (\w+)\s+\w+\s+wins (\d+)%', out, re.M)}
+if len(gear) != 14: fails.append(f'sim output has {len(gear)} gear lines, expected 14')
+for g, w in gear.items():  # v2: gear is an option, not an upgrade. 200 mirror matches is about +-7%, so the band is wide.
+    if not quick and not 38 <= w <= 64: fails.append(f'gear: carrying {g} wins {w}% against the same character without it (band 38-64%)')
 for c, w in chars.items():  # only judged on the full run: 30 matches a pair (--quick) is too rough to call
     if not 40 <= w <= 60:
         if quick: print(f'(quick run: {c} wins {w}% of the round-robin; the full run checks the 40-60% band)')
