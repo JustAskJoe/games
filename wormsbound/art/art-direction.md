@@ -56,7 +56,7 @@ Each is built from its job, and its gear is also its shot. No helmets, no army l
 ```
 roughs: canva                 # cloudflare (free, full size) | canva (links only) | off
 canva_roughs: on
-final_art_source: undecided   # set after the A/B pick: canva (painted) or pixellab (pixel; needs Hunter's OK to spend)
+final_art_source: undecided   # set after the A/B pick: canva (painted) or code (pixel art drawn by art/tools scripts, as in Rogue Shooter)
 slack_channel:                # none yet: the agent skips Slack until a channel is named here
 ```
 
@@ -70,7 +70,7 @@ Fill in once a source is chosen.
 | --- | --- | --- | --- |
 | canva | Character (anchor + cut-out parts) | | plan credits |
 | canva | Theme background (sky + 2 layers) | | plan credits |
-| pixellab | Character with idle, hop, aim and hit loops | | not priced yet |
+| code | Character sprite sheet (`art/tools/units.py`) | none | $0 |
 
 ## Brief template
 The agent copies this for each request into `art/briefs/<issue>-<slug>.md`.

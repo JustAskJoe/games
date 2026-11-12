@@ -11,7 +11,7 @@ ship: 9
 test: 3
 skip: 2
 hours_estimate: 60-110 (first art pass)
-money_estimate: $0 on Canva; PixelLab credits for the pixel test (needs Hunter's OK, R20)
+money_estimate: $0 (pixel art drawn in code; Canva plan credits for key art and portraits)
 team_needed: lead-artist, artist, ui-vector, tech-artist
 team_later: animator, marketing-artist
 
@@ -29,7 +29,7 @@ Today everything is **placeholder art drawn in code**: chunky 8-pixel terrain ce
 - **Units are tiny.** A unit is 3 cells (24 px) across on a one-screen map, and smaller when the v2 camera zooms out. Silhouette and colour carry everything (R9); fine detail never shows, so drift between images hardly matters.
 - **The ground has to stay code.** It is a destructible grid that every shot carves. Art can give it a texture and an edge, but the shape is the game's.
 - **Characters don't need to act.** They stand, aim, get knocked about and fall over. That is cut-out motion and a few short loops, not acting.
-- **There are only five characters,** and ten themes that already have palettes in `MapGen.THEMES`.
+- **There are ten characters** (five until the v2 pull request merges), and ten themes that already have palettes in `MapGen.THEMES`.
 
 **Where it fights AI (watch these):**
 1. **The genre has famous look-alikes.** Small round soldiers with big eyes and bazookas drift straight towards well-known artillery games. Every character needs a look-alike check (R17).
@@ -52,7 +52,7 @@ Counts are for a first full art pass of today's game (5 characters, 10 themes, v
 | 7 | Shots and VFX: shells, trails, blasts, lightning, tornado, splashes | ~15 | ✅ ship | Tech Artist | Code particles and shaders, as now, tuned per character. No image model. |
 | 8 | UI kit: HUD, buttons, shot icons, minimap frame, menus, Custom Map screen | 1 kit, ~20 icons | ✅ ship | UI & Vector Designer | SVG and CSS (R1, R2). Shot names and numbers are text the game draws. |
 | 9 | Logo, title screen key art | 1 + 1 | ✅ ship | UI & Vector (logo) + Artist (key art) | The key art becomes the **style anchor** (R3). No lettering in the painting (R1). |
-| 10 | **Pixel direction:** characters with walk, aim and hit loops | 5 | 🧪 test | Artist with PixelLab (when approved) | The studio's one shippable kind of frame animation, and it matches the 8-px grid. A two-character test decides direction A or B before any set is made. Spends PixelLab credits: Hunter's OK first (R20). |
+| 10 | **Pixel direction:** characters with idle, hurt, walk and aim frames | 10 | 🧪 test | Tech Artist, **drawn in code** (Rogue Shooter's method: Python scripts, no image model) | Matches the 8-px grid, costs nothing, and frames can't drift because a script draws them. **A first pass exists** in the v2 pull request (JustAskJoe/games#107): `art/tools/units.py` draws all ten characters with idle and hurt frames. Hunter chose this on Nov 11 instead of PixelLab. Walk and aim frames are still to do. |
 | 11 | Walk cycles in the painted direction | 5 | 🧪 test | Tech Artist | A two-frame waddle on cut-out parts. If it slides, units hop instead. |
 | 12 | Animated theme details (drifting embers, snow, swaying trees) | per theme | 🧪 test | Tech Artist | Code only. Trees are destructible grid stamps, so sway may not be worth it. |
 | 13 | Painted frame-by-frame character animation | — | ❌ skip | — | Drifts, and the units are 24 px. Use 2 and 11. |
@@ -123,11 +123,11 @@ Scaled from §6.2's "typical 2D indie game" (prices not re-checked on vendors' p
 | Terrain fills, props, hazard sprites | 10 themes | 10–18 | $0 (code and vector) |
 | Rigs, motion, VFX | 5 characters, ~15 effects | 14–28 | $0 (code) |
 | UI kit and logo | 1 | 8–14 | $0 (vector) |
-| Pixel test (direction A) | 2 characters | 2–4 | PixelLab credits: not priced here, Hunter's OK first |
+| Pixel direction A, drawn in code | 10 characters | 6–12 (a first pass is done) | $0 |
 | Reviews, finishing pass, records | — | 6–10 | $0 |
-| **Total** | | **about 60–110** | **$0 plus the pixel test** |
+| **Total** | | **about 60–110** | **$0** |
 
-If the pixel direction wins, rows 2 to 4 move to PixelLab and the money line needs a real number before anyone starts.
+If the pixel direction wins, characters stay in code and only key art, portraits and skies go to the Artist.
 
 ## 8. Legal flags for the legal reviewer
 
@@ -135,13 +135,13 @@ If the pixel direction wins, rows 2 to 4 move to PixelLab and the money line nee
 2. **The name "Wormsbound" is a working title** that leans on two existing game names. Not an art question, but the logo shouldn't be finalised until the name is.
 3. **Raw AI images in a shipped build** (Canva's terms, still open studio-wide).
 4. **Third-party datasets and models:** nothing from a research dataset (including the rigged-character dataset mentioned in section 2) is used, downloaded or committed. If that ever changes, its licence is read first.
-5. **PixelLab's terms** haven't been read by the studio (`pipeline-upgrade.md` §7 lists them as 🟡). Read before any pixel finals.
+5. **PixelLab** is no longer in this plan (pixel art is drawn in code). If it comes back, its terms need reading first (`pipeline-upgrade.md` §7 lists them as 🟡).
 
 ## 9. Decisions for the game's owner
 
 - [ ] @Louiemark, @Hunter: **approve this plan** (or say what to change). The Artist won't start concepts until it's merged.
-- [ ] @Louiemark: **direction A (pixel) or B (painted cut-outs)?** Recommended: run the two-character test first (Brick and Gale, each in A and B, at 24 px on a phone), then pick.
-- [ ] @Hunter: **OK to spend PixelLab credits on the two-character pixel test?** (R20)
+- [ ] @Louiemark: **direction A (pixel, drawn in code) or B (painted cut-outs)?** A now has a first pass of all ten characters to judge (in JustAskJoe/games#107, `wormsbound/art/concepts/units.png`). B would still need its two-character test.
+- [x] @Hunter: ~~OK to spend PixelLab credits on the pixel test?~~ Not needed: Hunter chose pixel art drawn in code, as in Rogue Shooter (Hunter, Nov 11). No spend.
 - [ ] @Louiemark: **keep the five characters' current shapes** as the starting point for their designs, or open them up?
 - [ ] @Louiemark: **hop instead of walk** (suggestion 3)?
 - [ ] @Louiemark, @Hunter: which **Slack channel** should the Artist post to (it skips Slack if `art-direction.md` names none)?
