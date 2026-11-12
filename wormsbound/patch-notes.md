@@ -6,6 +6,22 @@ Newest on top. See the repo's CLAUDE.md for how patch notes work.
 
 ---
 
+## Lead art plan · 2026-11-11 · Hunter (with Claude)
+Art only, no build change. The first step of the art rework: the Lead Artist's plan for Wormsbound and a draft art direction, for the crew to review.
+
+### What's new
+- [`art/lead-plan.md`](art/lead-plan.md) (**draft**): what ships, what's a test and what's skipped; risks; hours; decisions for Louiemark and Hunter. The short version: keep the ground, props, shots and UI in code and vector; characters, portraits, skies and key art come from the Artist; test a pixel finish against painted cut-outs on two characters before making any set.
+- [`art/art-direction.md`](art/art-direction.md) (**draft**): the look, palette, the five characters' shapes, sizes and the style lead the Artist reads.
+
+### Next up
+- [ ] @Louiemark, @Hunter: review and approve the plan (its section 9 has six decisions). The Artist won't start concepts for Wormsbound until a plan is merged.
+- [ ] After that: file the first art request (the style anchor plus Brick and Gale in both finishes) in the Art Cottage.
+
+### Watch out
+- [ ] The plan counts on the map generator (JustAskJoe/games#95) and v2 (JustAskJoe/games#107) merging: ten themes and a camera. If they don't, its counts are too high.
+- [ ] Prices in the plan come from `kit/art/pipeline-upgrade.md`; none were re-checked on a vendor's page. The pixel test would spend PixelLab credits and needs Hunter's OK first.
+- [ ] The rigged-character dataset Hunter saw on Nov 5 is not part of the studio and isn't used; the plan says why (section 2). The Animator role is still "to be hired".
+
 ## P1 online · 2026-11-02 · Louiemark (with Claude)
 Online 1v1 and an online free-for-all for up to 6 players. The room server is live on Cloudflare (`wss://wormsbound-rooms.louiemark-ambata.workers.dev`) and the game uses it.
 
