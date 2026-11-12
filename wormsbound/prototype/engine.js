@@ -586,14 +586,14 @@
         if (w === 'ss') { if (!ssReady(G)) return false; u.ss = 0; G.stats.ss++; }
         else { if (am[w] === 0) return false; if (am[w] > 0) am[w]--; }
         const sp = shotSpec(G, u, w);
-        G.spent += sp.delay; if (w === 'gear') G.stats.gear = (G.stats.gear || 0) + 1;
+        G.spent += sp.delay; if (w === 'gear') G.stats.gear = (G.stats.gear || 0) + 1; if (w === 'shot2') G.stats.shot2++;
         if (sp.rain) { // Bullet Rain: a fan of darts, one after another
           const n = sp.rain.n;
           for (let i = 0; i < n; i++) { const q = newShot(G, u, w, it.angle + (i - (n - 1) / 2) * sp.rain.spread, it.power * (1 - 0.015 * i), G.team); q.wait = i * 7; G.proj.push(q); }
           G.stats.shots++; u.face = Math.cos(it.angle * Math.PI / 180) >= 0 ? 1 : -1; G.phase = 'flight'; return true;
         }
         const p = newShot(G, u, w, it.angle, it.power, G.team);
-        G.proj.push(p); G.stats.shots++; if (w === 'shot2') G.stats.shot2++;
+        G.proj.push(p); G.stats.shots++;
         if (sp.double) { // Double Tap: a second dart a third of a second later
           const q = newShot(G, u, w, it.angle, it.power * 0.96, G.team); q.wait = 20; G.proj.push(q);
         }

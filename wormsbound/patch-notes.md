@@ -19,6 +19,10 @@ Bigger fights on maps made for them. A proposal for Louiemark: it sits on top of
 - **Online team battle** (ONLINE → MAKE A TEAM BATTLE): up to 5 v 5 with **one player per unit**. Computers play the empty slots, so one person can start a 5v5, and a computer covers for anyone who drops out until they're back.
 - Online free-for-alls with 5 or 6 players get a Large map and the camera.
 - Computers walk towards the fight on big maps instead of standing out of range, and never into the water.
+- **Five new characters, ten in all,** in five classes of two: **Tusk** (Tank: every shot shoves), **Hopper** (Scout: climbs anything, shots that skip), **Flint** (Gunner: fans of flares), **Patch** (Engineer: wide digs and a sinkhole) and **Nimbus** (Controller: her Vacuum pulls people towards the blast).
+- **Gear:** every unit carries one extra weapon in a 4th slot (key 4), picked after its character. Four anyone can carry, two more for each class; 14 so far, all from the 100-weapon list (Popcorn Bomb, Crater Maker, Dirt Cannon, Gravity Well, Delay Ray...). Press Enter to take the usual one.
+- **Pixel art for every character,** drawn in code the way Rogue Shooter's is: the round placeholder units are now sprites, in every team colour.
+- The character screen shows all ten as small cards with one detail panel; the feedback form scrolls.
 - **Fixed:** a drawn round used to be replayed on exactly the same map (and two bots would draw it again, forever). A replayed round now gets a new map, online and offline.
 
 ### Next up
@@ -27,10 +31,17 @@ Bigger fights on maps made for them. A proposal for Louiemark: it sits on top of
 - [ ] @Louiemark: **redeploy the room server** when this merges (the protocol gained team rooms; old pages against a new server are fine, new pages against the old server can't make a team battle).
 - [ ] Art rework: the Lead Artist plan for Wormsbound is its own pull request. The Artist can't start concepts until it's merged.
 - [ ] Let the online host pick a map or a share code.
+- [ ] A gear picker in the online lobbies (online uses each character's usual gear for now).
+- [ ] More of the weapons list as gear; then crates and in-match levelling on top of it.
 - [ ] After v2: characters with builds (the "champion" layer).
 
 ### Watch out
 - [ ] **Nobody has played any of this.** Bots, in-process players and headless browsers only. The camera, right-drag, pinch and the minimap have never been used by a hand.
+- [ ] **The new five and all the gear are first guesses.** Bot sim only: characters win 44 to 56% each, and carrying a gear item wins 43 to 57% against not carrying it. Nobody has played them.
+- [ ] **Bots can't judge everything:** they never fire the Dirt Cannon, and they value the Delay Ray and the pull by rule of thumb. Those three need people.
+- [ ] **Vacuum and Gravity Well pull units off ledges and into the liquid.** That's the point, but it may feel unfair in play; not tested with people.
+- [ ] The sprites are a first pass: three frames a character, no walk or aim frames, and the old code-drawn launcher is still on top. Terrain and backgrounds are unchanged.
+- [ ] The crew-size sim numbers above were measured before the new characters; the final run's are in the pull request.
 - [ ] **A 5v5 is long:** a median of 63 turns in the bot sim (six turns a unit), and over half reach sudden death. Crews of 5 have 10% less health and earlier sudden death to get there; a first pass was 78.
 - [ ] **Touch:** two-finger pan and pinch are written but untested on a real phone. On a phone the whole stage is small, so a Giant map is hard to read.
 - [ ] **Per-unit SS changes crews:** a unit charges only on its own turns, so the first SS in a 5v5 arrives around turn 30.

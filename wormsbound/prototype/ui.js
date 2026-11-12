@@ -43,6 +43,7 @@
   const ui = {
     screen: 'title', G: null, matchSeed: 0, round: 1, wins: [0, 0], aim: {}, weapon: 'shot1', lob: false, picks: [null, null], pickTeam: 0, cursor: 2,
     mode: 'duel', level: 'medium', cpu: null, mapPick: startMap(), net: null, you: 0, remoteAim: null,
+    gear: [], pendingChar: null,
     sq: { size: clamp(+lsGet('wb-crew') || 3, 2, 5), vs: lsGet('wb-crewvs') === 'p2' ? 'p2' : 'cpu' },
     cam: { on: false, x: 0, y: 0, z: 1, cx: 0, cy: 0, tx: 0, ty: 0, zoom: 1, manual: false, over: false },
     drag: null, acc: 0, last: 0, slow: 0, shake: 0, parts: [], trails: {}, scorch: [], clouds: [], dust: [], pops: [],
@@ -274,6 +275,8 @@
   // ---------- engine events → effects ----------
   function onFx(fx) {
     for (const e of fx) {
+      if (e.k === 'fill') { ui.terrainDirty = true; burst(e.x * CELL, e.y * CELL, 14, 'chunk'); noise(0.25, 300, 120, 0.1); }
+      if (e.k === 'slow') for (const id of e.hits) { const hu = ui.G.units.find((v) => v.id === id); if (hu) ui.pops.push({ x: hu.x * CELL, y: hu.y * CELL - 44, t: 0, text: 'SLOWED', c: '#8FD8FF' }); }
       if (e.k === 'boom') {
         const x = e.x * CELL, y = e.y * CELL, r = e.r * CELL;
         ui.scorch.push({ x, y, r }); ui.terrainDirty = true;
@@ -432,10 +435,18 @@
     if (ui.screen === 'level') { if (/^[1-3]$/.test(k)) { ui.level = Object.keys(LEVELS)[+k - 1]; ui.cursor = 2; selectScreen(0); } return; }
     if (ui.screen === 'select') {
       const n = WB.CHAR_IDS.length;
-      if (k === 'ArrowLeft' || k === 'a' || k === 'A') { ui.cursor = (ui.cursor + n - 1) % n; selectScreen(ui.pickTeam); }
-      else if (k === 'ArrowRight' || k === 'd' || k === 'D') { ui.cursor = (ui.cursor + 1) % n; selectScreen(ui.pickTeam); }
+      if (k === 'ArrowLeft' || k === 'a' || k === 'A') selLook((ui.cursor + n - 1) % n);
+      else if (k === 'ArrowRight' || k === 'd' || k === 'D') selLook((ui.cursor + 1) % n);
+      else if (k === 'ArrowUp' || k === 'ArrowDown' || k === 'w' || k === 'W' || k === 's' || k === 'S') { e.preventDefault(); selLook((ui.cursor + 5) % n); }
       else if (k === 'Enter' || k === ' ') { e.preventDefault(); choose(WB.CHAR_IDS[ui.cursor]); }
-      else if (/^[1-5]$/.test(k)) choose(WB.CHAR_IDS[+k - 1]);
+      else if (/^[0-9]$/.test(k)) choose(WB.CHAR_IDS[(+k + 9) % 10]);
+      return;
+    }
+    if (ui.screen === 'gear') {
+      const gs = WB.gearFor(ui.pendingChar);
+      if (k === 'Enter' || k === ' ') { e.preventDefault(); chooseGear(WB.CHARS[ui.pendingChar].gear); }
+      else if (/^[1-6]$/.test(k) && gs[+k - 1]) chooseGear(gs[+k - 1]);
+      else if (k === 'Escape') selectScreen(ui.pickTeam);
       return;
     }
     if (k === 'Escape' || k === 'p' || k === 'P') { if (ui.screen === 'game') { e.preventDefault(); toggleMenu(); } return; }
@@ -451,12 +462,13 @@
     else if (k === 'f' || k === 'F') { a.angle = 180 - a.angle; }
     else if (k === '1') pickWeapon(WB.ssReady(ui.G) ? 'ss' : 'shot1');
     else if (k === '2' || k === '3') pickWeapon(WB.WEAPON_IDS[+k - 1]);
+    else if (k === '4') pickWeapon('gear');
     else if (k === 'l' || k === 'L') toggleLob();
     else if (k === ' ' || k === 'Enter') { e.preventDefault(); doFire(); }
     if (/^(Arrow(Up|Down)|[wWsSqQeEfF])$/.test(k)) shareAim(a);
     else if (k === 'x' || k === 'X') pass();
   });
-  function pickWeapon(w) { if (!canAct() || (w === 'ss' ? !WB.ssReady(ui.G) : WB.ammoOf(ui.G)[w] === 0)) return; ui.weapon = w; ui.lob = false; SFX.click(); renderCtl(); coachLine(); }
+  function pickWeapon(w) { if (!canAct() || (w === 'ss' ? !WB.ssReady(ui.G) : w === 'gear' ? !WB.current(ui.G).gear || WB.ammoOf(ui.G).gear === 0 : WB.ammoOf(ui.G)[w] === 0)) return; ui.weapon = w; ui.lob = false; SFX.click(); renderCtl(); coachLine(); }
   function toggleLob() { if (!canAct() || !WB.lobbable(ui.G).length) return; ui.lob = !ui.lob; SFX.click(); renderCtl(); coachLine(); }
 
   // ---------- HUD and controls (DOM) ----------
@@ -493,10 +505,11 @@
     const aim = G.phase === 'aim', am = WB.ammoOf(G), lob = WB.lobbable(G).length > 0;
     const wb = (w, key) => { const S = WB.shotSpec(G, WB.current(G), w);
       return `<button class="btn wpn${ui.weapon === w && !ui.lob ? '' : ' ghost'}" type="button" data-w="${w}" aria-pressed="${ui.weapon === w && !ui.lob}" title="${esc(S.desc)} Turn delay +${S.delay}." ${!aim || am[w] === 0 ? 'disabled' : ''}>${esc(S.name)}<small>${key} · ${am[w] < 0 ? '∞' : am[w] + ' left'} · ⏱${S.delay}</small></button>`; };
+    $('#ctl').classList.toggle('four', !!(WB.current(G) && WB.current(G).gear));
     $('#ctl').innerHTML = `<button class="btn ghost" type="button" data-walk="-1" aria-label="Walk left" ${aim && G.moves ? '' : 'disabled'}>◀</button>
       <span class="steps">${G.moves} steps</span>
       <button class="btn ghost" type="button" data-walk="1" aria-label="Walk right" ${aim && G.moves ? '' : 'disabled'}>▶</button>
-      ${WB.ssReady(G) ? `<button class="btn wpn ss${ui.weapon === 'ss' && !ui.lob ? '' : ' dim'}" type="button" data-w="ss" aria-pressed="${ui.weapon === 'ss' && !ui.lob}" title="${esc(WB.shotSpec(G, WB.current(G), 'ss').desc)}" ${aim ? '' : 'disabled'}>SS · ${esc(WB.shotSpec(G, WB.current(G), 'ss').name)}<small>1 · ready · ⏱${WB.shotSpec(G, WB.current(G), 'ss').delay}</small></button>` : wb('shot1', '1')}${wb('shot2', '2')}${wb('dud', '3')}
+      ${WB.ssReady(G) ? `<button class="btn wpn ss${ui.weapon === 'ss' && !ui.lob ? '' : ' dim'}" type="button" data-w="ss" aria-pressed="${ui.weapon === 'ss' && !ui.lob}" title="${esc(WB.shotSpec(G, WB.current(G), 'ss').desc)}" ${aim ? '' : 'disabled'}>SS · ${esc(WB.shotSpec(G, WB.current(G), 'ss').name)}<small>1 · ready · ⏱${WB.shotSpec(G, WB.current(G), 'ss').delay}</small></button>` : wb('shot1', '1')}${wb('shot2', '2')}${wb('dud', '3')}${WB.current(G) && WB.current(G).gear ? wb('gear', '4') : ''}
       <button class="btn teal" type="button" data-act="lob" aria-pressed="${ui.lob}" ${aim && lob ? '' : 'disabled'} title="Pick up a live dud in reach (L)">LOB</button>
       <button class="btn fire" type="button" data-act="fire" ${aim ? '' : 'disabled'}>FIRE</button>
       <button class="btn ghost sm" type="button" data-act="pass" ${aim ? '' : 'disabled'} title="End your turn (X)">Skip</button>`;
@@ -516,6 +529,7 @@
     else if (ui.turnsSeen <= 5) t = 'Keys: <b>◀ ▶</b> walk · <b>▲ ▼</b> angle · <b>Q/E</b> power · <b>1 2 3</b> shots · <b>Space</b> fire.';
     else if (ui.weapon === 'ss') t = `<b>SS ready: ${esc(WB.shotSpec(G, WB.current(G), 'ss').name)}!</b> ${esc(WB.shotSpec(G, WB.current(G), 'ss').desc)} It replaces Shot 1 until you use it.`;
     else if (ui.weapon === 'shot2') t = `<b>${esc(WB.shotSpec(G, WB.current(G), 'shot2').name)}:</b> ${esc(WB.shotSpec(G, WB.current(G), 'shot2').desc)} (${WB.ammoOf(G).shot2} left this match)`;
+    else if (ui.weapon === 'gear') t = `<b>${esc(WB.shotSpec(G, WB.current(G), 'gear').name)}:</b> ${esc(WB.shotSpec(G, WB.current(G), 'gear').desc)} (${WB.ammoOf(G).gear} left this match)`;
     else if (ui.weapon === 'dud') t = 'A live dud lands and ticks for <b>3 turns</b>. Anyone close can lob it back, so drop it where they can\'t reach.';
     else t = '';
     el.innerHTML = t;
@@ -530,7 +544,7 @@
     <div><b>3 · Ground</b>Blasts carve the map. Knock them into the water or off a cliff.</div>
     <div><b>4 · Live duds</b>A dud ticks for 3 turns. Walk up to one and LOB it back.</div>
     <div style="grid-column:1/-1"><b>5 · SS (Special Shot)</b>Your character's ultimate. It charges one notch a turn (the SS meter up top) and takes over Shot 1 when it's full. Using it starts the charge again.</div></div>
-    <p class="keys">Keys: ◀ ▶ / A D walk · ▲ ▼ / W S angle (Shift = fine) · Q E power · F flip · 1 2 3 shots · L lob · Space fire · X skip · Esc menu</p>`;
+    <p class="keys">Keys: ◀ ▶ / A D walk · ▲ ▼ / W S angle (Shift = fine) · Q E power · F flip · 1 2 3 shots · 4 gear · L lob · Space fire · X skip · Esc menu</p>`;
   function titleScreen() {
     ui.screen = 'title'; renderCtl(); coachLine();
     const wide = () => { const c = $('#screen .card'); if (c) c.classList.add('title'); };
@@ -670,6 +684,15 @@
   }
   // ---------- character select: each crew picks one of five ----------
   function statBar(label, v, txt) { return `<div class="sb"><span>${label}</span><i><b style="width:${Math.round(clamp(v, 0.06, 1) * 100)}%"></b></i><em>${txt}</em></div>`; }
+  function charDetail(id, team, mul) {
+    const C = WB.CHARS[id], T = TEAMS[team];
+    return `<div class="cdl"><img src="${portrait(id, team)}" alt="" width="150" height="110"><div><b class="cn" style="color:${T.c}">${esc(C.name)}</b><span class="role">${esc(C.role)} · ${esc(WB.CLASSES[C.cls])}</span><span class="bl">${esc(C.blurb)}</span></div></div>
+      <div class="cdm">${statBar('Health', C.hp / 118, Math.round(C.hp * mul))}${statBar('Armour', (1 - C.armor) / 0.15 + 0.06, C.armor < 1 ? `−${Math.round((1 - C.armor) * 100)}%` : '–')}${statBar('Move', C.steps / 22, C.steps + ' steps')}${statBar('Wind grip', (2 - (C.shot1.wind || 1)) / 1.55, (C.shot1.wind || 1) < 1 ? 'steady' : (C.shot1.wind || 1) > 1 ? 'curvy' : 'normal')}</div>
+      <div class="cdr"><span class="sh"><b>1 · ${esc(C.shot1.name)}</b> ${esc(C.shot1.desc)}</span>
+        <span class="sh two"><b>2 · ${esc(C.shot2.name)}</b> ${esc(C.shot2.desc)} <em>2 a match</em></span>
+        <span class="sh ss"><b>SS · ${esc(C.ss.name)}</b> ${esc(C.ss.desc)} <em>every ${WB.SS_CHARGE} turns</em></span>
+        <span class="sh"><b>4 · Gear</b> picks one of ${WB.gearFor(id).length} next. Usually ${esc(WB.GEAR[C.gear].name)}.</span></div>`;
+  }
   function selectScreen(team) {
     ui.screen = 'select'; ui.pickTeam = team; ui.G = null; ui.paused = false;
     renderHUD(); renderCtl(); coachLine();
@@ -677,37 +700,60 @@
     const other = ui.mode === 'duel' && team === 1 && ui.picks[0] ? `Player 1 picked <b style="color:${TEAMS[0].c}">${esc(WB.CHARS[ui.picks[0]].name)}</b>. ` : '';
     const mul = sq ? WB.CREW_HP[ui.sq.size] : ui.mode === 'solo' ? WB.HP_MUL.ffa : WB.HP_MUL.duel;
     const who = sq ? (ui.sq.vs === 'cpu' ? 'Your crew' : `Player ${team + 1}'s crew`) : '';
+    ui.cursor = clamp(ui.cursor, 0, WB.CHAR_IDS.length - 1);
     const cards = WB.CHAR_IDS.map((id, i) => {
       const C = WB.CHARS[id];
-      return `<button class="char${i === ui.cursor ? ' cur' : ''}" type="button" data-act="pick" data-char="${id}" style="--tc:${T.c}" aria-label="${esc(C.name)}, ${esc(C.role)}">
-        <img src="${portrait(id, team)}" alt="" width="150" height="110"><span class="num">${i + 1}</span>
-        <b class="cn">${esc(C.name)}</b><span class="role">${esc(C.role)}</span>
-        ${statBar('Health', C.hp / 115, Math.round(C.hp * mul))}${statBar('Armour', (1 - C.armor) / 0.15 + 0.06, C.armor < 1 ? `−${Math.round((1 - C.armor) * 100)}%` : '–')}${statBar('Move', C.steps / 22, C.steps + ' steps')}${statBar('Wind grip', (2 - (C.shot1.wind || 1)) / 1.55, (C.shot1.wind || 1) < 1 ? 'steady' : (C.shot1.wind || 1) > 1 ? 'curvy' : 'normal')}
-        <span class="bl">${esc(C.blurb)}</span>
-        <span class="sh"><b>1 · ${esc(C.shot1.name)}</b> ${esc(C.shot1.desc)}</span>
-        <span class="sh two"><b>2 · ${esc(C.shot2.name)}</b> ${esc(C.shot2.desc)} <em>2 a match</em></span>
-        <span class="sh ss"><b>SS · ${esc(C.ss.name)}</b> ${esc(C.ss.desc)} <em>every ${WB.SS_CHARGE} turns</em></span></button>`;
+      return `<button class="char mini${i === ui.cursor ? ' cur' : ''}" type="button" data-act="pick" data-char="${id}" data-i="${i}" style="--tc:${T.c}" aria-label="${esc(C.name)}, ${esc(C.role)}, ${esc(WB.CLASSES[C.cls])}">
+        <img src="${portrait(id, team)}" alt="" width="150" height="110"><span class="num">${(i + 1) % 10}</span>
+        <b class="cn">${esc(C.name)}</b><span class="role">${esc(WB.CLASSES[C.cls])}</span></button>`;
     }).join('');
     $('#screen').innerHTML = `<div class="screen"><div class="pick" role="dialog" aria-modal="true">
       <div class="tag">${sq ? `Squads · ${ui.sq.size} v ${ui.sq.size} · step 2 of 2` : ui.mode === 'solo' ? `1 Player · ${LEVELS[ui.level].name} · step 2 of 2` : `2 Players · step ${team + 1} of 2`} · everyone also carries 2 Live duds</div>
       <h2 style="color:${T.c}">${sq ? `${who}: pick unit ${mine.length + 1} of ${ui.sq.size}` : ui.mode === 'solo' ? 'Pick your character' : `Player ${team + 1}, pick your character`}</h2>
       <p class="sub">${sq ? `<span class="crewslots">${Array.from({ length: ui.sq.size }, (_, i) => `<b style="--tc:${T.c}" class="${mine[i] ? 'on' : ''}">${mine[i] ? esc(WB.CHARS[mine[i]].name) : i + 1}</b>`).join('')}</span> The same character twice is fine. ${ui.sq.vs === 'cpu' ? 'The computer picks its own crew.' : ''}` : other + (ui.mode === 'solo' ? 'The three computers get random characters.' : 'Same pick as the other player is fine.')}</p>
-      <div class="chars">${cards}</div>
-      <div class="row"><button class="btn ghost sm" type="button" data-act="pickback">Back</button>${sq ? '<button class="btn gold sm" type="button" data-act="crewfill">Fill the rest for me</button>' : ''}<span class="keys">← → choose · Enter to pick · or press 1–5</span></div></div></div>`;
+      <div class="chars ten">${cards}</div>
+      <div class="cdetail" id="cdetail" style="--tc:${T.c}">${charDetail(WB.CHAR_IDS[ui.cursor], team, mul)}</div>
+      <div class="row"><button class="btn ghost sm" type="button" data-act="pickback">Back</button>${sq ? '<button class="btn gold sm" type="button" data-act="crewfill">Fill the rest for me</button>' : ''}<span class="keys">← → ↑ ↓ choose · Enter to pick · or press 1–9, 0</span></div></div></div>`;
+    ui.selMul = mul;
   }
-  function choose(id) {
-    if (!WB.CHARS[id] || ui.screen !== 'select') return;
+  // moving over a card (mouse or keyboard) shows that character in the detail panel without redrawing the screen
+  function selLook(i) {
+    if (ui.screen !== 'select' || i === ui.cursor || !(i >= 0 && i < WB.CHAR_IDS.length)) return;
+    ui.cursor = i; for (const b of document.querySelectorAll('.char.mini')) b.classList.toggle('cur', +b.dataset.i === i);
+    const d = $('#cdetail'); if (d) d.innerHTML = charDetail(WB.CHAR_IDS[i], ui.pickTeam, ui.selMul);
+  }
+  document.addEventListener('pointerover', (e) => { const b = e.target.closest && e.target.closest('.char.mini'); if (b) selLook(+b.dataset.i); });
+  document.addEventListener('focusin', (e) => { const b = e.target.closest && e.target.closest('.char.mini'); if (b) selLook(+b.dataset.i); });
+  // Gear: after a character, one of the six items it can carry (four anyone can, two for its class)
+  function gearScreen(id) {
+    ui.screen = 'gear'; ui.pendingChar = id;
+    const T = TEAMS[ui.pickTeam], C = WB.CHARS[id];
+    const items = WB.gearFor(id).map((g, i) => { const X = WB.GEAR[g];
+      return `<button class="gearb${g === C.gear ? ' cur' : ''}" type="button" data-act="gear" data-gear="${g}" style="--tc:${T.c}"><span class="num">${i + 1}</span><b>${esc(X.name)}</b><em>${X.cls === 'any' ? 'Anyone' : esc(WB.CLASSES[X.cls]) + ' only'} · ${X.ammo} a match · ⏱${X.delay}</em><span>${esc(X.desc)}</span></button>`; }).join('');
+    $('#screen').innerHTML = `<div class="screen"><div class="pick" role="dialog" aria-modal="true" style="width:980px">
+      <div class="tag">Gear · a 4th shot, yours for the whole match</div>
+      <h2 style="color:${T.c}">${esc(C.name)}'s gear</h2>
+      <p class="sub">${esc(WB.CLASSES[C.cls])}s can carry these six. The highlighted one is ${esc(C.name)}'s usual pick: press Enter to take it.</p>
+      <div class="gears">${items}</div>
+      <div class="row"><button class="btn ghost sm" type="button" data-act="gearback">Back</button><span class="keys">1–6 to pick · Enter for the usual</span></div></div></div>`;
+  }
+  function choose(id) { if (WB.CHARS[id] && ui.screen === 'select') { SFX.click(); gearScreen(id); } }
+  const randomGear = (c) => (Math.random() < 0.5 ? WB.CHARS[c].gear : WB.gearFor(c)[Math.floor(Math.random() * WB.gearFor(c).length)]);
+  function chooseGear(g) {
+    const id = ui.pendingChar; if (ui.screen !== 'gear' || !WB.CHARS[id]) return;
+    if (!WB.gearFor(id).includes(g)) g = WB.CHARS[id].gear;
+    SFX.click(); ui.screen = 'select';
     if (ui.mode === 'squads') { // a crew fills up one unit at a time; then the other side picks (the computer picks its own)
-      const mine = ui.picks[ui.pickTeam] || (ui.picks[ui.pickTeam] = []); mine.push(id); SFX.click();
+      const mine = ui.picks[ui.pickTeam] || (ui.picks[ui.pickTeam] = []), gear = ui.gear[ui.pickTeam] || (ui.gear[ui.pickTeam] = []); mine.push(id); gear.push(g);
       if (mine.length < ui.sq.size) { selectScreen(ui.pickTeam); return; }
       if (ui.pickTeam === 0 && ui.sq.vs === 'p2') { ui.cursor = 2; selectScreen(1); return; }
-      if (ui.sq.vs === 'cpu') ui.picks[1] = randomCrew(ui.sq.size);
+      if (ui.sq.vs === 'cpu') { ui.picks[1] = randomCrew(ui.sq.size); ui.gear[1] = ui.picks[1].map(randomGear); }
       startMatch(); return;
     }
-    ui.picks[ui.pickTeam] = id; SFX.click();
+    ui.picks[ui.pickTeam] = id; ui.gear[ui.pickTeam] = g;
     if (ui.mode === 'solo') { // the computers take random characters, different from each other where possible
       const rest = WB.CHAR_IDS.filter((c) => c !== id).sort(() => Math.random() - 0.5);
-      ui.picks = [id, rest[0], rest[1], rest[2]]; startMatch();
+      ui.picks = [id, rest[0], rest[1], rest[2]]; ui.gear = [g].concat(ui.picks.slice(1).map(randomGear)); startMatch();
     } else if (ui.pickTeam === 0) { ui.cursor = 2; selectScreen(1); } else startMatch();
   }
 
@@ -764,7 +810,7 @@
       <div class="fq"><label for="fbText">Anything else? (best moment, what confused you)</label><textarea id="fbText">${esc(F.text)}</textarea></div>
       <div class="fq"><label for="fbName">Your name (optional)</label><input id="fbName" value="${esc(F.nm)}"></div>
       ${F.saved === true ? '<p style="color:#22C3B5">Thanks! Saved.</p>' : F.saved === 'copy' ? `<p>Couldn't save from here. Copy this and send it to the crew:</p><textarea readonly style="width:100%;min-height:90px">${esc(feedbackText())}</textarea>` : ''}
-      <div class="row"><button class="btn fire" type="button" data-act="fbsend">Send</button><button class="btn ghost" type="button" data-act="fbback">Back</button></div>`);
+      <div class="row"><button class="btn fire" type="button" data-act="fbsend">Send</button><button class="btn ghost" type="button" data-act="fbback">Back</button></div>`);    const card = $('#screen .card'), top = ui.fbTop || 0; card.classList.add('title', 'scroll'); card.scrollTop = top; card.onscroll = () => { ui.fbTop = card.scrollTop; }; // ten characters made the form taller than the screen: it scrolls, and keeps its place when an answer redraws it
   }
   function feedbackText() {
     const F = ui.fb, G = ui.G;
@@ -927,7 +973,7 @@
   function startRound() {
     const first = (ui.round - 1) % nSides();
     const sq = ui.mode === 'squads';
-    ui.G = WB.newGame((ui.matchSeed + ui.round * 7919 + (ui.draws || 0) * 104729) >>> 0, { teams: nSides(), size: crew(), first, chars: sq ? ui.picks[0].concat(ui.picks[1]) : ui.picks, map: mapFor(ui.round), recipe: ui.mode === 'solo' ? 'solo' : undefined });
+    ui.G = WB.newGame((ui.matchSeed + ui.round * 7919 + (ui.draws || 0) * 104729) >>> 0, { teams: nSides(), size: crew(), first, chars: sq ? ui.picks[0].concat(ui.picks[1]) : ui.picks, gear: sq ? (ui.gear[0] || []).concat(ui.gear[1] || []) : ui.gear, map: mapFor(ui.round), recipe: ui.mode === 'solo' ? 'solo' : undefined });
     ui.aim = {}; ui.cpu = null; ui.parts = []; ui.trails = {}; ui.scorch = []; ui.pops = []; ui.acc = 0; ui.slow = 0; ui.shake = 0; ui.overAt = 0; ui.paused = false;
     bakeBackground(ui.G.seed); renderTerrain(); camReset();
     ui.screen = 'game'; hide(); onTurn();
@@ -957,16 +1003,19 @@
       case 'squads': squadScreen(); break;
       case 'sqsize': ui.sq.size = clamp(+b.dataset.n || 3, 2, 5); lsSet('wb-crew', ui.sq.size); squadScreen(); break;
       case 'sqvs': ui.sq.vs = b.dataset.vs === 'p2' ? 'p2' : 'cpu'; lsSet('wb-crewvs', ui.sq.vs); if (LEVELS[b.dataset.level]) { ui.level = b.dataset.level; lsSet('wb-level', ui.level); } squadScreen(); break;
-      case 'sqgo': ui.picks = [null, null]; ui.cursor = 2; selectScreen(0); break;
-      case 'crewfill': { const mine = ui.picks[ui.pickTeam] || (ui.picks[ui.pickTeam] = []); const left = WB.CHAR_IDS.filter((c) => !mine.includes(c)).sort(() => Math.random() - 0.5); while (mine.length < ui.sq.size - 1) mine.push(left.length ? left.pop() : WB.CHAR_IDS[Math.floor(Math.random() * 5)]); choose(left.length ? left.pop() : WB.CHAR_IDS[Math.floor(Math.random() * 5)]); break; }
+      case 'sqgo': ui.picks = [null, null]; ui.gear = [null, null]; ui.cursor = 2; selectScreen(0); break;
+      case 'crewfill': { const mine = ui.picks[ui.pickTeam] || (ui.picks[ui.pickTeam] = []), gear = ui.gear[ui.pickTeam] || (ui.gear[ui.pickTeam] = []); const left = WB.CHAR_IDS.filter((c) => !mine.includes(c)).sort(() => Math.random() - 0.5); const next = () => (left.length ? left.pop() : WB.CHAR_IDS[Math.floor(Math.random() * WB.CHAR_IDS.length)]);
+        while (mine.length < ui.sq.size - 1) { const c = next(); mine.push(c); gear.push(WB.CHARS[c].gear); } const last = next(); ui.pendingChar = last; ui.screen = 'gear'; chooseGear(WB.CHARS[last].gear); break; }
       case 'cam': camAct(b.dataset.cam); break;
-      case 'mode': ui.mode = b.dataset.mode === 'solo' ? 'solo' : 'duel'; ui.picks = new Array(nSides()).fill(null); if (ui.mode === 'solo') levelScreen(); else { ui.cursor = 2; selectScreen(0); } break;
+      case 'mode': ui.mode = b.dataset.mode === 'solo' ? 'solo' : 'duel'; ui.gear = []; ui.picks = new Array(nSides()).fill(null); if (ui.mode === 'solo') levelScreen(); else { ui.cursor = 2; selectScreen(0); } break;
       case 'level': ui.level = LEVELS[b.dataset.level] ? b.dataset.level : 'medium'; lsSet('wb-level', ui.level); ui.cursor = 2; selectScreen(0); break;
-      case 'start': case 'pickagain': ui.picks = new Array(nSides()).fill(null); ui.cursor = 2; selectScreen(0); break;
+      case 'start': case 'pickagain': ui.gear = []; ui.picks = new Array(nSides()).fill(null); ui.cursor = 2; selectScreen(0); break;
       case 'rematch': if (online()) { ui.net.send({ t: 'rematch' }); ui.net.rematchAsked = true; roundOverAgain(); } else startMatch(); break;
       case 'mapcode': { const inp = $('#mapCode'); if (!setMap(inp && inp.value)) { const a = $('#mapAbout'); if (a) a.textContent = "That code doesn't look right. Copy it again from the Map Lab."; } break; }
       case 'pick': choose(b.dataset.char); break;
-      case 'pickback': if (ui.mode === 'squads') { const mine = ui.picks[ui.pickTeam] || []; if (mine.length) { mine.pop(); selectScreen(ui.pickTeam); } else if (ui.pickTeam === 1) { ui.picks[0].pop(); selectScreen(0); } else squadScreen(); }
+      case 'gear': chooseGear(b.dataset.gear); break;
+      case 'gearback': selectScreen(ui.pickTeam); break;
+      case 'pickback': if (ui.mode === 'squads') { const mine = ui.picks[ui.pickTeam] || []; if (mine.length) { mine.pop(); (ui.gear[ui.pickTeam] || []).pop(); selectScreen(ui.pickTeam); } else if (ui.pickTeam === 1) { ui.picks[0].pop(); (ui.gear[0] || []).pop(); selectScreen(0); } else squadScreen(); }
         else if (ui.mode === 'duel' && ui.pickTeam === 1) { ui.picks[0] = null; selectScreen(0); } else if (ui.mode === 'solo') levelScreen(); else titleScreen(); break;
       case 'next': if (online()) { ui.net.send({ t: 'next' }); ui.net.nextAsked = true; roundOverAgain(); } else { if (ui.G.winner >= 0) ui.round++; else ui.draws = (ui.draws || 0) + 1; startRound(); } break; // a drawn round is played again on a new map
       case 'online': onlineScreen(); break;
@@ -1006,7 +1055,39 @@
 
   // ---------- drawing ----------
   // One crewmate: team-coloured body (who's who at a glance) plus the character's own headgear (what they can do).
+  // Unit sprites (art/sprites/units.png, drawn by art/tools/units.py and inlined by build.py as WB_ART.units): one row per
+  // character, 32 x 32 art pixels a frame (idle 1, idle 2, hurt), facing right. The body is painted in three key colours;
+  // each team gets its own copy of the sheet with those swapped for its colours. Until the picture has loaded (or if a
+  // build has none) the old code-drawn bodies are used.
+  const SPR = { S: 32, foot: [16, 30], img: null, sheets: {}, key: [[200, 0, 200], [255, 0, 255], [255, 140, 255]], frame: 0 };
+  (function loadSprites() {
+    const src = window.WB_ART && window.WB_ART.units; if (!src) return;
+    const im = new Image(); im.onload = () => { SPR.img = im; for (const k of Object.keys(portraits)) delete portraits[k]; if (ui.screen === 'title') titleScreen(); }; im.src = src;
+  })();
+  const rgb = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+  function teamSheet(team) {
+    if (SPR.sheets[team]) return SPR.sheets[team];
+    const c = document.createElement('canvas'); c.width = SPR.img.width; c.height = SPR.img.height; const g = c.getContext('2d'); g.drawImage(SPR.img, 0, 0);
+    try {
+      const d = g.getImageData(0, 0, c.width, c.height), px = d.data, mid = rgb(TEAMS[team].c), to = [rgb(TEAMS[team].c2), mid, mid.map((v) => Math.round(v + (255 - v) * 0.45))];
+      for (let i = 0; i < px.length; i += 4) { if (!px[i + 3]) continue; for (let k = 0; k < 3; k++) if (px[i] === SPR.key[k][0] && px[i + 1] === SPR.key[k][1] && px[i + 2] === SPR.key[k][2]) { px[i] = to[k][0]; px[i + 1] = to[k][1]; px[i + 2] = to[k][2]; break; } }
+      g.putImageData(d, 0, 0);
+    } catch (e) { /* a browser that won't let us read the pixels: the key colours show, the game still plays */ }
+    return (SPR.sheets[team] = c);
+  }
+  function drawSprite(c, x, y, R, team, ch, face, t, bob) {
+    const row = WB.CHAR_IDS.indexOf(ch), k = R / 12 * 2, col = SPR.frame === 2 ? 2 : (reduced ? 0 : Math.floor(t * 2.4 + row * 0.37) % 2);
+    c.fillStyle = 'rgba(0,0,0,.28)'; c.beginPath(); c.ellipse(x, y + 1, R * 0.95, 3.5 * R / 12, 0, 0, 7); c.fill();
+    const sm = c.imageSmoothingEnabled; c.imageSmoothingEnabled = false;
+    c.save(); c.translate(Math.round(x), Math.round(y + bob)); c.scale((face || 1) * k, k);
+    c.drawImage(teamSheet(team), col * SPR.S, row * SPR.S, SPR.S, SPR.S, -SPR.foot[0], -SPR.foot[1], SPR.S, SPR.S);
+    c.restore(); c.imageSmoothingEnabled = sm;
+    return y - R + bob;
+  }
+  // how far above the body a character's gear reaches, in units of its radius (the name tag sits above it)
+  const TALL = { volt: 2.5, gale: 2.9, nimbus: 2.6, tusk: 1.9, hopper: 1.9, flint: 1.8, patch: 1.7 };
   function drawBody(c, x, y, R, team, ch, face, t, bob) {
+    if (SPR.img && WB.CHAR_IDS.indexOf(ch) * SPR.S < SPR.img.height) return drawSprite(c, x, y, R, team, ch, face, t, bob);
     const T = TEAMS[team], k = R / 12, cy = y - R + bob, f = face || 1;
     c.lineJoin = 'round'; c.lineCap = 'round';
     c.fillStyle = 'rgba(0,0,0,.28)'; c.beginPath(); c.ellipse(x, y + 1, R * (ch === 'brick' ? 1.1 : 0.9), 3.5 * k, 0, 0, 7); c.fill();
@@ -1058,7 +1139,7 @@
     const c = document.createElement('canvas'); c.width = 300; c.height = 220; const g = c.getContext('2d');
     const bg = g.createLinearGradient(0, 0, 0, 220); bg.addColorStop(0, '#7A3B5E'); bg.addColorStop(1, '#FF8A3D'); g.fillStyle = bg; g.fillRect(0, 0, 300, 220);
     g.fillStyle = '#6FAE45'; g.fillRect(0, 186, 300, 34); g.fillStyle = '#A6DE62'; g.fillRect(0, 182, 300, 8);
-    drawBody(g, 150, 186, 42, team, ch, team === 0 ? 1 : -1, 0.6, 0);
+    drawBody(g, 150, 186, SPR.img ? 36 : 42, team, ch, team === 0 ? 1 : -1, 0.6, 0);
     return (portraits[key] = c.toDataURL());
   }
   function drawUnit(u, isCur, t) {
@@ -1072,10 +1153,10 @@
     }
     const bob = isCur && !reduced ? Math.sin(t * 6) * 1.5 : 0, cy = y - R + bob;
     if (isCur) { const g = ctx.createRadialGradient(x, cy, 4, x, cy, 44); g.addColorStop(0, 'rgba(255,211,77,.45)'); g.addColorStop(1, 'rgba(255,211,77,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, cy, 44, 0, 7); ctx.fill(); }
-    drawBody(ctx, x, y, R, u.team, u.char, u.face, t, bob);
+    SPR.frame = u.air ? 2 : 0; drawBody(ctx, x, y, R, u.team, u.char, u.face, t, bob); SPR.frame = 0;
     if (u.hp < 35) { ctx.fillStyle = 'rgba(70,60,80,.55)'; ctx.beginPath(); ctx.arc(x + 6 * Math.sin(t * 2), cy - R - 6 - (t * 20 % 10), 4, 0, 7); ctx.fill(); }
     // name and hp
-    const bw = 34, bx = x - bw / 2, by = cy - R - (u.char === 'volt' ? 30 : 18);
+    const bw = 34, bx = x - bw / 2, by = cy - R - (SPR.img ? Math.round((TALL[u.char] || 1.5) * R - R + 8) : u.char === 'volt' ? 30 : 18);
     ctx.fillStyle = 'rgba(30,26,43,.8)'; ctx.fillRect(bx - 2, by - 2, bw + 4, 8);
     ctx.fillStyle = u.hp > u.maxHp / 2 ? '#7BE07A' : u.hp > u.maxHp / 4 ? '#FFD34D' : '#FF4D5E'; ctx.fillRect(bx, by, bw * clamp(u.hp / u.maxHp, 0, 1), 4);
     ctx.font = FONT(13); ctx.textAlign = 'center'; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(30,26,43,.9)';
@@ -1109,7 +1190,8 @@
     ctx.lineCap = 'round';
     for (let i = 1; i < tr.length; i++) { ctx.strokeStyle = `rgba(255,243,224,${i / tr.length * 0.5})`; ctx.lineWidth = (i / tr.length) * (p.w === 'bomblet' ? 3 : 5); ctx.beginPath(); ctx.moveTo(tr[i - 1][0], tr[i - 1][1]); ctx.lineTo(tr[i][0], tr[i][1]); ctx.stroke(); }
     if (p.w === 'dud') { drawDud({ x: p.x, y: p.y + 5 / CELL, fuse: p.fuse }, t, true); return; }
-    const ch = ui.G.chars[p.team], big = p.w === 'shot2' || p.w === 'ss', ang = Math.atan2(p.vy, p.vx);
+    const LOOK = { tusk: 'brick', hopper: 'zip', flint: 'volt', patch: 'digger', nimbus: 'gale' }, c0 = p.char || ui.G.chars[p.team];
+    const ch = p.w === 'gear' || p.w === 'frag' ? 'gear' : LOOK[c0] || c0, big = p.w === 'shot2' || p.w === 'ss', ang = Math.atan2(p.vy, p.vx);
     if (p.w === 'ss') { const g = ctx.createRadialGradient(x, y, 2, x, y, 24); g.addColorStop(0, 'rgba(255,211,77,.8)'); g.addColorStop(1, 'rgba(255,138,61,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, 24, 0, 7); ctx.fill(); }
     ctx.strokeStyle = '#1E1A2B'; ctx.lineWidth = 2;
     if (ch === 'zip' || (ch === 'digger' && big)) { // darts and drills point where they fly
@@ -1118,7 +1200,7 @@
       else { ctx.fillStyle = '#9A9CA3'; ctx.beginPath(); ctx.moveTo(12, 0); ctx.lineTo(-5, -6); ctx.lineTo(-5, 6); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.strokeStyle = '#4A4D58'; for (let i = 0; i < 3; i++) { const sx = 6 - i * 4 - (t * 40 % 4); ctx.beginPath(); ctx.moveTo(sx, -4 + i); ctx.lineTo(sx - 2, 4 - i); ctx.stroke(); } }
       ctx.restore(); return;
     }
-    const look = { brick: ['#5A5F6E', p.w === 'ss' ? 10 : big ? 8 : 6], volt: ['#4FB3FF', big ? 6.5 : 5.5], digger: ['#B2643A', 6], gale: ['#7BE07A', big ? 6.5 : 5.5] }[ch] || ['#3A3150', 5.5];
+    const look = { brick: ['#5A5F6E', p.w === 'ss' ? 10 : big ? 8 : 6], volt: ['#4FB3FF', big ? 6.5 : 5.5], digger: ['#B2643A', 6], gale: ['#7BE07A', big ? 6.5 : 5.5], gear: ['#FFD34D', p.w === 'frag' ? 3.5 : 5.5] }[ch] || ['#3A3150', 5.5];
     if (ch === 'volt') { const g = ctx.createRadialGradient(x, y, 1, x, y, 16); g.addColorStop(0, 'rgba(143,216,255,.7)'); g.addColorStop(1, 'rgba(143,216,255,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, 16, 0, 7); ctx.fill(); }
     if (ch === 'gale') { ctx.strokeStyle = '#FFF3E0'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x, y); ctx.quadraticCurveTo(x - p.vx * 0.4 + 4 * Math.sin(t * 20), y - p.vy * 0.4, x - p.vx * 0.7, y - p.vy * 0.7); ctx.stroke(); ctx.strokeStyle = '#1E1A2B'; }
     ctx.fillStyle = look[0]; ctx.beginPath(); ctx.arc(x, y, look[1], 0, 7); ctx.fill(); ctx.stroke();
@@ -1248,7 +1330,7 @@
 
   // ---------- boot ----------
   window.WBUI = {
-    get G() { return ui.G; }, ui, startMatch, levelScreen, squadScreen, camAct, camZoom, camPan, toWorld, onlineScreen, netStart, play, selectScreen, choose, startRound, roundOver, doFire, walk, pass, botTurn, renderAll: () => { renderHUD(); renderCtl(); coachLine(); },
+    get G() { return ui.G; }, ui, startMatch, levelScreen, squadScreen, chooseGear, gearScreen, camAct, camZoom, camPan, toWorld, onlineScreen, netStart, play, selectScreen, choose, startRound, roundOver, doFire, walk, pass, botTurn, renderAll: () => { renderHUD(); renderCtl(); coachLine(); },
     aim: (angle, power) => { const u = WB.current(ui.G); const a = aimOf(u); a.angle = angle; a.power = power; },
   };
   fit(); addEventListener('resize', fit);

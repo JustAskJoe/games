@@ -96,6 +96,23 @@ button { font: inherit; color: inherit; }
 .card.title { width: 860px; padding: 20px 34px; } /* the title: wide enough for three mode buttons in a row and the map row */
 .card.title .row.maps .mapcode { width: 170px; }
 .card.title .row .btn { padding-left: 14px; padding-right: 14px; }
+.card.scroll { max-height: 690px; overflow-y: auto; }
+/* character select with ten characters: small cards, one detail panel */
+.chars.ten { grid-template-columns: repeat(10, 1fr); gap: 8px; }
+.char.mini { padding: 6px; gap: 1px; text-align: center; align-items: center; } .char.mini img { height: 62px; } .char.mini .cn { font-size: 18px; } .char.mini .role { font-size: 9px; letter-spacing: 1px; margin: 0; }
+.char.mini .num { left: 8px; top: 8px; width: 20px; height: 20px; font-size: 12px; }
+.cdetail { display: grid; grid-template-columns: 1.15fr .8fr 1.5fr; gap: 14px; margin-top: 10px; padding: 10px 12px; background: var(--ink); border: 3px solid var(--tc); border-radius: 18px; text-align: left; font-size: 12px; min-height: 150px; }
+.cdetail .cdl { display: flex; gap: 10px; } .cdetail .cdl img { width: 130px; height: 96px; border-radius: 12px; border: 2px solid var(--ink-2); object-fit: cover; flex: none; }
+.cdetail .cn { display: block; font-family: var(--display); font-weight: 400; font-size: 30px; line-height: 1; } .cdetail .role { display: block; font-weight: 900; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin: 2px 0 4px; }
+.cdetail .bl { color: var(--cream-2); font-weight: 700; } .cdetail .cdm { display: flex; flex-direction: column; gap: 4px; justify-content: center; }
+.cdetail .cdr { display: flex; flex-direction: column; gap: 4px; } .cdetail .sh { background: var(--ink-2); border-radius: 10px; padding: 4px 7px; font-weight: 700; }
+.cdetail .sh b { color: var(--gold); } .cdetail .sh.two b { color: var(--tc); } .cdetail .sh em { font-style: normal; color: var(--muted); font-weight: 800; } .cdetail .sh.ss { background: linear-gradient(90deg, rgba(255,211,77,.18), var(--ink-2)); }
+/* gear step */
+.gears { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.gearb { position: relative; display: flex; flex-direction: column; gap: 2px; text-align: left; font: inherit; color: var(--cream); background: var(--ink); border: 3px solid var(--ink-2); border-radius: 16px; padding: 10px 12px 10px 40px; cursor: pointer; min-height: 92px; }
+.gearb:hover, .gearb.cur { border-color: var(--tc); } .gearb:focus-visible { outline: 4px solid var(--gold); outline-offset: 2px; }
+.gearb b { font-family: var(--display); font-weight: 400; font-size: 22px; color: var(--gold); line-height: 1; } .gearb em { font-style: normal; font-size: 11px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); } .gearb span { font-size: 13px; font-weight: 700; color: var(--cream-2); }
+.gearb .num { position: absolute; left: 10px; top: 10px; width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--cream); font-family: var(--display); font-size: 13px; display: grid; place-items: center; color: var(--cream); }
 /* Squads setup and crew picking */
 .card .sqrow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: center; margin-top: 12px; }
 .card .sqrow > span { font-size: 13px; font-weight: 800; opacity: .8; min-width: 90px; text-align: right; }
@@ -125,6 +142,7 @@ button { font: inherit; color: inherit; }
 .btn.sm { min-height: 40px; font-size: 16px; padding: 4px 12px; }
 .btn[aria-pressed="true"] { background: var(--gold); box-shadow: 0 5px 0 var(--ink), 0 0 16px var(--gold); }
 .wpn { flex-direction: column; gap: 0; line-height: 1; min-width: 104px; }
+.wpn { white-space: nowrap; } .ctl.four .wpn { min-width: 92px; font-size: 19px; padding-left: 10px; padding-right: 10px; } .ctl.four .wpn small { font-size: 11px; } /* with a gear slot: four shots in the row */
 .btn.ss { background: linear-gradient(180deg, #FFE27A, #FF8A3D); box-shadow: 0 5px 0 var(--ink), 0 0 22px rgba(255,211,77,.8); animation: ssglow 1.2s ease-in-out infinite alternate; }
 .btn.ss.dim { animation: none; opacity: .8; box-shadow: 0 5px 0 var(--ink); }
 @keyframes ssglow { from { box-shadow: 0 5px 0 var(--ink), 0 0 10px rgba(255,211,77,.5); } to { box-shadow: 0 5px 0 var(--ink), 0 0 26px rgba(255,211,77,1); } }
@@ -207,6 +225,9 @@ button { font: inherit; color: inherit; }
 </div>
 <div class="hint-rotate">Best on a computer, or turn your phone sideways.</div>
 <div class="owner" aria-hidden="true">© 2026 justaskjoe. All rights reserved.</div>
+<script>
+window.WB_ART = { units: "data:image/png;base64,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" };
+</script>
 <script>
 /* Wormsbound map generator (mapgen.js).
    © 2026 justaskjoe. All rights reserved.
@@ -910,34 +931,84 @@ button { font: inherit; color: inherit; }
   // Numbers tuned Nov 2, 2026 (1v1, one unit a side, with SS and turn delay) so every character wins 40-60% of
   // smart-bot matches across the roster (sim.js). Health here is the base; HP_MUL scales it by format.
   const CHARS = {
-    brick: { name: 'Brick', role: 'Tank', hp: 110, armor: 0.88, steps: 10, climb: 2,
+    brick: { name: 'Brick', role: 'Tank', cls: 'tank', gear: 'ricochet', hp: 110, armor: 0.88, steps: 10, climb: 2,
       blurb: 'Big, tough and slow. Takes 12% less damage. His heavy shots barely feel the wind.',
       shot1: { name: 'Slug', ammo: -1, delay: 680, r: 3.5, dmg: 40, wind: 0.45, desc: 'A heavy shell. Wind hardly moves it.' },
       shot2: { name: 'Wrecking Ball', ammo: 2, delay: 840, r: 5, dmg: 56, wind: 0.45, bounce: 1, desc: 'Bounces once, then a big blast.' },
       ss: { name: 'Meteor Slam', delay: 1040, r: 6, dmg: 56, wind: 0.3, speed: 0.95, desc: 'A huge, heavy shell: the biggest crater in the game.' } },
-    zip: { name: 'Zip', role: 'Scout', hp: 105, armor: 1, steps: 22, climb: 3,
+    zip: { name: 'Zip', role: 'Scout', cls: 'scout', gear: 'pistol', hp: 105, armor: 1, steps: 22, climb: 3,
       blurb: 'Quick on her feet. Walks twice as far as most and climbs higher ledges.',
       shot1: { name: 'Dart', ammo: -1, delay: 560, r: 3, dmg: 46, speed: 1.15, wind: 0.8, desc: 'Fast and flat, with a small blast.' },
       shot2: { name: 'Double Tap', ammo: 2, delay: 740, r: 3, dmg: 38, speed: 1.15, wind: 0.8, double: true, desc: 'Two darts, one right after the other.' },
       ss: { name: 'Bullet Rain', delay: 960, r: 3.2, dmg: 36, speed: 1.15, wind: 0.8, rain: { n: 5, spread: 4 }, desc: 'Five darts fanned out in a quick burst.' } },
-    volt: { name: 'Volt', role: 'All-rounder', hp: 100, armor: 1, steps: 14, climb: 2,
+    volt: { name: 'Volt', role: 'All-rounder', cls: 'gunner', gear: 'lobber', hp: 100, armor: 1, steps: 14, climb: 2,
       blurb: 'Steady and simple. Calls lightning down on anyone hiding under cover.',
       shot1: { name: 'Arc Ball', ammo: -1, delay: 600, r: 3.2, dmg: 46, desc: 'A plain, reliable shell.' },
       shot2: { name: 'Thunderstrike', ammo: 2, delay: 800, r: 3, dmg: 26, strike: { w: 2.2, dmg: 34 }, desc: 'Where it lands, lightning hits everyone close by, cover or not.' },
       ss: { name: 'Storm Call', delay: 1000, r: 3, dmg: 24, storm: { gap: 7, w: 2.4, dmg: 42 }, desc: 'Three lightning bolts: where it lands and 7 cells to each side.' } },
-    digger: { name: 'Digger', role: 'Miner', hp: 110, armor: 0.95, steps: 12, climb: 2,
+    digger: { name: 'Digger', role: 'Miner', cls: 'engineer', gear: 'thermite', hp: 110, armor: 0.95, steps: 12, climb: 2,
       blurb: 'Sturdy. Can tunnel straight through hills to reach someone dug in.',
       shot1: { name: 'Pick Shell', ammo: -1, delay: 620, r: 4, dmg: 40, desc: 'Digs a wide crater.' },
       shot2: { name: 'Drill', ammo: 2, delay: 800, r: 4, dmg: 48, drill: 14, desc: 'Bores through up to 14 cells of ground, then explodes.' },
       ss: { name: 'Earthquake', delay: 1000, r: 5, dmg: 40, quake: { dmg: 20 }, desc: 'A big blast, then a quake that hits every enemy standing on the ground.' } },
-    gale: { name: 'Gale', role: 'Wind-rider', hp: 90, armor: 1, steps: 16, climb: 2,
+    gale: { name: 'Gale', role: 'Wind-rider', cls: 'control', gear: 'well', hp: 90, armor: 1, steps: 16, climb: 2,
       blurb: 'Rides the wind. Her shots curve hard, and her Gust throws people into the water.',
       shot1: { name: 'Kite Bomb', ammo: -1, delay: 600, r: 4, dmg: 42, wind: 1.7, desc: 'Strong, but the wind pushes it a lot.' },
       shot2: { name: 'Gust Bomb', ammo: 2, delay: 780, r: 4.5, dmg: 24, wind: 1.7, knock: 2.2, desc: 'Weak blast, huge knockback.' },
       ss: { name: 'Tornado', delay: 980, r: 3, dmg: 20, wind: 1.3, tornado: { reach: 11, dmg: 16, push: 26 }, desc: 'Flings everyone within 11 cells away from it, you too.' } },
+    // --- the second five (v2, Nov 11, 2026): one more for each class, built from the same shot fields ---
+    tusk: { name: 'Tusk', role: 'Bruiser', cls: 'tank', gear: 'crater', hp: 107, armor: 0.92, steps: 9, climb: 2,
+      blurb: 'A battering ram. Not as tough as Brick, but every hit shoves people where they don\'t want to be.',
+      shot1: { name: 'Ram Shell', ammo: -1, delay: 660, r: 3.3, dmg: 36, wind: 0.6, knock: 1.4, desc: 'A solid hit with a hard shove.' },
+      shot2: { name: 'Bouncer', ammo: 2, delay: 820, r: 4.6, dmg: 50, wind: 0.6, bounce: 2, desc: 'Bounces twice, so it gets round corners, then a big blast.' },
+      ss: { name: 'Stampede', delay: 1020, r: 4.2, dmg: 32, wind: 0.6, knock: 1.5, rain: { n: 3, spread: 3.5 }, desc: 'Three ram shells in a row, each with a shove.' } },
+    hopper: { name: 'Hopper', role: 'Skirmisher', cls: 'scout', gear: 'triple', hp: 107, armor: 1, steps: 20, climb: 4,
+      blurb: 'Goes anywhere: climbs the highest ledges of anyone. Light shots that skip off the ground.',
+      shot1: { name: 'Pebble', ammo: -1, delay: 540, r: 3.1, dmg: 48, speed: 1.2, wind: 0.9, desc: 'Quick and light. The cheapest turn in the game.' },
+      shot2: { name: 'Skip Shot', ammo: 2, delay: 720, r: 3.4, dmg: 46, speed: 1.1, wind: 0.9, bounce: 2, desc: 'Skips twice off the ground before it blows.' },
+      ss: { name: 'Flurry', delay: 940, r: 2.7, dmg: 30, speed: 1.2, wind: 0.9, rain: { n: 7, spread: 2.6 }, desc: 'Seven pebbles in a tight fan.' } },
+    flint: { name: 'Flint', role: 'Gunner', cls: 'gunner', gear: 'tnt', hp: 100, armor: 1, steps: 14, climb: 2,
+      blurb: 'Fills the air with shot. Great at hitting something; less good at hitting one thing hard.',
+      shot1: { name: 'Flare', ammo: -1, delay: 600, r: 3.4, dmg: 46, speed: 1.05, desc: 'A plain, slightly quick shell.' },
+      shot2: { name: 'Scatter Flares', ammo: 2, delay: 780, r: 2.9, dmg: 25, rain: { n: 4, spread: 6 }, desc: 'Four small flares in a wide fan.' },
+      ss: { name: 'Barrage', delay: 1000, r: 3.6, dmg: 36, rain: { n: 5, spread: 1.6 }, desc: 'Five shells landing almost on top of each other.' } },
+    patch: { name: 'Patch', role: 'Engineer', cls: 'engineer', gear: 'dirt', hp: 106, armor: 0.95, steps: 13, climb: 2,
+      blurb: 'Reshapes the map. Short digs with wide blasts, and a quake that shakes the ground out from under people.',
+      shot1: { name: 'Bolt', ammo: -1, delay: 610, r: 3.5, dmg: 41, desc: 'A sturdy shell with a good crater.' },
+      shot2: { name: 'Shaped Charge', ammo: 2, delay: 800, r: 5, dmg: 46, drill: 7, desc: 'Bores 7 cells in, then blows a wide hole.' },
+      ss: { name: 'Sinkhole', delay: 1000, r: 7, dmg: 28, drill: 4, quake: { dmg: 14 }, desc: 'A huge crater, and a tremor that hits every enemy on the ground.' } },
+    nimbus: { name: 'Nimbus', role: 'Storm-caller', cls: 'control', gear: 'delayray', hp: 100, armor: 1, steps: 15, climb: 2,
+      blurb: 'Moves people instead of hurting them. Her Vacuum drags everyone towards the blast: off a ledge, into a pit, onto a dud.',
+      shot1: { name: 'Cloudburst', ammo: -1, delay: 600, r: 3.8, dmg: 43, wind: 1.5, desc: 'A wide blast that the wind carries.' },
+      shot2: { name: 'Vacuum', ammo: 2, delay: 780, r: 4.6, dmg: 28, wind: 1.5, knock: -1.9, desc: 'Weak blast that pulls everyone near it towards its centre.' },
+      ss: { name: 'Thunderhead', delay: 990, r: 3, dmg: 20, wind: 1.4, storm: { gap: 5, w: 2.1, dmg: 34 }, desc: 'Three lightning bolts close together: where it lands and 5 cells to each side.' } },
   };
   const CHAR_IDS = Object.keys(CHARS);
-  const WEAPON_IDS = ['shot1', 'shot2', 'dud', 'ss'];
+  // Classes: two characters each. A class decides which gear a character can carry.
+  const CLASSES = { tank: 'Tank', scout: 'Scout', gunner: 'Gunner', engineer: 'Engineer', control: 'Controller' };
+  // Gear (v2): one extra weapon per unit, chosen before the match, in a 4th slot. Each comes from the 100-weapon list in
+  // design/weapons.md (# is its number there). cls 'any' = everyone; otherwise only that class. Same fields as shots,
+  // plus: cluster { n, r, dmg } (bomblets when it lands), fill (adds ground instead of removing it), slow (turn delay
+  // added to every enemy in the blast). A negative knock pulls towards the blast.
+  const GEAR = {
+    pistol:   { name: 'Pocket Pistol', n: 6, cls: 'any', ammo: 3, delay: 420, r: 2.6, dmg: 28, speed: 1.1, double: true, desc: 'Two quick weak shots. The cheapest turn you can take.' },
+    rivet:    { name: 'Rivet Rifle', n: 1, cls: 'any', ammo: 2, delay: 620, r: 2.4, dmg: 22, speed: 1.2, wind: 0.3, rain: { n: 3, spread: 1.5 }, desc: 'Three fast flat shots the wind hardly touches.' },
+    lobber:   { name: 'Sky Lobber', n: 7, cls: 'any', ammo: 2, delay: 700, r: 4.2, dmg: 48, speed: 0.8, wind: 0.3, desc: 'A slow, heavy lob for dropping over walls. Aim high.' },
+    popcorn:  { name: 'Popcorn Bomb', n: 35, cls: 'any', ammo: 1, delay: 820, r: 3, dmg: 22, cluster: { n: 5, r: 2.6, dmg: 20 }, desc: 'Pops into five bomblets that scatter and blow.' },
+    crater:   { name: 'Crater Maker', n: 72, cls: 'tank', ammo: 1, delay: 1100, r: 9, dmg: 46, speed: 0.9, wind: 0.4, desc: 'One shell, one enormous hole. Reshapes the map.' },
+    ricochet: { name: 'Ricochet Repeater', n: 4, cls: 'tank', ammo: 2, delay: 700, r: 3.4, dmg: 44, wind: 0.5, bounce: 3, desc: 'Bounces off the ground up to three times.' },
+    scatter:  { name: 'Scattercan', n: 2, cls: 'scout', ammo: 2, delay: 680, r: 2.3, dmg: 20, speed: 1.1, rain: { n: 6, spread: 5 }, desc: 'Six pellets in a wide fan. Strong up close.' },
+    triple:   { name: 'Triple Barrel', n: 14, cls: 'scout', ammo: 2, delay: 720, r: 3.2, dmg: 36, speed: 1.1, rain: { n: 3, spread: 5 }, desc: 'Three shells fanned five degrees apart.' },
+    tnt:      { name: 'TNT Drop', n: 37, cls: 'gunner', ammo: 1, delay: 860, r: 4, dmg: 36, speed: 0.9, rain: { n: 3, spread: 2 }, desc: 'Three heavy bombs, one after another.' },
+    pinball:  { name: 'Pinball Shot', n: 9, cls: 'gunner', ammo: 2, delay: 680, r: 3.4, dmg: 48, speed: 1.1, bounce: 4, desc: 'Extra bouncy: up to four bounces before it blows.' },
+    thermite: { name: 'Thermite Spike', n: 48, cls: 'engineer', ammo: 2, delay: 780, r: 3.8, dmg: 52, drill: 20, desc: 'Burns through 20 cells of anything, then explodes.' },
+    dirt:     { name: 'Dirt Cannon', n: 53, cls: 'engineer', ammo: 2, delay: 560, r: 5, dmg: 0, knock: 0, fill: true, desc: 'Adds ground instead of removing it: build a wall, plug a tunnel.' },
+    well:     { name: 'Gravity Well', n: 51, cls: 'control', ammo: 2, delay: 760, r: 5, dmg: 26, knock: -2, desc: 'Pulls everyone near it in, then pops.' },
+    delayray: { name: 'Delay Ray', n: 65, cls: 'control', ammo: 2, delay: 600, r: 4, dmg: 20, knock: 0.3, slow: 300, desc: 'Barely hurts, but every enemy it catches takes their next turn later.' },
+  };
+  const GEAR_IDS = Object.keys(GEAR);
+  const gearFor = (ch) => GEAR_IDS.filter((g) => GEAR[g].cls === 'any' || GEAR[g].cls === CHARS[ch].cls); // what a character may carry
+  const WEAPON_IDS = ['shot1', 'shot2', 'dud', 'ss', 'gear'];
 
   // ---------- seeded RNG (state in G._s) ----------
   function R(G) { G._s = (G._s + 0x6D2B79F5) >>> 0; let t = G._s; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }
@@ -982,6 +1053,8 @@ button { font: inherit; color: inherit; }
     const perUnit = !!opts.chars && opts.chars.length === spots && size > 1;
     const charAt = (t, i) => { const c = opts.chars && (perUnit ? opts.chars[t * size + i] : opts.chars[t]); return CHARS[c] ? c : 'volt'; };
     const chars = Array.from({ length: teams }, (_, t) => charAt(t, 0)); // each side's lead character (the HUD's label)
+    // opts.gear: a gear id per side or per unit, like opts.chars; '' or 'none' = no gear. Anything a character can't carry falls back to its own default.
+    const gearAt = (t, i, ch) => { const g = opts.gear && (opts.gear.length === spots && size > 1 ? opts.gear[t * size + i] : opts.gear[t]); return g === '' || g === 'none' ? null : gearFor(ch).includes(g) ? g : CHARS[ch].gear; };
     const G = {
       v: 3, seed: seed >>> 0, _s: (seed >>> 0) || 1, _id: 0, cols: COLS, rows: ROWS, map: 'hills', mapName: '', theme: 'hills', windMul: 1, mirror: false,
       phase: 'aim', turn: 0, team: 0, teams, size, actor: 0, spent: 0, chars,
@@ -1015,7 +1088,8 @@ button { font: inherit; color: inherit; }
       const y = deep.length ? deep[Math.floor(R(G) * deep.length)] : surfaceY(G, x);
       const own = opts.owners && Number.isInteger(opts.owners[t * size + i]) ? opts.owners[t * size + i] : t;
       G.units.push({ id: ++G._id, team: t, own, char: ch, x: x + 0.5, y, vx: 0, vy: 0, hp, maxHp: hp, alive: true, air: false, face: x < G.cols / 2 ? 1 : -1, delay: 0,
-        ammo: { shot1: C.shot1.ammo, shot2: C.shot2.ammo, dud: DUD.ammo }, ss: 0 });
+        gear: gearAt(t, i, ch), ammo: { shot1: C.shot1.ammo, shot2: C.shot2.ammo, dud: DUD.ammo, gear: 0 }, ss: 0 });
+      const nu = G.units[G.units.length - 1]; if (nu.gear) nu.ammo.gear = GEAR[nu.gear].ammo;
     }
     G.units.sort((a, b) => a.team - b.team || a.x - b.x); // ids stay as made; keep the list grouped by side
     // the map's hazards: barrels, and old live duds (anyone can lob them; they tick from turn 1). None right by a spawn.
@@ -1082,7 +1156,7 @@ button { font: inherit; color: inherit; }
   // or a side (its lead character).
   function shotSpec(G, who, w) {
     const C = who && typeof who === 'object' ? CHARS[who.char] : CHARS[who] || charOf(G, who);
-    const s = w === 'dud' ? DUD : C[w];  // shot1 | shot2 | ss
+    const s = w === 'dud' ? DUD : w === 'gear' ? GEAR[who && who.gear] || GEAR.pistol : C[w];  // shot1 | shot2 | ss | gear (a unit's own)
     return Object.assign({ wind: 1, speed: 1, knock: 1 }, s);
   }
 
@@ -1132,7 +1206,7 @@ button { font: inherit; color: inherit; }
   }
   function newShot(G, u, w, angle, power, team) {
     const s = shotSpec(G, u, w);
-    const p = Object.assign(launch(u, angle, power, s.speed), { id: ++G._id, w, team, char: u.char, from: u.id, age: 0, wm: s.wind });
+    const p = Object.assign(launch(u, angle, power, s.speed), { id: ++G._id, w, team, char: u.char, gear: w === 'gear' ? u.gear : undefined, from: u.id, age: 0, wm: s.wind });
     if (s.bounce) p.bounce = s.bounce;
     if (s.drill) p.drill = s.drill;
     if (w === 'dud') p.fuse = DUD.fuse;
@@ -1150,7 +1224,9 @@ button { font: inherit; color: inherit; }
       const k = 1 - d / reach;
       hurt(G, u, Math.round(dmg * k * CHARS[u.char].armor), byTeam);
       const nx = d > 0.01 ? (cx - x) / d : 0, ny = d > 0.01 ? (cy - y) / d : -1;
-      u.vx += nx * KNOCK * k * knockMul; u.vy += (ny - 0.6) * KNOCK * k * knockMul; u.air = true;
+      if (knockMul < 0) { u.vx += -nx * KNOCK * k * -knockMul; u.vy -= 0.45 * KNOCK * k * -knockMul; } // a pull: towards the centre, with a hop
+      else { u.vx += nx * KNOCK * k * knockMul; u.vy += (ny - 0.6) * KNOCK * k * knockMul; }
+      u.air = true;
     }
     G.fx.push({ k: 'boom', x, y, r, kind });
     // live duds caught in a blast go off too: chain reactions
@@ -1161,6 +1237,13 @@ button { font: inherit; color: inherit; }
     for (const u of G.units) if (u.alive && !supported(G, u)) u.air = true;
     for (const d of G.duds) if (!d.gone && !solidAt(G, d.x, d.y + 0.6)) d.air = true;
     for (const b of G.barrels) if (!b.gone && !solidAt(G, b.x, b.y + 0.6)) b.air = true;
+  }
+  // Dirt Cannon: add ground in a circle (never over a unit, a dud, a barrel, hard rock or the sky band at the top)
+  function fillGround(G, cx, cy, r) {
+    const clear = (x, y) => !G.units.some((u) => u.alive && Math.abs(u.x - (x + 0.5)) < 1.6 && y + 0.5 > u.y - UNIT_R * 2 - 0.6 && y < u.y) && !G.duds.some((d) => Math.hypot(d.x - x - 0.5, d.y - y - 0.5) < 1.2) && !G.barrels.some((b) => Math.hypot(b.x - x - 0.5, b.y - 1 - y - 0.5) < 1.6);
+    for (let y = Math.max(Math.round(G.rows * 0.1), Math.floor(cy - r)); y <= Math.min(G.rows - 1, Math.ceil(cy + r)); y++) for (let x = Math.max(0, Math.floor(cx - r)); x <= Math.min(G.cols - 1, Math.ceil(cx + r)); x++) {
+      const dx = x + 0.5 - cx, dy = y + 0.5 - cy; if (dx * dx + dy * dy <= r * r && !G.T[y * G.cols + x] && clear(x, y)) G.T[y * G.cols + x] = MapGen.DIRT;
+    }
   }
   function hurt(G, u, hit, byTeam) {
     if (hit <= 0 || !u.alive) return;
@@ -1234,8 +1317,13 @@ button { font: inherit; color: inherit; }
       G.duds.push(d); G.fx.push({ k: 'dud', id: d.id, x, y, fuse: d.fuse });
       return;
     }
-    const s = shotSpec(G, p.char || p.team, p.w);
+    const s = p.spec || shotSpec(G, p.w === 'gear' ? p : p.char || p.team, p.w);
+    if (s.fill) { fillGround(G, p.x, p.y, s.r); G.fx.push({ k: 'fill', x: p.x, y: p.y, r: s.r }); return; }
     explode(G, p.x, p.y, s.r, s.dmg, p.team, p.w === 'ss' ? 'ss' : p.w === 'shot2' ? (p.char || G.chars[p.team]) : 'shot', s.knock);
+    if (s.slow) { const reach = s.r * DMG_SPREAD, hits = []; for (const u of G.units) { const [cx, cy] = center(u); if (u.alive && u.team !== p.team && Math.hypot(cx - p.x, cy - p.y) <= reach) { u.delay += s.slow; hits.push(u.id); } } G.fx.push({ k: 'slow', x: p.x, y: p.y, hits }); }
+    if (s.cluster) for (let i = 0; i < s.cluster.n; i++) { // bomblets: thrown up and out, each a small blast of its own
+      const a = (i + 0.5) / s.cluster.n * Math.PI; G.proj.push({ id: ++G._id, w: 'frag', team: p.team, from: -1, age: 9, x: p.x, y: p.y - 1.2, vx: Math.cos(a) * 11, vy: -14 - Math.sin(a) * 6, wm: 1, spec: { r: s.cluster.r, dmg: s.cluster.dmg, knock: 1 } });
+    }
     if (s.strike) strike(G, p.x, s.strike.w, s.strike.dmg, p.team);
     if (s.storm) for (const dx of [0, -s.storm.gap, s.storm.gap]) strike(G, p.x + dx, s.storm.w, s.storm.dmg, p.team);
     if (s.quake) { // every enemy standing on the ground takes damage and is bounced up a little
@@ -1348,7 +1436,7 @@ button { font: inherit; color: inherit; }
       }
       case 'weapon': {
         if (WEAPON_IDS.indexOf(it.w) < 0) return false;
-        if (it.w === 'ss' ? !ssReady(G) : u.ammo[it.w] === 0) return false;
+        if (it.w === 'ss' ? !ssReady(G) : it.w === 'gear' ? !u.gear || u.ammo.gear === 0 : u.ammo[it.w] === 0) return false;
         G.weapon = it.w; return true;
       }
       case 'fire': {
@@ -1357,14 +1445,14 @@ button { font: inherit; color: inherit; }
         if (w === 'ss') { if (!ssReady(G)) return false; u.ss = 0; G.stats.ss++; }
         else { if (am[w] === 0) return false; if (am[w] > 0) am[w]--; }
         const sp = shotSpec(G, u, w);
-        G.spent += sp.delay;
+        G.spent += sp.delay; if (w === 'gear') G.stats.gear = (G.stats.gear || 0) + 1; if (w === 'shot2') G.stats.shot2++;
         if (sp.rain) { // Bullet Rain: a fan of darts, one after another
           const n = sp.rain.n;
           for (let i = 0; i < n; i++) { const q = newShot(G, u, w, it.angle + (i - (n - 1) / 2) * sp.rain.spread, it.power * (1 - 0.015 * i), G.team); q.wait = i * 7; G.proj.push(q); }
           G.stats.shots++; u.face = Math.cos(it.angle * Math.PI / 180) >= 0 ? 1 : -1; G.phase = 'flight'; return true;
         }
         const p = newShot(G, u, w, it.angle, it.power, G.team);
-        G.proj.push(p); G.stats.shots++; if (w === 'shot2') G.stats.shot2++;
+        G.proj.push(p); G.stats.shots++;
         if (sp.double) { // Double Tap: a second dart a third of a second later
           const q = newShot(G, u, w, it.angle, it.power * 0.96, G.team); q.wait = 20; G.proj.push(q);
         }
@@ -1430,7 +1518,7 @@ button { font: inherit; color: inherit; }
   const gauss = (r) => (r() + r() + r() - 1.5) * 1.15;
 
   // Score a landing spot for `team` with weapon w (from the bot's point of view).
-  function scoreLanding(G, land, w, team, fuse, char) {
+  function scoreLanding(G, land, w, team, fuse, char) { // char: the unit firing (or a character id)
     if (land.hit === 'water' || land.hit === 'out' || land.hit === 'timeout') return -1;
     if (w === 'dud') { // a dud is a threat over time, minus the risk it gets lobbed back
       const s = blastScore(G, land.x, land.y, DUD.r, DUD.dmg, team);
@@ -1439,14 +1527,17 @@ button { font: inherit; color: inherit; }
     }
     const S = shotSpec(G, char || team, w);
     const s = blastScore(G, land.x, land.y, S.r, S.dmg, team);
+    if (S.fill) return -1; // bots don't build (yet)
     let sc = s.theirs - 1.4 * s.mine;
     if (S.double) sc *= 1.8;
+    if (S.cluster) { const c = blastScore(G, land.x, land.y, S.cluster.r * 2.4, S.cluster.dmg * 1.6, team); sc += c.theirs - 1.4 * c.mine; } // the bomblets, roughly: a wider, weaker blast
+    if (S.slow) for (const u of G.units) { if (!u.alive || u.team === team) continue; const [cx, cy] = center(u); if (Math.hypot(cx - land.x, cy - land.y) <= S.r * DMG_SPREAD) sc += S.slow * 0.02; }
     if (S.strike) for (const u of G.units) if (u.alive && Math.abs(u.x - land.x) <= S.strike.w) sc += (u.team === team ? -1.4 : 1) * Math.min(u.hp, S.strike.dmg * CHARS[u.char].armor);
-    if (S.knock > 1) for (const u of G.units) { // a big push near the water or a cliff is worth a lot
+    if (Math.abs(S.knock) > 1) for (const u of G.units) { // a big push near the water or a cliff is worth a lot
       if (!u.alive) continue; const [cx, cy] = center(u); if (Math.hypot(cx - land.x, cy - land.y) > S.r * DMG_SPREAD) continue;
       if (G.water - u.y < 14 || u.x < 10 || u.x > G.cols - 10) sc += (u.team === team ? -1.4 : 1) * 0.6 * u.hp;
     }
-    if (S.rain) sc *= 3.2;
+    if (S.rain) sc *= 0.64 * S.rain.n;
     if (S.storm) for (const dx of [0, -S.storm.gap, S.storm.gap]) for (const u of G.units) if (u.alive && Math.abs(u.x - land.x - dx) <= S.storm.w) sc += (u.team === team ? -1.4 : 1) * Math.min(u.hp, S.storm.dmg * CHARS[u.char].armor);
     if (S.quake) for (const u of G.units) if (u.alive && u.team !== team) sc += Math.min(u.hp, S.quake.dmg * CHARS[u.char].armor);
     if (S.tornado) for (const u of G.units) {
@@ -1463,7 +1554,7 @@ button { font: inherit; color: inherit; }
     const tryOne = (angle, power) => {
       power = clamp(power, 0.1, 1) * powerCap;
       const land = predict(G, u, angle, power, w);
-      const sc = scoreLanding(G, land, w, u.team, fuse, u.char);
+      const sc = scoreLanding(G, land, w, u.team, fuse, u);
       if (sc > best.score) best = { score: sc, angle, power: power / powerCap };
     };
     for (let i = 0; i < st.tries; i++) {
@@ -1502,6 +1593,7 @@ button { font: inherit; color: inherit; }
     }
     opts.push({ w: 'shot1', ...s1 });
     if (ssReady(G) && !(st.ssSkip && rnd() < st.ssSkip)) { const x = bestShot(G, u, 'ss', st, rnd, 0); opts.push({ w: 'ss', ...x }); }
+    if (u.gear && u.ammo.gear !== 0 && !GEAR[u.gear].fill) { const g = bestShot(G, u, 'gear', st, rnd, 0); opts.push({ w: 'gear', ...g }); }
     if (u.ammo.shot2 !== 0) { const c = bestShot(G, u, 'shot2', st, rnd, 0); opts.push({ w: 'shot2', ...c, score: c.score * 1.05 }); }
     if (st.dud && u.ammo.dud !== 0) { const d = bestShot(G, u, 'dud', st, rnd, DUD.fuse); opts.push({ w: 'dud', ...d, score: d.score * st.dud }); }
     if (st.lob) for (const d of lobbable(G)) {
@@ -1538,7 +1630,7 @@ button { font: inherit; color: inherit; }
     const parts = [G.map, G.cols, G.turn, G.team, G.actor, G.spent, G.units.map((u) => u.delay).join(','), G.phase, r(G.wind), G.water, G.moves, G.winner, G.chars.join(','),
       G.units.map((u) => `${u.id}:${r(u.x)},${r(u.y)},${u.hp},${u.alive ? 1 : 0}`).join(';'),
       G.duds.map((d) => `${d.id}:${r(d.x)},${r(d.y)},${d.fuse}`).join(';'), G.barrels.map((b) => `${b.id}:${r(b.x)},${r(b.y)}`).join(';'),
-      G.units.map((u) => `${u.char},${u.ammo.shot2},${u.ammo.dud},${u.ss}`).join(';'), G.T.join('')];
+      G.units.map((u) => `${u.char},${u.gear || '-'},${u.ammo.shot2},${u.ammo.dud},${u.ammo.gear},${u.ss}`).join(';'), G.T.join('')];
     let h = 2166136261; const s = parts.join('|');
     for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
     return h.toString(16);
@@ -1552,7 +1644,7 @@ button { font: inherit; color: inherit; }
   }
 
   const WB = { TICK, COLS, ROWS, WATER0, GRAV, VMAX, WIND_MAX, UNIT_R, UNITS_PER_TEAM, HP, MOVE_STEPS, LOB_RANGE, LOB_POWER, SUDDEN_ROUNDS, MAX_ROUNDS, suddenTurn, maxTurns, DMG_SPREAD, SS_CHARGE, DELAY, HP_MUL, CREW_HP,
-    MAX_TEAMS, MAX_SIZE, MAX_UNITS, DUD, BARREL, CHARS, CHAR_IDS, WEAPON_IDS, MAPS, MAP_IDS, pickMap, recipeFor, MapGen, STYLES, newGame, act, step, resolve, current, owner, teamUnits, charOf, shotSpec, ssReady, ssOf, ammoOf, safeStep, turnOrder, delayIf, solidAt, surfaceY, center, lobbable, canLob,
+    MAX_TEAMS, MAX_SIZE, MAX_UNITS, DUD, BARREL, CHARS, CHAR_IDS, CLASSES, GEAR, GEAR_IDS, gearFor, WEAPON_IDS, MAPS, MAP_IDS, pickMap, recipeFor, MapGen, STYLES, newGame, act, step, resolve, current, owner, teamUnits, charOf, shotSpec, ssReady, ssOf, ammoOf, safeStep, turnOrder, delayIf, solidAt, surfaceY, center, lobbable, canLob,
     predict, blastScore, botTurn, playOut, hash, replay };
   if (typeof module !== 'undefined' && module.exports) module.exports = WB; else root.WB = WB;
 })(typeof window !== 'undefined' ? window : globalThis);
@@ -1604,6 +1696,7 @@ button { font: inherit; color: inherit; }
   const ui = {
     screen: 'title', G: null, matchSeed: 0, round: 1, wins: [0, 0], aim: {}, weapon: 'shot1', lob: false, picks: [null, null], pickTeam: 0, cursor: 2,
     mode: 'duel', level: 'medium', cpu: null, mapPick: startMap(), net: null, you: 0, remoteAim: null,
+    gear: [], pendingChar: null,
     sq: { size: clamp(+lsGet('wb-crew') || 3, 2, 5), vs: lsGet('wb-crewvs') === 'p2' ? 'p2' : 'cpu' },
     cam: { on: false, x: 0, y: 0, z: 1, cx: 0, cy: 0, tx: 0, ty: 0, zoom: 1, manual: false, over: false },
     drag: null, acc: 0, last: 0, slow: 0, shake: 0, parts: [], trails: {}, scorch: [], clouds: [], dust: [], pops: [],
@@ -1835,6 +1928,8 @@ button { font: inherit; color: inherit; }
   // ---------- engine events → effects ----------
   function onFx(fx) {
     for (const e of fx) {
+      if (e.k === 'fill') { ui.terrainDirty = true; burst(e.x * CELL, e.y * CELL, 14, 'chunk'); noise(0.25, 300, 120, 0.1); }
+      if (e.k === 'slow') for (const id of e.hits) { const hu = ui.G.units.find((v) => v.id === id); if (hu) ui.pops.push({ x: hu.x * CELL, y: hu.y * CELL - 44, t: 0, text: 'SLOWED', c: '#8FD8FF' }); }
       if (e.k === 'boom') {
         const x = e.x * CELL, y = e.y * CELL, r = e.r * CELL;
         ui.scorch.push({ x, y, r }); ui.terrainDirty = true;
@@ -1993,10 +2088,18 @@ button { font: inherit; color: inherit; }
     if (ui.screen === 'level') { if (/^[1-3]$/.test(k)) { ui.level = Object.keys(LEVELS)[+k - 1]; ui.cursor = 2; selectScreen(0); } return; }
     if (ui.screen === 'select') {
       const n = WB.CHAR_IDS.length;
-      if (k === 'ArrowLeft' || k === 'a' || k === 'A') { ui.cursor = (ui.cursor + n - 1) % n; selectScreen(ui.pickTeam); }
-      else if (k === 'ArrowRight' || k === 'd' || k === 'D') { ui.cursor = (ui.cursor + 1) % n; selectScreen(ui.pickTeam); }
+      if (k === 'ArrowLeft' || k === 'a' || k === 'A') selLook((ui.cursor + n - 1) % n);
+      else if (k === 'ArrowRight' || k === 'd' || k === 'D') selLook((ui.cursor + 1) % n);
+      else if (k === 'ArrowUp' || k === 'ArrowDown' || k === 'w' || k === 'W' || k === 's' || k === 'S') { e.preventDefault(); selLook((ui.cursor + 5) % n); }
       else if (k === 'Enter' || k === ' ') { e.preventDefault(); choose(WB.CHAR_IDS[ui.cursor]); }
-      else if (/^[1-5]$/.test(k)) choose(WB.CHAR_IDS[+k - 1]);
+      else if (/^[0-9]$/.test(k)) choose(WB.CHAR_IDS[(+k + 9) % 10]);
+      return;
+    }
+    if (ui.screen === 'gear') {
+      const gs = WB.gearFor(ui.pendingChar);
+      if (k === 'Enter' || k === ' ') { e.preventDefault(); chooseGear(WB.CHARS[ui.pendingChar].gear); }
+      else if (/^[1-6]$/.test(k) && gs[+k - 1]) chooseGear(gs[+k - 1]);
+      else if (k === 'Escape') selectScreen(ui.pickTeam);
       return;
     }
     if (k === 'Escape' || k === 'p' || k === 'P') { if (ui.screen === 'game') { e.preventDefault(); toggleMenu(); } return; }
@@ -2012,12 +2115,13 @@ button { font: inherit; color: inherit; }
     else if (k === 'f' || k === 'F') { a.angle = 180 - a.angle; }
     else if (k === '1') pickWeapon(WB.ssReady(ui.G) ? 'ss' : 'shot1');
     else if (k === '2' || k === '3') pickWeapon(WB.WEAPON_IDS[+k - 1]);
+    else if (k === '4') pickWeapon('gear');
     else if (k === 'l' || k === 'L') toggleLob();
     else if (k === ' ' || k === 'Enter') { e.preventDefault(); doFire(); }
     if (/^(Arrow(Up|Down)|[wWsSqQeEfF])$/.test(k)) shareAim(a);
     else if (k === 'x' || k === 'X') pass();
   });
-  function pickWeapon(w) { if (!canAct() || (w === 'ss' ? !WB.ssReady(ui.G) : WB.ammoOf(ui.G)[w] === 0)) return; ui.weapon = w; ui.lob = false; SFX.click(); renderCtl(); coachLine(); }
+  function pickWeapon(w) { if (!canAct() || (w === 'ss' ? !WB.ssReady(ui.G) : w === 'gear' ? !WB.current(ui.G).gear || WB.ammoOf(ui.G).gear === 0 : WB.ammoOf(ui.G)[w] === 0)) return; ui.weapon = w; ui.lob = false; SFX.click(); renderCtl(); coachLine(); }
   function toggleLob() { if (!canAct() || !WB.lobbable(ui.G).length) return; ui.lob = !ui.lob; SFX.click(); renderCtl(); coachLine(); }
 
   // ---------- HUD and controls (DOM) ----------
@@ -2054,10 +2158,11 @@ button { font: inherit; color: inherit; }
     const aim = G.phase === 'aim', am = WB.ammoOf(G), lob = WB.lobbable(G).length > 0;
     const wb = (w, key) => { const S = WB.shotSpec(G, WB.current(G), w);
       return `<button class="btn wpn${ui.weapon === w && !ui.lob ? '' : ' ghost'}" type="button" data-w="${w}" aria-pressed="${ui.weapon === w && !ui.lob}" title="${esc(S.desc)} Turn delay +${S.delay}." ${!aim || am[w] === 0 ? 'disabled' : ''}>${esc(S.name)}<small>${key} · ${am[w] < 0 ? '∞' : am[w] + ' left'} · ⏱${S.delay}</small></button>`; };
+    $('#ctl').classList.toggle('four', !!(WB.current(G) && WB.current(G).gear));
     $('#ctl').innerHTML = `<button class="btn ghost" type="button" data-walk="-1" aria-label="Walk left" ${aim && G.moves ? '' : 'disabled'}>◀</button>
       <span class="steps">${G.moves} steps</span>
       <button class="btn ghost" type="button" data-walk="1" aria-label="Walk right" ${aim && G.moves ? '' : 'disabled'}>▶</button>
-      ${WB.ssReady(G) ? `<button class="btn wpn ss${ui.weapon === 'ss' && !ui.lob ? '' : ' dim'}" type="button" data-w="ss" aria-pressed="${ui.weapon === 'ss' && !ui.lob}" title="${esc(WB.shotSpec(G, WB.current(G), 'ss').desc)}" ${aim ? '' : 'disabled'}>SS · ${esc(WB.shotSpec(G, WB.current(G), 'ss').name)}<small>1 · ready · ⏱${WB.shotSpec(G, WB.current(G), 'ss').delay}</small></button>` : wb('shot1', '1')}${wb('shot2', '2')}${wb('dud', '3')}
+      ${WB.ssReady(G) ? `<button class="btn wpn ss${ui.weapon === 'ss' && !ui.lob ? '' : ' dim'}" type="button" data-w="ss" aria-pressed="${ui.weapon === 'ss' && !ui.lob}" title="${esc(WB.shotSpec(G, WB.current(G), 'ss').desc)}" ${aim ? '' : 'disabled'}>SS · ${esc(WB.shotSpec(G, WB.current(G), 'ss').name)}<small>1 · ready · ⏱${WB.shotSpec(G, WB.current(G), 'ss').delay}</small></button>` : wb('shot1', '1')}${wb('shot2', '2')}${wb('dud', '3')}${WB.current(G) && WB.current(G).gear ? wb('gear', '4') : ''}
       <button class="btn teal" type="button" data-act="lob" aria-pressed="${ui.lob}" ${aim && lob ? '' : 'disabled'} title="Pick up a live dud in reach (L)">LOB</button>
       <button class="btn fire" type="button" data-act="fire" ${aim ? '' : 'disabled'}>FIRE</button>
       <button class="btn ghost sm" type="button" data-act="pass" ${aim ? '' : 'disabled'} title="End your turn (X)">Skip</button>`;
@@ -2077,6 +2182,7 @@ button { font: inherit; color: inherit; }
     else if (ui.turnsSeen <= 5) t = 'Keys: <b>◀ ▶</b> walk · <b>▲ ▼</b> angle · <b>Q/E</b> power · <b>1 2 3</b> shots · <b>Space</b> fire.';
     else if (ui.weapon === 'ss') t = `<b>SS ready: ${esc(WB.shotSpec(G, WB.current(G), 'ss').name)}!</b> ${esc(WB.shotSpec(G, WB.current(G), 'ss').desc)} It replaces Shot 1 until you use it.`;
     else if (ui.weapon === 'shot2') t = `<b>${esc(WB.shotSpec(G, WB.current(G), 'shot2').name)}:</b> ${esc(WB.shotSpec(G, WB.current(G), 'shot2').desc)} (${WB.ammoOf(G).shot2} left this match)`;
+    else if (ui.weapon === 'gear') t = `<b>${esc(WB.shotSpec(G, WB.current(G), 'gear').name)}:</b> ${esc(WB.shotSpec(G, WB.current(G), 'gear').desc)} (${WB.ammoOf(G).gear} left this match)`;
     else if (ui.weapon === 'dud') t = 'A live dud lands and ticks for <b>3 turns</b>. Anyone close can lob it back, so drop it where they can\'t reach.';
     else t = '';
     el.innerHTML = t;
@@ -2091,7 +2197,7 @@ button { font: inherit; color: inherit; }
     <div><b>3 · Ground</b>Blasts carve the map. Knock them into the water or off a cliff.</div>
     <div><b>4 · Live duds</b>A dud ticks for 3 turns. Walk up to one and LOB it back.</div>
     <div style="grid-column:1/-1"><b>5 · SS (Special Shot)</b>Your character's ultimate. It charges one notch a turn (the SS meter up top) and takes over Shot 1 when it's full. Using it starts the charge again.</div></div>
-    <p class="keys">Keys: ◀ ▶ / A D walk · ▲ ▼ / W S angle (Shift = fine) · Q E power · F flip · 1 2 3 shots · L lob · Space fire · X skip · Esc menu</p>`;
+    <p class="keys">Keys: ◀ ▶ / A D walk · ▲ ▼ / W S angle (Shift = fine) · Q E power · F flip · 1 2 3 shots · 4 gear · L lob · Space fire · X skip · Esc menu</p>`;
   function titleScreen() {
     ui.screen = 'title'; renderCtl(); coachLine();
     const wide = () => { const c = $('#screen .card'); if (c) c.classList.add('title'); };
@@ -2231,6 +2337,15 @@ button { font: inherit; color: inherit; }
   }
   // ---------- character select: each crew picks one of five ----------
   function statBar(label, v, txt) { return `<div class="sb"><span>${label}</span><i><b style="width:${Math.round(clamp(v, 0.06, 1) * 100)}%"></b></i><em>${txt}</em></div>`; }
+  function charDetail(id, team, mul) {
+    const C = WB.CHARS[id], T = TEAMS[team];
+    return `<div class="cdl"><img src="${portrait(id, team)}" alt="" width="150" height="110"><div><b class="cn" style="color:${T.c}">${esc(C.name)}</b><span class="role">${esc(C.role)} · ${esc(WB.CLASSES[C.cls])}</span><span class="bl">${esc(C.blurb)}</span></div></div>
+      <div class="cdm">${statBar('Health', C.hp / 118, Math.round(C.hp * mul))}${statBar('Armour', (1 - C.armor) / 0.15 + 0.06, C.armor < 1 ? `−${Math.round((1 - C.armor) * 100)}%` : '–')}${statBar('Move', C.steps / 22, C.steps + ' steps')}${statBar('Wind grip', (2 - (C.shot1.wind || 1)) / 1.55, (C.shot1.wind || 1) < 1 ? 'steady' : (C.shot1.wind || 1) > 1 ? 'curvy' : 'normal')}</div>
+      <div class="cdr"><span class="sh"><b>1 · ${esc(C.shot1.name)}</b> ${esc(C.shot1.desc)}</span>
+        <span class="sh two"><b>2 · ${esc(C.shot2.name)}</b> ${esc(C.shot2.desc)} <em>2 a match</em></span>
+        <span class="sh ss"><b>SS · ${esc(C.ss.name)}</b> ${esc(C.ss.desc)} <em>every ${WB.SS_CHARGE} turns</em></span>
+        <span class="sh"><b>4 · Gear</b> picks one of ${WB.gearFor(id).length} next. Usually ${esc(WB.GEAR[C.gear].name)}.</span></div>`;
+  }
   function selectScreen(team) {
     ui.screen = 'select'; ui.pickTeam = team; ui.G = null; ui.paused = false;
     renderHUD(); renderCtl(); coachLine();
@@ -2238,37 +2353,60 @@ button { font: inherit; color: inherit; }
     const other = ui.mode === 'duel' && team === 1 && ui.picks[0] ? `Player 1 picked <b style="color:${TEAMS[0].c}">${esc(WB.CHARS[ui.picks[0]].name)}</b>. ` : '';
     const mul = sq ? WB.CREW_HP[ui.sq.size] : ui.mode === 'solo' ? WB.HP_MUL.ffa : WB.HP_MUL.duel;
     const who = sq ? (ui.sq.vs === 'cpu' ? 'Your crew' : `Player ${team + 1}'s crew`) : '';
+    ui.cursor = clamp(ui.cursor, 0, WB.CHAR_IDS.length - 1);
     const cards = WB.CHAR_IDS.map((id, i) => {
       const C = WB.CHARS[id];
-      return `<button class="char${i === ui.cursor ? ' cur' : ''}" type="button" data-act="pick" data-char="${id}" style="--tc:${T.c}" aria-label="${esc(C.name)}, ${esc(C.role)}">
-        <img src="${portrait(id, team)}" alt="" width="150" height="110"><span class="num">${i + 1}</span>
-        <b class="cn">${esc(C.name)}</b><span class="role">${esc(C.role)}</span>
-        ${statBar('Health', C.hp / 115, Math.round(C.hp * mul))}${statBar('Armour', (1 - C.armor) / 0.15 + 0.06, C.armor < 1 ? `−${Math.round((1 - C.armor) * 100)}%` : '–')}${statBar('Move', C.steps / 22, C.steps + ' steps')}${statBar('Wind grip', (2 - (C.shot1.wind || 1)) / 1.55, (C.shot1.wind || 1) < 1 ? 'steady' : (C.shot1.wind || 1) > 1 ? 'curvy' : 'normal')}
-        <span class="bl">${esc(C.blurb)}</span>
-        <span class="sh"><b>1 · ${esc(C.shot1.name)}</b> ${esc(C.shot1.desc)}</span>
-        <span class="sh two"><b>2 · ${esc(C.shot2.name)}</b> ${esc(C.shot2.desc)} <em>2 a match</em></span>
-        <span class="sh ss"><b>SS · ${esc(C.ss.name)}</b> ${esc(C.ss.desc)} <em>every ${WB.SS_CHARGE} turns</em></span></button>`;
+      return `<button class="char mini${i === ui.cursor ? ' cur' : ''}" type="button" data-act="pick" data-char="${id}" data-i="${i}" style="--tc:${T.c}" aria-label="${esc(C.name)}, ${esc(C.role)}, ${esc(WB.CLASSES[C.cls])}">
+        <img src="${portrait(id, team)}" alt="" width="150" height="110"><span class="num">${(i + 1) % 10}</span>
+        <b class="cn">${esc(C.name)}</b><span class="role">${esc(WB.CLASSES[C.cls])}</span></button>`;
     }).join('');
     $('#screen').innerHTML = `<div class="screen"><div class="pick" role="dialog" aria-modal="true">
       <div class="tag">${sq ? `Squads · ${ui.sq.size} v ${ui.sq.size} · step 2 of 2` : ui.mode === 'solo' ? `1 Player · ${LEVELS[ui.level].name} · step 2 of 2` : `2 Players · step ${team + 1} of 2`} · everyone also carries 2 Live duds</div>
       <h2 style="color:${T.c}">${sq ? `${who}: pick unit ${mine.length + 1} of ${ui.sq.size}` : ui.mode === 'solo' ? 'Pick your character' : `Player ${team + 1}, pick your character`}</h2>
       <p class="sub">${sq ? `<span class="crewslots">${Array.from({ length: ui.sq.size }, (_, i) => `<b style="--tc:${T.c}" class="${mine[i] ? 'on' : ''}">${mine[i] ? esc(WB.CHARS[mine[i]].name) : i + 1}</b>`).join('')}</span> The same character twice is fine. ${ui.sq.vs === 'cpu' ? 'The computer picks its own crew.' : ''}` : other + (ui.mode === 'solo' ? 'The three computers get random characters.' : 'Same pick as the other player is fine.')}</p>
-      <div class="chars">${cards}</div>
-      <div class="row"><button class="btn ghost sm" type="button" data-act="pickback">Back</button>${sq ? '<button class="btn gold sm" type="button" data-act="crewfill">Fill the rest for me</button>' : ''}<span class="keys">← → choose · Enter to pick · or press 1–5</span></div></div></div>`;
+      <div class="chars ten">${cards}</div>
+      <div class="cdetail" id="cdetail" style="--tc:${T.c}">${charDetail(WB.CHAR_IDS[ui.cursor], team, mul)}</div>
+      <div class="row"><button class="btn ghost sm" type="button" data-act="pickback">Back</button>${sq ? '<button class="btn gold sm" type="button" data-act="crewfill">Fill the rest for me</button>' : ''}<span class="keys">← → ↑ ↓ choose · Enter to pick · or press 1–9, 0</span></div></div></div>`;
+    ui.selMul = mul;
   }
-  function choose(id) {
-    if (!WB.CHARS[id] || ui.screen !== 'select') return;
+  // moving over a card (mouse or keyboard) shows that character in the detail panel without redrawing the screen
+  function selLook(i) {
+    if (ui.screen !== 'select' || i === ui.cursor || !(i >= 0 && i < WB.CHAR_IDS.length)) return;
+    ui.cursor = i; for (const b of document.querySelectorAll('.char.mini')) b.classList.toggle('cur', +b.dataset.i === i);
+    const d = $('#cdetail'); if (d) d.innerHTML = charDetail(WB.CHAR_IDS[i], ui.pickTeam, ui.selMul);
+  }
+  document.addEventListener('pointerover', (e) => { const b = e.target.closest && e.target.closest('.char.mini'); if (b) selLook(+b.dataset.i); });
+  document.addEventListener('focusin', (e) => { const b = e.target.closest && e.target.closest('.char.mini'); if (b) selLook(+b.dataset.i); });
+  // Gear: after a character, one of the six items it can carry (four anyone can, two for its class)
+  function gearScreen(id) {
+    ui.screen = 'gear'; ui.pendingChar = id;
+    const T = TEAMS[ui.pickTeam], C = WB.CHARS[id];
+    const items = WB.gearFor(id).map((g, i) => { const X = WB.GEAR[g];
+      return `<button class="gearb${g === C.gear ? ' cur' : ''}" type="button" data-act="gear" data-gear="${g}" style="--tc:${T.c}"><span class="num">${i + 1}</span><b>${esc(X.name)}</b><em>${X.cls === 'any' ? 'Anyone' : esc(WB.CLASSES[X.cls]) + ' only'} · ${X.ammo} a match · ⏱${X.delay}</em><span>${esc(X.desc)}</span></button>`; }).join('');
+    $('#screen').innerHTML = `<div class="screen"><div class="pick" role="dialog" aria-modal="true" style="width:980px">
+      <div class="tag">Gear · a 4th shot, yours for the whole match</div>
+      <h2 style="color:${T.c}">${esc(C.name)}'s gear</h2>
+      <p class="sub">${esc(WB.CLASSES[C.cls])}s can carry these six. The highlighted one is ${esc(C.name)}'s usual pick: press Enter to take it.</p>
+      <div class="gears">${items}</div>
+      <div class="row"><button class="btn ghost sm" type="button" data-act="gearback">Back</button><span class="keys">1–6 to pick · Enter for the usual</span></div></div></div>`;
+  }
+  function choose(id) { if (WB.CHARS[id] && ui.screen === 'select') { SFX.click(); gearScreen(id); } }
+  const randomGear = (c) => (Math.random() < 0.5 ? WB.CHARS[c].gear : WB.gearFor(c)[Math.floor(Math.random() * WB.gearFor(c).length)]);
+  function chooseGear(g) {
+    const id = ui.pendingChar; if (ui.screen !== 'gear' || !WB.CHARS[id]) return;
+    if (!WB.gearFor(id).includes(g)) g = WB.CHARS[id].gear;
+    SFX.click(); ui.screen = 'select';
     if (ui.mode === 'squads') { // a crew fills up one unit at a time; then the other side picks (the computer picks its own)
-      const mine = ui.picks[ui.pickTeam] || (ui.picks[ui.pickTeam] = []); mine.push(id); SFX.click();
+      const mine = ui.picks[ui.pickTeam] || (ui.picks[ui.pickTeam] = []), gear = ui.gear[ui.pickTeam] || (ui.gear[ui.pickTeam] = []); mine.push(id); gear.push(g);
       if (mine.length < ui.sq.size) { selectScreen(ui.pickTeam); return; }
       if (ui.pickTeam === 0 && ui.sq.vs === 'p2') { ui.cursor = 2; selectScreen(1); return; }
-      if (ui.sq.vs === 'cpu') ui.picks[1] = randomCrew(ui.sq.size);
+      if (ui.sq.vs === 'cpu') { ui.picks[1] = randomCrew(ui.sq.size); ui.gear[1] = ui.picks[1].map(randomGear); }
       startMatch(); return;
     }
-    ui.picks[ui.pickTeam] = id; SFX.click();
+    ui.picks[ui.pickTeam] = id; ui.gear[ui.pickTeam] = g;
     if (ui.mode === 'solo') { // the computers take random characters, different from each other where possible
       const rest = WB.CHAR_IDS.filter((c) => c !== id).sort(() => Math.random() - 0.5);
-      ui.picks = [id, rest[0], rest[1], rest[2]]; startMatch();
+      ui.picks = [id, rest[0], rest[1], rest[2]]; ui.gear = [g].concat(ui.picks.slice(1).map(randomGear)); startMatch();
     } else if (ui.pickTeam === 0) { ui.cursor = 2; selectScreen(1); } else startMatch();
   }
 
@@ -2325,7 +2463,7 @@ button { font: inherit; color: inherit; }
       <div class="fq"><label for="fbText">Anything else? (best moment, what confused you)</label><textarea id="fbText">${esc(F.text)}</textarea></div>
       <div class="fq"><label for="fbName">Your name (optional)</label><input id="fbName" value="${esc(F.nm)}"></div>
       ${F.saved === true ? '<p style="color:#22C3B5">Thanks! Saved.</p>' : F.saved === 'copy' ? `<p>Couldn't save from here. Copy this and send it to the crew:</p><textarea readonly style="width:100%;min-height:90px">${esc(feedbackText())}</textarea>` : ''}
-      <div class="row"><button class="btn fire" type="button" data-act="fbsend">Send</button><button class="btn ghost" type="button" data-act="fbback">Back</button></div>`);
+      <div class="row"><button class="btn fire" type="button" data-act="fbsend">Send</button><button class="btn ghost" type="button" data-act="fbback">Back</button></div>`);    const card = $('#screen .card'), top = ui.fbTop || 0; card.classList.add('title', 'scroll'); card.scrollTop = top; card.onscroll = () => { ui.fbTop = card.scrollTop; }; // ten characters made the form taller than the screen: it scrolls, and keeps its place when an answer redraws it
   }
   function feedbackText() {
     const F = ui.fb, G = ui.G;
@@ -2488,7 +2626,7 @@ button { font: inherit; color: inherit; }
   function startRound() {
     const first = (ui.round - 1) % nSides();
     const sq = ui.mode === 'squads';
-    ui.G = WB.newGame((ui.matchSeed + ui.round * 7919 + (ui.draws || 0) * 104729) >>> 0, { teams: nSides(), size: crew(), first, chars: sq ? ui.picks[0].concat(ui.picks[1]) : ui.picks, map: mapFor(ui.round), recipe: ui.mode === 'solo' ? 'solo' : undefined });
+    ui.G = WB.newGame((ui.matchSeed + ui.round * 7919 + (ui.draws || 0) * 104729) >>> 0, { teams: nSides(), size: crew(), first, chars: sq ? ui.picks[0].concat(ui.picks[1]) : ui.picks, gear: sq ? (ui.gear[0] || []).concat(ui.gear[1] || []) : ui.gear, map: mapFor(ui.round), recipe: ui.mode === 'solo' ? 'solo' : undefined });
     ui.aim = {}; ui.cpu = null; ui.parts = []; ui.trails = {}; ui.scorch = []; ui.pops = []; ui.acc = 0; ui.slow = 0; ui.shake = 0; ui.overAt = 0; ui.paused = false;
     bakeBackground(ui.G.seed); renderTerrain(); camReset();
     ui.screen = 'game'; hide(); onTurn();
@@ -2518,16 +2656,19 @@ button { font: inherit; color: inherit; }
       case 'squads': squadScreen(); break;
       case 'sqsize': ui.sq.size = clamp(+b.dataset.n || 3, 2, 5); lsSet('wb-crew', ui.sq.size); squadScreen(); break;
       case 'sqvs': ui.sq.vs = b.dataset.vs === 'p2' ? 'p2' : 'cpu'; lsSet('wb-crewvs', ui.sq.vs); if (LEVELS[b.dataset.level]) { ui.level = b.dataset.level; lsSet('wb-level', ui.level); } squadScreen(); break;
-      case 'sqgo': ui.picks = [null, null]; ui.cursor = 2; selectScreen(0); break;
-      case 'crewfill': { const mine = ui.picks[ui.pickTeam] || (ui.picks[ui.pickTeam] = []); const left = WB.CHAR_IDS.filter((c) => !mine.includes(c)).sort(() => Math.random() - 0.5); while (mine.length < ui.sq.size - 1) mine.push(left.length ? left.pop() : WB.CHAR_IDS[Math.floor(Math.random() * 5)]); choose(left.length ? left.pop() : WB.CHAR_IDS[Math.floor(Math.random() * 5)]); break; }
+      case 'sqgo': ui.picks = [null, null]; ui.gear = [null, null]; ui.cursor = 2; selectScreen(0); break;
+      case 'crewfill': { const mine = ui.picks[ui.pickTeam] || (ui.picks[ui.pickTeam] = []), gear = ui.gear[ui.pickTeam] || (ui.gear[ui.pickTeam] = []); const left = WB.CHAR_IDS.filter((c) => !mine.includes(c)).sort(() => Math.random() - 0.5); const next = () => (left.length ? left.pop() : WB.CHAR_IDS[Math.floor(Math.random() * WB.CHAR_IDS.length)]);
+        while (mine.length < ui.sq.size - 1) { const c = next(); mine.push(c); gear.push(WB.CHARS[c].gear); } const last = next(); ui.pendingChar = last; ui.screen = 'gear'; chooseGear(WB.CHARS[last].gear); break; }
       case 'cam': camAct(b.dataset.cam); break;
-      case 'mode': ui.mode = b.dataset.mode === 'solo' ? 'solo' : 'duel'; ui.picks = new Array(nSides()).fill(null); if (ui.mode === 'solo') levelScreen(); else { ui.cursor = 2; selectScreen(0); } break;
+      case 'mode': ui.mode = b.dataset.mode === 'solo' ? 'solo' : 'duel'; ui.gear = []; ui.picks = new Array(nSides()).fill(null); if (ui.mode === 'solo') levelScreen(); else { ui.cursor = 2; selectScreen(0); } break;
       case 'level': ui.level = LEVELS[b.dataset.level] ? b.dataset.level : 'medium'; lsSet('wb-level', ui.level); ui.cursor = 2; selectScreen(0); break;
-      case 'start': case 'pickagain': ui.picks = new Array(nSides()).fill(null); ui.cursor = 2; selectScreen(0); break;
+      case 'start': case 'pickagain': ui.gear = []; ui.picks = new Array(nSides()).fill(null); ui.cursor = 2; selectScreen(0); break;
       case 'rematch': if (online()) { ui.net.send({ t: 'rematch' }); ui.net.rematchAsked = true; roundOverAgain(); } else startMatch(); break;
       case 'mapcode': { const inp = $('#mapCode'); if (!setMap(inp && inp.value)) { const a = $('#mapAbout'); if (a) a.textContent = "That code doesn't look right. Copy it again from the Map Lab."; } break; }
       case 'pick': choose(b.dataset.char); break;
-      case 'pickback': if (ui.mode === 'squads') { const mine = ui.picks[ui.pickTeam] || []; if (mine.length) { mine.pop(); selectScreen(ui.pickTeam); } else if (ui.pickTeam === 1) { ui.picks[0].pop(); selectScreen(0); } else squadScreen(); }
+      case 'gear': chooseGear(b.dataset.gear); break;
+      case 'gearback': selectScreen(ui.pickTeam); break;
+      case 'pickback': if (ui.mode === 'squads') { const mine = ui.picks[ui.pickTeam] || []; if (mine.length) { mine.pop(); (ui.gear[ui.pickTeam] || []).pop(); selectScreen(ui.pickTeam); } else if (ui.pickTeam === 1) { ui.picks[0].pop(); (ui.gear[0] || []).pop(); selectScreen(0); } else squadScreen(); }
         else if (ui.mode === 'duel' && ui.pickTeam === 1) { ui.picks[0] = null; selectScreen(0); } else if (ui.mode === 'solo') levelScreen(); else titleScreen(); break;
       case 'next': if (online()) { ui.net.send({ t: 'next' }); ui.net.nextAsked = true; roundOverAgain(); } else { if (ui.G.winner >= 0) ui.round++; else ui.draws = (ui.draws || 0) + 1; startRound(); } break; // a drawn round is played again on a new map
       case 'online': onlineScreen(); break;
@@ -2567,7 +2708,39 @@ button { font: inherit; color: inherit; }
 
   // ---------- drawing ----------
   // One crewmate: team-coloured body (who's who at a glance) plus the character's own headgear (what they can do).
+  // Unit sprites (art/sprites/units.png, drawn by art/tools/units.py and inlined by build.py as WB_ART.units): one row per
+  // character, 32 x 32 art pixels a frame (idle 1, idle 2, hurt), facing right. The body is painted in three key colours;
+  // each team gets its own copy of the sheet with those swapped for its colours. Until the picture has loaded (or if a
+  // build has none) the old code-drawn bodies are used.
+  const SPR = { S: 32, foot: [16, 30], img: null, sheets: {}, key: [[200, 0, 200], [255, 0, 255], [255, 140, 255]], frame: 0 };
+  (function loadSprites() {
+    const src = window.WB_ART && window.WB_ART.units; if (!src) return;
+    const im = new Image(); im.onload = () => { SPR.img = im; for (const k of Object.keys(portraits)) delete portraits[k]; if (ui.screen === 'title') titleScreen(); }; im.src = src;
+  })();
+  const rgb = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+  function teamSheet(team) {
+    if (SPR.sheets[team]) return SPR.sheets[team];
+    const c = document.createElement('canvas'); c.width = SPR.img.width; c.height = SPR.img.height; const g = c.getContext('2d'); g.drawImage(SPR.img, 0, 0);
+    try {
+      const d = g.getImageData(0, 0, c.width, c.height), px = d.data, mid = rgb(TEAMS[team].c), to = [rgb(TEAMS[team].c2), mid, mid.map((v) => Math.round(v + (255 - v) * 0.45))];
+      for (let i = 0; i < px.length; i += 4) { if (!px[i + 3]) continue; for (let k = 0; k < 3; k++) if (px[i] === SPR.key[k][0] && px[i + 1] === SPR.key[k][1] && px[i + 2] === SPR.key[k][2]) { px[i] = to[k][0]; px[i + 1] = to[k][1]; px[i + 2] = to[k][2]; break; } }
+      g.putImageData(d, 0, 0);
+    } catch (e) { /* a browser that won't let us read the pixels: the key colours show, the game still plays */ }
+    return (SPR.sheets[team] = c);
+  }
+  function drawSprite(c, x, y, R, team, ch, face, t, bob) {
+    const row = WB.CHAR_IDS.indexOf(ch), k = R / 12 * 2, col = SPR.frame === 2 ? 2 : (reduced ? 0 : Math.floor(t * 2.4 + row * 0.37) % 2);
+    c.fillStyle = 'rgba(0,0,0,.28)'; c.beginPath(); c.ellipse(x, y + 1, R * 0.95, 3.5 * R / 12, 0, 0, 7); c.fill();
+    const sm = c.imageSmoothingEnabled; c.imageSmoothingEnabled = false;
+    c.save(); c.translate(Math.round(x), Math.round(y + bob)); c.scale((face || 1) * k, k);
+    c.drawImage(teamSheet(team), col * SPR.S, row * SPR.S, SPR.S, SPR.S, -SPR.foot[0], -SPR.foot[1], SPR.S, SPR.S);
+    c.restore(); c.imageSmoothingEnabled = sm;
+    return y - R + bob;
+  }
+  // how far above the body a character's gear reaches, in units of its radius (the name tag sits above it)
+  const TALL = { volt: 2.5, gale: 2.9, nimbus: 2.6, tusk: 1.9, hopper: 1.9, flint: 1.8, patch: 1.7 };
   function drawBody(c, x, y, R, team, ch, face, t, bob) {
+    if (SPR.img && WB.CHAR_IDS.indexOf(ch) * SPR.S < SPR.img.height) return drawSprite(c, x, y, R, team, ch, face, t, bob);
     const T = TEAMS[team], k = R / 12, cy = y - R + bob, f = face || 1;
     c.lineJoin = 'round'; c.lineCap = 'round';
     c.fillStyle = 'rgba(0,0,0,.28)'; c.beginPath(); c.ellipse(x, y + 1, R * (ch === 'brick' ? 1.1 : 0.9), 3.5 * k, 0, 0, 7); c.fill();
@@ -2619,7 +2792,7 @@ button { font: inherit; color: inherit; }
     const c = document.createElement('canvas'); c.width = 300; c.height = 220; const g = c.getContext('2d');
     const bg = g.createLinearGradient(0, 0, 0, 220); bg.addColorStop(0, '#7A3B5E'); bg.addColorStop(1, '#FF8A3D'); g.fillStyle = bg; g.fillRect(0, 0, 300, 220);
     g.fillStyle = '#6FAE45'; g.fillRect(0, 186, 300, 34); g.fillStyle = '#A6DE62'; g.fillRect(0, 182, 300, 8);
-    drawBody(g, 150, 186, 42, team, ch, team === 0 ? 1 : -1, 0.6, 0);
+    drawBody(g, 150, 186, SPR.img ? 36 : 42, team, ch, team === 0 ? 1 : -1, 0.6, 0);
     return (portraits[key] = c.toDataURL());
   }
   function drawUnit(u, isCur, t) {
@@ -2633,10 +2806,10 @@ button { font: inherit; color: inherit; }
     }
     const bob = isCur && !reduced ? Math.sin(t * 6) * 1.5 : 0, cy = y - R + bob;
     if (isCur) { const g = ctx.createRadialGradient(x, cy, 4, x, cy, 44); g.addColorStop(0, 'rgba(255,211,77,.45)'); g.addColorStop(1, 'rgba(255,211,77,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, cy, 44, 0, 7); ctx.fill(); }
-    drawBody(ctx, x, y, R, u.team, u.char, u.face, t, bob);
+    SPR.frame = u.air ? 2 : 0; drawBody(ctx, x, y, R, u.team, u.char, u.face, t, bob); SPR.frame = 0;
     if (u.hp < 35) { ctx.fillStyle = 'rgba(70,60,80,.55)'; ctx.beginPath(); ctx.arc(x + 6 * Math.sin(t * 2), cy - R - 6 - (t * 20 % 10), 4, 0, 7); ctx.fill(); }
     // name and hp
-    const bw = 34, bx = x - bw / 2, by = cy - R - (u.char === 'volt' ? 30 : 18);
+    const bw = 34, bx = x - bw / 2, by = cy - R - (SPR.img ? Math.round((TALL[u.char] || 1.5) * R - R + 8) : u.char === 'volt' ? 30 : 18);
     ctx.fillStyle = 'rgba(30,26,43,.8)'; ctx.fillRect(bx - 2, by - 2, bw + 4, 8);
     ctx.fillStyle = u.hp > u.maxHp / 2 ? '#7BE07A' : u.hp > u.maxHp / 4 ? '#FFD34D' : '#FF4D5E'; ctx.fillRect(bx, by, bw * clamp(u.hp / u.maxHp, 0, 1), 4);
     ctx.font = FONT(13); ctx.textAlign = 'center'; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(30,26,43,.9)';
@@ -2670,7 +2843,8 @@ button { font: inherit; color: inherit; }
     ctx.lineCap = 'round';
     for (let i = 1; i < tr.length; i++) { ctx.strokeStyle = `rgba(255,243,224,${i / tr.length * 0.5})`; ctx.lineWidth = (i / tr.length) * (p.w === 'bomblet' ? 3 : 5); ctx.beginPath(); ctx.moveTo(tr[i - 1][0], tr[i - 1][1]); ctx.lineTo(tr[i][0], tr[i][1]); ctx.stroke(); }
     if (p.w === 'dud') { drawDud({ x: p.x, y: p.y + 5 / CELL, fuse: p.fuse }, t, true); return; }
-    const ch = ui.G.chars[p.team], big = p.w === 'shot2' || p.w === 'ss', ang = Math.atan2(p.vy, p.vx);
+    const LOOK = { tusk: 'brick', hopper: 'zip', flint: 'volt', patch: 'digger', nimbus: 'gale' }, c0 = p.char || ui.G.chars[p.team];
+    const ch = p.w === 'gear' || p.w === 'frag' ? 'gear' : LOOK[c0] || c0, big = p.w === 'shot2' || p.w === 'ss', ang = Math.atan2(p.vy, p.vx);
     if (p.w === 'ss') { const g = ctx.createRadialGradient(x, y, 2, x, y, 24); g.addColorStop(0, 'rgba(255,211,77,.8)'); g.addColorStop(1, 'rgba(255,138,61,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, 24, 0, 7); ctx.fill(); }
     ctx.strokeStyle = '#1E1A2B'; ctx.lineWidth = 2;
     if (ch === 'zip' || (ch === 'digger' && big)) { // darts and drills point where they fly
@@ -2679,7 +2853,7 @@ button { font: inherit; color: inherit; }
       else { ctx.fillStyle = '#9A9CA3'; ctx.beginPath(); ctx.moveTo(12, 0); ctx.lineTo(-5, -6); ctx.lineTo(-5, 6); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.strokeStyle = '#4A4D58'; for (let i = 0; i < 3; i++) { const sx = 6 - i * 4 - (t * 40 % 4); ctx.beginPath(); ctx.moveTo(sx, -4 + i); ctx.lineTo(sx - 2, 4 - i); ctx.stroke(); } }
       ctx.restore(); return;
     }
-    const look = { brick: ['#5A5F6E', p.w === 'ss' ? 10 : big ? 8 : 6], volt: ['#4FB3FF', big ? 6.5 : 5.5], digger: ['#B2643A', 6], gale: ['#7BE07A', big ? 6.5 : 5.5] }[ch] || ['#3A3150', 5.5];
+    const look = { brick: ['#5A5F6E', p.w === 'ss' ? 10 : big ? 8 : 6], volt: ['#4FB3FF', big ? 6.5 : 5.5], digger: ['#B2643A', 6], gale: ['#7BE07A', big ? 6.5 : 5.5], gear: ['#FFD34D', p.w === 'frag' ? 3.5 : 5.5] }[ch] || ['#3A3150', 5.5];
     if (ch === 'volt') { const g = ctx.createRadialGradient(x, y, 1, x, y, 16); g.addColorStop(0, 'rgba(143,216,255,.7)'); g.addColorStop(1, 'rgba(143,216,255,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, 16, 0, 7); ctx.fill(); }
     if (ch === 'gale') { ctx.strokeStyle = '#FFF3E0'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x, y); ctx.quadraticCurveTo(x - p.vx * 0.4 + 4 * Math.sin(t * 20), y - p.vy * 0.4, x - p.vx * 0.7, y - p.vy * 0.7); ctx.stroke(); ctx.strokeStyle = '#1E1A2B'; }
     ctx.fillStyle = look[0]; ctx.beginPath(); ctx.arc(x, y, look[1], 0, 7); ctx.fill(); ctx.stroke();
@@ -2809,7 +2983,7 @@ button { font: inherit; color: inherit; }
 
   // ---------- boot ----------
   window.WBUI = {
-    get G() { return ui.G; }, ui, startMatch, levelScreen, squadScreen, camAct, camZoom, camPan, toWorld, onlineScreen, netStart, play, selectScreen, choose, startRound, roundOver, doFire, walk, pass, botTurn, renderAll: () => { renderHUD(); renderCtl(); coachLine(); },
+    get G() { return ui.G; }, ui, startMatch, levelScreen, squadScreen, chooseGear, gearScreen, camAct, camZoom, camPan, toWorld, onlineScreen, netStart, play, selectScreen, choose, startRound, roundOver, doFire, walk, pass, botTurn, renderAll: () => { renderHUD(); renderCtl(); coachLine(); },
     aim: (angle, power) => { const u = WB.current(ui.G); const a = aimOf(u); a.angle = angle; a.power = power; },
   };
   fit(); addEventListener('resize', fit);
