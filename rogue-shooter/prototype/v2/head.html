@@ -1,5 +1,6 @@
 <title>Rogue Shooter</title>
 <meta name="claude:viewport-fit-sides" content="cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Rajdhani:wght@500;600;700&display=swap">
 <style>
 :root {
@@ -405,4 +406,34 @@ canvas.spr, .spr { image-rendering: pixelated; display: block; }
 .t-train .ink, .t-train .h.ink { color: var(--ink); }
 .stall .btn.small { cursor: pointer; }
 .cost .ico { display: inline-block; }
+
+/* ---------- touch controls (src/touch.js); on once html has .touch ---------- */
+#hud, #farmhud, #farm-prompt { zoom: var(--hz, 1); }   /* the HUD shrinks on small windows */
+#tc-probe { position: fixed; visibility: hidden; padding: 0 env(safe-area-inset-right) 0 env(safe-area-inset-left); }
+html.touch, html.touch body { touch-action: manipulation; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
+#touch { position: fixed; inset: 0; z-index: 12; pointer-events: none; font-family: var(--display); }
+#tc-zone { position: absolute; left: 0; top: 0; bottom: 0; width: 50%; pointer-events: auto; touch-action: none; }
+#tc-base { position: absolute; left: 0; top: 0; width: 128px; height: 128px; border-radius: 50%; background: rgba(240,228,200,.12); border: 3px solid rgba(240,228,200,.45); display: grid; place-items: center; pointer-events: none; }
+#tc-knob { width: 56px; height: 56px; border-radius: 50%; background: rgba(255,204,68,.75); border: 3px solid var(--ink); box-shadow: inset 0 -4px 0 rgba(0,0,0,.25); }
+#touch button, #tc-keys button { font-family: var(--display); color: var(--fg); background: #4a3418; border: 3px solid var(--ink); box-shadow: inset 0 3px 0 0 var(--wood-hi), inset 0 -3px 0 0 var(--wood-lo); text-shadow: 2px 2px 0 var(--ink); pointer-events: auto; touch-action: none; cursor: pointer; }
+#touch button:active, #tc-keys button:active { background: #6b4c22; color: var(--gold); }
+#tc-pause { position: absolute; right: calc(12px + env(safe-area-inset-right)); top: 12px; width: 48px; height: 48px; font-size: 12px; }
+#tc-act { position: absolute; right: calc(24px + env(safe-area-inset-right)); bottom: calc(24px + env(safe-area-inset-bottom)); width: 96px; height: 96px; border-radius: 50%; font-size: 14px; background: #8e2c22; box-shadow: inset 0 3px 0 0 #df6448, inset 0 -3px 0 0 #4e140e, 0 0 0 3px var(--gold); color: #fff3d0; }
+#tc-act.off { opacity: .4; box-shadow: inset 0 3px 0 0 #df6448, inset 0 -3px 0 0 #4e140e; }
+#tc-keys { position: fixed; z-index: 55; right: calc(8px + env(safe-area-inset-right)); top: 8px; bottom: 8px; width: 92px; display: flex; flex-wrap: wrap; align-content: center; gap: 6px; }
+#tc-keys button { width: 100%; min-height: 48px; padding: 4px 3px; display: grid; gap: 3px; place-items: center; font-size: 8px; line-height: 10px; }
+#tc-keys button span { font-size: 9px; line-height: 11px; color: var(--fg); } #tc-keys button small { font-size: 7px; color: var(--dim); }
+#tc-keys button.num { width: calc(50% - 3px); } #tc-keys button.num span { font-size: 14px; line-height: 16px; }
+#tc-keys button.ok { background: #2f6a2a; box-shadow: inset 0 3px 0 0 #8fe07a, inset 0 -3px 0 0 #163a14, 0 0 0 3px var(--gold); }
+#tc-keys button.back { background: #8e2c22; box-shadow: inset 0 3px 0 0 #df6448, inset 0 -3px 0 0 #4e140e; }
+#tc-rotate { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; align-content: center; gap: 18px; background: var(--bg); font-family: var(--display); font-size: 14px; line-height: 22px; color: var(--gold); text-align: center; padding: 24px; text-shadow: 3px 3px 0 var(--gold-deep); }
+#tc-rotate small { font-size: 9px; color: var(--dim); text-shadow: none; }
+.touch-only { display: none; }
+html.touch .touch-only { display: inline; } html.touch .kb-only { display: none; }
+/* fights: ability and potion belt move bottom-right, bigger, and are tapped */
+html.touch .hud-bc { left: auto; right: 24px; bottom: 24px; transform: none; flex-direction: row-reverse; zoom: 1.4; pointer-events: auto; }
+html.touch .hud-bc .keytag, html.touch .belt .key { display: none; }
+html.touch .hud-tr { right: 110px; }
+html.touch .toast { bottom: 230px; }
+html.touch #farm-prompt { pointer-events: auto; bottom: 150px; } html.touch #farm-prompt .key { display: none; }
 </style>

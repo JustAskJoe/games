@@ -119,14 +119,13 @@ function updatePlayer(dt) {
   }
   if (player.ability) { updateAbility(dt); return; }
 
-  let dx = 0, dy = 0;
-  if (keys['w'] || keys['arrowup']) dy -= 1; if (keys['s'] || keys['arrowdown']) dy += 1;
-  if (keys['a'] || keys['arrowleft']) dx -= 1; if (keys['d'] || keys['arrowright']) dx += 1;
+  const mv = moveInput();   // keyboard or touch stick (touch.js)
+  let dx = mv.dx, dy = mv.dy;
   const len = Math.hypot(dx, dy);
   player.moving = len > 0 && player.stunT <= 0;
   if (player.moving) {
     dx /= len; dy /= len;
-    let sp = player.speed;
+    let sp = player.speed * mv.mag;
     if (player.slowT > 0) sp *= 1 - player.slowPct;
     if (inSpores()) sp *= 0.6;
     sp *= extraSpeedMult();

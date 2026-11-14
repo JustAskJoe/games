@@ -124,14 +124,13 @@ function updateFarm(dt) {
   farmTime += dt;
   updatePenAnimals(dt);
   if (farmShopOpen) return;
-  let dx = 0, dy = 0;
-  if (keys['w'] || keys['arrowup']) dy -= 1; if (keys['s'] || keys['arrowdown']) dy += 1;
-  if (keys['a'] || keys['arrowleft']) dx -= 1; if (keys['d'] || keys['arrowright']) dx += 1;
+  const mv = moveInput();   // keyboard or touch stick (touch.js)
+  let dx = mv.dx, dy = mv.dy;
   const len = Math.hypot(dx, dy);
   player.moving = len > 0;
   if (player.moving) {
     dx /= len; dy /= len;
-    const sp = player.speed * 1.6 * dt;
+    const sp = player.speed * 1.6 * mv.mag * dt;
     const nx = player.x + dx * sp, ny = player.y + dy * sp;
     if (!heroBlocked(m, nx, player.y)) player.x = nx;
     if (!heroBlocked(m, player.x, ny)) player.y = ny;
@@ -145,7 +144,7 @@ function updateFarm(dt) {
   updateFarmHud();
 }
 function checkExits(m) {
-  if (m.id.startsWith('in_')) { if (inBox(m.j.exit, player.x, player.y) && (keys['s'] || keys['arrowdown'])) { leaveRoom(); return true; } return false; }
+  if (m.id.startsWith('in_')) { if (inBox(m.j.exit, player.x, player.y) && moveInput().dy > 0.5) { leaveRoom(); return true; } return false; }
   for (const ex of m.j.exits || []) if (inBox(ex.box, player.x, player.y, 2)) {
     if (ex.to === 'battle') { hideFarmHud(); showBattleMap(); return true; }
     const back = (WJ.maps[ex.to].exits || []).find(e => e.to === m.id);

@@ -5,7 +5,7 @@ runs from file:// with no image requests.
 """
 import os, sys, json, base64
 HERE = os.path.dirname(os.path.abspath(__file__))
-ORDER = ['core', 'assets', 'gfx', 'data', 'input', 'state', 'combat', 'ui', 'render', 'farm', 'buildings', 'bmenus', 'main']
+ORDER = ['core', 'assets', 'gfx', 'data', 'input', 'state', 'combat', 'ui', 'render', 'farm', 'buildings', 'bmenus', 'touch', 'main']
 OUT = os.path.join(HERE, '..', '..', 'builds', 'rogue-shooter-v2.html')
 SPRITES = os.path.join(HERE, '..', '..', 'art', 'sprites')
 ASSET_DIRS = ['heroes', 'enemies', 'bosses', 'biomes', 'combat', 'farm', 'ui', 'world']

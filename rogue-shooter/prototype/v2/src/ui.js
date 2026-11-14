@@ -6,8 +6,11 @@ const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;',
 function slotHtml(name, s, cls, extra) { return '<div class="' + (cls || 'slot') + '">' + (name ? icon(name, s || 3) : '') + (extra || '') + '</div>'; }
 
 function fitStage() {
-  const fit = Math.min(innerWidth / 1280, innerHeight / 800);
+  // on touch screens the right-hand strip is kept for the key column (touch.js)
+  const col = touchMode ? TC_COL + safeInsets().r : 0, sl = col ? safeInsets().l : 0;
+  const fit = Math.min((innerWidth - col - sl) / 1280, innerHeight / 800);
   $('stage').style.setProperty('--k', fit >= 1 ? Math.floor(fit) : fit);
+  $('stage').style.left = col ? 'calc(' + (sl + (innerWidth - col - sl) / 2) + 'px)' : '';
 }
 addEventListener('resize', fitStage);
 
@@ -38,8 +41,13 @@ let menu = null;
 function setMenu(items, o) {
   menu = Object.assign({ items, i: 0, axis: 'v' }, o || {});
   items.forEach((el, i) => {
-    el.addEventListener('mouseenter', () => { if (!el.classList.contains('off')) selectMenu(i); });
-    el.addEventListener('click', () => { if (!el.classList.contains('off') && el._act) el._act(); });
+    el.addEventListener('mouseenter', () => { if (lastPointer !== 'touch' && !el.classList.contains('off')) selectMenu(i); });
+    el.addEventListener('click', () => {
+      if (el.classList.contains('off')) return;
+      // touch: in a list with a detail panel the first tap picks the row, the second uses it
+      if (lastPointer === 'touch' && menu && menu.items === items && menu.onSelect && menu.i !== i) { selectMenu(i); return; }
+      if (el._act) el._act();
+    });
   });
   selectMenu(menu.i);
 }
@@ -100,7 +108,8 @@ function buildCharSelect() {
       '<div class="k"><span class="kframe">' + icon(c.ability, 3) + '</span><div><span>' + c.ability.toUpperCase() + '</span><small>SPACE · ' + c.cdText.toUpperCase() + '</small></div></div></div>' +
       '<div class="trait"><b style="color:#8fe07a">+</b>' + esc(c.plus) + '</div><div class="trait minus"><b>&minus;</b>' + esc(c.minus) + '</div>';
     const spr = heroUiSprite(id, 'front', true); d.querySelector('.pic').appendChild(spr.c);
-    d.addEventListener('mouseenter', () => selectChar(i)); d.addEventListener('click', () => startRun(id));
+    d.addEventListener('mouseenter', () => { if (lastPointer !== 'touch') selectChar(i); });
+    d.addEventListener('click', () => { if (lastPointer === 'touch' && charSel !== i) selectChar(i); else startRun(id); });   // touch: tap to look, tap again to start
     row.appendChild(d); charCards.push(d);
   });
   selectChar(charSel);
@@ -273,7 +282,8 @@ function showLevelUp() {
     d.innerHTML = '<span class="key num">' + (i + 1) + '</span>' + tag + '<span class="rar">' + rar.toUpperCase() + '</span><div class="art">' + icon(iconName, 4) + '</div>' +
       '<div class="cn">' + name.toUpperCase() + '</div><div class="val">' + val + '</div><div class="desc">' + esc(desc) + '</div><div class="now">' + now + '</div>';
     d._pick = () => { if (state !== 'levelup') return; apply(); $('stats').hidden = true; lvlCards = []; afterLevelPick(); };
-    d.addEventListener('click', () => pickLvl(i)); d.addEventListener('mouseenter', () => selectLvl(i));
+    d.addEventListener('click', () => { if (lastPointer === 'touch' && lvlSel !== i) selectLvl(i); else pickLvl(i); });   // touch: tap to look, tap again to take
+    d.addEventListener('mouseenter', () => { if (lastPointer !== 'touch') selectLvl(i); });
     row.appendChild(d); lvlCards.push(d);
   });
   setScreen('levelup'); lvlLockUntil = performance.now() + 350;
@@ -356,7 +366,7 @@ function buildOptions() {
   const keys = [['MOVE', 'W A S D'], ['ABILITY', 'SPACE'], ['POTIONS', 'Q E R'], ['STATS', 'TAB'], ['PAUSE', 'ESC'], ['INTERACT', 'ENTER']];
   s.innerHTML = '<div class="abs t24 gold" style="left:60px;top:42px">OPTIONS</div>' +
     '<div class="abs panel" id="opt-main" style="left:340px;top:100px;width:440px;padding:21px;display:grid;gap:15px;align-content:start"><div class="lbl">AUDIO</div><div class="desc">No sound yet: music and effects are still to come.</div><div class="lbl" style="margin-top:9px">SCREEN</div></div>' +
-    '<div class="abs panel" style="left:800px;top:100px;width:420px;padding:21px;display:grid;gap:12px;align-content:start"><div class="lbl">CONTROLS</div>' + keys.map(([n, v]) => '<div class="opt" style="cursor:default"><span>' + n + '</span><span>' + v.split(' ').map(KEY).join('') + '</span><span></span></div>').join('') + '<div class="desc">Gamepad and touch controls are still to be designed.</div></div>' +
+    '<div class="abs panel" style="left:800px;top:100px;width:420px;padding:21px;display:grid;gap:12px;align-content:start"><div class="lbl">CONTROLS</div>' + keys.map(([n, v]) => '<div class="opt" style="cursor:default"><span>' + n + '</span><span>' + v.split(' ').map(KEY).join('') + '</span><span></span></div>').join('') + '<div class="desc">Touch: drag on the left half to move, tap the ability and potions bottom-right, ACT on the farm. Menus: tap a row, tap again to use it. Gamepad still to be designed.</div></div>' +
     '<div class="abs panel" id="opt-side" style="left:60px;top:100px;width:260px;padding:15px;display:grid;gap:9px"></div>' +
     '<div class="abs hint" style="left:60px;bottom:30px">' + KEY('&uarr;') + KEY('&darr;') + ' CHOOSE ' + KEY('ENTER') + ' CHANGE ' + KEY('ESC') + ' BACK</div>';
   const main = s.querySelector('#opt-main'), opts = [full, tog('shake', 'SCREEN SHAKE'), tog('damageNumbers', 'DAMAGE NUMBERS'), tog('flashes', 'HIT FLASH', 'Turn off for softer hits and boss deaths')];

@@ -5,7 +5,7 @@
 The one page to read before touching this game.
 
 **Team:** Joe, with Claude.
-**Status (Nov 3, 2026):** Building v2 (`design/game-design-v2.md`). v2-M2 done: the farm, town and building interiors are the farm-hub art itself, all six buildings can be built, entered and used through their menus, weapons come only from the Forge, and every basic attack aims at the nearest enemy. Desktop with keyboard.
+**Status (Nov 3, 2026):** Building v2 (`design/game-design-v2.md`). v2-M2 done: the farm, town and building interiors are the farm-hub art itself, all six buildings can be built, entered and used through their menus, weapons come only from the Forge, and every basic attack aims at the nearest enemy. Desktop with keyboard, and (Nov 14) phones and tablets held sideways with touch controls.
 
 ## The game in one line
 A rogue-like auto-shooter with a farm phase between rounds. Pick a class, survive 30 rounds across six zones, then tend your farm, visit the town and get ready before the next fight.
@@ -14,19 +14,26 @@ A rogue-like auto-shooter with a farm phase between rounds. Pick a class, surviv
 Pure Canvas + vanilla JS, no libraries. v2 source lives in `prototype/v2/`:
 - `head.html` (styles, including the shared UI kit), `body.html` (HUD and screen containers), `src/*.js` joined in this order: core, assets, gfx, data, input, state, combat, ui, render, farm, buildings, bmenus, main. They share one script scope, so the order matters.
 - **Build:** `python3 prototype/v2/build.py` writes `src/assets.js` (every PNG in `art/sprites/` as a data URI plus every JSON manifest; generated, git-ignored) and then `builds/rogue-shooter-v2.html` (about 3.2 MB). The build still runs from `file://`.
-- **Test:** `python3 prototype/v2/test.py` builds, then plays title, class select, battle map, combat (ability, level-up, pause, mini-boss), round complete, the farm (planting), an unbuilt site's menu and Build, walking into the Forge and buying a weapon at the anvil, every building menu and the cabin, the town, the path back to the map, auto-aim (an enemy behind the Marksman gets shot), cards-only level-ups, every zone's boss round, and death in headless Chromium. It fails on any JavaScript error. Screenshots go to `prototype/v2/shots/`.
+- **Test:** `python3 prototype/v2/test.py` builds, then plays title, class select, battle map, combat (ability, level-up, pause, mini-boss), round complete, the farm (planting), an unbuilt site's menu and Build, walking into the Forge and buying a weapon at the anvil, every building menu and the cabin, the town, the path back to the map, auto-aim (an enemy behind the Marksman gets shot), cards-only level-ups, every zone's boss round, and death in headless Chromium; then a phone held sideways (844×390, touch): the stick, ability and potion taps, two-tap cards and lists, the key column, ACT on the farm, planting, building, the Forge, walking out of a room, and the rotate prompt in portrait (screenshots `shots/phone-*.png`). It fails on any JavaScript error. Screenshots go to `prototype/v2/shots/`.
 - `builds/rogue-shooter.html` is the old v1 single-file build, kept until v2 replaces it.
 - **Art direction:** `design/art-direction.md`. **Art integration plan:** `design/art-integration-handoff.md` (phases 1-7; see "What's built" for what's done).
 
 ### Rendering
-- **Pixel renderer:** every scene draws on an offscreen canvas in art pixels and is blown up by `PIXEL_SCALE` (3) in `endFrame()`. `W()`/`H()` are the scene size in art pixels (about 427×267 on a 1280×800 window). One world unit is one art pixel.
+- **Pixel renderer:** every scene draws on an offscreen canvas in art pixels and is blown up by `PIXEL_SCALE` in `endFrame()`: 3, or 2 when the window's short side is under 600 px (phones), so a phone sideways sees about as much of the fight as a desktop (`resize()` in `core.js`). `W()`/`H()` are the scene size in art pixels (about 427×267 on a 1280×800 window). One world unit is one art pixel.
 - **Top-down camera,** depth-sorted by feet `y`.
 - **Sprites (`src/gfx.js`):** `loadAssets()` turns the embedded data URIs into images before the title shows. `drawFrame(img, fw, fh, col, row, x, y, flipX, white)` draws a sheet frame with its bottom-centre on the feet. `drawStrip()` draws one-row effect strips from `combat.json`/`farm.json` (centred or at the feet, optionally rotated; rotations snap to 32 steps). `drawExtra()` draws enemy and boss effect strips from the manifests' `extras`. The hit flash uses a white silhouette of the whole sheet, made once (`whiteOf`). `stripPiece()` cuts the largest solid piece out of a strip frame (one orbital blade, one missile) so the code can place them.
 - **Heroes:** `art/sprites/heroes/<class>.png` rows front/side/back, columns idle, walk1-4, attack1-3, ability1-3; side views face right and flip for left. Attack and ability effects (`<class>_fx.png`, `<class>_ability_fx.png`) are two layers: columns 0-2 behind the hero, 3-5 in front. Hurt (3 frames) and death (5 frames) come from `art/sprites/combat/`.
 - **Enemies and bosses:** `enemies.json`/`bosses.json`. `timing_ms.move` is ms per frame (a number); `timing_ms.attack` is a list. The Slime's row is picked by zone.
 - **Zones (`src/render.js`):** `buildArena(zone)` places obstacles from `biomes.json` on a jittered grid (collision circles at the feet; pond and fallen log block as ellipses, lava pools and void pits hurt, the ruined arch's pillars block) and paints the whole 2400×2400 floor once: the 96 px ground tile, a soft breakup in hard steps, the zone's path and scattered details. Light layers follow `art/tools/biomes/scenes.py`: cloud shadows (Meadow), canopy light (Forest), stepped glows on crystals, lava and void rocks, a bottom glow (Volcanic), fog bands (Shadow) and stepped vignettes. Shadows are blue-tinted ellipses.
 - **Damage numbers** draw on the screen canvas after the 3× blow-up (16 px, crits 24 px gold).
-- **Menus** are DOM over the canvas on a 1280×800 stage (`#stage`, scaled 1:1 at 1280×800, by whole numbers above, and down to fit below). The HUD is anchored to the window corners. Icons are CSS backgrounds from `icons.png` at 2×/3×/4×.
+- **Menus** are DOM over the canvas on a 1280×800 stage (`#stage`, scaled 1:1 at 1280×800, by whole numbers above, and down to fit below). The HUD is anchored to the window corners and shrinks on small windows (`--hz`, CSS `zoom`, never below 0.5). Icons are CSS backgrounds from `icons.png` at 2×/3×/4×.
+
+### Touch controls (`src/touch.js`)
+On after the first touch, or at load on a touch-only device (`touchMode`, `html.touch`). Landscape only: portrait shows "Turn your phone sideways" and pauses a fight.
+- **Moving:** a floating stick wherever the thumb lands on the left half (`#tc-zone`). `moveInput()` gives a direction and a speed (0.35-1) from the keyboard or the stick; `combat.js` and `farm.js` both use it, and so does walking out of a room (stick pushed down at the doorway).
+- **Fights:** the HUD's ability and potion belt move bottom-right, 1.4× bigger, and are tapped. A pause button top-right.
+- **Farm:** an ACT button bottom-right (Enter; dimmed when there's nothing to do); the prompt above it can be tapped too.
+- **Menus:** plain buttons act on one tap. In lists with a detail panel (`setMenu` with `onSelect`), class select and level-up, the first tap picks and the second uses. The keys a screen's hints name become buttons in a column on the right (`updateKeyColumn()`): ESC (back/leave/done) on top, ENTER (labelled from its hint: BUY, PLANT, TAKE…) where a tap only picks, then the menu's letters (U, E, S, G, R, L, C), then numbers. Arrows and ENTER elsewhere are left to taps. The buttons send ordinary key events, so a new menu's keys show up on touch by themselves as long as its hint line uses `KEY()`. The stage is fitted to leave that column free.
 
 ### State machine
 `loading | title | start (class select) | map | playing | levelup | stats | paused | options | roundComplete | dying | dead | won | farm`. `setScreen(id)` shows one screen on the stage with its shade.
@@ -73,5 +80,6 @@ Everything above, in `builds/rogue-shooter-v2.html`.
 ## What's not built
 - Rare and legendary crops (so legendary tonics can't be brewed yet), the Void plot and the planting hover preview (multi-plot footprints)
 - Mutator picks on the battle map (they're set in the Arena)
-- Saving a run (Continue is greyed out), sound and music, mobile/touch controls
+- Saving a run (Continue is greyed out), sound and music, gamepad
+- A phone layout for the menus: on a phone they're the desktop stage scaled to about half, so the smallest text is small
 - Meta-progression between runs

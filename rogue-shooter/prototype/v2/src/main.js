@@ -49,6 +49,7 @@ function gameLoop(now) {
   frame(now, dt);
   endFrame();
   if (state === 'playing' || state === 'dying') drawDamageNumbers();
+  touchTick();
 }
 function backdrop(zid) { if (arenaZone !== zid) buildArena(zid); }
 

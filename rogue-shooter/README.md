@@ -10,6 +10,8 @@ A rogue-like auto-shooter with a farm between fights. Pick a class, survive 30 r
 
 WASD or arrow keys to move; attacks are automatic and aim at the nearest enemy. Space for your class ability (aimed the way you face), Q/E/R for potions, TAB for stats, ESC to pause. On the farm, Enter to interact: build at a site's sign, go in through doors, use what's inside.
 
+**On a phone or tablet** (hold it sideways): drag on the left half to move, tap the ability and potions bottom-right, II to pause, ACT on the farm. In menus, tap a row to pick it and tap again (or the green button) to use it; the buttons down the right side are the menu's keys (back, upgrade, equip…).
+
 ## Build and test (v2)
 `python3 prototype/v2/build.py` builds `builds/rogue-shooter-v2.html`. `python3 prototype/v2/test.py` builds and plays it in headless Chromium (needs Python Playwright).
 

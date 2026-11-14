@@ -6,6 +6,34 @@ Newest on top. Each entry covers **what's new** for players, **next up** for the
 
 ---
 
+## v2-M2.1 · Nov 14, 2026 · Hunter (with Claude)
+Rogue Shooter v2 plays on phones and tablets held sideways, with touch controls for fights, the farm and every menu.
+
+### What's new
+- **Touch controls.** They come on with your first touch. Drag anywhere on the left half to move: the stick appears under your thumb, and pushing it less than all the way walks slower. In fights the ability and the potion belt sit bottom-right and are tapped, and **II** pauses. On the farm, **ACT** does what Enter does (plant, harvest, build, go in, use a station), and you can also tap the prompt. Push down at a doorway to walk out.
+- **Menus by tap.** Buttons work on one tap. In lists with a detail panel (Forge, Alchemy, Training, Shrine, Barn, planting, shops), on class select and on level-up, the first tap picks and the second uses it, so a stray thumb can't buy or take a card. The green button in the right-hand column does the same.
+- **Key column.** Each menu's keys become big buttons down the right side: back, leave or done on top, then things like Upgrade, Equip, Sell, Goats, Reroll, Lock in, Clear and the 1-3 belt slots.
+- **Phone sizing.** On short screens (under 600 px) the fight and farm draw at 2× instead of 3×, so you see about as much as on a desktop. The HUD shrinks to fit. In portrait the game asks you to turn the phone sideways and pauses a fight.
+- Added the viewport tag the build was missing, so phones show it at its real size instead of zoomed out.
+- `test.py` now also plays on an emulated phone (844×390, touch): stick, ability, potion, two-tap cards, the key column, ACT, planting, building, the Forge, leaving a room and the portrait prompt.
+
+### Next up
+- [ ] @Hunter: play `builds/rogue-shooter-v2.html` on a real phone (iPhone and Android) through the Lab: stick feel, button reach, and whether the menu text is readable.
+- [ ] A phone layout for the menus. Right now they're the desktop stage scaled to about half, so the 8 px hint and stat text ends up about 4 px.
+- [ ] Haptics on hits and taps where the phone supports them, and an Options toggle for left-handed controls (stick on the right).
+
+### Watch out
+- [ ] **2× on phones goes against `design/art-direction.md`'s "one pixel size: 3×".** The whole screen switches together, so pixels never mix sizes, but a person should decide if that's OK and update that page.
+- [ ] Only tested in headless Chromium with Playwright touch emulation at 844×390. Not on a real iPhone or Android, not in Safari, and not on a tablet. iOS Safari can't go fullscreen on iPhone, so the browser bars take some height.
+- [ ] The HUD shrink uses CSS `zoom`. Firefox before version 126 ignores it and shows the HUD full size.
+- [ ] Small desktop windows (short side under 600 px) also switch to 2× and get the smaller HUD. Desktop at 1280×800 is unchanged (the desktop test still checks 3×).
+- [ ] Touch turns on with the first touch and stays on. On a touchscreen laptop, a touch then a mouse keeps the two-tap menus until reload.
+- [ ] The key column is built from each screen's hint line. A menu whose keys aren't in a `KEY()` hint won't get a button. Today every menu's keys are in its hints.
+- [ ] Hint lines on the stage still show keyboard keys on touch. They're small and harmless, but a touch version of the hints would read better.
+- [ ] On very narrow phones (for example 667×375), keeping the 104 px column free makes the menus a bit smaller still (about 0.45×).
+
+---
+
 ## v2-M2 · Nov 3, 2026 · Joe (with Claude)
 The farm is now the farm-hub art itself, every building can be built, walked into and used, weapons come only from the Forge, and every hero's basic attack aims at the nearest enemy.
 

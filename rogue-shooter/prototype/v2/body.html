@@ -33,7 +33,7 @@
 <div id="farmhud" hidden>
   <div class="abs cnt plank" id="farm-gold" style="left:18px;top:18px"></div>
   <div class="abs roundplank plank" id="farm-where" style="right:18px;top:18px"></div>
-  <div class="abs hint" style="left:18px;bottom:12px"><span class="key">W</span><span class="key">A</span><span class="key">S</span><span class="key">D</span> WALK · SOUTH PATH TO BATTLE · EAST BRIDGE TO TOWN</div>
+  <div class="abs hint" style="left:18px;bottom:12px"><span class="kb-only"><span class="key">W</span><span class="key">A</span><span class="key">S</span><span class="key">D</span></span><span class="touch-only">DRAG TO</span> WALK · SOUTH PATH TO BATTLE · EAST BRIDGE TO TOWN</div>
 </div>
 <div id="farm-prompt" class="plank" hidden></div>
 
@@ -55,3 +55,13 @@
   <section class="screen" id="victory" hidden></section>
   <section class="screen" id="farmshop" hidden></section>
 </div>
+
+<div id="touch" hidden>
+  <div id="tc-zone"></div>
+  <div id="tc-base" hidden><i id="tc-knob"></i></div>
+  <button id="tc-pause" aria-label="Pause">II</button>
+  <button id="tc-act" aria-label="Interact">ACT</button>
+</div>
+<div id="tc-keys" hidden></div>
+<div id="tc-rotate" hidden><span>TURN YOUR PHONE SIDEWAYS</span><small>ROGUE SHOOTER PLAYS IN LANDSCAPE</small></div>
+<div id="tc-probe"></div>
