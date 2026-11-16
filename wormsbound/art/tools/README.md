@@ -6,6 +6,8 @@ Pixel art drawn in code, the method Rogue Shooter uses (`rogue-shooter/art/tools
 
 - `units.py`: the ten characters. One draw function each; `CHARS` at the bottom lists them **in the same order as `CHARS` in `prototype/engine.js`** (the game finds a character's row by that order).
 
+- `lineup.py`: the v3 creature lineup, a concept sheet only (`../concepts/v3-lineup.png`). Ten creatures, one frame each at 48 × 48. The game doesn't use it. See `design/v3.md` section 6.
+
 Run `python3 units.py` from this folder, then `python3 ../../prototype/build.py` (the build inlines the sheet).
 
 ## Sprite sheet layout

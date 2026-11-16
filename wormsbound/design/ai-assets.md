@@ -18,3 +18,11 @@ Pixel art drawn in code by Claude, the method Rogue Shooter uses. No image model
 |---|---|---|
 | `art/sprites/units.png` (10 characters × 3 frames, 32 × 32) | `art/tools/units.py` (Python, Pillow): shapes, colour ramps, top-left light, outline | Body in three key colours the game swaps per team. First pass, not final. |
 | `art/concepts/units.png` | written by the same script | Contact sheet for review: two team colours, light and dark ground, game size |
+
+## v3 creature lineup (Nov 16, 2026)
+
+A concept sheet, not used by the game. Drawn in code by Claude; no image model and no outside images.
+
+| Asset | Method | Notes |
+|---|---|---|
+| `art/concepts/v3-lineup.png` (10 creatures, one frame each, 48 × 48) | `art/tools/lineup.py` (Python, Pillow): shapes, colour ramps, top-left light, outline | For choosing the cast's look. Each is shown in colour and as a plain black shape. |
