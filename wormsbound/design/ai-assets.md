@@ -26,3 +26,12 @@ A concept sheet, not used by the game. Drawn in code by Claude; no image model a
 | Asset | Method | Notes |
 |---|---|---|
 | `art/concepts/v3-lineup.png` (10 creatures, one frame each, 48 × 48) | `art/tools/lineup.py` (Python, Pillow): shapes, colour ramps, top-left light, outline | For choosing the cast's look. Each is shown in colour and as a plain black shape. |
+
+## v3 creature sprites (Nov 16, 2026)
+
+Pixel art drawn in code by Claude. No image model and no outside images. These replace the v2 unit sprites in the build.
+
+| Asset | Method | Notes |
+|---|---|---|
+| `art/sprites/creatures.png` (10 creatures × 16 frames, 48 × 48) | `art/tools/creatures.py` (Python, Pillow): shapes, colour ramps, top-left light, outline; frames made by moving groups of parts | In the build. Team colour only on a band, scarf or panel. |
+| `art/concepts/v3-creatures.png`, `art/concepts/v3-creatures.gif` | written by the same script | Every frame, and the cast moving, for review |

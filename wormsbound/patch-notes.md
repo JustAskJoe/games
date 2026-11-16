@@ -6,23 +6,32 @@ Newest on top. See the repo's CLAUDE.md for how patch notes work.
 
 ---
 
-## v3 design proposal (nothing built) · 2026-11-16 · Hunter (with Claude)
-A plan and a concept sheet only; the game is unchanged. Write-up: [`design/v3.md`](design/v3.md). Sheet: [`art/concepts/v3-lineup.png`](art/concepts/v3-lineup.png).
+## v3 design proposal, and new creature sprites · 2026-11-16 · Hunter (with Claude)
+A plan for v3 (rules unchanged, nothing of it built), and the first piece of it that is in the game: new character art. Write-up: [`design/v3.md`](design/v3.md). Sheet: [`art/concepts/v3-lineup.png`](art/concepts/v3-lineup.png).
 
 ### What's new
 - **A design for v3:** weapons replaced by kits (a passive, a basic shot, an ability, a move ability and an ultimate for each character), jumping and moving after you shoot, six visible stats, shrines and a Relic to fight over, and level-ups during a match.
 - **A creature lineup:** the ten characters as ten different animals, drawn as a concept sheet to check they can be told apart as plain shapes.
+- **The ten characters are now ten creatures in the game:** armadillo, boar, ferret, frog, gecko, salamander, mole, beaver, heron and a cloud sheep. Each has its own outline and prop, and wears its team colour on a band or scarf, with a team-coloured disc under its feet.
+- **They move:** a walk cycle, an aiming pose, recoil and a muzzle flash when they fire, a hurt frame in the air, and they lie flat when knocked out (no more tombstones). Each also has an idle habit: Zip's scarf flaps, Volt's sparks trade places, Flint's pilot light flickers.
+- No rules changed: same hit circles, same shots, same balance.
 
 ### Next up
 - [ ] @Louiemark: read `design/v3.md` and answer its eight open questions. Nothing gets built on it until you've said yes to the direction.
-- [ ] @Hunter: approve or change the creatures on the lineup sheet before any are animated.
+- [x] @Hunter: approve or change the creatures on the lineup sheet before any are animated. (Hunter approved, Nov 16)
 - [ ] Update `art/lead-plan.md` (pull request #108) to the creature direction once the lineup is approved.
 
 ### Watch out
 - [ ] **Nothing in v3 is built or tested.** Every number in the doc is a first guess.
 - [ ] v3 replaces v2's gear slot and changes its crates, and v2 (#107) hasn't been reviewed or played by Louiemark yet.
 - [ ] The doc says bots will judge walls, bridges and jump pads badly, so the balance sim will be a weaker guide than it was for v2.
-- [ ] The lineup sheet is one frame per character at 48 x 48, not game art. `art/tools/units.py` still draws what the build ships.
+- [ ] **The creatures are drawn bigger than what can be hit.** A unit's hit circle is unchanged (24 pixels across); the creature over it is about 40. Shots that look like they clip an ear or a tail miss. v3's movement work should settle size and hit shape together.
+- [ ] **Team colour is now small** (a band plus the disc underfoot and the name tag). Nobody has checked a 5v5 on a Giant map zoomed out to see if sides are still obvious.
+- [ ] Jump and cast frames are drawn but nothing in the game uses them yet.
+- [ ] Tusk and Digger are the two closest outlines (both long and low); Nimbus's rain cloud clips the top of her frame when she jumps.
+- [ ] The select screen's small cards crop the tallest creatures (Volt's antennae, Gale's head).
+- [ ] `art/tools/units.py` and `art/sprites/units.png` (the v2 sprites) are no longer used by the build. Left in place; delete them only if someone says so.
+- [ ] The title screen still says "placeholder art". These are a first pass by Claude, not the Artist's; the lead plan (#108) should be updated to this direction.
 
 ---
 
