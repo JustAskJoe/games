@@ -6,6 +6,26 @@ Newest on top. See the repo's CLAUDE.md for how patch notes work.
 
 ---
 
+## v3 design proposal (nothing built) · 2026-11-16 · Hunter (with Claude)
+A plan and a concept sheet only; the game is unchanged. Write-up: [`design/v3.md`](design/v3.md). Sheet: [`art/concepts/v3-lineup.png`](art/concepts/v3-lineup.png).
+
+### What's new
+- **A design for v3:** weapons replaced by kits (a passive, a basic shot, an ability, a move ability and an ultimate for each character), jumping and moving after you shoot, six visible stats, shrines and a Relic to fight over, and level-ups during a match.
+- **A creature lineup:** the ten characters as ten different animals, drawn as a concept sheet to check they can be told apart as plain shapes.
+
+### Next up
+- [ ] @Louiemark: read `design/v3.md` and answer its eight open questions. Nothing gets built on it until you've said yes to the direction.
+- [ ] @Hunter: approve or change the creatures on the lineup sheet before any are animated.
+- [ ] Update `art/lead-plan.md` (pull request #108) to the creature direction once the lineup is approved.
+
+### Watch out
+- [ ] **Nothing in v3 is built or tested.** Every number in the doc is a first guess.
+- [ ] v3 replaces v2's gear slot and changes its crates, and v2 (#107) hasn't been reviewed or played by Louiemark yet.
+- [ ] The doc says bots will judge walls, bridges and jump pads badly, so the balance sim will be a weaker guide than it was for v2.
+- [ ] The lineup sheet is one frame per character at 48 x 48, not game art. `art/tools/units.py` still draws what the build ships.
+
+---
+
 ## v2: crews, big maps, a fresh map every match · 2026-11-11 · Hunter (with Claude)
 Bigger fights on maps made for them. A proposal for Louiemark: it sits on top of the map generator pull request and should land after it. Full write-up: [`design/v2.md`](design/v2.md).
 
