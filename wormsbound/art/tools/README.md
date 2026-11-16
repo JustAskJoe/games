@@ -4,15 +4,25 @@
 
 Pixel art drawn in code, the method Rogue Shooter uses (`rogue-shooter/art/tools/`): Python with Pillow, colour ramps per material, light from the top-left, a dark outline. No image model, no outside images.
 
-- `units.py`: the ten characters. One draw function each; `CHARS` at the bottom lists them **in the same order as `CHARS` in `prototype/engine.js`** (the game finds a character's row by that order).
+- `creatures.py`: **the sprites the game uses.** Ten creatures, one draw function each, 16 frames each.
+- `lineup.py`: the "can you tell them apart as shapes?" sheet (`../concepts/v3-lineup.png`), laid out from `creatures.py`.
+- `units.py`: the v2 sprites (round bodies with gear). No longer in the build; kept until someone decides to remove it.
 
-- `lineup.py`: the v3 creature lineup, a concept sheet only (`../concepts/v3-lineup.png`). Ten creatures, one frame each at 48 × 48. The game doesn't use it. See `design/v3.md` section 6.
+Run `python3 creatures.py` from this folder, then `python3 ../../prototype/build.py` (the build inlines the sheet).
 
-Run `python3 units.py` from this folder, then `python3 ../../prototype/build.py` (the build inlines the sheet).
+## How a creature is drawn and animated
+- Each draw function paints its parts in groups and calls `f.at('legs' | 'tail' | 'body' | 'head' | 'prop')` before each group.
+- A pose in `POSES` is an offset for each group plus a few flags (idle habit, eyes, muzzle flash, casting glow, lift, lying down). So one drawing gives all 16 frames.
+- To change how a creature looks, edit its function. To change a movement for the whole cast, edit `POSES`.
+- `ROWS` is the sheet's row order and **must match `CHARS` in `prototype/engine.js`** (the game finds a character's row by that order).
 
 ## Sprite sheet layout
-- `../sprites/units.png`: 32 × 32 art pixels a frame, one row per character, facing right. Columns: idle 1, idle 2, hurt. The game draws a frame at 2× and flips it to face left.
-- The body uses three **key colours** (`#C800C8` shade, `#FF00FF` mid, `#FF8CFF` light). The game swaps them for the unit's team colours when the page loads, so never use those three for anything else.
-- The unit's feet stand on row 29; the game puts row 30 on the ground.
-- `../sprites/units.json`: the layout above, for tools.
-- `../concepts/units.png`: a contact sheet for people (two team colours, light and dark ground, and real game size along the bottom).
+- `../sprites/creatures.png`: 48 × 48 art pixels a frame, one row per character, facing right. Columns: idle 1, idle 2, walk 1 to 4, jump 1 and 2, aim, fire 1 and 2, cast 1 and 2, hurt, knocked out 1 and 2. The game flips a frame to face left.
+- The team band, scarf or panel uses three **key colours** (`#C800C8` shade, `#FF00FF` mid, `#FF8CFF` light). The game swaps them for the unit's team colours when the page loads, so never use those three for anything else.
+- Feet stand on row 45; the game puts row 46 on the ground.
+- `../sprites/creatures.json`: the layout above, for tools.
+- `../concepts/v3-creatures.png`: every frame, two team colours, light and dark ground. `../concepts/v3-creatures.gif`: the cast moving.
+- The game uses idle, walk, aim, fire, hurt and knocked out today. Jump and cast are drawn and waiting for v3's movement and abilities.
+
+## The v2 sheet (not in the build)
+- `../sprites/units.png`: 32 × 32 art pixels a frame, columns idle 1, idle 2, hurt; drawn by `units.py`.

@@ -1,0 +1,55 @@
+{
+ "about": "Wormsbound creature sprites. Drawn by art/tools/creatures.py; do not edit the PNG by hand.",
+ "frame": 48,
+ "foot": [
+  24,
+  46
+ ],
+ "rows": [
+  "brick",
+  "zip",
+  "volt",
+  "digger",
+  "gale",
+  "tusk",
+  "hopper",
+  "flint",
+  "patch",
+  "nimbus"
+ ],
+ "frames": [
+  "idle1",
+  "idle2",
+  "walk1",
+  "walk2",
+  "walk3",
+  "walk4",
+  "jump1",
+  "jump2",
+  "aim",
+  "fire1",
+  "fire2",
+  "cast1",
+  "cast2",
+  "hurt",
+  "ko1",
+  "ko2"
+ ],
+ "key": [
+  [
+   200,
+   0,
+   200
+  ],
+  [
+   255,
+   0,
+   255
+  ],
+  [
+   255,
+   140,
+   255
+  ]
+ ]
+}

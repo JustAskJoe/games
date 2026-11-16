@@ -1062,15 +1062,25 @@
 
   // ---------- drawing ----------
   // One crewmate: team-coloured body (who's who at a glance) plus the character's own headgear (what they can do).
-  // Unit sprites (art/sprites/units.png, drawn by art/tools/units.py and inlined by build.py as WB_ART.units): one row per
-  // character, 32 x 32 art pixels a frame (idle 1, idle 2, hurt), facing right. The body is painted in three key colours;
-  // each team gets its own copy of the sheet with those swapped for its colours. Until the picture has loaded (or if a
-  // build has none) the old code-drawn bodies are used.
-  const SPR = { S: 32, foot: [16, 30], img: null, sheets: {}, key: [[200, 0, 200], [255, 0, 255], [255, 140, 255]], frame: 0 };
+  // Unit sprites (art/sprites/creatures.png, drawn by art/tools/creatures.py and inlined by build.py as WB_ART.units): one
+  // row per character, 48 x 48 art pixels a frame, facing right; the columns are SPR.F below. Each creature wears its
+  // team on a band, scarf or panel painted in three key colours; each team gets its own copy of the sheet with those
+  // swapped for its colours. Until the picture has loaded (or if a build has none) the old code-drawn bodies are used.
+  // The creatures are drawn a little bigger than a unit's hit circle (SPR.scale) so they read; the rules don't change.
+  const SPR = { S: 48, foot: [24, 46], scale: 1.25, img: null, sheets: {}, key: [[200, 0, 200], [255, 0, 255], [255, 140, 255]], frame: -1, top: [], anim: {},
+    F: { idle1: 0, idle2: 1, walk1: 2, jump1: 6, jump2: 7, aim: 8, fire1: 9, fire2: 10, cast1: 11, cast2: 12, hurt: 13, ko1: 14, ko2: 15 } };
   (function loadSprites() {
     const src = window.WB_ART && window.WB_ART.units; if (!src) return;
-    const im = new Image(); im.onload = () => { SPR.img = im; for (const k of Object.keys(portraits)) delete portraits[k]; if (ui.screen === 'title') titleScreen(); }; im.src = src;
+    const im = new Image(); im.onload = () => { SPR.img = im; spriteTops(im); for (const k of Object.keys(portraits)) delete portraits[k]; if (ui.screen === 'title') titleScreen(); }; im.src = src;
   })();
+  // the top row of each creature's idle frame, so its name tag can sit just above it
+  function spriteTops(im) {
+    try {
+      const c = document.createElement('canvas'); c.width = SPR.S; c.height = im.height; const g = c.getContext('2d'); g.drawImage(im, 0, 0);
+      const px = g.getImageData(0, 0, SPR.S, im.height).data;
+      for (let r = 0; r * SPR.S < im.height; r++) { let top = 0; scan: for (let y = 0; y < SPR.S; y++) for (let x = 0; x < SPR.S; x++) if (px[((r * SPR.S + y) * SPR.S + x) * 4 + 3]) { top = y; break scan; } SPR.top[r] = top; }
+    } catch (e) { /* can't read the pixels: tags sit at a default height */ }
+  }
   const rgb = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
   function teamSheet(team) {
     if (SPR.sheets[team]) return SPR.sheets[team];
@@ -1083,16 +1093,16 @@
     return (SPR.sheets[team] = c);
   }
   function drawSprite(c, x, y, R, team, ch, face, t, bob) {
-    const row = WB.CHAR_IDS.indexOf(ch), k = R / 12 * 2, col = SPR.frame === 2 ? 2 : (reduced ? 0 : Math.floor(t * 2.4 + row * 0.37) % 2);
-    c.fillStyle = 'rgba(0,0,0,.28)'; c.beginPath(); c.ellipse(x, y + 1, R * 0.95, 3.5 * R / 12, 0, 0, 7); c.fill();
+    const row = WB.CHAR_IDS.indexOf(ch), k = R / 12 * SPR.scale, col = SPR.frame >= 0 ? SPR.frame : (reduced ? 0 : Math.floor(t * 1.8 + row * 0.37) % 2);
+    // the creature only wears its team on a band, so it also stands on a disc of its team's colour: whose is whose from far off
+    c.fillStyle = 'rgba(0,0,0,.3)'; c.beginPath(); c.ellipse(x, y + 1, R * 1.5, 4.5 * R / 12, 0, 0, 7); c.fill();
+    c.globalAlpha *= 0.8; c.fillStyle = TEAMS[team].c; c.beginPath(); c.ellipse(x, y + 0.5, R * 1.3, 3.2 * R / 12, 0, 0, 7); c.fill(); c.globalAlpha /= 0.8;
     const sm = c.imageSmoothingEnabled; c.imageSmoothingEnabled = false;
     c.save(); c.translate(Math.round(x), Math.round(y + bob)); c.scale((face || 1) * k, k);
     c.drawImage(teamSheet(team), col * SPR.S, row * SPR.S, SPR.S, SPR.S, -SPR.foot[0], -SPR.foot[1], SPR.S, SPR.S);
     c.restore(); c.imageSmoothingEnabled = sm;
     return y - R + bob;
   }
-  // how far above the body a character's gear reaches, in units of its radius (the name tag sits above it)
-  const TALL = { volt: 2.5, gale: 2.9, nimbus: 2.6, tusk: 1.9, hopper: 1.9, flint: 1.8, patch: 1.7 };
   function drawBody(c, x, y, R, team, ch, face, t, bob) {
     if (SPR.img && WB.CHAR_IDS.indexOf(ch) * SPR.S < SPR.img.height) return drawSprite(c, x, y, R, team, ch, face, t, bob);
     const T = TEAMS[team], k = R / 12, cy = y - R + bob, f = face || 1;
@@ -1151,6 +1161,9 @@
   }
   function drawUnit(u, isCur, t) {
     const x = u.x * CELL, y = u.y * CELL, R = WB.UNIT_R * CELL, T = TEAMS[u.team];
+    if (!u.alive && SPR.img) { // knocked out: flat on its back
+      SPR.frame = SPR.F.ko2; ctx.globalAlpha = 0.88; drawBody(ctx, x, y, R, u.team, u.char, u.face, t, 0); ctx.globalAlpha = 1; SPR.frame = -1; return;
+    }
     if (!u.alive) { // a little tombstone
       ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.beginPath(); ctx.ellipse(x, y, 10, 3, 0, 0, 7); ctx.fill();
       ctx.fillStyle = '#B9B2C4'; ctx.strokeStyle = '#1E1A2B'; ctx.lineWidth = 2.5;
@@ -1160,10 +1173,15 @@
     }
     const bob = isCur && !reduced ? Math.sin(t * 6) * 1.5 : 0, cy = y - R + bob;
     if (isCur) { const g = ctx.createRadialGradient(x, cy, 4, x, cy, 44); g.addColorStop(0, 'rgba(255,211,77,.45)'); g.addColorStop(1, 'rgba(255,211,77,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, cy, 44, 0, 7); ctx.fill(); }
-    SPR.frame = u.air ? 2 : 0; drawBody(ctx, x, y, R, u.team, u.char, u.face, t, bob); SPR.frame = 0;
+    // which frame: knocked through the air, just fired, walking, taking aim, or idling
+    const G = ui.G, F = SPR.F, a = (SPR.anim[u.id] = SPR.anim[u.id] || { x: u.x, walk: -9, fired: -9, on: false });
+    if (Math.abs(u.x - a.x) > 0.01 && !u.air) a.walk = t; a.x = u.x;
+    const firing = G.shooter === u.id && G.phase !== 'aim'; if (firing && !a.on) a.fired = t; a.on = firing;
+    SPR.frame = u.air ? F.hurt : t - a.fired < 0.14 ? F.fire1 : t - a.fired < 0.36 ? F.fire2 : t - a.walk < 0.22 ? F.walk1 + Math.floor(t * 9) % 4 : isCur && G.phase === 'aim' ? F.aim : -1;
+    drawBody(ctx, x, y, R, u.team, u.char, u.face, t, SPR.img ? 0 : bob); SPR.frame = -1;
     if (u.hp < 35) { ctx.fillStyle = 'rgba(70,60,80,.55)'; ctx.beginPath(); ctx.arc(x + 6 * Math.sin(t * 2), cy - R - 6 - (t * 20 % 10), 4, 0, 7); ctx.fill(); }
     // name and hp
-    const bw = 34, bx = x - bw / 2, by = cy - R - (SPR.img ? Math.round((TALL[u.char] || 1.5) * R - R + 8) : u.char === 'volt' ? 30 : 18);
+    const bw = 34, bx = x - bw / 2, by = cy - R - (SPR.img ? Math.round((SPR.foot[1] - (SPR.top[WB.CHAR_IDS.indexOf(u.char)] || 10)) * R / 12 * SPR.scale - 2 * R + 10) : u.char === 'volt' ? 30 : 18);
     ctx.fillStyle = 'rgba(30,26,43,.8)'; ctx.fillRect(bx - 2, by - 2, bw + 4, 8);
     ctx.fillStyle = u.hp > u.maxHp / 2 ? '#7BE07A' : u.hp > u.maxHp / 4 ? '#FFD34D' : '#FF4D5E'; ctx.fillRect(bx, by, bw * clamp(u.hp / u.maxHp, 0, 1), 4);
     ctx.font = FONT(13); ctx.textAlign = 'center'; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(30,26,43,.9)';
