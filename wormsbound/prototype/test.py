@@ -162,10 +162,34 @@ with sync_playwright() as p:
     print('scrollWidth1280', pg.evaluate('document.documentElement.scrollWidth'))
     pg.close()
 
+    # the Custom Map screen: open it from the title, change a setting and a theme, save a favourite, paste a code, play it
+    pg = b.new_page(viewport={'width': 1280, 'height': 720}); watch(pg)
+    pg.add_init_script('window.__WB_SEED = 99; try { localStorage.clear(); } catch (e) {}')
+    pg.goto(build.as_uri()); pg.wait_for_timeout(500)
+    pg.click('[data-act=mapedit]'); pg.wait_for_timeout(300)
+    assert pg.evaluate('() => WBUI.ui.screen') == 'mapedit', 'Custom map should open the map screen'
+    code0 = pg.input_value('#edCode'); pg.fill('#ed-caves', '4'); pg.wait_for_timeout(100)
+    code1 = pg.input_value('#edCode'); assert code1 != code0, 'moving a slider should change the code'
+    pg.click('[data-act=edtheme][data-theme=magma]'); pg.wait_for_timeout(200)
+    assert pg.input_value('#edCode').startswith('magma-'), pg.input_value('#edCode')
+    pg.click('[data-act=edseed]'); pg.click('[data-act=edsave]'); pg.wait_for_timeout(100)
+    assert pg.locator('[data-act=edfav]').count() == 1, 'saving should add a favourite'
+    pg.screenshot(path=str(shots / 'd18_custom_map.png'))
+    pg.fill('#edPaste', 'frost-peak-1222120211020-k3j9a'); pg.click('[data-act=edload]'); pg.wait_for_timeout(200)
+    assert pg.input_value('#edCode') == 'frost-peak-1222120211020-k3j9a', pg.input_value('#edCode')
+    pg.click('[data-act=eduse]'); pg.wait_for_timeout(200)
+    assert pg.evaluate('() => [WBUI.ui.screen, WBUI.ui.mapPick]') == ['title', 'frost-peak-1222120211020-k3j9a']
+    pg.click('[data-act=mode][data-mode=duel]'); pg.keyboard.press('1'); pg.click('[data-char=gale]'); pg.wait_for_timeout(800)
+    st = pg.evaluate('() => [WBUI.G.map, WBUI.G.theme]'); print('custom map match:', st)
+    assert st == ['frost-peak-1222120211020-k3j9a', 'frost'], st
+    pg.close()
+
     # phone widths: it must load, start and fire without errors or sideways scroll
     for w, h in ((390, 844), (320, 640), (844, 390)):
         q = b.new_page(viewport={'width': w, 'height': h}, has_touch=True); watch(q)
         q.add_init_script('window.__WB_SEED = 7;'); q.goto(build.as_uri()); q.wait_for_timeout(500)
+        q.click('[data-act=mapedit]'); q.wait_for_timeout(200); q.screenshot(path=str(shots / f'p_{w}x{h}_custommap.png'))
+        print(f'custom map scrollWidth{w}', q.evaluate('document.documentElement.scrollWidth')); q.click('[data-act=edback]')
         q.click('[data-act=mode][data-mode=duel]'); q.wait_for_timeout(200); q.screenshot(path=str(shots / f'p_{w}x{h}_select.png'))
         q.click('[data-char=gale]'); q.click('[data-char=digger]'); q.wait_for_timeout(400)
         q.evaluate('() => { WBUI.aim(60, 0.7); WBUI.doFire(); WBUI.ui.fast = true; }'); wait_aim(q)

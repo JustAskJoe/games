@@ -53,7 +53,7 @@ for (const seed of [11, 222, 3333]) {
 
 // 6. A dud ticks down and goes off; a dud in reach can be lobbed.
 {
-  const G = WB.newGame(5);
+  const G = WB.newGame(5, { map: { preset: 'hills', hazards: 0 } }); // no old duds on the map, so the count is ours
   const u = WB.current(G);
   WB.act(G, { k: 'weapon', w: 'dud' }); WB.act(G, { k: 'fire', angle: u.team === 0 ? 80 : 100, power: 0.3 }); WB.resolve(G);
   const d = G.duds[0];
@@ -126,7 +126,9 @@ const shoot = (chars, w, angle, power, setup) => {
   ok(lost(b) < lost(a), `armour: Brick loses ${lost(b)} where Volt loses ${lost(a)}`);
 }
 { // Gust Bomb throws harder than a normal shot
-  const kick = (w) => { const G = WB.newGame(9, { chars: ['gale', 'volt'] }), u = G.units.find((x) => x.team === 1); G.phase = 'flight'; G.proj.push({ id: 997, w, team: 0, from: -1, age: 9, x: u.x - 2, y: u.y - 1, vx: 0, vy: 5, wm: 1 });
+  const kick = (w) => { const G = WB.newGame(9, { chars: ['gale', 'volt'] }), u = G.units.find((x) => x.team === 1); G.phase = 'flight';
+    for (let x = Math.floor(u.x) - 4; x <= Math.floor(u.x) + 4; x++) G.T[Math.floor(u.y) * WB.COLS + x] = 1; // flat floor, whatever the map
+    G.proj.push({ id: 997, w, team: 0, from: -1, age: 9, x: u.x - 2, y: u.y - 1, vx: 0, vy: 5, wm: 1 });
     let top = 0; for (let i = 0; i < 90 && G.phase === 'flight'; i++) { WB.step(G); top = Math.max(top, Math.hypot(u.vx, u.vy)); } return top; };
   ok(kick('shot2') > kick('shot1') * 1.6, `Gust Bomb knockback ${kick('shot2').toFixed(0)} vs Kite Bomb ${kick('shot1').toFixed(0)}`);
 }
@@ -178,7 +180,7 @@ const ssGame = (chars, seed = 11) => { const G = WB.newGame(seed, { chars }); G.
   ok(moved > 4 || !foe.alive, `Tornado throws the target away (moved ${moved.toFixed(1)} cells${foe.alive ? '' : ', knocked out'})`);
 }
 { // Meteor Slam: the biggest crater
-  const crater = (w) => { const G = WB.newGame(5, { chars: ['brick', 'volt'] }), before = G.T.reduce((a, v) => a + v, 0); G.proj.push({ id: 902, w, team: 0, from: -1, age: 9, x: 80, y: WB.surfaceY(G, 80) - 1, vx: 0, vy: 4, wm: 1 }); G.phase = 'flight'; WB.resolve(G); return before - G.T.reduce((a, v) => a + v, 0); };
+  const crater = (w) => { const G = WB.newGame(5, { chars: ['brick', 'volt'], map: { preset: 'hills', hazards: 0 } }), cells = () => G.T.filter((v) => v).length, before = cells(); G.proj.push({ id: 902, w, team: 0, from: -1, age: 9, x: 80, y: WB.surfaceY(G, 80) - 1, vx: 0, vy: 4, wm: 1 }); G.phase = 'flight'; WB.resolve(G); return before - cells(); };
   ok(crater('ss') > crater('shot2') * 1.3, `Meteor Slam digs ${crater('ss')} cells vs Wrecking Ball ${crater('shot2')}`);
 }
 
@@ -216,8 +218,9 @@ const ssGame = (chars, seed = 11) => { const G = WB.newGame(seed, { chars }); G.
   ok(G.units.every((u) => u.char === G.chars[u.team] && WB.solidAt(G, u.x, u.y + 0.05)), 'each stands on the ground as its own character');
   ok(WB.turnOrder(G).map((x) => x.team).join('') === '2301', 'the first round goes round the table from the side that starts');
   ok(G.ss.filter((v) => v === 1).length === 4, 'everyone starts with one SS notch (the first side charges on its turn)');
-  const xs = [0, 1, 2, 3].map((s2) => WB.newGame(s2 + 1, { teams: 4 }).units.find((u) => u.team === 0).x);
-  ok(new Set(xs.map((x) => x < 40 ? 'L' : x < 80 ? 'l' : x < 120 ? 'r' : 'R')).size > 1, 'side 0 doesn\'t always start in the same spot');
+  const xs = Array.from({ length: 40 }, (_, s2) => WB.newGame(s2 + 1, { teams: 4 }).units.find((u) => u.team === 0).x);
+  const quarters = [0, 1, 2, 3].map((q) => xs.filter((x) => Math.floor(x / 40) === q).length);
+  ok(quarters.every((k) => k >= 5), `side 0 starts all over the map (by quarter over 40 seeds: ${quarters})`);
   const { G: F, log } = WB.playOut(WB.newGame(71, { teams: 4, chars: ['volt', 'zip', 'gale', 'brick'] }), ['smart', 'easy', 'medium', 'hard']);
   ok(F.phase === 'over' && WB.teamUnits(F, F.winner >= 0 ? F.winner : 0).length <= 1, `a 4-way bot match finishes (winner side ${F.winner}, ${F.turn} turns)`);
   ok(WB.hash(WB.replay(71, log, { teams: 4, chars: ['volt', 'zip', 'gale', 'brick'] })) === WB.hash(F), 'and replays exactly');
@@ -230,25 +233,83 @@ const ssGame = (chars, seed = 11) => { const G = WB.newGame(seed, { chars }); G.
   ok(G.phase === 'over' && !G.timeout, `a match of passes ends by rising water (turn ${G.turn})`);
 }
 
-// Maps: three shapes, picked from the seed (so every copy builds the same one), or chosen with opts.map.
+// 8. Maps: each one is seeded, spawns everyone on dry ground, and plays and replays a whole match.
+for (const m of WB.MAP_IDS) {
+  ok(WB.hash(WB.newGame(13, { map: m })) === WB.hash(WB.newGame(13, { map: m })), `${m}: same seed gives the same map`);
+  for (let s = 0; s < 20; s++) {
+    const G = WB.newGame(1000 + s * 31, { map: m, teams: s % 2 ? 4 : 2 });
+    if (!G.units.every((u) => u.y < G.water - 4 && WB.solidAt(G, u.x, u.y))) { ok(false, `${m} seed ${1000 + s * 31}: a unit spawned off the ground`); break; }
+    if (s === 19) ok(true, `${m}: 20 seeds spawn everyone on dry ground`);
+  }
+  const opts = { map: m, chars: ['gale', 'brick'] }, { G: F, log } = WB.playOut(WB.newGame(808, opts), ['smart', 'smart']);
+  ok(F.phase === 'over' && WB.hash(WB.replay(808, log, opts)) === WB.hash(F), `${m}: a bot match finishes and replays exactly (${F.turn} turns)`);
+}
+// With no map given, the round's map comes from its seed (the online server sends no map), so every copy builds the same one.
 {
   const seen = {};
   for (let s = 1; s <= 300; s++) seen[WB.newGame(s * 7919).map] = 1;
-  ok(WB.MAP_IDS.every((m) => seen[m]), `all ${WB.MAP_IDS.length} maps come up from random seeds (${Object.keys(seen).join(', ')})`);
-  ok(WB.newGame(4242).map === WB.newGame(4242).map && WB.hash(WB.newGame(4242)) === WB.hash(WB.newGame(4242)), 'the same seed always gives the same map and terrain');
-  for (const m of WB.MAP_IDS) {
-    let wet = 0, close = 0;
-    for (let s = 1; s <= 120; s++) for (const n of [2, 4, 6]) {
-      const G = WB.newGame(s * 104729, { teams: n, map: m });
-      if (G.map !== m) wet += 1000;
-      for (const u of G.units) if (u.y >= G.water - 1 || !WB.solidAt(G, u.x, u.y + 0.5)) wet++;
-      const xs = G.units.map((u) => u.x).sort((a, b) => a - b); for (let i = 1; i < xs.length; i++) if (xs[i] - xs[i - 1] < 7) close++;
-    }
-    ok(wet === 0, `${m}: opts.map picks it, and every unit starts on dry ground (2, 4 and 6 sides, 120 seeds)`);
-    ok(close === 0, `${m}: nobody starts on top of someone else`);
-    const G = WB.playOut(WB.newGame(77, { map: m, chars: ['volt', 'gale'] }), ['smart', 'smart']).G;
-    ok(G.phase === 'over', `${m}: a bot match plays to the end (${G.turn} turns)`);
+  ok(WB.MAP_IDS.every((m) => seen[m]), `all ${WB.MAP_IDS.length} theme maps come up from random seeds`);
+  ok(WB.hash(WB.newGame(4242)) === WB.hash(WB.newGame(4242)) && WB.newGame(4242).map === WB.pickMap(4242), 'the same seed always gives the same map and terrain');
+  ok(WB.MAP_IDS.includes(WB.newGame(13, { map: 'nope' }).map), 'an unknown map id falls back to a theme map');
+  let wet = 0, close = 0;
+  for (const m of WB.MAP_IDS) for (let s = 1; s <= 30; s++) for (const n of [2, 4, 6]) {
+    const G = WB.newGame(s * 104729, { teams: n, map: m });
+    for (const u of G.units) if (u.y >= G.water - 1 || !WB.solidAt(G, u.x, u.y + 0.5)) wet++;
+    const xs = G.units.map((u) => u.x).sort((a, b) => a - b); for (let i = 1; i < xs.length; i++) if (xs[i] - xs[i - 1] < 7) close++;
   }
+  ok(wet === 0 && close === 0, `every theme, 2, 4 and 6 sides, 30 seeds: everyone starts on dry ground, nobody on top of anyone (${wet} wet, ${close} close)`);
+}
+
+// 9. The map generator (mapgen.js) on its own: settings, codes, every preset, random settings, sizes.
+{
+  const MG = WB.MapGen, same = (a, b) => a.T.join('') === b.T.join('') && JSON.stringify(a.features) === JSON.stringify(b.features);
+  ok(MG.THEME_IDS.length === 10 && MG.LANDFORM_IDS.length === 11, `10 themes and 11 landforms (${MG.THEME_IDS.length}, ${MG.LANDFORM_IDS.length})`);
+  ok(MG.THEME_IDS.every((t) => MG.LANDFORMS[MG.THEMES[t].landform] && MG.THEMES[t].props.every(([k]) => MG.THEMES[t] && k)), 'every theme names a real landform and its props');
+  let bad = [];
+  for (const id of MG.PRESET_IDS) for (let k = 0; k < 15; k++) {
+    const m = MG.generate(id, { w: 160, h: 90, seed: 1 + k * 7919 });
+    if (!m.stats.ok) bad.push(`${id}/${k}: ${m.stats.problems}`);
+    if (m.T.slice(0, m.sky * m.w).some((v) => v)) bad.push(`${id}/${k}: ground in the sky band`);
+    if (k === 0 && !same(m, MG.generate(id, { w: 160, h: 90, seed: 1 }))) bad.push(`${id}: not deterministic`);
+  }
+  ok(!bad.length, `all ${MG.PRESET_IDS.length} presets pass the map checks on 15 seeds each ${bad.slice(0, 3)}`);
+  bad = [];
+  for (let k = 1; k <= 200; k++) {
+    const s = MG.randomSettings(k), code = MG.encode(s), back = MG.decode(code);
+    if (!back || MG.encode(back) !== code) { bad.push('code ' + code); continue; }
+    const a = MG.generate(code), b = MG.generate(s);
+    if (!same(a, b)) bad.push('code rebuilds a different map: ' + code);
+    if (!a.stats.ok) bad.push(code + ' ' + a.stats.problems);
+    if (s.symmetry) for (let y = 0; y < a.h; y++) for (let x = 0; x < a.w / 2; x++) if (a.T[y * a.w + x] !== a.T[y * a.w + a.w - 1 - x]) { bad.push('not mirrored ' + code); y = a.h; break; }
+  }
+  ok(!bad.length, `200 random settings: share codes round-trip, rebuild the same map and pass the checks ${bad.slice(0, 3)}`);
+  ok(['nope', 'hills-auto-12-x', 'frost-peak-9999999999999-1', '', null].every((c) => MG.decode(c) === null), 'bad share codes are refused');
+  ok(MG.SIZE_IDS.every((z) => { const m = MG.generate({ preset: 'classic', size: z, seed: 5 }); return m.w === MG.SIZES[z].w && m.h === MG.SIZES[z].h && m.T.length === m.w * m.h && m.stats.ok; }), 'every size builds a good map of its own dimensions');
+  const lv = [0, 1, 2, 3].map((w) => MG.generate({ preset: 'hills', water: w, seed: 3 }).water);
+  ok(lv.join() === '86,82,78,74', `liquid levels Low..Flooded start at rows ${lv}`);
+  // hard rock: never within 4 cells of air when the map is made, and blasts can't break it
+  const R = MG.generate({ preset: 'fortress', seed: 9 }); let near = 0, rocks = 0;
+  for (let i = 0; i < R.T.length; i++) if (R.T[i] === MG.ROCK) { rocks++; const x = i % R.w, y = (i / R.w) | 0; for (let dy = -4; dy <= 4; dy++) for (let dx = -4; dx <= 4; dx++) { const xx = x + dx, yy = y + dy; if (xx >= 0 && yy >= 0 && xx < R.w && yy < R.h && !R.T[yy * R.w + xx]) near++; } }
+  ok(rocks > 100 && near === 0, `Fortress has hard rock (${rocks} cells), all of it buried 5+ deep`);
+  const G = WB.newGame(9, { map: { preset: 'fortress', seed: 9 } }), i0 = G.T.indexOf(MG.ROCK), rx = i0 % WB.COLS, ry = (i0 / WB.COLS) | 0;
+  G.phase = 'flight'; G.proj.push({ id: 990, w: 'shot1', team: 0, from: -1, age: 9, x: rx + 0.5, y: ry + 0.5, vx: 0, vy: 0.1, wm: 1 }); WB.resolve(G);
+  ok(G.T[i0] === MG.ROCK, 'a blast right on hard rock leaves it standing');
+  // themes play their way: wind strength, barrels that chain, old duds that tick
+  const windOf = (map) => Math.max(...Array.from({ length: 40 }, (_, k) => Math.abs(WB.newGame(k + 1, { map }).wind)));
+  ok(windOf('fungal') <= WB.WIND_MAX * 0.5 && windOf('frost') > WB.WIND_MAX, `Fungal Hollow's wind tops out at ${windOf('fungal')}, Frostbite Peaks' at ${windOf('frost')}`);
+  const B = WB.newGame(21, { map: 'scrap' });
+  ok(B.barrels.length > 0 && B.barrels.every((b) => B.units.every((u) => Math.abs(u.x - b.x) >= 7)), `Scrap Yard starts with ${B.barrels.length} oil drums, none by a spawn`);
+  const b0 = B.barrels[0]; B.barrels.push({ id: 991, x: b0.x + 3, y: b0.y, air: false, vy: 0 });
+  B.phase = 'flight'; B.proj.push({ id: 992, w: 'shot1', team: 0, from: -1, age: 9, x: b0.x, y: b0.y - 2, vx: 0, vy: 3, wm: 1 }); WB.resolve(B);
+  ok(B.barrels.every((b) => b.id !== b0.id && b.id !== 991) && B.stats.barrels >= 2, `a hit drum blows and sets off the one next to it (${B.stats.barrels} blew)`);
+  const D = WB.newGame(4, { map: 'haunt' }), old = D.duds.filter((d) => d.old);
+  ok(old.length > 0 && old.every((d) => d.fuse >= 4 && d.team === null), `Haunted Hollow starts with ${old.length} restless duds, fuses 4-6`);
+  const mir = WB.newGame(12, { map: 'classic' });
+  ok(Math.abs(mir.units[0].x + mir.units[1].x - WB.COLS) <= 1.01, `mirror maps mirror the spawns (${mir.units.map((u) => u.x)})`);
+  const code = MG.encode(MG.randomSettings(77)), g1 = WB.newGame(5, { map: code }), g2 = WB.newGame(99, { map: code });
+  ok(g1.T.join('') === g2.T.join('') && g1.map === code, 'a share code with a seed gives the same map whatever the match seed');
+  const { G: F, log } = WB.playOut(WB.newGame(31, { map: code, chars: ['zip', 'digger'] }), ['smart', 'smart']);
+  ok(F.phase === 'over' && WB.hash(WB.replay(31, log, { map: code, chars: ['zip', 'digger'] })) === WB.hash(F), `a match on a shared custom map finishes and replays (${F.turn} turns)`);
 }
 
 console.log(`${passes} passed, ${fails} failed`);
