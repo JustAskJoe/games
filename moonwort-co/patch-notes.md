@@ -43,8 +43,6 @@ Prototype 1: a 2D phone-first build covering 3 in-game days. Play it from the La
 - [ ] @Hunter: play it on a real phone from the PR's Lab preview. Is reading a trouble and finding the brew fun on its own?
 - [ ] @Hunter: run the pass-bar test with 5 people (4 of 5 find a brew without help, want to keep playing, and recall a plant fact the next day).
 - [ ] @Hunter: review the lore cards in `design/lore/ingredients.json` (or name a reviewer). Every entry has `reviewed_by: null` until a person checks it.
-- [ ] Crew deck (about 12 slides) from the brief.
-- [x] Add the game to the table in the repo README. (Hunter with Claude, Nov 2)
 
 ### Watch out
 - [ ] Only bots have played it: the sim and a Playwright run through all 3 days at 390 and 320 px in desktop Chromium. It hasn't been tried on a real phone, iOS Safari, or with haptics.
@@ -59,7 +57,45 @@ Prototype 1: a 2D phone-first build covering 3 in-game days. Play it from the La
 - [ ] Name questions for a botanist: dandelion (Kew treats *Taraxacum officinale* as a group of microspecies), Culpeper's camomile and valerian were probably different species from ours, his "mint" is spearmint, and POWO now calls rosemary *Salvia rosmarinus*.
 - [ ] @Hunter: content calls. Elder is `kitchen_safe` only when the berries are ripe and cooked (raw ones are toxic). Hops are in the cannabis family and toxic to dogs. Mugwort and sage carry pregnancy cautions. Valerian, hops and lemon balm can cause drowsiness. The cards say all this; decide whether any herb should leave the game.
 - [ ] POWO links were confirmed through Kew's checklist on GBIF, not opened in a browser (POWO blocks scripts).
-- [ ] The Lead Artist plan is a separate PR (#101), and both PRs add a top patch-notes entry. Whichever merges second needs a one-line conflict fixed.
+- [x] The Lead Artist plan is a separate PR (#101), and both PRs add a top patch-notes entry. Whichever merges second needs a one-line conflict fixed. (Fixed on #101, Hunter with Claude, Nov 3.)
+
+---
+
+## 0.0.1 · 2026-11-02 · Hunter (with Claude)
+Lead art plan and draft art direction from the Lead Artist (JOB: plan). Nothing player-facing yet.
+
+### What's new
+- Draft lead art plan: `art/lead-plan.md` (status: draft). Prototype 1 is 2D and drawn entirely in code / SVG; free style-anchor concepts can run beside it; paid finals wait for the pass bar.
+- Draft art direction: `art/art-direction.md`, with a proposed palette (plum night, moss, beeswax gold, rose clay, ember), light direction and a botanical Art Nouveau frame grammar kept apart from Trickbound's.
+
+### Next up
+- [ ] @Hunter: approve or change the lead art plan (`art/lead-plan.md` §9 has 11 decisions).
+- [ ] @Hunter: pick the full game's camera: painterly 2D (recommended) or painterly 3D as the brief says.
+- [ ] @Hunter: approve or change the draft `art/art-direction.md` (palette hexes, light direction, frame grammar).
+- [ ] @Hunter: name the person who checks plant accuracy and lore on every ingredient illustration.
+- [ ] Prototype 1: use the art direction's palette as CSS tokens and the card, portrait and scene sizes for placeholders, so finals drop in later.
+- [ ] After the plan is approved: run the three free style-anchor concept directions (Canva plan credits or Cloudflare).
+- [ ] Send lead plan §8 (legal flags) to the legal reviewer before any paid finals.
+
+### Watch out
+- [ ] No prices were checked on a vendor's page today. Gemini's $0.067 per image is the studio's Oct 31 check; freelance rates are third-party ranges.
+- [ ] Public-domain and license status of the Waite–Smith tarot, Culpeper, NCCIH, POWO and USDA PLANTS was not checked on their own pages; they're flagged for the legal reviewer.
+- [ ] The palette hexes and all sizes are proposals until Prototype 1 has real tokens and layouts.
+- [ ] Biggest art risk: AI paints plants wrong, and some herbs have toxic look-alikes. Needs a person's check on every plant.
+- [ ] This entry is dated 2026-11-02 (Hunter's chat), one day before the Forge entry below (2026-11-03). Check which date is right.
+- [ ] No build-and-test run: the game had no build when this was written. Prototype 1 (0.1) merged first; this entry changes no game code.
+
+---
+
+## 0.0 · 2026-11-03 · Hunter (with Forge)
+Project folder created from the approved pitch. Nothing built yet.
+
+### What's new
+- The brief is in `pitch/brief.md`.
+
+### Next up
+- [ ] Crew deck (about 12 slides) from the brief.
+- [x] Add the game to the table in the repo README. (Hunter with Claude, Nov 2)
 
 ### Watch out
 - [ ] The brief is a draft until the crew deck settles the open calls.
