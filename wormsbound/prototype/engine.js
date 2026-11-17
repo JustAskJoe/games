@@ -7,16 +7,17 @@
      so seed + intent log replays a match exactly. hash(G) is a checksum for spotting drift.
    - Fixed-step physics at 60 ticks a second while anything is flying or falling (phase 'flight').
 
-   Each team picks one of five characters (CHARS) before the match. A character sets its units' health, armour,
-   walking and climbing, and its shots: Shot 1 (unlimited), Shot 2 (its ability, 2 a match) and its SS (Special
-   Shot): a big ultimate that charges one notch per turn of yours and is ready every SS_CHARGE turns. Every
-   character also carries the Live dud. The idea of characters with their own shots comes from GunBound;
-   the characters, names and shots here are our own.
+   Each team picks characters (CHARS) before the match. A character sets its units' six stats (health, armour, power,
+   move, jump, weight) and its kit (v3, Nov 17, 2026): a passive that is always on, a basic shot (unlimited), an
+   ability and a move ability (each on a cooldown counted in that unit's own turns) and an ultimate, the SS, which
+   charges one notch per turn of yours and is ready every SS_CHARGE turns. Nothing runs out: it just isn't ready.
+   The idea of characters with their own shots comes from GunBound; the characters, names and kits here are our own.
 
    The map is a grid of terrain cells built by mapgen.js (0 = air; 1 ground, 3 and 4 props: breakable; 2 hard rock:
    blasts can't break it). Units, shells, duds and barrels move in cell units, y pointing down.
-   Turn flow: aim (move, pick a shot, fire or lob a live dud, or pass) → flight (step() until everything
-   settles) → live duds tick down one → the next turn, with new wind. Last team standing wins.
+   Turn flow: aim (walk, jump, use the move ability, pick a shot, fire, or pass) → flight (step() until everything
+   settles) → a short retreat (walk with what's left of a third of your movement, or pass) → old duds on the map tick
+   down one → the next turn, with new wind. Jumps and move abilities fly too, then hand the turn back. Last team standing wins.
 
    Turn delay (GunBound's idea): there is no fixed back-and-forth. Every unit has a delay; whatever it does on its
    turn adds to it (each shot has its own cost, walking adds a little per step, passing isn't free), and the next
@@ -44,8 +45,10 @@
   const SAFE_FALL = 22;         // landing speed (cells/s) before fall damage
   const FALL_DMG = 2.2;         // hp per cell/s over SAFE_FALL
   const KNOCK = 26;             // knockback speed at the blast centre
-  const LOB_RANGE = 5;          // how close a unit must be to pick up a live dud
-  const LOB_POWER = 0.65;       // a thrown dud tops out below a full-power shot
+  const JUMP = { cost: 3, vx: 7, vy: 17 }; // a jump: costs 3 steps of movement; about 5 cells up and 8 along (× the character's jump stat for height)
+  const RETREAT = 1 / 3;        // after firing you may still walk: what's left of your movement, up to this share of it
+  const BURN = 6;               // Flint's burn: damage at the start of each of the target's next two turns
+  const DASH_DELAY = 150;       // turn delay a move ability adds unless it says otherwise
   const SUDDEN_ROUNDS = 12;     // after this many rounds (a round = one turn per side) the water rises
   const SUDDEN_RISE = 2;        // rows per turn
   const MAX_ROUNDS = 40;        // hard stop (the rising water should end it well before this)
@@ -55,106 +58,112 @@
   const DMG_SPREAD = 1.6;       // damage falls off to 0 at r × 1.6
   const SS_CHARGE = 4;          // the SS is ready on your 4th turn, then every 4th turn after you use it
   // Turn delay: what each action adds to the acting unit's delay (shots carry their own `delay`).
-  const DELAY = { move: 12, pass: 520, lob: 620, dud: 720 };
+  const DELAY = { move: 12, pass: 520, jump: 40 };
   // Health scale by format: characters' hp numbers are for a crew of two; one unit a side needs more to last.
   const HP_MUL = { duel: 2.6, ffa: 1.8, crew: 1 };
   const CREW_HP = [0, 0, 1.5, 1.25, 1.05, 0.9]; // by units a side (2 to 5): small crews need a bit more health each
   // Supply crates (v2): the middle of a match. One lands between the sides once everyone has had a turn, then every
   // few turns. Walk onto it to open it; a blast destroys it, so you can deny one instead. What's inside shows on the crate.
   const CRATE = { max: 3, reach: 2.2, heal: 0.25, ss: 2, r: 1.5 };
-  const CRATE_KINDS = ['gear', 'gear', 'ss', 'heal']; // gear: a new item for your class, full ammo · ss: +2 notches · heal: +25% health
+  const CRATE_KINDS = ['cool', 'ss', 'heal']; // cool: ability and move ability ready now · ss: +2 notches · heal: +25% health
   const crateFirst = (G) => G.units.length, crateEvery = (G) => Math.max(3, Math.round(G.units.length * 0.75));
   const START_GAP = 10;         // starting delays alternate teams 0, 10, 20, 30 so the first round goes A B A B
 
-  // The Live dud: every character has 2. Lands without exploding, ticks down 3 turns, anyone near can lob it.
-  const DUD = { name: 'Live dud', ammo: 2, r: 6, dmg: 60, fuse: 3, delay: DELAY.dud, desc: 'Lands without exploding and ticks for 3 turns. Anyone close can lob it on.' };
+  // Old duds: a map hazard (nobody fires or throws them any more). They tick down each turn and go off; a blast sets them off early.
+  const DUD = { name: 'Old dud', r: 6, dmg: 60, fuse: 3 };
 
-  // Shot fields: r crater, dmg centre damage, wind (× wind push), speed (× launch speed), knock (× knockback),
-  // bounce (bounces off the ground first), drill (cells it tunnels through), strike (lightning: {w, dmg}),
-  // double (a second shot follows), ammo (-1 = unlimited), delay (turn delay it adds: heavier = your next turn later).
-  // SS-only fields: rain (a fan of darts), storm (three lightning strikes), quake (hits every enemy on the ground),
-  // tornado (flings everyone within reach).
-  // Numbers tuned Nov 2, 2026 (1v1, one unit a side, with SS and turn delay) so every character wins 40-60% of
-  // smart-bot matches across the roster (sim.js). Health here is the base; HP_MUL scales it by format.
+  // Shot fields: r crater, dmg centre damage, wind (× wind push), speed (× launch speed), knock (× knockback, negative
+  // pulls), bounce (bounces off the ground first), drill (cells it tunnels through), strike (lightning: {w, dmg}),
+  // double (a second shot follows), delay (turn delay it adds: heavier = your next turn later), cd (cooldown in the
+  // owner's own turns), rain (a fan of shots), storm (three lightning strikes), quake (hits every enemy on the ground),
+  // tornado (flings everyone within reach), slow (turn delay added to enemies in the blast).
+  // New in v3: wall { w, h } (raises ground in front of you, nothing is fired), ray { range, pull, dmg } (a straight
+  // line: the first enemy it touches is pulled towards you), skip { r, dmg } (a small blast at every bounce),
+  // zone { w, turns, dmg } (fire left where it lands: ending a turn in it hurts), span { len } (a flat bridge where it lands).
+  // Move abilities (dash): kind 'leap' (thrown like a shot: speed, grav, nofall, land { r, dmg, knock } blast where you
+  // come down, blast { r, dmg } where you took off, self damage) · 'float' (a straight line, no gravity, up to range)
+  // · 'blink' (appear up to range cells away, in open air you can see) · 'charge' (run along the ground up to range,
+  // shove the first enemy met) · 'tunnel' (dig a passage up to range long and go through it).
+  // Stats: hp, armor (× damage taken), power (× damage dealt), steps and climb (move), jump (× jump height),
+  // weight (÷ how far shoves move you). Each verb (design/v3.md) appears at most once in a kit.
+  // Balance: the v2 numbers were tuned for 40-60% in 1v1. The v3 kits are a FIRST PASS; see sim.js for where they sit.
   const CHARS = {
-    brick: { name: 'Brick', role: 'Tank', cls: 'tank', gear: 'ricochet', hp: 110, armor: 0.88, steps: 10, climb: 2,
-      blurb: 'Big, tough and slow. Takes 12% less damage. His heavy shots barely feel the wind.',
-      shot1: { name: 'Slug', ammo: -1, delay: 680, r: 3.5, dmg: 40, wind: 0.45, desc: 'A heavy shell. Wind hardly moves it.' },
-      shot2: { name: 'Wrecking Ball', ammo: 2, delay: 840, r: 5, dmg: 56, wind: 0.45, bounce: 1, desc: 'Bounces once, then a big blast.' },
+    brick: { name: 'Brick', role: 'Tank', cls: 'tank', hp: 110, armor: 0.88, power: 1, steps: 10, climb: 2, jump: 0.8, weight: 2,
+      blurb: 'Big, tough and slow. Hard to shove. Builds his own cover and charges through yours.',
+      passive: { id: 'plated', name: 'Plated', desc: 'Shoves move him half as far.' },
+      shot1: { name: 'Slug', delay: 680, r: 3.5, dmg: 40, wind: 0.45, desc: 'A heavy shell. Wind hardly moves it.' },
+      shot2: { name: 'Bulwark', verb: 'Build', cd: 3, delay: 620, r: 0, dmg: 0, wall: { w: 3, h: 7 }, desc: 'Raises a wall of ground in front of him, 3 wide and 7 tall. Aim left or right.' },
+      dash: { name: 'Charge', verb: 'Move', cd: 3, kind: 'charge', range: 10, dmg: 14, shove: 1.5, desc: 'Runs up to 10 cells along the ground. The first enemy he meets is shoved hard.' },
       ss: { name: 'Meteor Slam', delay: 1040, r: 6, dmg: 56, wind: 0.3, speed: 0.95, desc: 'A huge, heavy shell: the biggest crater in the game.' } },
-    zip: { name: 'Zip', role: 'Scout', cls: 'scout', gear: 'pistol', hp: 105, armor: 1, steps: 22, climb: 3,
-      blurb: 'Quick on her feet. Walks twice as far as most and climbs higher ledges.',
-      shot1: { name: 'Dart', ammo: -1, delay: 560, r: 3, dmg: 46, speed: 1.15, wind: 0.8, desc: 'Fast and flat, with a small blast.' },
-      shot2: { name: 'Double Tap', ammo: 2, delay: 740, r: 3, dmg: 38, speed: 1.15, wind: 0.8, double: true, desc: 'Two darts, one right after the other.' },
+    zip: { name: 'Zip', role: 'Scout', cls: 'scout', hp: 110, armor: 1, power: 1, steps: 22, climb: 3, jump: 1.15, weight: 0.9,
+      blurb: 'Quick on her feet. Shoots, then gets out: she keeps all her movement after firing.',
+      passive: { id: 'slippery', name: 'Slippery', desc: 'Keeps all of her movement after shooting (others keep a third).' },
+      shot1: { name: 'Dart', delay: 560, r: 3, dmg: 51, speed: 1.15, wind: 0.8, desc: 'Fast and flat, with a small blast.' },
+      shot2: { name: 'Double Tap', verb: 'Blast', cd: 2, delay: 740, r: 3, dmg: 38, speed: 1.15, wind: 0.8, double: true, desc: 'Two darts, one right after the other.' },
+      dash: { name: 'Grapple', verb: 'Move', cd: 2, kind: 'leap', speed: 0.72, grav: 0.6, nofall: true, desc: 'Swings fast and flat to where she aims. No fall damage.' },
       ss: { name: 'Bullet Rain', delay: 960, r: 3.2, dmg: 36, speed: 1.15, wind: 0.8, rain: { n: 5, spread: 4 }, desc: 'Five darts fanned out in a quick burst.' } },
-    volt: { name: 'Volt', role: 'All-rounder', cls: 'gunner', gear: 'lobber', hp: 100, armor: 1, steps: 14, climb: 2,
+    volt: { name: 'Volt', role: 'Gunner', cls: 'gunner', hp: 100, armor: 1, power: 1, steps: 14, climb: 2, jump: 1, weight: 1,
       blurb: 'Steady and simple. Calls lightning down on anyone hiding under cover.',
-      shot1: { name: 'Arc Ball', ammo: -1, delay: 600, r: 3.2, dmg: 46, desc: 'A plain, reliable shell.' },
-      shot2: { name: 'Thunderstrike', ammo: 2, delay: 800, r: 3, dmg: 26, strike: { w: 2.2, dmg: 34 }, desc: 'Where it lands, lightning hits everyone close by, cover or not.' },
+      passive: { id: 'charged', name: 'Charged', desc: 'Every third hit does half as much again and arcs to another enemy within 8 cells.' },
+      shot1: { name: 'Arc Ball', delay: 600, r: 3.2, dmg: 45, desc: 'A plain, reliable shell.' },
+      shot2: { name: 'Thunderstrike', verb: 'Blast', cd: 3, delay: 800, r: 3, dmg: 26, strike: { w: 2.2, dmg: 34 }, desc: 'Where it lands, lightning hits everyone close by, cover or not.' },
+      dash: { name: 'Blink', verb: 'Move', cd: 3, kind: 'blink', range: 8, desc: 'Appears up to 8 cells away, in open air he can see.' },
       ss: { name: 'Storm Call', delay: 1000, r: 3, dmg: 24, storm: { gap: 7, w: 2.4, dmg: 42 }, desc: 'Three lightning bolts: where it lands and 7 cells to each side.' } },
-    digger: { name: 'Digger', role: 'Miner', cls: 'engineer', gear: 'thermite', hp: 110, armor: 0.95, steps: 12, climb: 2,
-      blurb: 'Sturdy. Can tunnel straight through hills to reach someone dug in.',
-      shot1: { name: 'Pick Shell', ammo: -1, delay: 620, r: 4, dmg: 40, desc: 'Digs a wide crater.' },
-      shot2: { name: 'Drill', ammo: 2, delay: 800, r: 4, dmg: 48, drill: 14, desc: 'Bores through up to 14 cells of ground, then explodes.' },
+    digger: { name: 'Digger', role: 'Miner', cls: 'engineer', hp: 110, armor: 0.95, power: 1, steps: 12, climb: 2, jump: 0.9, weight: 1.2,
+      blurb: 'Sturdy. Walks through thin walls and tunnels straight to anyone dug in.',
+      passive: { id: 'tunnel', name: 'Tunneller', desc: 'Walks straight through ground up to 3 cells thick.' },
+      shot1: { name: 'Pick Shell', delay: 620, r: 4, dmg: 40, desc: 'Digs a wide crater.' },
+      shot2: { name: 'Drill', verb: 'Dig', cd: 2, delay: 800, r: 4, dmg: 48, drill: 14, desc: 'Bores through up to 14 cells of ground, then explodes.' },
+      dash: { name: 'Burrow', verb: 'Move', cd: 3, kind: 'tunnel', range: 9, desc: 'Digs a passage up to 9 cells long where he aims, and goes through it.' },
       ss: { name: 'Earthquake', delay: 1000, r: 5, dmg: 40, quake: { dmg: 20 }, desc: 'A big blast, then a quake that hits every enemy standing on the ground.' } },
-    gale: { name: 'Gale', role: 'Wind-rider', cls: 'control', gear: 'well', hp: 90, armor: 1, steps: 16, climb: 2,
-      blurb: 'Rides the wind. Her shots curve hard, and her Gust throws people into the water.',
-      shot1: { name: 'Kite Bomb', ammo: -1, delay: 600, r: 4, dmg: 42, wind: 1.7, desc: 'Strong, but the wind pushes it a lot.' },
-      shot2: { name: 'Gust Bomb', ammo: 2, delay: 780, r: 4.5, dmg: 24, wind: 1.7, knock: 2.2, desc: 'Weak blast, huge knockback.' },
+    gale: { name: 'Gale', role: 'Wind-rider', cls: 'control', hp: 90, armor: 1, power: 1, steps: 16, climb: 2, jump: 1.2, weight: 0.8,
+      blurb: 'Rides the wind and chooses which way it blows. Her Gust throws people into the water.',
+      passive: { id: 'tailwind', name: 'Tailwind', desc: 'Once on her turn she can turn the wind round (not how hard it blows).' },
+      shot1: { name: 'Kite Bomb', delay: 600, r: 4, dmg: 42, wind: 1.7, desc: 'Strong, but the wind pushes it a lot.' },
+      shot2: { name: 'Gust', verb: 'Shove', cd: 3, delay: 780, r: 4.5, dmg: 24, wind: 1.7, knock: 2.2, desc: 'Weak blast, huge shove.' },
+      dash: { name: 'Updraft', verb: 'Move', cd: 3, kind: 'leap', speed: 0.68, grav: 0.45, nofall: true, desc: 'Lifts off and glides to where she aims. No fall damage.' },
       ss: { name: 'Tornado', delay: 980, r: 3, dmg: 20, wind: 1.3, tornado: { reach: 11, dmg: 16, push: 26 }, desc: 'Flings everyone within 11 cells away from it, you too.' } },
-    // --- the second five (v2, Nov 11, 2026): one more for each class, built from the same shot fields ---
-    tusk: { name: 'Tusk', role: 'Bruiser', cls: 'tank', gear: 'crater', hp: 107, armor: 0.92, steps: 9, climb: 2,
-      blurb: 'A battering ram. Not as tough as Brick, but every hit shoves people where they don\'t want to be.',
-      shot1: { name: 'Ram Shell', ammo: -1, delay: 660, r: 3.3, dmg: 36, wind: 0.6, knock: 1.4, desc: 'A solid hit with a hard shove.' },
-      shot2: { name: 'Bouncer', ammo: 2, delay: 820, r: 4.6, dmg: 50, wind: 0.6, bounce: 2, desc: 'Bounces twice, so it gets round corners, then a big blast.' },
+    // --- the second five: one more for each class ---
+    tusk: { name: 'Tusk', role: 'Bruiser', cls: 'tank', hp: 107, armor: 0.92, power: 1, steps: 9, climb: 2, jump: 0.9, weight: 1.5,
+      blurb: 'A battering ram. Every hit shoves people where they don\'t want to be, harder the further he ran first.',
+      passive: { id: 'momentum', name: 'Momentum', desc: 'Every 4 cells he walked this turn adds 10% to his shoves.' },
+      shot1: { name: 'Ram Shell', delay: 660, r: 3.3, dmg: 36, wind: 0.6, knock: 1.4, desc: 'A solid hit with a hard shove.' },
+      shot2: { name: 'Hook', verb: 'Shove', cd: 3, delay: 720, r: 0, dmg: 0, wind: 0, speed: 1.1, ray: { range: 16, pull: 8, dmg: 16 }, desc: 'A straight line out to 16 cells. The first enemy it touches is dragged towards him.' },
+      dash: { name: 'Leap Slam', verb: 'Move', cd: 3, kind: 'leap', speed: 0.6, nofall: true, land: { r: 3, dmg: 22, knock: 1.2 }, desc: 'A high jump to where he aims, with a blast where he lands.' },
       ss: { name: 'Stampede', delay: 1020, r: 4.2, dmg: 32, wind: 0.6, knock: 1.5, rain: { n: 3, spread: 3.5 }, desc: 'Three ram shells in a row, each with a shove.' } },
-    hopper: { name: 'Hopper', role: 'Skirmisher', cls: 'scout', gear: 'triple', hp: 107, armor: 1, steps: 20, climb: 4,
-      blurb: 'Goes anywhere: climbs the highest ledges of anyone. Light shots that skip off the ground.',
-      shot1: { name: 'Pebble', ammo: -1, delay: 540, r: 3.1, dmg: 48, speed: 1.2, wind: 0.9, desc: 'Quick and light. The cheapest turn in the game.' },
-      shot2: { name: 'Skip Shot', ammo: 2, delay: 720, r: 3.4, dmg: 46, speed: 1.1, wind: 0.9, bounce: 2, desc: 'Skips twice off the ground before it blows.' },
+    hopper: { name: 'Hopper', role: 'Skirmisher', cls: 'scout', hp: 110, armor: 1, power: 1, steps: 20, climb: 4, jump: 2, weight: 0.9,
+      blurb: 'Goes anywhere. Jumps twice as high as anyone and never takes fall damage.',
+      passive: { id: 'springy', name: 'Springy', desc: 'No fall damage, and her jump is twice as high.' },
+      shot1: { name: 'Pebble', delay: 540, r: 3.1, dmg: 51, speed: 1.2, wind: 0.9, desc: 'Quick and light. The cheapest turn in the game.' },
+      shot2: { name: 'Skipping Stone', verb: 'Blast', cd: 2, delay: 720, r: 3.2, dmg: 34, speed: 1.1, wind: 0.9, bounce: 3, skip: { r: 2.2, dmg: 16 }, desc: 'Skips off the ground up to 3 times, with a small blast each time.' },
+      dash: { name: 'Pounce', verb: 'Move', cd: 3, kind: 'leap', speed: 0.66, nofall: true, land: { r: 2.6, dmg: 18, knock: 1.3 }, desc: 'A long leap that lands with a blast and a shove.' },
       ss: { name: 'Flurry', delay: 940, r: 2.7, dmg: 30, speed: 1.2, wind: 0.9, rain: { n: 7, spread: 2.6 }, desc: 'Seven pebbles in a tight fan.' } },
-    flint: { name: 'Flint', role: 'Gunner', cls: 'gunner', gear: 'tnt', hp: 100, armor: 1, steps: 14, climb: 2,
-      blurb: 'Fills the air with shot. Great at hitting something; less good at hitting one thing hard.',
-      shot1: { name: 'Flare', ammo: -1, delay: 600, r: 3.4, dmg: 46, speed: 1.05, desc: 'A plain, slightly quick shell.' },
-      shot2: { name: 'Scatter Flares', ammo: 2, delay: 780, r: 2.9, dmg: 25, rain: { n: 4, spread: 6 }, desc: 'Four small flares in a wide fan.' },
-      ss: { name: 'Barrage', delay: 1000, r: 3.6, dmg: 36, rain: { n: 5, spread: 1.6 }, desc: 'Five shells landing almost on top of each other.' } },
-    patch: { name: 'Patch', role: 'Engineer', cls: 'engineer', gear: 'dirt', hp: 106, armor: 0.95, steps: 13, climb: 2,
-      blurb: 'Reshapes the map. Short digs with wide blasts, and a quake that shakes the ground out from under people.',
-      shot1: { name: 'Bolt', ammo: -1, delay: 610, r: 3.5, dmg: 41, desc: 'A sturdy shell with a good crater.' },
-      shot2: { name: 'Shaped Charge', ammo: 2, delay: 800, r: 5, dmg: 46, drill: 7, desc: 'Bores 7 cells in, then blows a wide hole.' },
+    flint: { name: 'Flint', role: 'Gunner', cls: 'gunner', hp: 100, armor: 1, power: 1, steps: 14, climb: 2, jump: 1, weight: 1,
+      blurb: 'Sets things on fire. His hits keep hurting, and his fire decides where people can stand.',
+      passive: { id: 'burn', name: 'Burn', desc: 'His hits leave a burn: 6 damage at the start of each of the target\'s next two turns.' },
+      shot1: { name: 'Flare Shot', delay: 600, r: 3.2, dmg: 38, speed: 1.05, desc: 'A small blast that sets the burn.' },
+      shot2: { name: 'Fire Wall', verb: 'Zone', cd: 3, delay: 760, r: 2, dmg: 10, zone: { w: 8, turns: 2, dmg: 14 }, desc: 'Leaves fire 8 cells wide for 2 turns. Ending a turn in it hurts.' },
+      dash: { name: 'Rocket Jump', verb: 'Move', cd: 3, kind: 'leap', speed: 0.62, nofall: true, self: 5, blast: { r: 2.5, dmg: 14 }, desc: 'Blasts himself to where he aims. Costs him 5 health and hurts anyone beside him.' },
+      ss: { name: 'Inferno', delay: 1000, r: 5.5, dmg: 44, zone: { w: 9, turns: 2, dmg: 14 }, desc: 'A big blast that leaves the crater burning for 2 turns.' } },
+    patch: { name: 'Patch', role: 'Engineer', cls: 'engineer', hp: 106, armor: 0.95, power: 1, steps: 13, climb: 2, jump: 1, weight: 1.1,
+      blurb: 'Reshapes the map. Bridges gaps, patches up his crew, and shakes the ground out from under people.',
+      passive: { id: 'repairs', name: 'Field Repairs', desc: 'At the start of his turn, crewmates within 5 cells heal 6 and he heals 3.' },
+      shot1: { name: 'Rivet', delay: 610, r: 3.5, dmg: 41, desc: 'A sturdy shell with a good crater.' },
+      shot2: { name: 'Bridge', verb: 'Build', cd: 2, delay: 600, r: 0, dmg: 0, span: { len: 10 }, desc: 'Lays a flat span 10 cells long where it lands.' },
+      dash: { name: 'Spring Pad', verb: 'Move', cd: 3, kind: 'leap', speed: 0.85, nofall: true, desc: 'Launches himself a long way. No fall damage.' },
       ss: { name: 'Sinkhole', delay: 1000, r: 7, dmg: 28, drill: 4, quake: { dmg: 14 }, desc: 'A huge crater, and a tremor that hits every enemy on the ground.' } },
-    nimbus: { name: 'Nimbus', role: 'Storm-caller', cls: 'control', gear: 'delayray', hp: 100, armor: 1, steps: 15, climb: 2,
-      blurb: 'Moves people instead of hurting them. Her Vacuum drags everyone towards the blast: off a ledge, into a pit, onto a dud.',
-      shot1: { name: 'Cloudburst', ammo: -1, delay: 600, r: 3.8, dmg: 43, wind: 1.5, desc: 'A wide blast that the wind carries.' },
-      shot2: { name: 'Vacuum', ammo: 2, delay: 780, r: 4.6, dmg: 28, wind: 1.5, knock: -1.9, desc: 'Weak blast that pulls everyone near it towards its centre.' },
+    nimbus: { name: 'Nimbus', role: 'Storm-caller', cls: 'control', hp: 109, armor: 1, power: 1, steps: 15, climb: 2, jump: 1.1, weight: 0.8,
+      blurb: 'Decides when the fight happens. Her hits slow people down and her ray puts their turn off.',
+      passive: { id: 'drizzle', name: 'Drizzle', desc: 'Enemies she hits have half their movement on their next turn.' },
+      shot1: { name: 'Raindrop', delay: 590, r: 3.8, dmg: 48, wind: 1.4, knock: -0.5, desc: 'A soft lob that tugs people towards where it lands.' },
+      shot2: { name: 'Delay Ray', verb: 'Time', cd: 3, delay: 620, r: 4, dmg: 28, knock: 0.3, slow: 300, desc: 'Barely hurts, but every enemy it catches takes their next turn later.' },
+      dash: { name: 'Cloud Ride', verb: 'Move', cd: 3, kind: 'float', range: 14, desc: 'Floats up to 14 cells in a straight line, over gaps and water.' },
       ss: { name: 'Thunderhead', delay: 990, r: 3, dmg: 20, wind: 1.4, storm: { gap: 5, w: 2.1, dmg: 34 }, desc: 'Three lightning bolts close together: where it lands and 5 cells to each side.' } },
   };
   const CHAR_IDS = Object.keys(CHARS);
-  // Classes: two characters each. A class decides which gear a character can carry.
   const CLASSES = { tank: 'Tank', scout: 'Scout', gunner: 'Gunner', engineer: 'Engineer', control: 'Controller' };
-  // Gear (v2): one extra weapon per unit, chosen before the match, in a 4th slot. Each comes from the 100-weapon list in
-  // design/weapons.md (# is its number there). cls 'any' = everyone; otherwise only that class. Same fields as shots,
-  // plus: cluster { n, r, dmg } (bomblets when it lands), fill (adds ground instead of removing it), slow (turn delay
-  // added to every enemy in the blast). A negative knock pulls towards the blast.
-  const GEAR = {
-    pistol:   { name: 'Pocket Pistol', n: 6, cls: 'any', ammo: 3, delay: 420, r: 2.6, dmg: 28, speed: 1.1, double: true, desc: 'Two quick weak shots. The cheapest turn you can take.' },
-    rivet:    { name: 'Rivet Rifle', n: 1, cls: 'any', ammo: 2, delay: 620, r: 2.4, dmg: 22, speed: 1.2, wind: 0.3, rain: { n: 3, spread: 1.5 }, desc: 'Three fast flat shots the wind hardly touches.' },
-    lobber:   { name: 'Sky Lobber', n: 7, cls: 'any', ammo: 2, delay: 700, r: 4.2, dmg: 48, speed: 0.8, wind: 0.3, desc: 'A slow, heavy lob for dropping over walls. Aim high.' },
-    popcorn:  { name: 'Popcorn Bomb', n: 35, cls: 'any', ammo: 1, delay: 820, r: 3, dmg: 22, cluster: { n: 5, r: 2.6, dmg: 20 }, desc: 'Pops into five bomblets that scatter and blow.' },
-    crater:   { name: 'Crater Maker', n: 72, cls: 'tank', ammo: 1, delay: 1100, r: 9, dmg: 46, speed: 0.9, wind: 0.4, desc: 'One shell, one enormous hole. Reshapes the map.' },
-    ricochet: { name: 'Ricochet Repeater', n: 4, cls: 'tank', ammo: 2, delay: 700, r: 3.4, dmg: 44, wind: 0.5, bounce: 3, desc: 'Bounces off the ground up to three times.' },
-    scatter:  { name: 'Scattercan', n: 2, cls: 'scout', ammo: 2, delay: 680, r: 2.3, dmg: 20, speed: 1.1, rain: { n: 6, spread: 5 }, desc: 'Six pellets in a wide fan. Strong up close.' },
-    triple:   { name: 'Triple Barrel', n: 14, cls: 'scout', ammo: 2, delay: 720, r: 3.2, dmg: 36, speed: 1.1, rain: { n: 3, spread: 5 }, desc: 'Three shells fanned five degrees apart.' },
-    tnt:      { name: 'TNT Drop', n: 37, cls: 'gunner', ammo: 1, delay: 860, r: 4, dmg: 36, speed: 0.9, rain: { n: 3, spread: 2 }, desc: 'Three heavy bombs, one after another.' },
-    pinball:  { name: 'Pinball Shot', n: 9, cls: 'gunner', ammo: 2, delay: 680, r: 3.4, dmg: 48, speed: 1.1, bounce: 4, desc: 'Extra bouncy: up to four bounces before it blows.' },
-    thermite: { name: 'Thermite Spike', n: 48, cls: 'engineer', ammo: 2, delay: 780, r: 3.8, dmg: 52, drill: 20, desc: 'Burns through 20 cells of anything, then explodes.' },
-    dirt:     { name: 'Dirt Cannon', n: 53, cls: 'engineer', ammo: 2, delay: 560, r: 5, dmg: 0, knock: 0, fill: true, desc: 'Adds ground instead of removing it: build a wall, plug a tunnel.' },
-    well:     { name: 'Gravity Well', n: 51, cls: 'control', ammo: 2, delay: 760, r: 5, dmg: 26, knock: -2, desc: 'Pulls everyone near it in, then pops.' },
-    delayray: { name: 'Delay Ray', n: 65, cls: 'control', ammo: 2, delay: 600, r: 4, dmg: 20, knock: 0.3, slow: 300, desc: 'Barely hurts, but every enemy it catches takes their next turn later.' },
-  };
-  const GEAR_IDS = Object.keys(GEAR);
-  const gearFor = (ch) => GEAR_IDS.filter((g) => GEAR[g].cls === 'any' || GEAR[g].cls === CHARS[ch].cls); // what a character may carry
-  const WEAPON_IDS = ['shot1', 'shot2', 'dud', 'ss', 'gear'];
+  const WEAPON_IDS = ['shot1', 'shot2', 'dash', 'ss']; // basic shot · ability · move ability · ultimate
+  const passiveOf = (u) => CHARS[u.char].passive.id;
 
   // ---------- seeded RNG (state in G._s) ----------
   function R(G) { G._s = (G._s + 0x6D2B79F5) >>> 0; let t = G._s; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }
@@ -180,6 +189,7 @@
       const dx = x + 0.5 - cx, dy = y + 0.5 - cy;
       if (dx * dx + dy * dy <= r * r && G.T[y * COLS + x] && G.T[y * COLS + x] !== MapGen.ROCK) { G.T[y * COLS + x] = 0; n++; }
     }
+    if (n) G.tv = (G.tv || 0) + 1; // the ground changed (a renderer can watch this number)
     return n;
   }
 
@@ -199,15 +209,13 @@
     const perUnit = !!opts.chars && opts.chars.length === spots && size > 1;
     const charAt = (t, i) => { const c = opts.chars && (perUnit ? opts.chars[t * size + i] : opts.chars[t]); return CHARS[c] ? c : 'volt'; };
     const chars = Array.from({ length: teams }, (_, t) => charAt(t, 0)); // each side's lead character (the HUD's label)
-    // opts.gear: a gear id per side or per unit, like opts.chars; '' or 'none' = no gear. Anything a character can't carry falls back to its own default.
-    const gearAt = (t, i, ch) => { const g = opts.gear && (opts.gear.length === spots && size > 1 ? opts.gear[t * size + i] : opts.gear[t]); return g === '' || g === 'none' ? null : gearFor(ch).includes(g) ? g : CHARS[ch].gear; };
     const G = {
-      v: 3, seed: seed >>> 0, _s: (seed >>> 0) || 1, _id: 0, cols: COLS, rows: ROWS, map: 'hills', mapName: '', theme: 'hills', windMul: 1, mirror: false,
+      v: 4, seed: seed >>> 0, _s: (seed >>> 0) || 1, _id: 0, cols: COLS, rows: ROWS, map: 'hills', mapName: '', theme: 'hills', windMul: 1, mirror: false,
       phase: 'aim', turn: 0, team: 0, teams, size, actor: 0, spent: 0, chars,
-      wind: 0, water: WATER0, moves: 0, weapon: 'shot1',
+      wind: 0, water: WATER0, moves: 0, weapon: 'shot1', mid: false, fired: false, retreat: false, walked: 0, windFlip: false, zones: [],
       T: null, units: [], proj: [], duds: [], barrels: [], crates: [], fx: [], crateOn: opts.crates !== false, shooter: 0, combo: false,
       fused: false, winner: null,
-      stats: { crates: new Array(teams).fill(0), cratesLost: 0, combos: 0, shots: 0, shot2: 0, ss: 0, lobs: 0, dudBlasts: 0, chains: 0, strikes: 0, drowned: 0, fallKOs: 0, selfDmg: new Array(teams).fill(0), dmg: new Array(teams).fill(0) },
+      stats: { crates: new Array(teams).fill(0), cratesLost: 0, combos: 0, shots: 0, shot2: 0, ss: 0, dash: 0, jumps: 0, retreats: 0, dudBlasts: 0, chains: 0, strikes: 0, drowned: 0, fallKOs: 0, selfDmg: new Array(teams).fill(0), dmg: new Array(teams).fill(0) },
     };
     const recipe = MapGen.RECIPES[opts.recipe] ? opts.recipe : recipeFor(teams, size), Rc = MapGen.RECIPES[recipe];
     const Z = MapGen.SIZES[opts.mapSize] || MapGen.SIZES[MapGen.sizeFor(spots)];
@@ -234,11 +242,10 @@
       const y = deep.length ? deep[Math.floor(R(G) * deep.length)] : surfaceY(G, x);
       const own = opts.owners && Number.isInteger(opts.owners[t * size + i]) ? opts.owners[t * size + i] : t;
       G.units.push({ id: ++G._id, team: t, own, char: ch, x: x + 0.5, y, vx: 0, vy: 0, hp, maxHp: hp, alive: true, air: false, face: x < G.cols / 2 ? 1 : -1, delay: 0,
-        gear: gearAt(t, i, ch), ammo: { shot1: C.shot1.ammo, shot2: C.shot2.ammo, dud: DUD.ammo, gear: 0 }, ss: 0 });
-      const nu = G.units[G.units.length - 1]; if (nu.gear) nu.ammo.gear = GEAR[nu.gear].ammo;
+        cd: { shot2: 0, dash: 0 }, ss: 0, burn: 0, wet: false, hits: 0 });
     }
     G.units.sort((a, b) => a.team - b.team || a.x - b.x); // ids stay as made; keep the list grouped by side
-    // the map's hazards: barrels, and old live duds (anyone can lob them; they tick from turn 1). None right by a spawn.
+    // the map's hazards: barrels, and old duds (they tick from turn 1; a blast sets them off early). None right by a spawn.
     for (const f of M.features) {
       if (G.units.some((u) => Math.abs(u.x - (f.x + 0.5)) < 7)) continue;
       if (f.kind === 'barrel') G.barrels.push({ id: ++G._id, x: f.x + 0.5, y: f.y, air: false, vy: 0 });
@@ -270,12 +277,13 @@
     return out;
   }
   // One notch of SS charge at the start of each of your turns.
-  // Each unit has its own kit: Shot 2 and dud ammo, and its own SS charge.
+  // Each unit has its own cooldowns and its own SS charge.
   function chargeSS(G) { const u = current(G); if (u) u.ss = Math.min(SS_CHARGE, u.ss + 1); }
   // who: a unit, a side (its most-charged living unit), or nothing (the unit whose turn it is)
   const ssOf = (G, who) => { if (who && typeof who === 'object') return who.ss; if (who == null) { const u = current(G); return u ? u.ss : 0; } return Math.max(0, ...teamUnits(G, who).map((u) => u.ss)); };
   const ssReady = (G, who) => ssOf(G, who) >= SS_CHARGE;
-  const ammoOf = (G, u = current(G)) => (u ? u.ammo : { shot1: 0, shot2: 0, dud: 0 });
+  const cdOf = (G, u = current(G)) => (u ? u.cd : { shot2: 0, dash: 0 }); // turns until the ability and the move ability are ready (0 = ready)
+  const ready = (G, w, u = current(G)) => !!u && (w === 'shot1' || (w === 'ss' ? u.ss >= SS_CHARGE : u.cd[w] === 0));
   const owner = (G) => { const u = current(G); return u ? u.own : -1; }; // who controls the unit whose turn it is
   const rollWind = (G) => Math.round((R(G) * 2 - 1) * WIND_MAX * (G.windMul || 1) * 10) / 10; // calm maps halve it, gale maps ×1.6
   const teamUnits = (G, t) => G.units.filter((u) => u.team === t && u.alive);
@@ -290,7 +298,7 @@
     return best;
   }
   // What this turn will have cost so far if you fire `w` now (or pass): for the UI's turn-order preview.
-  function delayIf(G, w) { const u = current(G); if (!u) return 0; return u.delay + G.spent + (w === 'pass' ? DELAY.pass : w === 'lob' ? DELAY.lob : shotSpec(G, u, w).delay); }
+  function delayIf(G, w) { const u = current(G); if (!u) return 0; return u.delay + G.spent + (w === 'pass' ? (G.retreat ? 0 : DELAY.pass) : shotSpec(G, u, w).delay); }
   // The coming turns, in order, if every unit's delay stays as it is now (the current unit counted with `extra`).
   function turnOrder(G, extra = 0, n = 6) {
     const live = G.units.filter((u) => u.alive).map((u) => ({ id: u.id, team: u.team, d: u.delay + (u.id === G.actor ? G.spent + extra : 0) }));
@@ -302,8 +310,7 @@
   // or a side (its lead character).
   function shotSpec(G, who, w) {
     const C = who && typeof who === 'object' ? CHARS[who.char] : CHARS[who] || charOf(G, who);
-    const s = w === 'dud' ? DUD : w === 'gear' ? GEAR[who && who.gear] || GEAR.pistol : C[w];  // shot1 | shot2 | ss | gear (a unit's own)
-    return Object.assign({ wind: 1, speed: 1, knock: 1 }, s);
+    return Object.assign({ wind: 1, speed: 1, knock: 1, delay: DASH_DELAY }, C[w] || C.shot1); // shot1 | shot2 | dash | ss
   }
 
   // ---------- flight ----------
@@ -328,8 +335,9 @@
   // Returns null while flying, or 'ground' | 'unit' | 'water' | 'out' when it lands.
   function advance(G, p, dt, ignoreId, real) {
     const px = p.x, py = p.y;
-    p.vx += G.wind * (p.wm == null ? 1 : p.wm) * dt; p.vy += GRAV * dt;
+    if (!p.ray) { p.vx += G.wind * (p.wm == null ? 1 : p.wm) * dt; p.vy += GRAV * dt; }
     p.x += p.vx * dt; p.y += p.vy * dt;
+    if (p.ray) { p.ray -= Math.hypot(p.x - px, p.y - py); if (p.ray <= 0) return 'out'; } // a straight line that runs out
     if (p.x < -4 || p.x > G.cols + 4) return 'out';
     if (p.y >= G.water) return 'water';
     const hu = unitHit(G, p, ignoreId);
@@ -345,6 +353,7 @@
     if (p.bounce > 0) { // bounce: off a wall sideways, otherwise off the floor
       p.bounce--;
       if (solidAt(G, p.x, py) && !solidAt(G, px, p.y)) { p.vx = -p.vx * 0.6; p.vy *= 0.8; } else { p.vy = -Math.abs(p.vy) * 0.55; p.vx *= 0.8; }
+      if (real && p.skip) explode(G, p.x, p.y, p.skip.r, p.skip.dmg, p.team, 'shot', 0.6); // Skipping Stone: a small blast at every skip
       p.x = px; p.y = py; p.bounced = true;
       return null;
     }
@@ -352,33 +361,35 @@
   }
   function newShot(G, u, w, angle, power, team) {
     const s = shotSpec(G, u, w);
-    const p = Object.assign(launch(u, angle, power, s.speed), { id: ++G._id, w, team, char: u.char, gear: w === 'gear' ? u.gear : undefined, from: u.id, age: 0, wm: s.wind });
+    const p = Object.assign(launch(u, angle, s.ray ? 1 : power, s.speed), { id: ++G._id, w, team, char: u.char, from: u.id, age: 0, wm: s.wind });
     if (s.bounce) p.bounce = s.bounce;
     if (s.drill) p.drill = s.drill;
-    if (w === 'dud') p.fuse = DUD.fuse;
+    if (s.skip) p.skip = s.skip;
+    if (s.ray) p.ray = s.ray.range;
+    if (passiveOf(u) === 'momentum') p.kb = 1 + 0.1 * Math.floor(G.walked / 4); // Tusk: the further he walked, the harder the shove
     return p;
   }
 
   // ---------- blasts ----------
-  function explode(G, x, y, r, dmg, byTeam, kind, knockMul = 1) {
+  function explode(G, x, y, r, dmg, byTeam, kind, knockMul = 1, skipId = 0) { // skipId: a unit the blast leaves alone (the one who made it by landing or taking off)
     carve(G, x, y, r);
     const reach = r * DMG_SPREAD;
     for (const u of G.units) {
-      if (!u.alive) continue;
+      if (!u.alive || u.id === skipId) continue;
       const [cx, cy] = center(u); const d = Math.hypot(cx - x, cy - y);
       if (d > reach) continue;
       const k = 1 - d / reach;
       hurt(G, u, Math.round(dmg * k * CHARS[u.char].armor), byTeam);
       const nx = d > 0.01 ? (cx - x) / d : 0, ny = d > 0.01 ? (cy - y) / d : -1;
-      if (knockMul < 0) { u.vx += -nx * KNOCK * k * -knockMul; u.vy -= 0.45 * KNOCK * k * -knockMul; } // a pull: towards the centre, with a hop
-      else { u.vx += nx * KNOCK * k * knockMul; u.vy += (ny - 0.6) * KNOCK * k * knockMul; }
+      const km = knockMul / CHARS[u.char].weight; // heavy characters are shoved less far
+      if (km < 0) { u.vx += -nx * KNOCK * k * -km; u.vy -= 0.45 * KNOCK * k * -km; } // a pull: towards the centre, with a hop
+      else { u.vx += nx * KNOCK * k * km; u.vy += (ny - 0.6) * KNOCK * k * km; }
       u.air = true;
     }
     G.fx.push({ k: 'boom', x, y, r, kind });
     // live duds caught in a blast go off too: chain reactions
     for (const d of G.duds) if (!d.gone && Math.hypot(d.x - x, d.y - y) <= r + 1.5) d.chain = true;
-    for (const p of G.proj) if (p.w === 'dud' && !p.gone && Math.hypot(p.x - x, p.y - y) <= r + 1.5) p.chain = true;
-    for (const b of G.barrels) if (!b.gone && Math.hypot(b.x - x, b.y - 1 - y) <= r + 1.5) b.chain = true;
+        for (const b of G.barrels) if (!b.gone && Math.hypot(b.x - x, b.y - 1 - y) <= r + 1.5) b.chain = true;
     for (const c of G.crates) if (!c.gone && Math.hypot(c.x - x, c.y - 1 - y) <= r * 0.6 + 0.8) { /* a crate is sturdy: only a blast close to it breaks it */ c.gone = true; G.stats.cratesLost++; G.fx.push({ k: 'cratepop', x: c.x, y: c.y }); }
     // anything standing on carved ground may now fall
     for (const u of G.units) if (u.alive && !supported(G, u)) u.air = true;
@@ -386,15 +397,50 @@
     for (const b of G.barrels) if (!b.gone && !solidAt(G, b.x, b.y + 0.6)) b.air = true;
     for (const c of G.crates) if (!c.gone && !solidAt(G, c.x, c.y + 0.6)) c.air = true;
   }
-  // Dirt Cannon: add ground in a circle (never over a unit, a dud, a barrel, hard rock or the sky band at the top)
-  function fillGround(G, cx, cy, r) {
-    const clear = (x, y) => !G.units.some((u) => u.alive && Math.abs(u.x - (x + 0.5)) < 1.6 && y + 0.5 > u.y - UNIT_R * 2 - 0.6 && y < u.y) && !G.duds.some((d) => Math.hypot(d.x - x - 0.5, d.y - y - 0.5) < 1.2) && !G.barrels.some((b) => Math.hypot(b.x - x - 0.5, b.y - 1 - y - 0.5) < 1.6);
-    for (let y = Math.max(Math.round(G.rows * 0.1), Math.floor(cy - r)); y <= Math.min(G.rows - 1, Math.ceil(cy + r)); y++) for (let x = Math.max(0, Math.floor(cx - r)); x <= Math.min(G.cols - 1, Math.ceil(cx + r)); x++) {
-      const dx = x + 0.5 - cx, dy = y + 0.5 - cy; if (dx * dx + dy * dy <= r * r && !G.T[y * G.cols + x] && clear(x, y)) G.T[y * G.cols + x] = MapGen.DIRT;
+  // Building (Bulwark, Bridge): new ground never goes over a unit, a dud, a barrel, hard rock or the sky band at the top.
+  const canBuild = (G, x, y) => x >= 0 && x < G.cols && y >= Math.round(G.rows * 0.1) && y < G.rows && !G.T[y * G.cols + x] && !G.units.some((u) => u.alive && Math.abs(u.x - (x + 0.5)) < 1.6 && y + 0.5 > u.y - UNIT_R * 2 - 0.6 && y < u.y) && !G.duds.some((d) => Math.hypot(d.x - x - 0.5, d.y - y - 0.5) < 1.2) && !G.barrels.some((b) => Math.hypot(b.x - x - 0.5, b.y - 1 - y - 0.5) < 1.6);
+  // Bulwark: a wall `w` wide and `h` tall, standing on the ground 3 cells in front of the unit.
+  function buildWall(G, u, dir, w, h) {
+    let n = 0;
+    for (let i = 0; i < w; i++) {
+      const x = Math.floor(u.x) + dir * (4 + i); if (x < 0 || x >= G.cols) continue;
+      let base = Math.floor(u.y) - 3; while (base < G.rows && !G.T[base * G.cols + x]) base++; // the ground in that column, from just above his feet down
+      if (base >= G.water || base - Math.floor(u.y) > 8) continue; // nothing to stand it on (a pit, or the water)
+      const top = Math.min(base - h, Math.floor(u.y) - h); // on a downslope it still reaches `h` above his feet
+      for (let y = base - 1; y >= top && base - y <= h + 8; y--) if (canBuild(G, x, y)) { G.T[y * G.cols + x] = MapGen.DIRT; n++; }
     }
+    G.fx.push({ k: 'fill', x: u.x + dir * 5, y: u.y - h / 2, r: h / 2 }); if (n) G.tv = (G.tv || 0) + 1;
+    return n;
   }
+  // Bridge: a flat span `len` long and 2 thick, centred where the shot landed, just above it.
+  function buildSpan(G, x, y, len) {
+    const row = Math.floor(y) - 1; let n = 0;
+    for (let cx = Math.floor(x - len / 2); cx < Math.floor(x - len / 2) + len; cx++) for (let k = 0; k < 2; k++) if (canBuild(G, cx, row + k)) { G.T[(row + k) * G.cols + cx] = MapGen.PROP; n++; }
+    G.fx.push({ k: 'fill', x, y: row, r: len / 2 }); if (n) G.tv = (G.tv || 0) + 1;
+    return n;
+  }
+  // Fire on the ground (Fire Wall, Inferno): any unit that ends its turn standing in it is hurt. It lasts `turns` turns each.
+  function addZone(G, x, y, z, team) {
+    G.zones.push({ id: ++G._id, kind: 'fire', x, y, w: z.w, dmg: z.dmg, team, until: G.turn + 1 + z.turns * G.units.filter((u) => u.alive).length });
+    G.fx.push({ k: 'zone', x, y, w: z.w });
+  }
+  const inZone = (z, u) => Math.abs(u.x - z.x) <= z.w / 2 && Math.abs(u.y - z.y) <= 6;
   function hurt(G, u, hit, byTeam) {
     if (hit <= 0 || !u.alive) return;
+    // the shooter's power and passive (only for hits on an enemy by the unit that fired this turn, and not for the arc itself)
+    const by = byTeam != null && byTeam !== u.team && G.shooter && !G._arc ? G.units.find((v) => v.id === G.shooter && v.team === byTeam) : null;
+    if (by) {
+      hit = Math.max(1, Math.round(hit * CHARS[by.char].power));
+      const pv = passiveOf(by);
+      if (pv === 'burn') { u.burn = 2; u.burnBy = byTeam; }
+      if (pv === 'drizzle') u.wet = true;
+      if (pv === 'charged' && ++by.hits % 3 === 0) { // every third hit: half as much again, and it arcs to another enemy close by
+        const extra = Math.round(hit * 0.5); let near = null;
+        for (const v of G.units) if (v.alive && v.team !== byTeam && v !== u && Math.hypot(v.x - u.x, v.y - u.y) <= 8 && (!near || Math.hypot(v.x - u.x, v.y - u.y) < Math.hypot(near.x - u.x, near.y - u.y))) near = v;
+        hit += extra; G.fx.push({ k: 'arc', x: u.x, y: u.y, to: near ? near.id : 0 });
+        if (near) { G._arc = true; hurt(G, near, extra, byTeam); G._arc = false; }
+      }
+    }
     u.hp -= hit;
     if (byTeam != null) { if (byTeam === u.team) G.stats.selfDmg[byTeam] += hit; else G.stats.dmg[byTeam] += hit; }
     // Combo (crews): hit an enemy a crewmate has hit since that enemy last had a turn, and the shooter gets a notch of SS. Once a turn.
@@ -424,12 +470,11 @@
 
   // ---------- the physics tick ----------
   function step(G) {
-    G.fx = [];
+    if (G.fxAct) G.fxAct = false; else G.fx = []; // effects an action set off (a wall going up, a blink) stay for the first tick after it
     if (G.phase !== 'flight') return G.fx;
     for (const p of G.proj) {
       if (p.gone) continue;
       if (p.wait > 0) { p.wait--; continue; } // the second shot of a Double Tap
-      if (p.chain) { p.gone = true; blowDud(G, p); continue; }
       const n = subSteps(p);
       for (let i = 0; i < n && !p.gone; i++) {
         const hit = advance(G, p, TICK / n, p.age < 6 ? p.from : -1, true);
@@ -471,20 +516,16 @@
     return G.fx;
   }
   function land(G, p) {
-    if (p.w === 'dud') { // back off out of the ground, then rest there ticking
-      let x = p.x - p.vx * TICK * 0.5, y = p.y - p.vy * TICK * 0.5, g = 0;
-      while (solidAt(G, x, y) && g++ < 40) y -= 0.25;
-      const d = { id: p.dudId || ++G._id, x, y, fuse: p.fuse, team: p.team, air: !solidAt(G, x, y + 0.6), vy: 0 };
-      G.duds.push(d); G.fx.push({ k: 'dud', id: d.id, x, y, fuse: d.fuse });
-      return;
+    const s = p.spec || shotSpec(G, p.char || p.team, p.w);
+    if (s.ray) { // Hook: the first enemy it touched is dragged towards whoever threw it; ground just stops it
+      const t = p.hitUnit && G.units.find((v) => v.id === p.hitUnit), sh = G.units.find((v) => v.id === p.from);
+      if (t && t.alive && sh && t.team !== p.team) { hurt(G, t, Math.round(s.ray.dmg * CHARS[t.char].armor), p.team); if (t.alive) { t.vx += Math.sign(sh.x - t.x || 1) * s.ray.pull * 2.4 / CHARS[t.char].weight; t.vy -= 10; t.air = true; } }
+      G.fx.push({ k: 'hook', x: p.x, y: p.y, from: p.from, hit: t ? t.id : 0 }); return;
     }
-    const s = p.spec || shotSpec(G, p.w === 'gear' ? p : p.char || p.team, p.w);
-    if (s.fill) { fillGround(G, p.x, p.y, s.r); G.fx.push({ k: 'fill', x: p.x, y: p.y, r: s.r }); return; }
-    explode(G, p.x, p.y, s.r, s.dmg, p.team, p.w === 'ss' ? 'ss' : p.w === 'shot2' ? (p.char || G.chars[p.team]) : 'shot', s.knock);
+    if (s.span) { buildSpan(G, p.x, p.y, s.span.len); return; }
+    explode(G, p.x, p.y, s.r, s.dmg, p.team, p.w === 'ss' ? 'ss' : p.w === 'shot2' ? (p.char || G.chars[p.team]) : 'shot', s.knock * (p.kb || 1));
+    if (s.zone) addZone(G, p.x, p.y, s.zone, p.team);
     if (s.slow) { const reach = s.r * DMG_SPREAD, hits = []; for (const u of G.units) { const [cx, cy] = center(u); if (u.alive && u.team !== p.team && Math.hypot(cx - p.x, cy - p.y) <= reach) { u.delay += s.slow; hits.push(u.id); } } G.fx.push({ k: 'slow', x: p.x, y: p.y, hits }); }
-    if (s.cluster) for (let i = 0; i < s.cluster.n; i++) { // bomblets: thrown up and out, each a small blast of its own
-      const a = (i + 0.5) / s.cluster.n * Math.PI; G.proj.push({ id: ++G._id, w: 'frag', team: p.team, from: -1, age: 9, x: p.x, y: p.y - 1.2, vx: Math.cos(a) * 11, vy: -14 - Math.sin(a) * 6, wm: 1, spec: { r: s.cluster.r, dmg: s.cluster.dmg, knock: 1 } });
-    }
     if (s.strike) strike(G, p.x, s.strike.w, s.strike.dmg, p.team);
     if (s.storm) for (const dx of [0, -s.storm.gap, s.storm.gap]) strike(G, p.x + dx, s.storm.w, s.storm.dmg, p.team);
     if (s.quake) { // every enemy standing on the ground takes damage and is bounced up a little
@@ -505,7 +546,13 @@
   }
   function blowDud(G, d) { d.gone = true; G.stats.dudBlasts++; explode(G, d.x, d.y, DUD.r, DUD.dmg, null, 'dud'); }
   function unitPhysics(G, u) {
-    u.vy += GRAV * TICK;
+    if (u.float) { // Cloud Ride: a straight line, no gravity, until it runs out or something is in the way
+      const f = u.float, nx = u.x + f.vx * TICK, ny = u.y + f.vy * TICK;
+      f.left -= Math.hypot(f.vx, f.vy) * TICK;
+      if (f.left <= 0 || nx < 1 || nx > G.cols - 1 || ny < UNIT_R * 2 + 1 || solidAt(G, nx, ny - 0.2) || solidAt(G, nx, ny - UNIT_R) || solidAt(G, nx, ny - UNIT_R * 2)) { u.float = null; u.vx = 0; u.vy = 0; }
+      else { u.x = nx; u.y = ny; return; }
+    }
+    u.vy += GRAV * TICK * (u.leap && u.leap.grav ? u.leap.grav : 1);
     const n = Math.max(1, Math.ceil(Math.hypot(u.vx, u.vy) * TICK / 0.4));
     for (let i = 0; i < n; i++) {
       const nx = u.x + u.vx * TICK / n, ny = u.y + u.vy * TICK / n;
@@ -513,8 +560,9 @@
       if (u.vy < 0) { if (!solidAt(G, u.x, ny - UNIT_R * 2)) u.y = ny; else u.vy = 0; }
       else if (solidAt(G, u.x, ny)) { // landed
         while (solidAt(G, u.x, u.y - 0.01) && u.y > 0) u.y -= 0.25;
-        const v = u.vy; u.vy = 0; u.vx = 0; u.air = false;
-        if (v > SAFE_FALL) { u.hp -= Math.round((v - SAFE_FALL) * FALL_DMG); if (u.hp <= 0) ko(G, u, 'fall'); }
+        const v = u.vy, lp = u.leap; u.vy = 0; u.vx = 0; u.air = false; u.leap = null;
+        if (v > SAFE_FALL && !(lp && lp.nofall) && passiveOf(u) !== 'springy') { u.hp -= Math.round((v - SAFE_FALL) * FALL_DMG); if (u.hp <= 0) ko(G, u, 'fall'); }
+        if (u.alive && lp && lp.land) explode(G, u.x, u.y - 0.5, lp.land.r, lp.land.dmg, u.team, 'shot', lp.land.knock, u.id); // Leap Slam, Pounce
         if (u.alive) openCrates(G, u); // knocked onto a crate: it's yours
         break;
       } else u.y = ny;
@@ -525,6 +573,11 @@
 
   // ---------- turns ----------
   function settle(G) {
+    if (G.mid) { // a jump or a move ability has come to rest: the turn carries on (unless it ended the match, or the unit)
+      G.mid = false; checkWin(G); if (G.phase === 'over') return;
+      const u = current(G);
+      if (u) { openCrates(G, u); G.phase = 'aim'; G.fx.push({ k: 'resume' }); return; }
+    }
     if (!G.fused) {
       G.fused = true;
       let boom = false;
@@ -533,6 +586,11 @@
     }
     checkWin(G);
     if (G.phase === 'over') return;
+    const u = current(G);
+    if (G.fired && !G.retreat && u) { // the shot has landed: a short retreat with what's left of your movement
+      const keep = passiveOf(u) === 'slippery' ? G.moves : Math.min(G.moves, Math.ceil(CHARS[u.char].steps * RETREAT));
+      if (keep > 0) { G.retreat = true; G.moves = keep; G.phase = 'aim'; G.stats.retreats++; G.fx.push({ k: 'retreat', moves: keep }); return; }
+    }
     nextTurn(G);
   }
   function checkWin(G) {
@@ -543,8 +601,12 @@
   }
   function nextTurn(G) {
     const was = G.units.find((u) => u.id === G.actor); if (was) was.delay += G.spent;
-    G.spent = 0;
+    G.spent = 0; G.retreat = false; G.fired = false; G.mid = false; G.walked = 0; G.windFlip = false;
+    G.shooter = 0;
+    if (was && was.alive) for (const z of G.zones) if (inZone(z, was)) { hurt(G, was, Math.round(z.dmg * CHARS[was.char].armor), z.team === was.team ? null : z.team); G.fx.push({ k: 'scorch', id: was.id, x: was.x, y: was.y }); break; } // ended the turn standing in fire
     G.turn++;
+    G.zones = G.zones.filter((z) => G.turn < z.until);
+    checkWin(G); if (G.phase === 'over') return;
     if (G.turn >= suddenTurn(G)) {
       G.water = Math.max(4, G.water - Math.max(SUDDEN_RISE, Math.round(SUDDEN_RISE * G.rows / ROWS)));
       for (const u of G.units) if (u.alive && u.y >= G.water) ko(G, u, 'water');
@@ -557,10 +619,21 @@
       const hp = Array.from({ length: G.teams }, (_, t) => teamUnits(G, t).reduce((a, u) => a + u.hp / u.maxHp, 0)), top = Math.max(...hp);
       G.phase = 'over'; G.winner = hp.filter((h) => h === top).length > 1 ? -1 : hp.indexOf(top); G.timeout = true; return;
     }
-    const nx = nextActor(G, was ? was.team : -1); G.actor = nx.id; G.team = nx.team;
-    nx.mark = null; G.shooter = 0; G.combo = false;
+    let nx = null;
+    for (;;) { // whoever is next; a burn bites first, and if it finishes them the turn passes on
+      nx = nextActor(G, was ? was.team : -1); if (!nx) break;
+      if (nx.burn > 0) { nx.burn--; hurt(G, nx, BURN, nx.burnBy == null || nx.burnBy === nx.team ? null : nx.burnBy); G.fx.push({ k: 'scorch', id: nx.id, x: nx.x, y: nx.y }); if (!nx.alive) { checkWin(G); if (G.phase === 'over') return; continue; } }
+      break;
+    }
+    G.actor = nx.id; G.team = nx.team;
+    nx.mark = null; G.combo = false;
+    for (const k of ['shot2', 'dash']) if (nx.cd[k] > 0) nx.cd[k]--;
+    if (passiveOf(nx) === 'repairs') { // Patch: his crew close by, and a little for himself
+      const got = []; for (const v of G.units) if (v.alive && v.team === nx.team && v.hp < v.maxHp && Math.hypot(v.x - nx.x, v.y - nx.y) <= 5) { v.hp = Math.min(v.maxHp, v.hp + (v === nx ? 3 : 6)); got.push(v.id); }
+      if (got.length) G.fx.push({ k: 'mend', ids: got });
+    }
     if (G.crateOn && G.turn >= crateFirst(G) && (G.turn - crateFirst(G)) % crateEvery(G) === 0 && G.crates.length < CRATE.max + (G.cols > COLS ? 1 : 0)) dropCrate(G);
-    G.phase = 'aim'; G.moves = CHARS[nx.char].steps; G.fused = false; G.weapon = 'shot1';
+    G.phase = 'aim'; G.moves = nx.wet ? Math.ceil(CHARS[nx.char].steps / 2) : CHARS[nx.char].steps; nx.wet = false; G.fused = false; G.weapon = 'shot1';
     chargeSS(G);
     G.wind = rollWind(G);
     G.fx.push({ k: 'turn', team: G.team, turn: G.turn });
@@ -587,8 +660,8 @@
   function openCrates(G, u) {
     for (const c of G.crates) {
       if (c.gone || c.air || Math.abs(c.x - u.x) > CRATE.reach || Math.abs(c.y - u.y) > 3.5) continue;
-      c.gone = true; G.stats.crates[u.team]++; let got = c.kind;
-      if (c.kind === 'gear') { const pool = gearFor(u.char).filter((g) => g !== u.gear); u.gear = pool[Math.floor(R(G) * pool.length)]; u.ammo.gear = GEAR[u.gear].ammo; got = u.gear; }
+      c.gone = true; G.stats.crates[u.team]++; const got = c.kind;
+      if (c.kind === 'cool') { u.cd.shot2 = 0; u.cd.dash = 0; }
       else if (c.kind === 'ss') u.ss = Math.min(SS_CHARGE, u.ss + CRATE.ss);
       else u.hp = Math.min(u.maxHp, u.hp + Math.round(u.maxHp * CRATE.heal));
       G.fx.push({ k: 'open', id: c.id, unit: u.id, x: c.x, y: c.y, kind: c.kind, got });
@@ -602,73 +675,120 @@
     if (nx < 0.5 || nx > G.cols - 0.5) return false;
     let ny = u.y, k = 0; // climb up to `climb` cells, or step down
     while (solidAt(G, nx, ny - 0.01) && k <= climb) { ny -= 1; k++; }
-    if (k > climb) return false;                       // a wall
+    if (k > climb) { // a wall. Digger walks through it if it is no more than 3 cells thick (and isn't hard rock)
+      if (passiveOf(u) !== 'tunnel') return false;
+      let thick = 0; while (thick < 4 && solidAt(G, u.x + dir * (1 + thick), u.y - 1)) thick++;
+      if (thick > 3) return false;
+      const cx = Math.floor(nx); for (let d = 1; d <= 3; d++) if (G.T[(Math.floor(u.y) - d) * G.cols + cx] === MapGen.ROCK) return false;
+      for (let d = 1; d <= 3; d++) { const cy = Math.floor(u.y) - d; if (cy >= 0) G.T[cy * G.cols + cx] = 0; }
+      G.tv = (G.tv || 0) + 1;
+      ny = u.y;
+    }
     if (solidAt(G, nx, ny - UNIT_R * 2)) return false; // no headroom
     u.x = nx; u.y = ny; u.face = dir;
     if (!supported(G, u)) { u.air = true; u.vx = 0; u.vy = 0; dropNow(G, u); } // step off a ledge (fall damage counts)
     return true;
   }
   function dropNow(G, u) { let g = 0; while (u.alive && u.air && g++ < 600) unitPhysics(G, u); }
+  const fits = (G, x, y) => x > 1 && x < G.cols - 1 && y > UNIT_R * 2 + 1 && y < G.water && !solidAt(G, x, y - 0.2) && !solidAt(G, x, y - UNIT_R) && !solidAt(G, x, y - UNIT_R * 2); // room for a unit with its feet at x, y
+  // A move ability. It flies (or happens at once), then the turn carries on: you can still shoot.
+  function dash(G, u, sp, angle, power) {
+    const a = angle * Math.PI / 180, ox = Math.cos(a), oy = -Math.sin(a), pw = clamp(power, 0.2, 1), dir = ox >= 0 ? 1 : -1;
+    u.face = dir;
+    if (sp.kind === 'leap') {
+      if (sp.blast) explode(G, u.x, u.y - 0.5, sp.blast.r, sp.blast.dmg, u.team, 'shot', 1, u.id); // Rocket Jump: the blast he rides
+      if (sp.self) u.hp = Math.max(1, u.hp - sp.self);
+      u.vx = ox * pw * VMAX * sp.speed; u.vy = oy * pw * VMAX * sp.speed; u.y -= 0.3; u.air = true;
+      u.leap = { nofall: !!sp.nofall, land: sp.land || null, grav: sp.grav || 1 };
+    } else if (sp.kind === 'float') {
+      u.float = { vx: ox * 22, vy: oy * 22, left: sp.range * pw }; u.leap = { nofall: true }; u.y -= 0.3; u.air = true;
+    } else if (sp.kind === 'blink') { // step along the line he can see; stop at the first thing in the way
+      let bx = u.x, by = u.y;
+      for (let d = 0.5; d <= sp.range * pw; d += 0.5) { const x = u.x + ox * d, y = u.y + oy * d; if (!fits(G, x, y)) break; bx = x; by = y; }
+      G.fx.push({ k: 'blink', id: u.id, x0: u.x, y0: u.y, x: bx, y: by });
+      u.x = bx; u.y = by; u.vx = 0; u.vy = 0; u.air = true; u.leap = { nofall: true };
+    } else if (sp.kind === 'charge') { // run along the ground; the first enemy in the way is shoved
+      for (let i = 0; i < sp.range && u.alive; i++) {
+        const e = G.units.find((v) => v.alive && v.team !== u.team && (v.x - u.x) * dir > 0 && Math.abs(v.x - u.x) <= UNIT_R * 2 + 0.2 && Math.abs(v.y - u.y) <= 3);
+        if (e) { G.shooter = u.id; hurt(G, e, Math.round(sp.dmg * CHARS[e.char].armor), u.team); if (e.alive) { e.vx += dir * KNOCK * sp.shove / CHARS[e.char].weight; e.vy -= 9; e.air = true; } G.fx.push({ k: 'bash', x: e.x, y: e.y }); break; }
+        if (!walk(G, u, dir)) break;
+      }
+    } else if (sp.kind === 'tunnel') { // dig along the aim and follow the passage; hard rock stops it
+      for (let d = 0.5; d <= sp.range * pw; d += 0.5) {
+        const x = u.x + ox * 0.5, y = u.y + oy * 0.5; if (x < 2 || x > G.cols - 2 || y < UNIT_R * 2 + 2 || y > G.water - 2) break;
+        carve(G, x, y - UNIT_R, UNIT_R + 0.3); if (!fits(G, x, y)) break;
+        u.x = x; u.y = y;
+      }
+      G.fx.push({ k: 'dug', id: u.id, x: u.x, y: u.y }); u.vx = 0; u.vy = 0; u.air = true; u.leap = { nofall: true };
+      for (const v of G.units) if (v.alive && !supported(G, v)) v.air = true;
+    }
+    G.mid = true; G.phase = 'flight';
+  }
 
   // ---------- actions: the one way to change a game ----------
-  //   { k: 'move', dir: -1|1 }                   walk one cell (the character's steps a turn)
-  //   { k: 'weapon', w: 'shot1'|'shot2'|'dud' }  pick a shot
-  //   { k: 'fire', angle, power }                 fire it (angle in degrees, 0 = right, 90 = up)
-  //   { k: 'lob', dud, angle, power }             pick up a live dud within LOB_RANGE and throw it
-  //   { k: 'pass' }                               end the turn without shooting (the UI's turn timer sends this)
+  //   { k: 'move', dir: -1|1 }                   walk one cell (the character's steps a turn; in the retreat, what's left)
+  //   { k: 'jump', dir: -1|1 }                   jump that way (costs JUMP.cost steps); the turn carries on when you land
+  //   { k: 'weapon', w: 'shot1'|'shot2'|'dash'|'ss' }  pick the basic shot, the ability, the move ability or the ultimate
+  //   { k: 'fire', angle, power }                 use it (angle in degrees, 0 = right, 90 = up). A shot ends the aiming:
+  //                                               once it lands you get the retreat. The move ability doesn't: aim again after.
+  //   { k: 'wind' }                               Gale only, once a turn: turn the wind round
+  //   { k: 'pass' }                               end the turn (free in the retreat; otherwise it costs turn delay). The UI's timer sends this.
   //   step(G) while phase === 'flight'            the clock, not a player action
   function act(G, it) {
     if (!it || typeof it !== 'object' || G.phase !== 'aim') return false;
     const u = current(G); if (!u) return false;
+    if (!G.fxAct) G.fx = []; // an action's effects are left in G.fx: step() returns them with its first tick, or read them here
+    const ok = act1(G, u, it); G.fxAct = G.fx.length > 0;
+    return ok;
+  }
+  function act1(G, u, it) {
     switch (it.k) {
       case 'move': {
         if (G.moves <= 0 || (it.dir !== 1 && it.dir !== -1)) return false;
         if (!walk(G, u, it.dir)) return false;
-        G.moves--; G.spent += DELAY.move;
+        G.moves--; G.walked++; if (!G.retreat) G.spent += DELAY.move; // steps in the retreat cost no turn delay
         if (!u.alive) G.phase = 'flight'; // walked into the water: end the turn
         else openCrates(G, u);
         return true;
       }
+      case 'jump': {
+        if (G.moves < JUMP.cost || (it.dir !== 1 && it.dir !== -1)) return false;
+        if (solidAt(G, u.x, u.y - UNIT_R * 2 - 0.6)) return false; // no headroom
+        G.moves -= JUMP.cost; if (!G.retreat) G.spent += DELAY.jump; G.stats.jumps++;
+        u.face = it.dir; u.vx = it.dir * JUMP.vx; u.vy = -JUMP.vy * Math.sqrt(CHARS[u.char].jump); u.y -= 0.3; u.air = true;
+        G.mid = true; G.phase = 'flight'; return true;
+      }
       case 'weapon': {
-        if (WEAPON_IDS.indexOf(it.w) < 0) return false;
-        if (it.w === 'ss' ? !ssReady(G) : it.w === 'gear' ? !u.gear || u.ammo.gear === 0 : u.ammo[it.w] === 0) return false;
+        if (G.retreat || WEAPON_IDS.indexOf(it.w) < 0 || !ready(G, it.w, u)) return false;
         G.weapon = it.w; return true;
       }
+      case 'wind': {
+        if (G.retreat || G.windFlip || passiveOf(u) !== 'tailwind') return false;
+        G.wind = -G.wind; G.windFlip = true; return true;
+      }
       case 'fire': {
-        if (!Number.isFinite(it.angle) || !Number.isFinite(it.power)) return false;
-        const w = G.weapon, am = u.ammo;
-        if (w === 'ss') { if (!ssReady(G)) return false; u.ss = 0; G.stats.ss++; }
-        else { if (am[w] === 0) return false; if (am[w] > 0) am[w]--; }
-        const sp = shotSpec(G, u, w); G.shooter = u.id;
-        G.spent += sp.delay; if (w === 'gear') G.stats.gear = (G.stats.gear || 0) + 1; if (w === 'shot2') G.stats.shot2++;
-        if (sp.rain) { // Bullet Rain: a fan of darts, one after another
+        if (G.retreat || !Number.isFinite(it.angle) || !Number.isFinite(it.power)) return false;
+        const w = G.weapon; if (!ready(G, w, u)) return false;
+        const sp = shotSpec(G, u, w);
+        if (w === 'dash') { u.cd.dash = sp.cd; G.spent += sp.delay; G.stats.dash++; G.weapon = 'shot1'; dash(G, u, sp, it.angle, it.power); return true; }
+        if (w === 'ss') { u.ss = 0; G.stats.ss++; }
+        if (w === 'shot2') { u.cd.shot2 = sp.cd; G.stats.shot2++; }
+        G.shooter = u.id; G.fired = true; G.spent += sp.delay; G.stats.shots++;
+        u.face = Math.cos(it.angle * Math.PI / 180) >= 0 ? 1 : -1;
+        if (sp.wall) { buildWall(G, u, u.face, sp.wall.w, sp.wall.h); G.phase = 'flight'; return true; } // Bulwark: nothing is fired
+        if (sp.rain) { // a fan of shots, one after another
           const n = sp.rain.n;
           for (let i = 0; i < n; i++) { const q = newShot(G, u, w, it.angle + (i - (n - 1) / 2) * sp.rain.spread, it.power * (1 - 0.015 * i), G.team); q.wait = i * 7; G.proj.push(q); }
-          G.stats.shots++; u.face = Math.cos(it.angle * Math.PI / 180) >= 0 ? 1 : -1; G.phase = 'flight'; return true;
+          G.phase = 'flight'; return true;
         }
-        const p = newShot(G, u, w, it.angle, it.power, G.team);
-        G.proj.push(p); G.stats.shots++;
-        if (sp.double) { // Double Tap: a second dart a third of a second later
-          const q = newShot(G, u, w, it.angle, it.power * 0.96, G.team); q.wait = 20; G.proj.push(q);
-        }
-        u.face = Math.cos(it.angle * Math.PI / 180) >= 0 ? 1 : -1;
+        G.proj.push(newShot(G, u, w, it.angle, it.power, G.team));
+        if (sp.double) { const q = newShot(G, u, w, it.angle, it.power * 0.96, G.team); q.wait = 20; G.proj.push(q); } // Double Tap: a second dart a third of a second later
         G.phase = 'flight'; return true;
       }
-      case 'lob': {
-        if (!Number.isFinite(it.angle) || !Number.isFinite(it.power)) return false;
-        const d = G.duds.find((x) => x.id === it.dud && !x.air);
-        if (!d || !canLob(G, u, d)) return false;
-        G.duds = G.duds.filter((x) => x !== d);
-        const p = Object.assign(launch(u, it.angle, Math.min(it.power, 1) * LOB_POWER), { id: ++G._id, w: 'dud', dudId: d.id, fuse: d.fuse, team: G.team, from: u.id, age: 0, wm: 1 });
-        G.proj.push(p); G.stats.lobs++; G.spent += DELAY.lob; G.shooter = u.id;
-        G.phase = 'flight'; return true;
-      }
-      case 'pass': G.spent += DELAY.pass; G.phase = 'flight'; return true;
+      case 'pass': if (!G.retreat) G.spent += DELAY.pass; G.phase = 'flight'; return true;
       default: return false;
     }
   }
-  function canLob(G, u, d) { const [cx, cy] = center(u); return Math.hypot(d.x - cx, d.y - cy) <= LOB_RANGE; }
-  const lobbable = (G) => { const u = current(G); return u && G.phase === 'aim' ? G.duds.filter((d) => !d.air && canLob(G, u, d)) : []; };
 
   // Run the clock until the turn settles (for bots, the sim and tests). Returns the ticks used.
   function resolve(G, maxTicks = 20000) {
@@ -680,7 +800,7 @@
   // ---------- aim prediction (the same advance() the game uses, without changing the ground) ----------
   function predict(G, u, angle, power, w = 'shot1', team = u.team, maxTicks = 900) {
     const s = shotSpec(G, u, w);
-    const p = Object.assign(launch(u, angle, power, s.speed), { wm: s.wind, bounce: s.bounce || 0, drill: s.drill || 0 });
+    const p = Object.assign(launch(u, angle, s.ray ? 1 : power, s.speed), { wm: s.wind, bounce: s.bounce || 0, drill: s.drill || 0, ray: s.ray ? s.ray.range : 0 });
     let t = 0;
     while (t++ < maxTicks) {
       const n = subSteps(p);
@@ -697,18 +817,17 @@
 
   // ---------- bots (for the sim; later a "vs bot" mode) ----------
   // Bots read only what a player sees: the map, the units, the wind and the live duds.
-  // style: smart (good aim, uses everything) · sloppy (few tries, shaky hands) · nodud (smart, never fires or lobs duds)
-  // · duder (smart, loves duds: shows whether the mechanic is too strong).
+  // style: smart (good aim, uses the whole kit) · sloppy (few tries, shaky hands) · basic (smart aim, but only ever the basic
+  // shot and walking: shows what the kits are worth) · nocrate (smart, never goes for a crate).
   const STYLES = {
-    smart:  { tries: 36, refine: 14, noiseA: 1.4, noiseP: 0.018, dud: 1, lob: 1, dodge: 1, crate: 1 },
-    sloppy: { tries: 10, refine: 0,  noiseA: 5.0, noiseP: 0.07,  dud: 1, lob: 1, dodge: 0, crate: 1 },
-    nodud:  { tries: 36, refine: 14, noiseA: 1.4, noiseP: 0.018, dud: 0, lob: 0, dodge: 1, crate: 1 },
-    duder:  { tries: 36, refine: 14, noiseA: 1.4, noiseP: 0.018, dud: 2.2, lob: 1, dodge: 1, crate: 1 },
-    nocrate: { tries: 36, refine: 14, noiseA: 1.4, noiseP: 0.018, dud: 1, lob: 1, dodge: 1, crate: 0 }, // smart, but never goes for a crate
+    smart:  { tries: 36, refine: 14, noiseA: 1.4, noiseP: 0.018, kit: 1, dodge: 1, crate: 1 },
+    sloppy: { tries: 10, refine: 0,  noiseA: 5.0, noiseP: 0.07,  kit: 1, dodge: 0, crate: 1 },
+    basic:  { tries: 36, refine: 14, noiseA: 1.4, noiseP: 0.018, kit: 0, dodge: 1, crate: 1 },
+    nocrate: { tries: 36, refine: 14, noiseA: 1.4, noiseP: 0.018, kit: 1, dodge: 1, crate: 0 },
     // the computer opponents in 1 Player mode
-    easy:   { tries: 8,  refine: 0,  noiseA: 7.5, noiseP: 0.10,  dud: 0.6, lob: 0, dodge: 0, ssSkip: 0.5, crate: 1 },
-    medium: { tries: 18, refine: 6,  noiseA: 3.2, noiseP: 0.04,  dud: 1, lob: 1, dodge: 1, crate: 1 },
-    hard:   { tries: 36, refine: 14, noiseA: 1.4, noiseP: 0.018, dud: 1, lob: 1, dodge: 1, crate: 1 },
+    easy:   { tries: 8,  refine: 0,  noiseA: 7.5, noiseP: 0.10,  kit: 0.5, dodge: 0, ssSkip: 0.5, crate: 1 },
+    medium: { tries: 18, refine: 6,  noiseA: 3.2, noiseP: 0.04,  kit: 1, dodge: 1, crate: 1 },
+    hard:   { tries: 36, refine: 14, noiseA: 1.4, noiseP: 0.018, kit: 1, dodge: 1, crate: 1 },
   };
   function botRng(G) { let s = (G.seed ^ Math.imul(G.turn + 1, 2654435761)) >>> 0; return () => { s = (s + 0x6D2B79F5) >>> 0; let t = s; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
   const gauss = (r) => (r() + r() + r() - 1.5) * 1.15;
@@ -716,17 +835,17 @@
   // Score a landing spot for `team` with weapon w (from the bot's point of view).
   function scoreLanding(G, land, w, team, fuse, char) { // char: the unit firing (or a character id)
     if (land.hit === 'water' || land.hit === 'out' || land.hit === 'timeout') return -1;
-    if (w === 'dud') { // a dud is a threat over time, minus the risk it gets lobbed back
-      const s = blastScore(G, land.x, land.y, DUD.r, DUD.dmg, team);
-      const sure = fuse <= 1 ? 1 : fuse === 2 ? 0.55 : 0.4;
-      return sure * s.theirs - 1.4 * s.mine;
-    }
     const S = shotSpec(G, char || team, w);
     const s = blastScore(G, land.x, land.y, S.r, S.dmg, team);
-    if (S.fill) return -1; // bots don't build (yet)
+    if (S.wall || S.span) return -1; // bots don't build (yet)
+    if (S.ray) { // Hook: only worth it if it lands on an enemy; more if that drags them towards water or the edge
+      const t = land.hit === 'unit' && G.units.find((x) => x.id === land.unit); if (!t || t.team === team) return -1;
+      return Math.min(t.hp, S.ray.dmg) + 14 + (G.water - t.y < 14 ? 12 : 0);
+    }
     let sc = s.theirs - 1.4 * s.mine;
+    if (S.zone) for (const u of G.units) if (u.alive && Math.abs(u.x - land.x) <= S.zone.w / 2 && Math.abs(u.y - land.y) <= 6) sc += (u.team === team ? -1.4 : 1) * S.zone.dmg * 0.8;
+    if (S.skip) sc += 6;
     if (S.double) sc *= 1.8;
-    if (S.cluster) { const c = blastScore(G, land.x, land.y, S.cluster.r * 2.4, S.cluster.dmg * 1.6, team); sc += c.theirs - 1.4 * c.mine; } // the bomblets, roughly: a wider, weaker blast
     if (S.slow) for (const u of G.units) { if (!u.alive || u.team === team) continue; const [cx, cy] = center(u); if (Math.hypot(cx - land.x, cy - land.y) <= S.r * DMG_SPREAD) sc += S.slow * 0.02; }
     if (S.strike) for (const u of G.units) if (u.alive && Math.abs(u.x - land.x) <= S.strike.w) sc += (u.team === team ? -1.4 : 1) * Math.min(u.hp, S.strike.dmg * CHARS[u.char].armor);
     if (Math.abs(S.knock) > 1) for (const u of G.units) { // a big push near the water or a cliff is worth a lot
@@ -744,7 +863,7 @@
     if (land.unit && G.units.find((x) => x.id === land.unit).team !== team) sc += 4;
     return sc;
   }
-  function bestShot(G, u, w, st, rnd, fuse, powerCap = 1) {
+  function bestShot(G, u, w, st, rnd, fuse, powerCap = 1) { // fuse: unused since duds stopped being a weapon; kept so call sites read the same
     const enemies = G.units.filter((x) => x.alive && x.team !== u.team);
     let best = { score: -Infinity };
     const tryOne = (angle, power) => {
@@ -769,57 +888,98 @@
     let drop = 0; while (!solidAt(G, nx, ny + drop + 0.05) && ny + drop < G.water) drop++;
     return ny + drop < G.water - 3 && drop <= 7;
   }
-  // One full bot turn: sends its intents through act() and returns them.
+  // One full bot turn: sends its intents through act() and returns them. A turn can have several flights now (a jump or
+  // a move ability, the shot, then the retreat), so the bot runs the clock itself between them. Give it a copy of the
+  // game if you want to play its intents out one by one (the UI and the server do).
   function botTurn(G, style) {
     const st = STYLES[style] || STYLES.smart, rnd = botRng(G), u = current(G); if (!u) return [];
-    const sent = [];
-    const send = (it) => { if (act(G, it)) sent.push(it); return G.phase; };
-    if (st.dodge) { // a live dud about to blow next to us and nothing to lob it with: walk away from it
+    const sent = [], turn = G.turn;
+    const mine = () => G.phase === 'aim' && G.turn === turn && current(G) === u;
+    const send = (it) => { if (!act(G, it)) return false; sent.push(it); if (G.phase === 'flight') resolve(G); return true; };
+    const walkTo = (dir, n, stop) => { while (n-- > 0 && mine() && G.moves > 0 && !(stop && stop()) && safeStep(G, u, dir) && send({ k: 'move', dir })); };
+    const foes = () => G.units.filter((x) => x.alive && x.team !== u.team).sort((a, b) => Math.abs(a.x - u.x) - Math.abs(b.x - u.x));
+    if (G.retreat) { retreat(); return sent; }
+    if (st.dodge) { // an old dud about to blow next to us: walk away from it
       const near = G.duds.find((d) => d.fuse <= 1 && Math.hypot(d.x - u.x, d.y - u.y) < DUD.r * DMG_SPREAD);
-      if (near && !(st.lob && canLob(G, u, near))) { const dir = u.x < near.x ? -1 : 1; for (let i = 0; i < 30 && G.phase === 'aim'; i++) if (!act(G, { k: 'move', dir })) break; else sent.push({ k: 'move', dir }); }
-      if (G.phase !== 'aim') return sent;
+      if (near) walkTo(u.x < near.x ? -1 : 1, 30);
+      if (!mine()) return sent;
     }
     if (st.crate && G.crates.length) { // a crate within this turn's steps, on a path that's safe all the way: go and get it, then shoot
       const c = G.crates.filter((q) => !q.air && Math.abs(q.x - u.x) <= Math.min(G.moves, 14) + CRATE.reach && Math.abs(q.y - u.y) < 12).sort((a, b) => Math.abs(a.x - u.x) - Math.abs(b.x - u.x))[0];
-      if (c) { const dir = c.x > u.x ? 1 : -1, id = c.id; while (G.phase === 'aim' && G.moves > 0 && G.crates.some((q) => q.id === id) && Math.abs(c.x - u.x) > 0.6 && safeStep(G, u, dir) && act(G, { k: 'move', dir })) sent.push({ k: 'move', dir }); }
-      if (G.phase !== 'aim') return sent;
+      if (c) { const id = c.id; walkTo(c.x > u.x ? 1 : -1, 40, () => !G.crates.some((q) => q.id === id) || Math.abs(c.x - u.x) <= 0.6); }
+      if (!mine()) return sent;
     }
-    const opts = [];
+    const useKit = st.kit >= 1 || (st.kit > 0 && rnd() < st.kit);
+    // where a leap would come down (null if that's the water, the edge of the map, or nowhere within 10 seconds)
+    const leapTo = (sp, ang, pw) => {
+      const a = ang * Math.PI / 180; let x = u.x, y = u.y - 0.3, vx = Math.cos(a) * pw * VMAX * sp.speed, vy = -Math.sin(a) * pw * VMAX * sp.speed;
+      for (let t = 0; t < 600; t++) { vy += GRAV * TICK * (sp.grav || 1); const nx = x + vx * TICK; if (solidAt(G, nx, y - UNIT_R)) vx = 0; else x = nx; y += vy * TICK; if (x < 6 || x > G.cols - 6 || y >= G.water - 3) return null; if (vy > 0 && solidAt(G, x, y)) return { x, y }; }
+      return null;
+    };
+    const fireDash = (angle, power) => send({ k: 'weapon', w: 'dash' }) && send({ k: 'fire', angle, power });
+    if (useKit && ready(G, 'dash', u)) { // a move that hurts is free damage before the shot: a slam onto someone, or a charge into them
+      const sp = shotSpec(G, u, 'dash');
+      if (sp.kind === 'leap' && sp.land) {
+        let best = null;
+        for (const e of foes().slice(0, 2)) for (const el of [40, 55, 70]) for (let pw = 0.3; pw <= 1.001; pw += 0.1) {
+          const ang = e.x > u.x ? el : 180 - el, at = leapTo(sp, ang, pw); if (!at) continue;
+          let sc = 0; for (const v of G.units) { if (!v.alive || v === u) continue; const d = Math.hypot(v.x - at.x, v.y - UNIT_R - at.y + 0.5), reach = sp.land.r * DMG_SPREAD; if (d < reach) sc += (v.team === u.team ? -1.4 : 1) * Math.min(v.hp, sp.land.dmg * (1 - d / reach)); }
+          if (sc > 8 && (!best || sc > best.sc)) best = { sc, ang, pw };
+        }
+        if (best) fireDash(best.ang, best.pw);
+      } else if (sp.kind === 'charge') {
+        const e = foes().find((v) => Math.abs(v.x - u.x) <= sp.range && Math.abs(v.x - u.x) > 3 && Math.abs(v.y - u.y) <= 2), dir = e && e.x > u.x ? 1 : -1;
+        let clear = !!e; for (let i = 1; clear && i < Math.abs(e.x - u.x) - 2; i++) { const x = u.x + dir * i; if (solidAt(G, x, u.y - 2.5) || !solidAt(G, x, u.y + 3)) clear = false; } // level ground all the way to them
+        if (clear) fireDash(dir > 0 ? 0 : 180, 1);
+      }
+      if (!mine()) return sent;
+    }
     let s1 = bestShot(G, u, 'shot1', st, rnd, 0);
-    if (!(s1.score > 0) && G.cols > COLS) { // big maps: nobody in reach, so walk towards the nearest enemy first (never into the water or off a cliff)
-      const foe = G.units.filter((x) => x.alive && x.team !== u.team).sort((a, b) => Math.abs(a.x - u.x) - Math.abs(b.x - u.x))[0];
-      if (foe) { const dir = foe.x > u.x ? 1 : -1; while (G.phase === 'aim' && G.moves > 0 && Math.abs(foe.x - u.x) > 20 && safeStep(G, u, dir) && act(G, { k: 'move', dir })) sent.push({ k: 'move', dir }); }
-      if (G.phase !== 'aim') return sent;
+    if (!(s1.score > 0) && G.cols > COLS) { // big maps: nobody in reach, so close the distance. The move ability first if it's ready, then on foot (never into the water or off a cliff)
+      const foe = foes()[0];
+      if (foe && useKit && ready(G, 'dash', u) && Math.abs(foe.x - u.x) > 30) {
+        const sp = shotSpec(G, u, 'dash'), right = foe.x > u.x;
+        const ang = sp.kind === 'charge' || sp.kind === 'tunnel' ? (right ? 0 : 180) : sp.kind === 'float' || sp.kind === 'blink' ? (right ? 25 : 155) : (right ? 55 : 125), pw = sp.kind === 'leap' ? 0.7 : 1;
+        if (sp.kind !== 'leap' || leapTo(sp, ang, pw)) fireDash(ang, pw);
+        if (!mine()) return sent;
+      }
+      if (foe) walkTo(foe.x > u.x ? 1 : -1, 60, () => Math.abs(foe.x - u.x) <= 20);
+      if (!mine()) return sent;
       s1 = bestShot(G, u, 'shot1', st, rnd, 0);
     }
-    opts.push({ w: 'shot1', ...s1 });
-    if (ssReady(G) && !(st.ssSkip && rnd() < st.ssSkip)) { const x = bestShot(G, u, 'ss', st, rnd, 0); opts.push({ w: 'ss', ...x }); }
-    if (u.gear && u.ammo.gear !== 0 && !GEAR[u.gear].fill) { const g = bestShot(G, u, 'gear', st, rnd, 0); opts.push({ w: 'gear', ...g }); }
-    if (u.ammo.shot2 !== 0) { const c = bestShot(G, u, 'shot2', st, rnd, 0); opts.push({ w: 'shot2', ...c, score: c.score * 1.05 }); }
-    if (st.dud && u.ammo.dud !== 0) { const d = bestShot(G, u, 'dud', st, rnd, DUD.fuse); opts.push({ w: 'dud', ...d, score: d.score * st.dud }); }
-    if (st.lob) for (const d of lobbable(G)) {
-      const b = bestShot(G, u, 'dud', st, rnd, d.fuse - 1 <= 0 ? 1 : d.fuse, LOB_POWER);
-      const here = blastScore(G, d.x, d.y, DUD.r, DUD.dmg, u.team); // getting a dud away from our own units is worth something
-      opts.push({ lob: d.id, ...b, score: b.score + here.mine * (d.fuse <= 1 ? 1.2 : 0.5) });
+    if (passiveOf(u) === 'tailwind' && useKit && !G.windFlip) { // Gale: turn the wind round if it helps her basic shot
+      const keep = s1.score, flip = JSON.parse(JSON.stringify(G)); flip.wind = -flip.wind;
+      const alt = bestShot(flip, flip.units.find((x) => x.id === u.id), 'shot1', st, botRng(G), 0);
+      if (alt.score > keep + 4 && send({ k: 'wind' })) s1 = bestShot(G, u, 'shot1', st, rnd, 0);
     }
+    const opts = [{ w: 'shot1', ...s1 }];
+    if (ssReady(G) && !(st.ssSkip && rnd() < st.ssSkip)) opts.push({ w: 'ss', ...bestShot(G, u, 'ss', st, rnd, 0) });
+    if (useKit && ready(G, 'shot2', u)) { const c = bestShot(G, u, 'shot2', st, rnd, 0); opts.push({ w: 'shot2', ...c, score: c.score * 1.05 }); }
     // turn delay: a heavier shot has to be worth the turns it gives away (about 2 points of damage per 100 delay)
-    for (const o of opts) o.score -= 0.02 * (o.lob ? DELAY.lob : shotSpec(G, u, o.w).delay);
+    for (const o of opts) o.score -= 0.02 * shotSpec(G, u, o.w).delay;
     opts.sort((a, b) => b.score - a.score);
     const o = opts[0];
     if (!o || o.angle == null) { send({ k: 'pass' }); return sent; }
     const angle = o.angle + gauss(rnd) * st.noiseA, power = clamp(o.power + gauss(rnd) * st.noiseP, 0.05, 1);
-    if (o.lob) send({ k: 'lob', dud: o.lob, angle, power });
-    else { if (o.w !== 'shot1') send({ k: 'weapon', w: o.w }); send({ k: 'fire', angle, power }); }
-    if (G.phase === 'aim') send({ k: 'pass' });
+    if (o.w !== 'shot1') send({ k: 'weapon', w: o.w });
+    if (!send({ k: 'fire', angle, power })) { send({ k: 'pass' }); return sent; }
+    if (mine() && G.retreat) retreat();
+    else if (mine()) send({ k: 'pass' });
     return sent;
+    // after the shot: back away from the nearest enemy while it's safe, then end the turn
+    function retreat() {
+      const foe = foes()[0];
+      if (foe && st.dodge && Math.abs(foe.x - u.x) < 40) walkTo(foe.x > u.x ? -1 : 1, G.moves);
+      if (mine()) send({ k: 'pass' });
+    }
   }
 
   // Play a whole match with one bot style per team. Returns the finished game and its intent log.
   function playOut(G, styles) {
     const log = []; let guard = 0;
-    while (G.phase !== 'over' && guard++ < maxTurns(G) + 5) {
+    while (G.phase !== 'over' && guard++ < maxTurns(G) * 2 + 10) { // a bot turn runs its own flights; this also covers a turn handed over mid-retreat
       const its = botTurn(G, styles[G.team]); log.push(...its);
-      resolve(G);
+      if (G.phase === 'flight') resolve(G);
     }
     if (G.phase !== 'over') throw new Error('match did not finish');
     return { G, log };
@@ -828,10 +988,10 @@
   // ---------- checksum and replay ----------
   function hash(G) {
     const r = (v) => Math.round(v * 100);
-    const parts = [G.map, G.cols, G.turn, G.team, G.actor, G.spent, G.units.map((u) => u.delay).join(','), G.phase, r(G.wind), G.water, G.moves, G.winner, G.chars.join(','),
+    const parts = [G.map, G.cols, G.turn, G.team, G.actor, G.spent, G.units.map((u) => u.delay).join(','), G.phase, r(G.wind), G.water, G.moves, G.winner, G.chars.join(','), G.retreat ? 1 : 0, G.fired ? 1 : 0, G.zones.map((z) => `${r(z.x)},${r(z.y)},${z.until}`).join(';'),
       G.units.map((u) => `${u.id}:${r(u.x)},${r(u.y)},${u.hp},${u.alive ? 1 : 0}`).join(';'),
       G.duds.map((d) => `${d.id}:${r(d.x)},${r(d.y)},${d.fuse}`).join(';'), G.barrels.map((b) => `${b.id}:${r(b.x)},${r(b.y)}`).join(';'), G.crates.map((c) => `${c.id}:${r(c.x)},${r(c.y)},${c.kind}`).join(';'),
-      G.units.map((u) => `${u.char},${u.gear || '-'},${u.ammo.shot2},${u.ammo.dud},${u.ammo.gear},${u.ss}`).join(';'), G.T.join('')];
+      G.units.map((u) => `${u.char},${u.cd.shot2},${u.cd.dash},${u.ss},${u.burn},${u.wet ? 1 : 0},${u.hits}`).join(';'), G.T.join('')];
     let h = 2166136261; const s = parts.join('|');
     for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
     return h.toString(16);
@@ -844,8 +1004,8 @@
     return G;
   }
 
-  const WB = { TICK, COLS, ROWS, WATER0, GRAV, VMAX, WIND_MAX, UNIT_R, UNITS_PER_TEAM, HP, MOVE_STEPS, LOB_RANGE, LOB_POWER, SUDDEN_ROUNDS, MAX_ROUNDS, suddenTurn, maxTurns, DMG_SPREAD, SS_CHARGE, DELAY, HP_MUL, CREW_HP,
-    MAX_TEAMS, MAX_SIZE, MAX_UNITS, DUD, BARREL, CHARS, CHAR_IDS, CLASSES, GEAR, GEAR_IDS, gearFor, CRATE, CRATE_KINDS, crateFirst, crateEvery, WEAPON_IDS, MAPS, MAP_IDS, pickMap, recipeFor, MapGen, STYLES, newGame, act, step, resolve, current, owner, teamUnits, charOf, shotSpec, ssReady, ssOf, ammoOf, safeStep, turnOrder, delayIf, solidAt, surfaceY, center, lobbable, canLob,
+  const WB = { TICK, COLS, ROWS, WATER0, GRAV, VMAX, WIND_MAX, UNIT_R, UNITS_PER_TEAM, HP, MOVE_STEPS, JUMP, RETREAT, BURN, SUDDEN_ROUNDS, MAX_ROUNDS, suddenTurn, maxTurns, DMG_SPREAD, SS_CHARGE, DELAY, HP_MUL, CREW_HP,
+    MAX_TEAMS, MAX_SIZE, MAX_UNITS, DUD, BARREL, CHARS, CHAR_IDS, CLASSES, CRATE, CRATE_KINDS, crateFirst, crateEvery, WEAPON_IDS, MAPS, MAP_IDS, pickMap, recipeFor, MapGen, STYLES, newGame, act, step, resolve, current, owner, teamUnits, charOf, shotSpec, ssReady, ssOf, cdOf, ready, passiveOf, safeStep, turnOrder, delayIf, solidAt, surfaceY, center, fits,
     predict, blastScore, botTurn, playOut, hash, replay };
   if (typeof module !== 'undefined' && module.exports) module.exports = WB; else root.WB = WB;
 })(typeof window !== 'undefined' ? window : globalThis);

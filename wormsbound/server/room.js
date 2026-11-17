@@ -25,7 +25,7 @@
      { t: 'rejoin', token }           get your seat back after a drop
      { t: 'pick', char }              choose your character (lobby or between matches)
      { t: 'ready', on }               ready up; the match starts when both seats have picked and are ready
-     { t: 'act', it }                 a move on your turn: move | weapon | fire | lob | pass (see engine.js act())
+     { t: 'act', it }                 a move on your turn: move | jump | weapon | fire | wind | pass (see engine.js act())
      { t: 'aim', angle, power }       where you're aiming right now (just shown to the other player)
      { t: 'next' }                    1v1: ready for the next round (both needed)
      { t: 'rematch' }                 1v1, after the match: play again with the same pair (both needed)
@@ -53,7 +53,7 @@ const BOT_THINK_MS = 1500;     // a computer waits this long after the last shot
 const TURN_LIMIT_MS = 50000;   // the browser's turn timer is 30 s; the server only steps in for a vanished player
 const NEXT_LIMIT_MS = 30000;   // between rounds: start the next one even if someone didn't tap "next"
 const GONE_LIMIT_MS = 8000;    // a disconnected player's turn passes after this (so 5 others aren't kept waiting)
-const MOVE_KINDS = new Set(['move', 'weapon', 'fire', 'lob', 'pass']);
+const MOVE_KINDS = new Set(['move', 'jump', 'weapon', 'fire', 'wind', 'pass']);
 const LETTERS = 'ABCDEFGHJKLMNPQRSTUVWXYZ'; // no I or O
 
 function randomToken() {
@@ -74,7 +74,8 @@ function cleanIntent(it) {
     case 'move': return { k: 'move', dir: it.dir === 1 ? 1 : it.dir === -1 ? -1 : 0 };
     case 'weapon': return { k: 'weapon', w: String(it.w) };
     case 'fire': return { k: 'fire', angle: num(it.angle, 0, 360), power: num(it.power, 0, 1) };
-    case 'lob': return { k: 'lob', dud: it.dud | 0, angle: num(it.angle, 0, 360), power: num(it.power, 0, 1) };
+    case 'jump': return { k: 'jump', dir: it.dir === 1 ? 1 : it.dir === -1 ? -1 : 0 };
+    case 'wind': return { k: 'wind' };
     default: return { k: 'pass' };
   }
 }
@@ -229,12 +230,12 @@ class Room {
   }
   // Play one checked move on the server's game and tell everyone. Used for players and for the server's computers.
   apply(it) {
-    const G = this.G, by = G.team;
+    const G = this.G, by = G.team, turn = G.turn;
     if (!WB.act(G, it)) return { error: 'that move isn\'t allowed' };
     const ticks = G.phase === 'flight' ? WB.resolve(G) : 0; // play the shot through to the end, here and now
     this.seq++; this.touched = Date.now();
     this.emit({ t: 'applied', seq: this.seq, by, it, hash: WB.hash(G), turn: G.turn });
-    if (G.phase === 'aim' && it.k !== 'move' && it.k !== 'weapon') { // a new turn: its clock starts when the shot has landed on the players' screens
+    if (G.phase === 'aim' && G.turn !== turn) { // a new turn (not a jump, a move ability or the retreat, which carry on the same one): its clock starts when the shot has landed on the players' screens
       this.turnAt = Date.now() + (this.teams() ? ticks * WB.TICK * 1000 : 0); this.deadline = this.turnAt + this.turnLimit(); this.botAt = this.turnAt + BOT_THINK_MS;
     }
     if (G.phase === 'over') this.roundOver();

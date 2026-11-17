@@ -3,6 +3,11 @@
 const WB = require('./engine.js');
 let fails = 0, passes = 0;
 const ok = (cond, msg) => { if (cond) passes++; else { fails++; console.log('FAIL', msg); } };
+// Let the shot land, then end the retreat that follows it (v3): the turn has passed when this returns.
+const endTurn = (G) => { WB.resolve(G); if (G.phase === 'aim' && G.retreat) { WB.act(G, { k: 'pass' }); WB.resolve(G); } };
+// A dead-flat map with the floor at row 60 and the units spread along it: abilities can be checked without the terrain getting in the way.
+const flatGame = (o = {}, xs) => { const G = WB.newGame(11, Object.assign({ map: { preset: 'hills', hazards: 0, caves: 0, props: 0 }, crates: false }, o)); for (let x = 0; x < G.cols; x++) for (let y = 0; y < G.rows; y++) G.T[y * G.cols + x] = y >= 60 ? 1 : 0; G.units.forEach((u, i) => { u.y = 60; u.air = false; u.x = xs ? xs[i] : 40.5 + i * (70 / Math.max(1, G.units.length - 1)); }); G.wind = 0; return G; };
+const cells = (G) => G.T.filter((v) => v).length;
 
 // 1. Same seed, same map.
 ok(WB.hash(WB.newGame(7)) === WB.hash(WB.newGame(7)), 'same seed gives the same start');
@@ -41,34 +46,35 @@ for (const seed of [11, 222, 3333]) {
   ok(!WB.act(G, { k: 'fire', angle: NaN, power: 1 }), 'a fire with no angle is refused');
   ok(!WB.act(G, { k: 'weapon', w: 'nuke' }), 'an unknown weapon is refused');
   ok(!WB.act(G, { k: 'move', dir: 3 }), 'a move must be one step');
-  ok(!WB.act(G, { k: 'lob', dud: 12345, angle: 45, power: 0.5 }), 'lobbing a dud that isn\'t there is refused');
+  ok(!WB.act(G, { k: 'lob', dud: 12345, angle: 45, power: 0.5 }) && !WB.act(G, { k: 'weapon', w: 'dud' }) && !WB.act(G, { k: 'weapon', w: 'gear' }), 'duds, lobs and gear are gone: those intents are refused');
+  ok(!WB.act(G, { k: 'jump', dir: 0 }) && !WB.act(G, { k: 'wind' }), 'a jump needs a direction, and only Gale turns the wind');
   let steps = 0; while (WB.act(G, { k: 'move', dir: 1 })) steps++;
   ok(steps <= WB.MOVE_STEPS, `walking stops at ${WB.MOVE_STEPS} steps (walked ${steps})`);
-  ok(WB.act(G, { k: 'weapon', w: 'dud' }) && WB.act(G, { k: 'fire', angle: 60, power: 0.5 }), 'fire a dud');
+  ok(WB.act(G, { k: 'fire', angle: 60, power: 0.5 }), 'fire the basic shot');
   ok(!WB.act(G, { k: 'fire', angle: 60, power: 0.5 }), 'no second shot while the first is flying');
   WB.resolve(G);
-  ok(G.phase === 'aim' && G.team === 1, 'the turn passes to the other team');
-  ok(G.units[0].ammo.dud === WB.DUD.ammo - 1, 'firing a dud uses one');
+  ok(G.phase !== 'aim' || !G.retreat || G.moves > 0, 'a retreat only happens with steps left');
 }
 
-// 6. A dud ticks down and goes off; a dud in reach can be lobbed.
+// 6. The turn has three parts now: aim, the shot, then a retreat with what's left of a third of your movement.
 {
-  const G = WB.newGame(5, { map: { preset: 'hills', hazards: 0 } }); // no old duds on the map, so the count is ours
-  const u = WB.current(G);
-  WB.act(G, { k: 'weapon', w: 'dud' }); WB.act(G, { k: 'fire', angle: u.team === 0 ? 80 : 100, power: 0.3 }); WB.resolve(G);
-  const d = G.duds[0];
-  ok(d && d.fuse === WB.DUD.fuse - 1, 'a fired dud rests with its fuse ticked once');
-  if (d) {
-    let turns = 0; const blastsBefore = G.stats.dudBlasts;
-    while (G.duds.some((x) => x.id === d.id) && turns++ < 6 && G.phase !== 'over') { WB.act(G, { k: 'pass' }); WB.resolve(G); }
-    ok(G.stats.dudBlasts === blastsBefore + 1, `the dud went off after ${turns} more turn(s)`);
-  }
-  // put a dud next to the current unit and lob it
-  const H = WB.newGame(6), v = WB.current(H);
-  H.duds.push({ id: 999, x: v.x + 1, y: v.y - 0.5, fuse: 2, team: 1, air: false, vy: 0 });
-  ok(WB.lobbable(H).length === 1, 'a dud right next to you is lobbable');
-  ok(WB.act(H, { k: 'lob', dud: 999, angle: v.team === 0 ? 45 : 135, power: 1 }), 'lob it');
-  ok(H.stats.lobs === 1 && H.proj.length === 1 && H.proj[0].fuse === 2, 'the lobbed dud keeps its fuse');
+  const G = WB.newGame(99), u = WB.current(G), t0 = G.turn;
+  WB.act(G, { k: 'fire', angle: u.x < G.cols / 2 ? 60 : 120, power: 0.9 }); WB.resolve(G);
+  ok(G.phase === 'aim' && G.retreat && WB.current(G) === u && G.turn === t0, 'after the shot lands, the same unit gets a retreat');
+  ok(G.moves === Math.ceil(WB.CHARS.volt.steps * WB.RETREAT), `with ${G.moves} steps (a third of ${WB.CHARS.volt.steps})`);
+  ok(!WB.act(G, { k: 'fire', angle: 60, power: 0.5 }) && !WB.act(G, { k: 'weapon', w: 'shot2' }), 'no shooting or picking in the retreat');
+  const d0 = G.spent; ok(WB.act(G, { k: 'pass' }) && G.spent === d0, 'ending the retreat costs no turn delay');
+  WB.resolve(G);
+  ok(G.phase === 'aim' && !G.retreat && G.turn === t0 + 1 && WB.current(G) !== u, 'then the turn passes');
+  ok(u.delay === WB.CHARS.volt.shot1.delay, 'and the shooter was charged for the shot only');
+  const Z = WB.newGame(99, { chars: ['zip', 'volt'] }); WB.act(Z, { k: 'move', dir: 1 }); const left = Z.moves; WB.act(Z, { k: 'fire', angle: 60, power: 0.9 }); WB.resolve(Z);
+  ok(Z.retreat && Z.moves === left, `Slippery: Zip keeps all ${left} of her remaining steps`);
+  const W = WB.newGame(99); while (WB.act(W, { k: 'move', dir: -1 }) && W.moves > 0); if (W.phase === 'aim') { W.moves = 0; WB.act(W, { k: 'fire', angle: 60, power: 0.9 }); WB.resolve(W); ok(!W.retreat && W.turn === 1, 'no steps left means no retreat: the turn passes at once'); }
+  // old duds are a map hazard: they tick down each turn and go off
+  const D = WB.newGame(5, { map: { preset: 'hills', hazards: 0 } }), v = WB.current(D);
+  D.duds.push({ id: 999, x: v.x + 30, y: WB.surfaceY(D, v.x + 30) - 0.4, fuse: 2, team: null, air: false, vy: 0, old: true });
+  let turns = 0; while (D.duds.length && turns++ < 6 && D.phase !== 'over') { WB.act(D, { k: 'pass' }); WB.resolve(D); }
+  ok(D.stats.dudBlasts === 1 && turns === 2, `an old dud with 2 on its fuse goes off after ${turns} turns`);
 }
 
 // 6b. The second team can go first (best-of-3 alternates it).
@@ -85,7 +91,8 @@ for (const a of WB.CHAR_IDS) {
   const G = WB.newGame(500, opts);
   const hp = Math.round(WB.CHARS[a].hp * WB.HP_MUL.duel);
   ok(G.units.filter((u) => u.team === 0).every((u) => u.char === a && u.hp === hp), `${a}: side 0 is ${a} with ${hp} hp (×${WB.HP_MUL.duel} in a 1v1)`);
-  ok(G.moves === WB.CHARS[a].steps && G.units[0].ammo.shot2 === 2 && G.units[0].ammo.dud === 2, `${a}: steps ${WB.CHARS[a].steps}, 2 Shot 2s, 2 duds`);
+  ok(G.moves === WB.CHARS[a].steps && G.units[0].cd.shot2 === 0 && G.units[0].cd.dash === 0, `${a}: steps ${WB.CHARS[a].steps}, ability and move ready at the start`);
+  const K = WB.CHARS[a]; ok(K.passive && K.passive.id && K.shot1 && K.shot2.cd >= 2 && K.shot2.verb && K.dash.cd >= 2 && K.dash.kind && K.ss && [K.power, K.jump, K.weight].every((v) => v > 0), `${a}: a whole kit (passive ${K.passive.name}, ${K.shot1.name}, ${K.shot2.name}, ${K.dash.name}, ${K.ss.name}) and six stats`);
   const { G: F, log } = WB.playOut(WB.newGame(600, opts), ['smart', 'smart']);
   ok(WB.hash(WB.replay(600, log, opts)) === WB.hash(F), `${a} vs ${b}: a bot match replays exactly`);
 }
@@ -96,7 +103,7 @@ const shoot = (chars, w, angle, power, setup) => {
 { // Double Tap: two darts from one shot
   const G = shoot(['zip', 'volt'], 'shot2', 45, 0.8);
   ok(G.proj.length === 2 && G.proj[1].wait > 0, 'Double Tap fires two darts, the second a moment later');
-  WB.resolve(G); ok(G.units[0].ammo.shot2 === 1, 'Double Tap uses one Shot 2');
+  ok(G.units[0].cd.shot2 === WB.CHARS.zip.shot2.cd, `Double Tap goes on a ${WB.CHARS.zip.shot2.cd}-turn cooldown`); WB.resolve(G);
 }
 { // Drill: tunnels through ground. Fire straight down into the hill you stand on.
   const G = shoot(['digger', 'volt'], 'shot2', 270, 0.6);
@@ -105,10 +112,10 @@ const shoot = (chars, w, angle, power, setup) => {
   WB.resolve(G);
   ok(maxDepth > 6 && G.T.reduce((a, v) => a + v, 0) < before, `the Drill bores ${maxDepth.toFixed(1)} cells into the ground before it explodes`);
 }
-{ // Wrecking Ball: bounces before exploding
-  const G = shoot(['brick', 'volt'], 'shot2', 70, 0.35);
-  let bounced = false; for (let i = 0; i < 2000 && G.phase === 'flight'; i++) { if (G.proj.some((p) => p.bounced)) bounced = true; WB.step(G); }
-  ok(bounced, 'the Wrecking Ball bounces');
+{ // Skipping Stone: skips off the ground with a small blast each time
+  const G = flatGame({ chars: ['hopper', 'volt'] }, [30.5, 140.5]); WB.act(G, { k: 'weapon', w: 'shot2' }); WB.act(G, { k: 'fire', angle: 25, power: 0.55 });
+  let booms = 0, bounced = false; for (let i = 0; i < 3000 && G.proj.length; i++) { if (G.proj.some((p) => p.bounced)) bounced = true; booms += WB.step(G).filter((e) => e.k === 'boom').length; }
+  ok(bounced && booms >= 3, `the Skipping Stone skips, with a blast each time (${booms} blasts)`);
 }
 { // Thunderstrike: hits a unit even with ground above it
   const G = WB.newGame(42, { chars: ['volt', 'brick'] }), foe = G.units.find((u) => u.team === 1), hp0 = foe.hp;
@@ -130,10 +137,10 @@ const shoot = (chars, w, angle, power, setup) => {
     for (let x = Math.floor(u.x) - 4; x <= Math.floor(u.x) + 4; x++) G.T[Math.floor(u.y) * WB.COLS + x] = 1; // flat floor, whatever the map
     G.proj.push({ id: 997, w, team: 0, from: -1, age: 9, x: u.x - 2, y: u.y - 1, vx: 0, vy: 5, wm: 1 });
     let top = 0; for (let i = 0; i < 90 && G.phase === 'flight'; i++) { WB.step(G); top = Math.max(top, Math.hypot(u.vx, u.vy)); } return top; };
-  ok(kick('shot2') > kick('shot1') * 1.6, `Gust Bomb knockback ${kick('shot2').toFixed(0)} vs Kite Bomb ${kick('shot1').toFixed(0)}`);
+  ok(kick('shot2') > kick('shot1') * 1.6, `Gust knockback ${kick('shot2').toFixed(0)} vs Kite Bomb ${kick('shot1').toFixed(0)}`);
 }
 { // the bots' aim prediction is exact for bounce and drill shots
-  for (const [c, ang, pw] of [['brick', 60, 0.5], ['digger', 50, 0.55], ['digger', 20, 0.45], ['brick', 30, 0.3]]) {
+  for (const [c, ang, pw] of [['tusk', 60, 0.5], ['digger', 50, 0.55], ['digger', 20, 0.45], ['tusk', 20, 0.3]]) { // a straight-line Hook and a Drill
     const G = WB.newGame(77, { chars: [c, 'volt'] }), u = WB.current(G);
     const guess = WB.predict(G, u, ang, pw, 'shot2');
     WB.act(G, { k: 'weapon', w: 'shot2' }); WB.act(G, { k: 'fire', angle: ang, power: pw });
@@ -152,7 +159,7 @@ const shoot = (chars, w, angle, power, setup) => {
   ok(G.team === 0 && WB.ssReady(G) && G.units[0].ss === WB.SS_CHARGE, `ready on your ${WB.SS_CHARGE}th turn`);
   ok(WB.act(G, { k: 'weapon', w: 'ss' }) && WB.act(G, { k: 'fire', angle: 60, power: 0.6 }), 'fire the SS');
   ok(G.units[0].ss === 0 && G.stats.ss === 1, 'firing it empties the charge');
-  WB.resolve(G); let g = 0; while (G.team !== 0 && g++ < 6) { WB.act(G, { k: 'pass' }); WB.resolve(G); } // the delay may give side 1 two turns
+  endTurn(G); let g = 0; while (G.team !== 0 && g++ < 6) { WB.act(G, { k: 'pass' }); WB.resolve(G); } // the delay may give side 1 two turns
   ok(G.units[0].ss === 1, 'and it starts charging again on your next turn');
 }
 const ssGame = (chars, seed = 11) => { const G = WB.newGame(seed, { chars }); WB.current(G).ss = WB.SS_CHARGE; WB.act(G, { k: 'weapon', w: 'ss' }); return G; };
@@ -181,7 +188,7 @@ const ssGame = (chars, seed = 11) => { const G = WB.newGame(seed, { chars }); WB
 }
 { // Meteor Slam: the biggest crater
   const crater = (w) => { const G = WB.newGame(5, { chars: ['brick', 'volt'], map: { preset: 'hills', hazards: 0 } }), cells = () => G.T.filter((v) => v).length, before = cells(); G.proj.push({ id: 902, w, team: 0, from: -1, age: 9, x: 80, y: WB.surfaceY(G, 80) - 1, vx: 0, vy: 4, wm: 1 }); G.phase = 'flight'; WB.resolve(G); return before - cells(); };
-  ok(crater('ss') > crater('shot2') * 1.3, `Meteor Slam digs ${crater('ss')} cells vs Wrecking Ball ${crater('shot2')}`);
+  ok(crater('ss') > crater('shot1') * 1.3, `Meteor Slam digs ${crater('ss')} cells vs Slug ${crater('shot1')}`);
 }
 
 // 10. Turn delay: the lowest delay goes next; heavy shots push your next turn back.
@@ -190,15 +197,15 @@ const ssGame = (chars, seed = 11) => { const G = WB.newGame(seed, { chars }); WB
   ok(WB.turnOrder(G).map((x) => x.team).join('') === '01', 'the first round alternates the sides');
   const a = WB.current(G); WB.act(G, { k: 'move', dir: 1 }); WB.act(G, { k: 'move', dir: 1 });
   ok(G.spent === 2 * WB.DELAY.move, 'walking adds delay per step');
-  ok(WB.delayIf(G, 'ss') > WB.delayIf(G, 'shot2') && WB.delayIf(G, 'shot2') > WB.delayIf(G, 'shot1'), 'SS costs more delay than Shot 2, Shot 2 more than Shot 1');
-  WB.act(G, { k: 'weapon', w: 'shot2' }); WB.act(G, { k: 'fire', angle: 60, power: 0.4 }); WB.resolve(G);
-  ok(a.delay === 2 * WB.DELAY.move + WB.CHARS.brick.shot2.delay, `Brick's Wrecking Ball adds ${WB.CHARS.brick.shot2.delay} delay`);
+  ok(WB.delayIf(G, 'ss') > WB.delayIf(G, 'shot1') && WB.delayIf(G, 'pass') < WB.delayIf(G, 'shot1'), 'the SS costs more delay than the basic shot, and passing less');
+  WB.act(G, { k: 'weapon', w: 'shot2' }); WB.act(G, { k: 'fire', angle: 60, power: 0.4 }); endTurn(G);
+  ok(a.delay === 2 * WB.DELAY.move + WB.CHARS.brick.shot2.delay, `Brick's Bulwark adds ${WB.CHARS.brick.shot2.delay} delay`);
   ok(WB.current(G).team === 1, 'then the other team plays');
 }
 { // light shots win extra turns: Zip firing Darts against Brick firing Slugs gets more turns over a match
   const G = WB.newGame(56, { chars: ['zip', 'brick'] }); const turns = [0, 0];
   // everyone fires off the edge of the map (no damage), so only the delays decide the turn order
-  for (let i = 0; i < 40 && G.phase !== 'over'; i++) { turns[G.team]++; WB.act(G, { k: 'fire', angle: G.team ? 4 : 176, power: 1 }); WB.resolve(G); }
+  for (let i = 0; i < 40 && G.phase !== 'over'; i++) { turns[G.team]++; WB.act(G, { k: 'fire', angle: G.team ? 4 : 176, power: 1 }); endTurn(G); }
   ok(turns[0] > turns[1], `Zip (Dart, ${WB.CHARS.zip.shot1.delay}) gets more turns than Brick (Slug, ${WB.CHARS.brick.shot1.delay}): ${turns[0]} vs ${turns[1]}`);
 }
 { // a team can play twice in a row if the other team throws heavy shots
@@ -206,7 +213,7 @@ const ssGame = (chars, seed = 11) => { const G = WB.newGame(seed, { chars }); WB
   for (let i = 0; i < 16 && G.phase !== 'over'; i++) {
     if (G.team === last) twice = true; last = G.team;
     if (G.team === 1) { G.units[1].ss = WB.SS_CHARGE; WB.act(G, { k: 'weapon', w: 'ss' }); WB.act(G, { k: 'fire', angle: 4, power: 1 }); } else WB.act(G, { k: 'fire', angle: 176, power: 1 });
-    WB.resolve(G);
+    endTurn(G);
   }
   ok(twice, 'heavy shots on one side let the other side play twice in a row');
 }
@@ -276,7 +283,7 @@ for (const m of WB.MAP_IDS) {
   ok(WB.newGame(21, { size: 3, chars: ['gale', 'brick'] }).units.every((u) => u.char === (u.team ? 'brick' : 'gale')), 'one character per side still means the whole crew plays it');
   const u0 = WB.current(G), mate = G.units.find((u) => u.team === u0.team && u.id !== u0.id);
   WB.act(G, { k: 'weapon', w: 'shot2' }); WB.act(G, { k: 'fire', angle: 80, power: 0.2 });
-  ok(u0.ammo.shot2 === 1 && mate.ammo.shot2 === 2, 'ammo is per unit: one unit firing its Shot 2 leaves its crewmates full');
+  ok(u0.cd.shot2 > 0 && mate.cd.shot2 === 0, 'cooldowns are per unit: one unit using its ability leaves its crewmates ready');
   ok(WB.shotSpec(G, u0, 'shot1').name === WB.CHARS[u0.char].shot1.name, 'a unit fires its own character\'s shots');
   WB.resolve(G);
   // spawns: dry, apart, standing with headroom, on every size and layout; sides keeps crews together
@@ -305,25 +312,115 @@ for (const m of WB.MAP_IDS) {
   ok(walked > 50, `bots walk on big maps (${walked} steps in 12 matches, ${lost} units lost to the water in all)`);
 }
 
-// 8c. v2 cast and gear: ten characters in five classes, one gear item per unit.
+// 8c. v3 kits: ten characters in five classes; an ability and a move ability on cooldowns; jumps; passives.
 {
   const cls = {}; for (const c of WB.CHAR_IDS) (cls[WB.CHARS[c].cls] = cls[WB.CHARS[c].cls] || []).push(c);
   ok(WB.CHAR_IDS.length === 10 && Object.keys(cls).length === 5 && Object.values(cls).every((v) => v.length === 2), `10 characters, 2 in each of 5 classes (${Object.entries(cls).map(([k, v]) => k + ': ' + v.join(' + ')).join('; ')})`);
-  ok(WB.GEAR_IDS.length === 14 && WB.CHAR_IDS.every((c) => WB.gearFor(c).length === 6 && WB.gearFor(c).includes(WB.CHARS[c].gear)), 'every character can carry 6 gear items (4 anyone\'s + 2 for its class), its default among them');
-  const g0 = WB.newGame(3, { chars: ['brick', 'gale'], gear: ['thermite', 'well'] });
-  ok(g0.units[0].gear === 'ricochet' && g0.units[1].gear === 'well', 'gear from another class falls back to the character\'s own default');
-  ok(WB.newGame(3, { gear: ['none', ''] }).units.every((u) => u.gear === null && u.ammo.gear === 0), "'none' means no gear");
-  const flat = (map, o) => { const G = WB.newGame(11, Object.assign({ map: { preset: 'hills', hazards: 0, caves: 0, props: 0 } }, o)), foe = G.units[1]; for (let x = 0; x < G.cols; x++) for (let y = 0; y < G.rows; y++) G.T[y * G.cols + x] = y >= 60 ? 1 : 0; for (const u of G.units) { u.y = 60; u.air = false; } G.units[0].x = 40.5; foe.x = 110.5; return G; };
-  const shoot = (G, x, y) => { const u = WB.current(G), s = WB.shotSpec(G, u, 'gear'); G.proj.push({ id: 950, w: 'gear', team: u.team, char: u.char, gear: u.gear, from: -1, age: 9, x, y, vx: 0, vy: 3, wm: 1 }); G.phase = 'flight'; WB.resolve(G); return s; };
-  { const G = flat(0, { gear: ['pistol', 'none'] }); WB.act(G, { k: 'weapon', w: 'gear' }); const a0 = G.units[0].ammo.gear; WB.act(G, { k: 'fire', angle: 80, power: 0.3 }); ok(a0 === 3 && G.units[0].ammo.gear === 2 && G.stats.gear === 1, 'firing gear uses one of its own ammo'); WB.resolve(G); }
-  { const G = flat(0, { gear: ['none', 'none'] }); ok(!WB.act(G, { k: 'weapon', w: 'gear' }), 'a unit with no gear can\'t pick the gear slot'); }
-  { const G = flat(0, { chars: ['nimbus', 'volt'], gear: ['well', 'none'] }), foe = G.units[1], x0 = foe.x; shoot(G, foe.x - 5, 58); ok(foe.x < x0 - 0.5, `Gravity Well pulls a unit towards the blast (${x0} → ${foe.x.toFixed(1)})`); }
-  { const G = flat(0, { chars: ['nimbus', 'volt'], gear: ['delayray', 'none'] }), foe = G.units[1], d0 = foe.delay; shoot(G, foe.x, 58); ok(foe.delay >= d0 + 300, `Delay Ray adds 300 turn delay to an enemy it catches (${d0} → ${foe.delay})`); }
-  { const G = flat(0, { chars: ['patch', 'volt'], gear: ['dirt', 'none'] }), foe = G.units[1], n0 = G.T.filter((v) => v).length, hp = foe.hp; shoot(G, foe.x + 6, 57); const n1 = G.T.filter((v) => v).length; ok(n1 > n0 + 20 && foe.hp === hp && !WB.solidAt(G, foe.x, foe.y - 1.5), `Dirt Cannon adds ground (${n1 - n0} cells), hurts nobody and never buries a unit`); }
-  { const G = flat(0, { gear: ['popcorn', 'none'] }); const before = G.T.filter((v) => v).length; shoot(G, 75, 58); const booms = before - G.T.filter((v) => v).length; const G2 = flat(0, { gear: ['pistol', 'none'] }); const b2 = G2.T.filter((v) => v).length; shoot(G2, 75, 58); ok(booms > (b2 - G2.T.filter((v) => v).length) * 2, 'Popcorn Bomb\'s bomblets dig far more than one small shell'); }
-  let bad = [];
-  for (const c of WB.CHAR_IDS) for (const g of WB.gearFor(c)) { const o = { chars: [c, WB.CHAR_IDS[(WB.CHAR_IDS.indexOf(c) + 3) % 10]], gear: [g, 'none'] }, { G: F, log } = WB.playOut(WB.newGame(777, o), ['smart', 'smart']); if (F.phase !== 'over' || WB.hash(WB.replay(777, log, o)) !== WB.hash(F)) bad.push(c + '/' + g); }
-  ok(!bad.length, `a match with every character carrying each gear it can finishes and replays exactly (60 loadouts) ${bad.slice(0, 3)}`);
+  ok(WB.GEAR_IDS === undefined && WB.WEAPON_IDS.join() === 'shot1,shot2,dash,ss', 'no gear list; four slots: basic, ability, move, SS');
+  ok(new Set(WB.CHAR_IDS.map((c) => WB.CHARS[c].passive.id)).size === 10, 'ten different passives');
+  const use = (G, w, angle, power = 0.7) => WB.act(G, { k: 'weapon', w }) && WB.act(G, { k: 'fire', angle, power });
+  { // cooldowns: counted in the unit's own turns
+    const G = flatGame({ chars: ['volt', 'brick'] }), u = G.units[0]; use(G, 'shot2', 80, 0.2); endTurn(G);
+    const seen = []; for (let i = 0; i < 12 && seen.length < 4; i++) { if (WB.current(G) === u) seen.push(u.cd.shot2); WB.act(G, { k: 'pass' }); WB.resolve(G); }
+    ok(seen.join() === '2,1,0,0' && WB.CHARS.volt.shot2.cd === 3, `Thunderstrike is ready again on Volt's third turn after it (left at each of his turns: ${seen})`);
+    const H = flatGame({ chars: ['volt', 'brick'] }); use(H, 'shot2', 80, 0.2); endTurn(H); while (WB.current(H) !== H.units[0]) { WB.act(H, { k: 'pass' }); WB.resolve(H); }
+    ok(!WB.act(H, { k: 'weapon', w: 'shot2' }) && !WB.ready(H, 'shot2') && WB.ready(H, 'shot1'), 'an ability on cooldown can\'t be picked');
+  }
+  { // jumping: costs steps, lands you further on, and the turn carries on
+    const G = flatGame({ chars: ['volt', 'hopper'] }), u = G.units[0], x0 = u.x, m0 = G.moves;
+    ok(WB.act(G, { k: 'jump', dir: 1 }) && G.phase === 'flight', 'a jump takes off');
+    let top = 99; for (let i = 0; i < 600 && G.phase === 'flight'; i++) { WB.step(G); top = Math.min(top, u.y); }
+    ok(G.phase === 'aim' && !G.retreat && WB.current(G) === u && u.x > x0 + 5 && G.moves === m0 - WB.JUMP.cost && u.hp === u.maxHp, `a jump lands ${(u.x - x0).toFixed(1)} cells on, costs ${WB.JUMP.cost} steps and the turn carries on`);
+    WB.act(G, { k: 'pass' }); WB.resolve(G);
+    const h = G.units[1]; WB.act(G, { k: 'jump', dir: -1 }); let top2 = 99; for (let i = 0; i < 600 && G.phase === 'flight'; i++) { WB.step(G); top2 = Math.min(top2, h.y); }
+    ok(60 - top2 > (60 - top) * 1.7, `Springy: Hopper jumps ${(60 - top2).toFixed(1)} cells high, Volt ${(60 - top).toFixed(1)}`);
+    G.moves = 2; ok(!WB.act(G, { k: 'jump', dir: 1 }), 'no jump without the steps for it');
+  }
+  { // a move ability doesn't end the turn
+    const G = flatGame({ chars: ['tusk', 'volt'] }, [40.5, 140.5]), u = G.units[0], x0 = u.x;
+    ok(use(G, 'dash', 55, 0.7), 'Leap Slam takes off'); const before = cells(G); WB.resolve(G);
+    ok(G.phase === 'aim' && !G.retreat && WB.current(G) === u && u.x > x0 + 8 && u.cd.dash === 3 && G.weapon === 'shot1', `Leap Slam lands ${(u.x - x0).toFixed(1)} cells on and Tusk can still shoot`);
+    ok(cells(G) < before && u.hp === u.maxHp, 'it blasts a crater where he lands and doesn\'t hurt him');
+    ok(WB.act(G, { k: 'fire', angle: 60, power: 0.5 }), 'and he fires after it');
+  }
+  { // Charge: runs along the ground and shoves the first enemy
+    const G = flatGame({ chars: ['brick', 'volt'] }, [40.5, 47.5]), u = G.units[0], foe = G.units[1], hp = foe.hp;
+    use(G, 'dash', 0, 1); let far = foe.x; for (let i = 0; i < 2000 && G.phase === 'flight'; i++) { WB.step(G); far = Math.max(far, foe.x); }
+    ok(u.x > 42 && far > 50 && foe.hp < hp, `Charge runs Brick into Volt and shoves him ${(far - 47.5).toFixed(1)} cells (${hp} → ${foe.hp})`);
+  }
+  { // Blink, Cloud Ride, Burrow, and the gliders
+    const B = flatGame({ chars: ['volt', 'brick'] }), v = B.units[0], bx = v.x; use(B, 'dash', 20, 1); WB.resolve(B);
+    ok(Math.abs(v.x - bx - 8 * Math.cos(20 * Math.PI / 180)) < 0.6 && Math.abs(v.y - 60) < 0.5 && v.hp === v.maxHp, `Blink puts Volt ${(v.x - bx).toFixed(1)} cells along and he drops unhurt`);
+    const C = flatGame({ chars: ['nimbus', 'brick'] }), n = C.units[0], nx = n.x; for (let x = 45; x < 52; x++) for (let y = 60; y < C.rows; y++) C.T[y * C.cols + x] = 0; // a gap to the water
+    use(C, 'dash', 0, 1); WB.resolve(C);
+    ok(n.alive && n.x > nx + 12 && Math.abs(n.y - 60) < 0.5, `Cloud Ride carries Nimbus ${(n.x - nx).toFixed(1)} cells across a gap`);
+    const D = flatGame({ chars: ['digger', 'brick'] }), d = D.units[0], dx = d.x, c0 = cells(D); use(D, 'dash', 320, 1); WB.resolve(D);
+    ok(d.alive && d.x > dx + 4 && d.y > 63 && cells(D) < c0 - 20, `Burrow digs Digger down and along (now ${(d.x - dx).toFixed(1)} across, ${(d.y - 60).toFixed(1)} down)`);
+    for (const c of ['zip', 'gale', 'patch', 'hopper', 'flint']) { const G = flatGame({ chars: [c, 'brick'] }, [40.5, 140.5]), u = G.units[0], x0 = u.x; use(G, 'dash', 50, 0.7); WB.resolve(G);
+      ok(G.phase === 'aim' && WB.current(G) === u && u.x > x0 + 6 && u.hp >= u.maxHp - 5, `${c}: ${WB.CHARS[c].dash.name} carries it ${(u.x - x0).toFixed(1)} cells (health ${u.hp}/${u.maxHp})`); }
+    const F = flatGame({ chars: ['flint', 'brick'] }, [40.5, 43.5]), f = F.units[0], near = F.units[1], h0 = near.hp; use(F, 'dash', 120, 0.7); WB.resolve(F);
+    ok(f.hp === f.maxHp - 5 && near.hp < h0, `Rocket Jump costs Flint 5 and hurts whoever was beside him (${h0} → ${near.hp})`);
+  }
+  { // Bulwark and Bridge build; nobody is hurt or buried
+    const G = flatGame({ chars: ['brick', 'volt'] }, [40.5, 46.5]), c0 = cells(G), foe = G.units[1], hp = foe.hp; use(G, 'shot2', 20, 0.5);
+    ok(cells(G) === c0 + 21 - 0 || cells(G) > c0 + 10, `Bulwark raises a wall (${cells(G) - c0} cells)`);
+    ok([44, 45, 46].some((x) => WB.solidAt(G, x + 0.5, 55.5)) && foe.hp === hp && !WB.solidAt(G, foe.x, foe.y - 1.5), 'in front of him, without burying or hurting the unit standing there');
+    WB.resolve(G); ok(G.retreat, 'building is his shot: the retreat follows');
+    const P = flatGame({ chars: ['patch', 'volt'] }), p0 = cells(P); P.proj.push({ id: 951, w: 'shot2', team: 0, char: 'patch', from: -1, age: 9, x: 80, y: 52, vx: 0, vy: 3, wm: 1 }); for (let y = 56; y < 60; y++) P.T[y * P.cols + 80] = 1; P.phase = 'flight'; WB.resolve(P);
+    const span = P.T.filter((v) => v === WB.MapGen.PROP).length;
+    ok(span >= 16 && cells(P) >= p0 + 16, `Bridge lays a span (${span} cells) where it lands`);
+  }
+  { // Hook drags the first enemy it touches towards Tusk
+    const G = flatGame({ chars: ['tusk', 'volt'] }, [40.5, 52.5]), foe = G.units[1], hp = foe.hp; use(G, 'shot2', 2, 1);
+    let near = foe.x; for (let i = 0; i < 3000 && G.phase === 'flight'; i++) { WB.step(G); near = Math.min(near, foe.x); }
+    ok(near < 49 && foe.hp < hp, `Hook drags Volt ${(52.5 - near).toFixed(1)} cells towards Tusk (${hp} → ${foe.hp})`);
+    const M = flatGame({ chars: ['tusk', 'volt'] }, [40.5, 80.5]); use(M, 'shot2', 2, 1); WB.resolve(M); ok(M.units[1].hp === M.units[1].maxHp, 'and runs out after 16 cells');
+  }
+  { // Fire Wall: ending a turn standing in it hurts
+    const G = flatGame({ chars: ['flint', 'volt'] }), foe = G.units[1]; G.proj.push({ id: 952, w: 'shot2', team: 0, char: 'flint', from: -1, age: 9, x: foe.x + 3, y: 56, vx: 0, vy: 3, wm: 1 }); G.phase = 'flight'; G.shooter = G.units[0].id; WB.resolve(G);
+    ok(G.zones.length === 1, 'Fire Wall leaves fire on the ground');
+    while (WB.current(G) !== foe) { WB.act(G, { k: 'pass' }); WB.resolve(G); } const hp = foe.hp; foe.burn = 0; WB.act(G, { k: 'pass' }); WB.resolve(G);
+    ok(foe.hp === hp - WB.CHARS.flint.shot2.zone.dmg, `ending a turn in it costs ${hp - foe.hp}`);
+    let g = 0; while (G.zones.length && g++ < 12) { WB.act(G, { k: 'pass' }); WB.resolve(G); } ok(!G.zones.length && g <= 6, `and it burns out (${g} more turns)`);
+  }
+  { // Delay Ray puts an enemy's next turn off
+    const G = flatGame({ chars: ['nimbus', 'volt'] }), foe = G.units[1], d0 = foe.delay; G.proj.push({ id: 953, w: 'shot2', team: 0, char: 'nimbus', from: -1, age: 9, x: foe.x, y: 58, vx: 0, vy: 3, wm: 1 }); G.phase = 'flight'; WB.resolve(G);
+    ok(foe.delay >= d0 + 300, `Delay Ray adds 300 turn delay to an enemy it catches (${d0} → ${foe.delay})`);
+  }
+  // passives. hit(): one basic shell from G.units[0] landing right beside G.units[1].
+  const hit = (G, w = 'shot1') => { const a = G.units[0], foe = G.units[1]; G.actor = a.id; G.team = a.team; G.shooter = a.id; G.phase = 'flight'; G.proj.push({ id: ++G._id, w, team: a.team, char: a.char, from: -1, age: 9, x: foe.x + 3, y: 57, vx: 0, vy: 3, wm: 1 }); let t = 0; while (G.proj.length && t++ < 4000) WB.step(G); };
+  { const lostTo = (c) => { const G = flatGame({ chars: ['gale', c] }), foe = G.units[1]; G.proj.push({ id: 954, w: 'shot2', team: 0, char: 'gale', from: -1, age: 9, x: foe.x - 2, y: 59, vx: 0, vy: 5, wm: 1 }); G.phase = 'flight'; let top = 0; for (let i = 0; i < 60; i++) { WB.step(G); top = Math.max(top, Math.hypot(foe.vx, foe.vy)); } return top; };
+    ok(lostTo('brick') < lostTo('volt') * 0.6, `Plated: the same Gust moves Brick at ${lostTo('brick').toFixed(0)}, Volt at ${lostTo('volt').toFixed(0)}`); }
+  { const G = flatGame({ chars: ['flint', 'volt'] }), foe = G.units[1]; foe.hp = foe.maxHp = 9999; hit(G); WB.resolve(G);
+    ok(foe.burn === 2, 'Burn: a hit from Flint sets a 2-turn burn'); while (WB.current(G) !== foe) { WB.act(G, { k: 'pass' }); WB.resolve(G); }
+    const h1 = foe.hp + WB.BURN; WB.act(G, { k: 'pass' }); WB.resolve(G); while (WB.current(G) !== foe) { WB.act(G, { k: 'pass' }); WB.resolve(G); }
+    ok(foe.burn === 0 && foe.hp === h1 - 2 * WB.BURN, `it bites for ${WB.BURN} at the start of each of the next two turns, then stops`); }
+  { const G = flatGame({ chars: ['nimbus', 'volt'] }), foe = G.units[1]; foe.hp = foe.maxHp = 9999; hit(G); WB.resolve(G); while (WB.current(G) !== foe) { WB.act(G, { k: 'pass' }); WB.resolve(G); }
+    ok(G.moves === Math.ceil(WB.CHARS.volt.steps / 2), `Drizzle: a unit Nimbus hit has ${G.moves} steps on its next turn, not ${WB.CHARS.volt.steps}`); WB.act(G, { k: 'pass' }); WB.resolve(G); while (WB.current(G) !== foe) { WB.act(G, { k: 'pass' }); WB.resolve(G); } ok(G.moves === WB.CHARS.volt.steps, 'and all of them the turn after'); }
+  { const G = flatGame({ chars: ['volt', 'brick'] }), foe = G.units[1]; foe.hp = foe.maxHp = 9999; const d = []; for (let i = 0; i < 3; i++) { const h = foe.hp; hit(G); d.push(h - foe.hp); for (let x = 0; x < G.cols; x++) for (let y = 0; y < G.rows; y++) G.T[y * G.cols + x] = y >= 60 ? 1 : 0; foe.vx = foe.vy = 0; foe.x = 110.5; foe.y = 60; foe.air = false; }
+    ok(d[0] === d[1] && d[2] === d[0] + Math.round(d[0] * 0.5), `Charged: Volt's third hit does half as much again (${d})`); }
+  { const G = flatGame({ chars: ['gale', 'volt'] }); G.wind = 3; ok(WB.act(G, { k: 'wind' }) && G.wind === -3 && !WB.act(G, { k: 'wind' }), 'Tailwind: Gale turns the wind round, once a turn');
+    WB.act(G, { k: 'pass' }); WB.resolve(G); ok(!WB.act(G, { k: 'wind' }), 'nobody else can'); }
+  { const G = flatGame({ chars: ['patch', 'volt', 'brick', 'brick'], size: 2 }, [40.5, 43.5, 100.5, 110.5]), p = G.units.find((u) => u.char === 'patch'), mate = G.units.find((u) => u.team === p.team && u !== p); p.hp -= 20; mate.hp -= 20; const a = p.hp, b = mate.hp;
+    let g = 0; do { WB.act(G, { k: 'pass' }); WB.resolve(G); } while (WB.current(G) !== p && g++ < 8);
+    ok(p.hp === a + 3 && mate.hp === b + 6, `Field Repairs: at the start of Patch's turn he heals 3 and a crewmate beside him 6`); }
+  { const G = flatGame({ chars: ['hopper', 'volt'] }), u = G.units[0]; u.y = 20; u.air = true; G.phase = 'flight'; G.mid = true; WB.resolve(G); ok(u.hp === u.maxHp, 'Springy: Hopper takes no fall damage');
+    const H = flatGame({ chars: ['volt', 'hopper'] }), v = H.units[0]; v.y = 20; v.air = true; H.phase = 'flight'; H.mid = true; WB.resolve(H); ok(v.hp < v.maxHp, 'the same fall hurts Volt'); }
+  { const wall = (G) => { for (let x = 44; x < 46; x++) for (let y = 50; y < 60; y++) G.T[y * G.cols + x] = 1; };
+    const G = flatGame({ chars: ['digger', 'volt'] }); wall(G); let n = 0; while (WB.act(G, { k: 'move', dir: 1 }) && n++ < 10); ok(G.units[0].x > 46, `Tunneller: Digger walks through a wall 2 thick (reached ${G.units[0].x})`);
+    const H = flatGame({ chars: ['volt', 'digger'] }); wall(H); n = 0; while (WB.act(H, { k: 'move', dir: 1 }) && n++ < 10); ok(H.units[0].x < 44, 'Volt is stopped by it'); }
+  { const G = flatGame({ chars: ['tusk', 'volt'] }); for (let i = 0; i < 8; i++) WB.act(G, { k: 'move', dir: 1 }); WB.act(G, { k: 'fire', angle: 60, power: 0.5 });
+    ok(Math.abs(G.proj[0].kb - 1.2) < 1e-9, 'Momentum: 8 cells walked makes Tusk\'s shove 20% harder'); }
+  { // a recharge crate readies both cooldowns
+    const G = flatGame({ chars: ['volt', 'brick'] }), u = G.units[0]; u.cd.shot2 = 2; u.cd.dash = 3; G.crates.push({ id: 955, x: u.x + 2, y: 60, kind: 'cool', air: false, vy: 0 }); WB.act(G, { k: 'move', dir: 1 });
+    ok(u.cd.shot2 === 0 && u.cd.dash === 0 && !G.crates.length, 'a recharge crate makes the ability and the move ready now'); }
+  // every pair of characters plays a whole match that finishes and replays exactly, and uses its kit
+  let bad = [], used = { shot2: 0, dash: 0, retreats: 0 };
+  for (let i = 0; i < 10; i++) for (let j = i + 1; j < 10; j++) { const o = { chars: [WB.CHAR_IDS[i], WB.CHAR_IDS[j]] }, { G: F, log } = WB.playOut(WB.newGame(777 + i * 31 + j, o), ['smart', 'smart']); for (const k in used) used[k] += F.stats[k]; if (F.phase !== 'over' || WB.hash(WB.replay(777 + i * 31 + j, log, o)) !== WB.hash(F)) bad.push(o.chars.join('/')); }
+  ok(!bad.length, `all 45 pairings finish and replay exactly ${bad.slice(0, 3)}`);
+  ok(used.shot2 > 60 && used.retreats > 300, `the computer uses abilities and retreats (in 45 one-screen matches: ${used.shot2} abilities, ${used.dash} moves, ${used.retreats} retreats)`);
+  { let mv = 0; for (let s2 = 1; s2 <= 4; s2++) mv += WB.playOut(WB.newGame(s2 * 31337, { size: 5, recipe: 'teams' }), ['smart', 'smart']).G.stats.dash; ok(mv >= 4, `and its move abilities to cross big maps (${mv} in four 5v5 matches)`); }
+  const { G: K } = WB.playOut(WB.newGame(4242, { chars: ['zip', 'flint'] }), ['basic', 'basic']); ok(K.stats.shot2 === 0 && K.stats.dash === 0, "the 'basic' bot style never touches its kit");
 }
 
 // 8d. v2 mid-match: supply crates and crew combos.
@@ -338,10 +435,10 @@ for (const m of WB.MAP_IDS) {
     ok(G.units.some((u) => Math.abs(u.x - c.x) <= 16), 'within a turn\'s walk of one of them');
     // walk onto it
     const u = G.units.reduce((a, b) => (Math.abs(a.x - c.x) < Math.abs(b.x - c.x) ? a : b)); while (WB.current(G) !== u) pass(G);
-    const before = { gear: u.gear, ss: u.ss, hp: (u.hp = Math.round(u.maxHp / 2)) }, dir = c.x > u.x ? 1 : -1, kind = c.kind;
+    u.cd.shot2 = 2; u.cd.dash = 2; const before = { ss: u.ss, hp: (u.hp = Math.round(u.maxHp / 2)) }, dir = c.x > u.x ? 1 : -1, kind = c.kind;
     G.moves = 30; let guard = 0; while (G.crates.some((q) => q.id === c.id) && guard++ < 30) WB.act(G, { k: 'move', dir });
     ok(!G.crates.some((q) => q.id === c.id) && G.stats.crates[u.team] === 1, 'walking onto a crate opens it');
-    ok(kind === 'gear' ? u.gear !== before.gear && WB.gearFor(u.char).includes(u.gear) && u.ammo.gear === WB.GEAR[u.gear].ammo : kind === 'ss' ? u.ss === Math.min(WB.SS_CHARGE, before.ss + WB.CRATE.ss) : u.hp > before.hp, `and gives what it showed (${kind})`);
+    ok(kind === 'cool' ? u.cd.shot2 === 0 && u.cd.dash === 0 : kind === 'ss' ? u.ss === Math.min(WB.SS_CHARGE, before.ss + WB.CRATE.ss) : u.hp > before.hp, `and gives what it showed (${kind})`);
   }
   { // a blast right on a crate destroys it; a nearby one doesn't
     const G = flat({}); pass(G); pass(G); const c = G.crates[0];

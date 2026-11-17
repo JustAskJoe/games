@@ -33,13 +33,10 @@ with sync_playwright() as p:
     assert pg.evaluate('() => WBUI.ui.screen') == 'select', '2 PLAYERS should open character select'
     pg.screenshot(path=str(shots / 'd1b_select_ember.png'))
     pg.keyboard.press('1'); pg.wait_for_timeout(200)          # Ember picks Brick with the keyboard
-    assert pg.evaluate('() => WBUI.ui.screen') == 'gear', 'picking a character opens the gear step'
-    pg.screenshot(path=str(shots / 'd1b2_gear.png'))
-    pg.keyboard.press('Enter'); pg.wait_for_timeout(200)       # and takes Brick's usual gear
+    assert pg.evaluate('() => [WBUI.ui.screen, WBUI.ui.pickTeam]') == ['select', 1], 'picking a character goes straight to the other player (no gear step since v3)'
     pg.screenshot(path=str(shots / 'd1c_select_tide.png'))
-    pg.click('[data-char=volt]'); pg.wait_for_timeout(200)     # Tide picks Volt with the mouse
-    pg.click('[data-gear=popcorn]'); pg.wait_for_timeout(1700)  # and a Popcorn Bomb instead of Volt's usual Sky Lobber
-    assert pg.evaluate('() => WBUI.G.units.map(u => u.gear)') == ['ricochet', 'popcorn'], 'each unit carries the gear that was picked'
+    pg.click('[data-char=volt]'); pg.wait_for_timeout(1700)    # Tide picks Volt with the mouse
+    assert pg.evaluate('() => WBUI.G.units.map(u => [u.cd.shot2, u.cd.dash])') == [[0, 0], [0, 0]], 'each unit starts with its ability and move ready'
     chars = pg.evaluate('() => WBUI.G.chars'); print('picked', chars); assert chars == ['brick', 'volt'], chars
     pg.screenshot(path=str(shots / 'd2_turn1.png'))
     st = pg.evaluate("() => ({ screen: WBUI.ui.screen, phase: WBUI.G.phase, team: WBUI.G.team, round: WBUI.ui.round })")
@@ -61,14 +58,22 @@ with sync_playwright() as p:
     pg.wait_for_timeout(500); pg.screenshot(path=str(shots / 'd4_flight.png'))
     wait_aim(pg); pg.wait_for_timeout(300)
     pg.screenshot(path=str(shots / 'd5_after_shot.png'))
-    assert pg.evaluate('() => WBUI.G.team') == 1, 'the turn did not pass to Tide'
+    st = pg.evaluate('() => [WBUI.G.team, WBUI.G.retreat, WBUI.G.moves]'); print('after the shot: team, retreat, steps', st)
+    assert st[0] == 0 and st[1] and st[2] > 0, 'after the shot lands Ember should get a retreat'
+    assert pg.locator('[data-act=fire]').count() == 0 and 'END TURN' in pg.inner_text('#ctl'), 'the retreat bar shows End turn, not Fire'
+    m0 = st[2]; pg.keyboard.press('ArrowLeft'); assert pg.evaluate('() => WBUI.G.moves') == m0 - 1, 'walking in the retreat'
+    pg.screenshot(path=str(shots / 'd5b_retreat.png')); pg.keyboard.press('Space'); wait_aim(pg); pg.wait_for_timeout(200)
+    assert pg.evaluate('() => [WBUI.G.team, WBUI.G.retreat]') == [1, False], 'ending the retreat did not pass the turn to Tide'
 
-    # weapon picker and lob button state
-    pg.click('[data-w=dud]'); assert pg.evaluate('() => WBUI.ui.weapon') == 'dud'
+    # the kit bar: basic, ability, move
+    pg.click('[data-w=dash]'); assert pg.evaluate('() => WBUI.ui.weapon') == 'dash'
     pg.keyboard.press('2'); assert pg.evaluate('() => WBUI.ui.weapon') == 'shot2'
-    names = pg.eval_on_selector_all('[data-w]', 'els => els.map(e => e.innerText.split("\\n")[0])'); print('Tide (Volt) shots:', names)
-    assert names[:2] == ['Arc Ball', 'Thunderstrike'], names
+    names = pg.eval_on_selector_all('[data-w]', 'els => els.map(e => e.innerText.split("\\n")[0])'); print('Tide (Volt) kit:', names)
+    assert names == ['Arc Ball', 'Thunderstrike', 'Blink'], names
     pg.keyboard.press('1'); assert pg.evaluate('() => WBUI.ui.weapon') == 'shot1'
+    # a jump: costs steps, and the turn carries on
+    m0 = pg.evaluate('() => WBUI.G.moves'); pg.click('[data-jump="-1"]'); pg.wait_for_timeout(200); wait_aim(pg)
+    assert pg.evaluate('() => [WBUI.G.stats.jumps, WBUI.G.team, WBUI.G.retreat]') == [1, 1, False] and pg.evaluate('() => WBUI.G.moves') == m0 - 3, 'the jump button should jump and leave the turn with Tide'
 
     # menu: Esc opens it, the timer toggles, resume closes it
     pg.keyboard.press('Escape'); pg.wait_for_timeout(150); pg.screenshot(path=str(shots / 'd6_menu.png'))
@@ -84,9 +89,8 @@ with sync_playwright() as p:
     pg.evaluate("() => { const G = WBUI.G, u = WB.current(G); G.duds.push({ id: 9999, x: u.x + 2, y: u.y - 0.4, fuse: 1, team: 1 - u.team, air: false, vy: 0 }); WBUI.renderAll(); }")
     pg.wait_for_timeout(200); pg.screenshot(path=str(shots / 'd7_dud_in_reach.png'))
     coach = pg.inner_text('#coach'); print('coach:', coach[:90]); assert 'dud' in coach.lower()
-    pg.click('[data-act=lob]'); assert pg.evaluate('() => WBUI.ui.lob'), 'LOB did not arm'
-    pg.click('[data-act=fire]'); wait_aim(pg)
-    assert pg.evaluate('() => WBUI.G.stats.lobs') == 1, 'the lob did not happen'
+    assert pg.locator('[data-act=lob]').count() == 0, 'there is no LOB button since v3'
+    pg.evaluate('() => { WBUI.G.duds = []; }')
 
     # bots play the rest of the match at 8x; walk through round screens until the match ends
     pg.evaluate('() => { WBUI.ui.fast = true; WBUI.ui.timerOn = false; }')
@@ -112,23 +116,20 @@ with sync_playwright() as p:
     pg.click('[data-act=fbback]'); pg.keyboard.press('r'); pg.wait_for_timeout(300)
     re = pg.evaluate("() => ({ screen: WBUI.ui.screen, wins: WBUI.ui.wins, round: WBUI.ui.round, tester: WBUI.ui.tester, chars: WBUI.G.chars })"); print('rematch:', re)
     assert re == {'screen': 'game', 'wins': [0, 0], 'round': 1, 'tester': False, 'chars': ['brick', 'volt']}, re
-    # every character can be picked and fires its Shot 2 in a real game
-    for c in ['zip', 'digger', 'gale', 'tusk', 'hopper', 'flint', 'patch', 'nimbus']:
+    # every character can be picked and uses its ability and its move in a real game
+    for c in ['brick', 'zip', 'volt', 'digger', 'gale', 'tusk', 'hopper', 'flint', 'patch', 'nimbus']:
         pg.evaluate(f"() => {{ WBUI.ui.picks = ['{c}', 'brick']; WBUI.startMatch(); WBUI.ui.fast = true; }}"); pg.wait_for_timeout(150)
         pg.keyboard.press('2'); pg.evaluate('() => WBUI.aim(55, 0.7)'); pg.keyboard.press('Space'); pg.wait_for_timeout(250)
         if c == 'zip': pg.screenshot(path=str(shots / 'd11_zip_double.png'))
-        wait_aim(pg); used = pg.evaluate('() => WBUI.G.stats.shot2'); print(c, 'Shot 2 fired:', used); assert used == 1, c
+        wait_aim(pg); used = pg.evaluate('() => WBUI.G.stats.shot2'); assert used == 1, c
+        pg.evaluate(f"() => {{ WBUI.ui.picks = ['{c}', 'brick']; WBUI.startMatch(); WBUI.ui.fast = true; }}"); pg.wait_for_timeout(150)
+        pg.keyboard.press('3'); pg.evaluate('() => WBUI.aim(55, 0.7)'); pg.keyboard.press('Space'); pg.wait_for_timeout(250)
+        if c == 'tusk': pg.screenshot(path=str(shots / 'd11b_leap.png'))
+        wait_aim(pg); st = pg.evaluate('() => [WBUI.G.stats.dash, WBUI.G.team, WBUI.G.retreat, WBUI.ui.weapon]'); print(c, 'ability fired; move used:', st)
+        assert st[0] == 1 and (st[1:] == [0, False, 'shot1'] or pg.evaluate('() => !WB.current(WBUI.G) || WB.current(WBUI.G).team !== 0')), c  # the turn carries on (unless the move took them into the water)
     # SS: when charged it takes over the Shot 1 slot; every character's SS fires in a real game
-    # v2 gear: every item fires from the 4th slot in a real game (each on a character that can carry it)
-    for g, c in pg.evaluate('() => WB.GEAR_IDS.map(g => [g, WB.CHAR_IDS.find(c => WB.gearFor(c).includes(g))])'):
-        pg.evaluate(f"() => {{ WBUI.ui.picks = ['{c}', 'brick']; WBUI.ui.gear = ['{g}', 'none']; WBUI.startMatch(); WBUI.ui.fast = true; }}"); pg.wait_for_timeout(150)
-        assert pg.locator('[data-w=gear]').count() == 1, 'the gear button should be in the control bar'
-        pg.keyboard.press('4'); pg.evaluate('() => WBUI.aim(55, 0.7)'); pg.keyboard.press('Space'); pg.wait_for_timeout(250)
-        if g == 'popcorn': pg.screenshot(path=str(shots / 'd11b_popcorn.png'))
-        wait_aim(pg); used = pg.evaluate('() => WBUI.G.stats.gear'); assert used == 1, g
-    print('all 14 gear items fired from the 4th slot')
     for c in ['brick', 'zip', 'volt', 'digger', 'gale', 'tusk', 'hopper', 'flint', 'patch', 'nimbus']:
-        pg.evaluate(f"() => {{ WBUI.ui.picks = ['{c}', 'volt']; WBUI.ui.gear = []; WBUI.startMatch(); WBUI.ui.fast = false; }}"); pg.wait_for_timeout(120)
+        pg.evaluate(f"() => {{ WBUI.ui.picks = ['{c}', 'volt']; WBUI.startMatch(); WBUI.ui.fast = false; }}"); pg.wait_for_timeout(120)
         assert pg.locator('[data-w=ss]').count() == 0, 'SS slot shown before it is charged'
         pg.evaluate('() => { WB.current(WBUI.G).ss = WB.SS_CHARGE; WBUI.ui.weapon = "shot1"; WBUI.renderAll(); }')
         assert pg.locator('[data-w=ss]').count() == 1 and pg.locator('[data-w=shot1]').count() == 0, 'SS should replace Shot 1'
@@ -148,7 +149,7 @@ with sync_playwright() as p:
     # 1 Player: you against 3 computers on Hard; the computers take their own turns
     pg.click('[data-act=mode][data-mode=solo]'); pg.wait_for_timeout(200); pg.screenshot(path=str(shots / 'd14_levels.png'))
     pg.keyboard.press('3'); assert pg.evaluate('() => WBUI.ui.level') == 'hard'
-    pg.click('[data-char=gale]'); pg.keyboard.press('Enter'); pg.wait_for_timeout(300)
+    pg.click('[data-char=gale]'); pg.wait_for_timeout(300)
     st = pg.evaluate('() => ({ teams: WBUI.G.teams, chars: WBUI.G.chars, mode: WBUI.ui.mode })'); print('1 player:', st)
     assert st['teams'] == 4 and st['chars'][0] == 'gale' and len(set(st['chars'][1:])) == 3, st
     pg.evaluate('() => { WBUI.ui.timerOn = false; }')
@@ -192,7 +193,7 @@ with sync_playwright() as p:
     assert pg.input_value('#edCode') == 'frost-peak-1222120211020-k3j9a', pg.input_value('#edCode')
     pg.click('[data-act=eduse]'); pg.wait_for_timeout(200)
     assert pg.evaluate('() => [WBUI.ui.screen, WBUI.ui.mapPick]') == ['title', 'frost-peak-1222120211020-k3j9a']
-    pg.click('[data-act=mode][data-mode=duel]'); pg.keyboard.press('1'); pg.keyboard.press('Enter'); pg.click('[data-char=gale]'); pg.keyboard.press('Enter'); pg.wait_for_timeout(800)
+    pg.click('[data-act=mode][data-mode=duel]'); pg.keyboard.press('1'); pg.click('[data-char=gale]'); pg.wait_for_timeout(800)
     st = pg.evaluate('() => [WBUI.G.map, WBUI.G.theme]'); print('custom map match:', st)
     assert st == ['frost-peak-1222120211020-k3j9a', 'frost'], st
     pg.close()
@@ -204,7 +205,7 @@ with sync_playwright() as p:
         q.click('[data-act=mapedit]'); q.wait_for_timeout(200); q.screenshot(path=str(shots / f'p_{w}x{h}_custommap.png'))
         print(f'custom map scrollWidth{w}', q.evaluate('document.documentElement.scrollWidth')); q.click('[data-act=edback]')
         q.click('[data-act=mode][data-mode=duel]'); q.wait_for_timeout(200); q.screenshot(path=str(shots / f'p_{w}x{h}_select.png'))
-        q.click('[data-char=gale]'); q.screenshot(path=str(shots / f'p_{w}x{h}_gear.png')); q.click('[data-act=gear]'); q.click('[data-char=digger]'); q.click('[data-act=gear]'); q.wait_for_timeout(400)
+        q.click('[data-char=gale]'); q.click('[data-char=digger]'); q.wait_for_timeout(400)
         q.evaluate('() => { WBUI.aim(60, 0.7); WBUI.doFire(); WBUI.ui.fast = true; }'); wait_aim(q)
         q.screenshot(path=str(shots / f'p_{w}x{h}.png'))
         sw = q.evaluate('document.documentElement.scrollWidth'); print(f'scrollWidth{w} {sw}')

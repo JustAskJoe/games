@@ -17,8 +17,9 @@ Pass band (PROPOSED Nov 2, 2026: Louiemark to confirm; numbers recorded in desig
   - skill shows: the smart bot beats the sloppy bot in 70-90% of matches
   - going first isn't decisive: in smart-vs-smart, the first team wins 40-62%
   - matches are short: median 10-24 turns (about 5-10 minutes at 20-30 seconds a turn)
-  - live duds pull their weight but don't take over: smart (uses duds) beats nodud 48%+,
-    and duder (dud-happy) beats smart no more than 65%
+  - kits are worth using but don't replace aiming (v3, Nov 17, 2026; replaces the two live-dud bands, since duds
+    stopped being a weapon, and the 14 gear bands, since gear is gone): across the ten characters, a bot that uses its
+    whole kit beats the same character firing only its basic shot 50-75% of the time (full run only). PROPOSED by Hunter with Claude; Louiemark to agree it.
   - no character is too strong or too weak: each of the five wins 40-60% of a smart-vs-smart round-robin
     (added Nov 2, 2026 with the characters; 1v1 with one unit a side since the game modes)
   - 1 Player difficulty (added Nov 2, 2026; a fair share of a 4-way is 25%): on Easy a new player (sloppy bot)
@@ -62,20 +63,19 @@ def row(label):
     if not m: fails.append(f'sim output missing the "{label}" line'); return None
     return dict(a=int(m[2]), b=int(m[4]), draws=int(m[5]), first=int(m[6]), p50=int(m[8]), timeouts=int(m[10]), stuck=int(m[11]))
 
-rows = {k: row(k) for k in ('mirror', 'skill', 'dud value', 'dud spam')}
+rows = {k: row(k) for k in ('mirror', 'skill')}
 if all(rows.values()):
     if any(x['stuck'] or x['timeouts'] for x in rows.values()): fails.append('balance: a match got stuck or hit the turn cap')
     if not 70 <= rows['skill']['a'] <= 90: fails.append(f"balance: smart beats sloppy {rows['skill']['a']}% (band 70-90%)")
     if not 40 <= rows['mirror']['first'] <= 62: fails.append(f"balance: going first wins {rows['mirror']['first']}% of mirror matches (band 40-62%)")
     if not 10 <= rows['mirror']['p50'] <= 24: fails.append(f"balance: median match is {rows['mirror']['p50']} turns (band 10-24)")
-    if rows['dud value']['a'] < 48: fails.append(f"balance: duds aren't worth using (smart vs nodud {rows['dud value']['a']}%, band 48%+)")
-    if rows['dud spam']['a'] > 65: fails.append(f"balance: dud spam wins {rows['dud spam']['a']}% (band 65% at most)")
 chars = {m[1]: int(m[2]) for m in re.finditer(r'^char (\w+)\s+wins (\d+)%', out, re.M)}
 if len(chars) != 10: fails.append(f'sim output has {len(chars)} character lines, expected 10')
-gear = {m[1]: int(m[2]) for m in re.finditer(r'^gear (\w+)\s+\w+\s+wins (\d+)%', out, re.M)}
-if len(gear) != 14: fails.append(f'sim output has {len(gear)} gear lines, expected 14')
-for g, w in gear.items():  # v2: gear is an option, not an upgrade. 200 mirror matches is about +-7%, so the band is wide.
-    if not quick and not 38 <= w <= 64: fails.append(f'gear: carrying {g} wins {w}% against the same character without it (band 38-64%)')
+kits = {m[1]: int(m[2]) for m in re.finditer(r'^kit (\w+)\s+wins (\d+)%', out, re.M)}
+if len(kits) != 10: fails.append(f'sim output has {len(kits)} kit lines, expected 10')  # v3: printed per character, not judged yet (50 matches each is about +-14%)
+kv = re.search(r'^kit value\s+whole kit wins (\d+)%', out, re.M)
+if not kv: fails.append('sim output missing the "kit value" line')
+elif not quick and not 50 <= int(kv[1]) <= 75: fails.append(f'balance: using the whole kit wins {kv[1]}% against basic shots only, across the ten characters (band 50-75%)')
 for c, w in chars.items():  # only judged on the full run: 30 matches a pair (--quick) is too rough to call
     if not 40 <= w <= 60:
         if quick: print(f'(quick run: {c} wins {w}% of the round-robin; the full run checks the 40-60% band)')

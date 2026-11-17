@@ -11,7 +11,7 @@ A turn-based artillery brawler for 2 to 4 friends on one screen: pick a characte
 - **Code:** `prototype/engine.js` (pure rules: seeded, every action through `act()`, `hash()` checksum, bots), `ui.js` (canvas renderer, input, screens), `head.html` / `body.html` (styles and page), `build.py` (joins them into `builds/wormsbound.html`), `sim.js` (bot balance run), `test.js` (rule checks), `test.py` (Playwright browser test)
 
 ### Adding things
-- **Gear:** one entry in `GEAR` in `engine.js` (`cls` is a class or `'any'`); the sim prints a `gear` line for it. See [design/v2.md](design/v2.md) section 9.
+- **A character's kit:** its entry in `CHARS` in `engine.js`: `passive`, `shot1` (basic), `shot2` (ability, with `cd`), `dash` (move, with `cd` and `kind`), `ss`. The fields are listed above `CHARS`; the sim prints a `kit` line per character. Design: [design/v3.md](design/v3.md).
 - **How the ground looks:** `prototype/look.js` (smooth edges, depth, grass, scorch, the drawn backdrop). It only paints; the rules grid in `engine.js` is untouched.
 - **Effects and sound:** in `prototype/ui.js`: `SFX` (sounds, all made in code), `onFx` (what each game event sets off), `pixelLayer` (the half-size canvas that barrels, shots, smoke and water are drawn on).
 - **A theme's background picture:** `art/backgrounds/<theme>.png`; see `art/tools/README.md`.
