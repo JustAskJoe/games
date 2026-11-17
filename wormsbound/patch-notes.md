@@ -10,6 +10,10 @@ Newest on top. See the repo's CLAUDE.md for how patch notes work.
 A plan for v3 (rules unchanged, nothing of it built), and the first piece of it that is in the game: new character art. Write-up: [`design/v3.md`](design/v3.md). Sheet: [`art/concepts/v3-lineup.png`](art/concepts/v3-lineup.png).
 
 ### What's new
+- **The ground is smooth.** Hills slope, cave mouths are rounded and craters come out round, with textured layers, grass or snow lying on top, a lit edge and a dark outline. The rules still use the same grid underneath, so nothing about play changed. Girders, trunks and other built things stay straight.
+- **Blasts leave scorch marks** with a few glowing embers, and caves show a dim back wall so they read as insides.
+- **Every theme has a painted background,** made with an open image model on Hunter's own PC and fitted to the game's pixel size and each theme's colours.
+- **Light:** lava lights whatever is above it; mushrooms, crystals and hot blocks glow and pulse; the screen has a soft dark frame.
 - **A design for v3:** weapons replaced by kits (a passive, a basic shot, an ability, a move ability and an ultimate for each character), jumping and moving after you shoot, six visible stats, shrines and a Relic to fight over, and level-ups during a match.
 - **A creature lineup:** the ten characters as ten different animals, drawn as a concept sheet to check they can be told apart as plain shapes.
 - **The ten characters are now ten creatures in the game:** armadillo, boar, ferret, frog, gecko, salamander, mole, beaver, heron and a cloud sheep. Each has its own outline and prop, and wears its team colour on a band or scarf, with a team-coloured disc under its feet.
@@ -22,6 +26,14 @@ A plan for v3 (rules unchanged, nothing of it built), and the first piece of it 
 - [ ] Update `art/lead-plan.md` (pull request #108) to the creature direction once the lineup is approved.
 
 ### Watch out
+- [ ] **The backgrounds are AI-generated** (Stable Diffusion XL 1.0, run locally; licence allows commercial use). They are the only generated art in the game and are listed in `design/ai-assets.md`. They are a first pass made before a lead art plan was adopted, so by the studio's art rules they count as concepts, not finals.
+- [ ] **Two backgrounds miss their theme a little:** Fungal Hollow reads as cliffs under an open sky more than a cavern, and Sky Isles has mountains but no floating islands. Scrap Yard and Shipwreck Cove have a tower and a palm tree near the front that could be mistaken for ground.
+- [ ] **Busy backgrounds can make the fight harder to read.** Frostbite Peaks is the one to check: pale mountains behind pale snow. Nobody has played on these yet.
+- [ ] **The build is three times the size** (about 1 MB, from 350 KB) because the ten pictures are inside it.
+- [ ] **The drawn edge and the real edge differ by up to half a cell (4 pixels).** A shot can look like it just clears a smoothed corner and still hit it, or the other way round.
+- [ ] Painting a map takes about 80 ms (200 ms for a Giant map) at the start of a round and about 11 ms per crater, measured on Hunter's PC. Not measured on a phone or a slow laptop.
+- [ ] Barrels, duds, crates, the water and the aim line are still drawn the old smooth way, so they don't share the ground's pixel size yet.
+- [ ] The map editor and the Map Lab still draw maps as blocks.
 - [ ] **Nothing in v3 is built or tested.** Every number in the doc is a first guess.
 - [ ] v3 replaces v2's gear slot and changes its crates, and v2 (#107) hasn't been reviewed or played by Louiemark yet.
 - [ ] The doc says bots will judge walls, bridges and jump pads badly, so the balance sim will be a weaker guide than it was for v2.

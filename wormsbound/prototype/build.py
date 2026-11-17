@@ -6,8 +6,12 @@ parts = [(here / 'head.html').read_text(encoding='utf-8'), (here / 'body.html').
 # art: the unit sprite sheet (art/sprites/creatures.png, drawn by art/tools/creatures.py) goes in as a data URL
 import base64
 units = here.parent / 'art' / 'sprites' / 'creatures.png'
-if units.exists(): parts.append('<script>\nwindow.WB_ART = { units: "data:image/png;base64,' + base64.b64encode(units.read_bytes()).decode() + '" };\n</script>\n')
-for f in ['mapgen.js', 'engine.js', 'ui.js']:
+# and each theme's background picture, if it has one (art/backgrounds/<theme>.png, made by art/tools/backgrounds.py)
+durl = lambda f: 'data:image/png;base64,' + base64.b64encode(f.read_bytes()).decode()
+backs = sorted((here.parent / 'art' / 'backgrounds').glob('*.png'))
+art = (['units: "' + durl(units) + '"'] if units.exists() else []) + ['backs: { ' + ', '.join(f'{f.stem}: "{durl(f)}"' for f in backs) + ' }']
+parts.append('<script>\nwindow.WB_ART = { ' + ', '.join(art) + ' };\n</script>\n')
+for f in ['mapgen.js', 'engine.js', 'look.js', 'ui.js']:   # look.js: how the ground and backdrop are painted
     parts.append('<script>\n' + (here / f).read_text(encoding='utf-8') + '\n</script>\n')
 out = here.parent / 'builds' / 'wormsbound.html'
 out.parent.mkdir(exist_ok=True)

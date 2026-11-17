@@ -38,7 +38,7 @@
 
   const cv = $('#map'), ctx = cv.getContext('2d');
   const terrCv = document.createElement('canvas'); terrCv.width = W; terrCv.height = H; const tctx = terrCv.getContext('2d');
-  const bgCv = document.createElement('canvas'); bgCv.width = W; bgCv.height = H; const bctx = bgCv.getContext('2d');
+  const bgCv = document.createElement('canvas'); bgCv.width = W + 80; bgCv.height = H + 40; const bctx = bgCv.getContext('2d'); // a little bigger than the screen: it slides as you look around
 
   const ui = {
     screen: 'title', G: null, matchSeed: 0, round: 1, wins: [0, 0], aim: {}, weapon: 'shot1', lob: false, picks: [null, null], pickTeam: 0, cursor: 2,
@@ -176,82 +176,42 @@
     win: () => { [523, 659, 784, 1046].forEach((f, i) => setTimeout(() => tone(f, f, 0.22, 0.18, 'triangle'), i * 120)); },
   };
 
-  // ---------- background: sunset sky, sun, two parallax ridges (baked once per round) ----------
-  // Each map's sky, far background, ground, prop and liquid colours come from its theme in mapgen.js (all drawn in code).
+  // ---------- background: painted once per round by look.js, small, and shown at 2x so it shares the ground's pixel size ----------
+  // Each map's sky, far background, ground, prop and liquid colours come from its theme in mapgen.js. A theme can also
+  // have a background picture (art/backgrounds/<theme>.png, inlined by build.py as WB_ART.backs); without one it's drawn.
+  const BACKS = {};
+  for (const [id, src] of Object.entries((window.WB_ART && window.WB_ART.backs) || {})) { const im = new Image(); im.onload = () => { BACKS[id] = im; if (((ui.G && ui.G.theme) || 'hills') === id) { bakeBackground(ui.G ? ui.G.seed : 20261102); } }; im.src = src; }
   const theme = () => WB.MapGen.THEMES[(ui.G && ui.G.theme) || 'hills'].look;
   function bakeBackground(seed) {
     let s = seed >>> 0; const r = () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
-    const TH = theme(), g = bctx.createLinearGradient(0, 0, 0, H);
-    g.addColorStop(0, TH.sky[0]); g.addColorStop(0.42, TH.sky[1]); g.addColorStop(0.7, TH.sky[2]); g.addColorStop(1, TH.sky[3]);
-    bctx.fillStyle = g; bctx.fillRect(0, 0, W, H);
-    const sx = 260 + r() * 760, sy = 330 + r() * 60;
-    const sg = bctx.createRadialGradient(sx, sy, 10, sx, sy, 170); sg.addColorStop(0, 'rgba(255,240,200,1)'); sg.addColorStop(0.25, 'rgba(255,214,140,.9)'); sg.addColorStop(1, 'rgba(255,170,90,0)');
-    bctx.fillStyle = sg; bctx.beginPath(); bctx.arc(sx, sy, 170, 0, 7); bctx.fill();
-    for (let i = 0; i < 70; i++) { bctx.fillStyle = `rgba(255,243,224,${0.15 + r() * 0.5})`; bctx.fillRect(r() * W, r() * 200, 2, 2); }
-    const ridge = (base, amp, col, k) => {
-      bctx.fillStyle = col; bctx.beginPath(); bctx.moveTo(0, H);
-      const p1 = r() * 6, p2 = r() * 6;
-      if (TH.bg === 'blocky') { // a skyline (or scrap heaps, or a foundry): flat-topped blocks instead of hills
-        for (let x = 0; x <= W;) { const w = 30 + r() * 70, y = base - amp * (0.3 + r() * 0.9); bctx.lineTo(x, y); bctx.lineTo(x + w, y); x += w; }
-      } else if (TH.bg === 'peaks') { // jagged mountains
-        for (let x = 0; x <= W;) { const w = 50 + r() * 90; bctx.lineTo(x + w / 2, base - amp * (0.8 + r() * 1.4)); bctx.lineTo(x + w, base - amp * 0.2 * r()); x += w; }
-      } else for (let x = 0; x <= W; x += 8) bctx.lineTo(x, base - amp * (0.6 * Math.sin(x / (180 * k) + p1) + 0.4 * Math.sin(x / (63 * k) + p2)));
-      bctx.lineTo(W, H); bctx.closePath(); bctx.fill();
-    };
-    if (TH.bg === 'cave') { // a cave: rock teeth hanging from the top, a dim glow below
-      for (let i = 0; i < 2; i++) { bctx.fillStyle = TH.ridges[i]; bctx.beginPath(); bctx.moveTo(0, 0); for (let x = 0; x <= W;) { const w = 30 + r() * 60; bctx.lineTo(x + w / 2, 60 + i * 50 + r() * 120); bctx.lineTo(x + w, 20 + r() * 30); x += w; } bctx.lineTo(W, 0); bctx.closePath(); bctx.fill(); }
-      ridge(560, 40, TH.ridges[1], 1);
-    } else if (TH.bg === 'float') { // far-off floating rocks instead of ridges
-      for (let i = 0; i < 9; i++) { const x = r() * W, y = 300 + r() * 260, w = 40 + r() * 90; bctx.fillStyle = TH.ridges[i & 1]; bctx.beginPath(); bctx.moveTo(x - w / 2, y); bctx.lineTo(x + w / 2, y); bctx.lineTo(x + w * 0.1, y + w * 0.6); bctx.closePath(); bctx.fill(); }
-    } else { ridge(470, 60, TH.ridges[0], 1.4); ridge(540, 45, TH.ridges[1], 1); }
-    if (TH.moon) { bctx.fillStyle = 'rgba(240,235,255,.85)'; bctx.beginPath(); bctx.arc(1040, 120, 46, 0, 7); bctx.fill(); bctx.fillStyle = TH.sky[0]; bctx.beginPath(); bctx.arc(1062, 108, 40, 0, 7); bctx.fill(); }
-    if (TH.snow) for (let i = 0; i < 120; i++) { bctx.fillStyle = `rgba(255,255,255,${0.3 + r() * 0.5})`; bctx.fillRect(r() * W, r() * H, 2 + r() * 2, 2 + r() * 2); }
-    if (TH.embers) for (let i = 0; i < 80; i++) { bctx.fillStyle = `rgba(255,${120 + r() * 100 | 0},40,${0.3 + r() * 0.6})`; bctx.fillRect(r() * W, 250 + r() * 470, 2, 2); }
-    if (TH.glow) for (let i = 0; i < 60; i++) { bctx.fillStyle = `rgba(184,240,112,${0.15 + r() * 0.4})`; bctx.beginPath(); bctx.arc(r() * W, 150 + r() * 560, 1 + r() * 3, 0, 7); bctx.fill(); }
-    if (TH.windows) for (let i = 0; i < 90; i++) { bctx.fillStyle = `rgba(255,214,120,${0.25 + r() * 0.5})`; bctx.fillRect(r() * W, 430 + r() * 250, 3, 4); }
+    const TH = theme(), small = document.createElement('canvas'); small.width = bgCv.width / 2; small.height = bgCv.height / 2;
+    WBLook.backdrop(small, TH, seed, BACKS[(ui.G && ui.G.theme) || 'hills']);
+    bctx.imageSmoothingEnabled = false; bctx.drawImage(small, 0, 0, bgCv.width, bgCv.height);
     ui.clouds = Array.from({ length: 6 }, () => ({ x: r() * W, y: 60 + r() * 220, s: 0.6 + r() * 0.9 }));
     ui.dust = Array.from({ length: reduced ? 0 : 46 }, () => ({ x: r() * W, y: 90 + r() * 560, z: 0.4 + r() * 0.8 }));
   }
 
-  // ---------- terrain: chunky cells, coloured by depth below the surface, with scorch marks ----------
-  const hash2 = (x, y) => { let h = (x * 374761393 + y * 668265263) >>> 0; h = (h ^ (h >>> 13)) * 1274126177 >>> 0; return (h >>> 16) & 255; };
-  function shadeFor(depth) { return depth === 0 ? 0 : depth === 1 ? 1 : depth < 5 ? 2 : depth < 10 ? 3 : depth < 18 ? 4 : 5; }
-  function renderTerrain() {
-    const G = ui.G, T = G.T, C = G.cols, R = G.rows;
-    if (terrCv.width !== C * CELL || terrCv.height !== R * CELL) { terrCv.width = C * CELL; terrCv.height = R * CELL; }
-    tctx.clearRect(0, 0, terrCv.width, terrCv.height);
-    for (let x = 0; x < C; x++) {
-      let depth = -1;
-      for (let y = 0; y < R; y++) {
-        if (!T[y * C + x]) { depth = -1; continue; }
-        depth++;
-        const v = T[y * C + x], L = theme(); // ground by depth; hard rock, props and accents in their own colours
-        const pair = v === WB.MapGen.ROCK ? L.rock : v === WB.MapGen.PROP ? L.prop : v === WB.MapGen.ACCENT ? L.accent : L.shades[shadeFor(depth)];
-        tctx.fillStyle = pair[hash2(x, y) & 1]; tctx.fillRect(x * CELL, y * CELL, CELL, CELL);
-        if (v === WB.MapGen.ROCK && (hash2(x, y) & 7) === 0) { tctx.fillStyle = 'rgba(255,255,255,.08)'; tctx.fillRect(x * CELL + 1, y * CELL + 1, 3, 2); }
-        if (depth > 3 && (hash2(x, y) & 31) === 0) { tctx.fillStyle = 'rgba(30,20,35,.25)'; tctx.fillRect(x * CELL + 2, y * CELL + 2, 3, 3); }
-      }
-    }
-    for (const s of ui.scorch) { // soot only on the ground that's left
-      tctx.save(); tctx.globalCompositeOperation = 'source-atop';
-      const g = tctx.createRadialGradient(s.x, s.y, s.r * 0.6, s.x, s.y, s.r * 1.5); g.addColorStop(0, 'rgba(30,18,28,.75)'); g.addColorStop(1, 'rgba(30,18,28,0)');
-      tctx.fillStyle = g; tctx.beginPath(); tctx.arc(s.x, s.y, s.r * 1.5, 0, 7); tctx.fill(); tctx.restore();
-    }
-    // ink edges where ground meets air, and grass tufts on top
-    tctx.fillStyle = '#2A1A2A';
-    for (let y = 0; y < R; y++) for (let x = 0; x < C; x++) {
-      if (!T[y * C + x]) continue;
-      const px = x * CELL, py = y * CELL;
-      if (x > 0 && !T[y * C + x - 1]) tctx.fillRect(px, py, 2, CELL);
-      if (x < C - 1 && !T[y * C + x + 1]) tctx.fillRect(px + CELL - 2, py, 2, CELL);
-      if (y < R - 1 && !T[(y + 1) * C + x]) tctx.fillRect(px, py + CELL - 2, CELL, 2);
-      if (y > 0 && !T[(y - 1) * C + x]) {
-        tctx.fillRect(px, py - 1, CELL, 2);
-        if (T[y * C + x] === WB.MapGen.DIRT && (hash2(x, y) & 3) === 0) { tctx.fillStyle = theme().tuft; tctx.fillRect(px + 2, py - 4, 2, 4); tctx.fillRect(px + 5, py - 3, 2, 3); tctx.fillStyle = '#2A1A2A'; }
-      }
-    }
-    ui.terrainDirty = false;
+  // ---------- terrain: painted by look.js from the same grid the rules use (smooth edges, depth, grass, scorch) ----------
+  // It repaints only around what changed, so calling it after every blast is cheap.
+  function renderTerrain() { ui.look = WBLook.terrain(terrCv, ui.G, theme()); ui.terrainDirty = false; }
+  // light from things that glow: lava lights whatever is above it, and mushrooms, crystals and hot blocks each get a halo
+  const glowCv = {};
+  function glowSprite(hex) {
+    if (glowCv[hex]) return glowCv[hex];
+    const c = document.createElement('canvas'); c.width = c.height = 96; const g = c.getContext('2d'), [r, gg, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+    const gr = g.createRadialGradient(48, 48, 2, 48, 48, 48); gr.addColorStop(0, `rgba(${r},${gg},${b},.26)`); gr.addColorStop(1, `rgba(${r},${gg},${b},0)`); g.fillStyle = gr; g.fillRect(0, 0, 96, 96);
+    return (glowCv[hex] = c);
   }
+  function drawGlows(t) {
+    const L = theme(), st = ui.look; if (!st) return;
+    ctx.globalCompositeOperation = 'lighter';
+    if (L.embers) { const wy = ui.G.water * CELL, g = ctx.createLinearGradient(0, wy - 200, 0, wy); g.addColorStop(0, 'rgba(255,110,30,0)'); g.addColorStop(1, 'rgba(255,120,40,.4)'); ctx.fillStyle = g; ctx.fillRect(0, wy - 200, worldW(), 200); }
+    if (st.lights.length) { const sp = glowSprite(L.accent[0]); for (let i = 0; i < st.lights.length; i++) { ctx.globalAlpha = reduced ? 0.85 : 0.75 + 0.25 * Math.sin(t * 2 + i * 1.7); ctx.drawImage(sp, st.lights[i][0] * CELL - 48, st.lights[i][1] * CELL - 48); } ctx.globalAlpha = 1; }
+    ctx.globalCompositeOperation = 'source-over';
+  }
+  // a soft dark frame round the screen, so the eye stays in the middle
+  const vigCv = document.createElement('canvas'); vigCv.width = W; vigCv.height = H;
+  { const g = vigCv.getContext('2d'), v = g.createRadialGradient(W / 2, H / 2, H * 0.45, W / 2, H / 2, H * 1.05); v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(10,6,20,.5)'); g.fillStyle = v; g.fillRect(0, 0, W, H); }
 
   // ---------- particles ----------
   function burst(x, y, n, kind) {
@@ -1277,17 +1237,19 @@
   function draw(t, dt) {
     const G = ui.G;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
-    if (!G) { ctx.drawImage(bgCv, 0, 0); return; }
+    if (!G) { ctx.drawImage(bgCv, -40, -20); return; }
     if (ui.terrainDirty) renderTerrain();
     camStep(dt);
     const sh = ui.shake, shx = sh > 0.3 ? (Math.random() - 0.5) * sh : 0, shy = sh > 0.3 ? (Math.random() - 0.5) * sh : 0, cam = ui.cam;
     ctx.setTransform(1, 0, 0, 1, shx, shy);
     const par = cam.on ? (cam.cx / worldW() - 0.5) * -30 : 0; // the far background slides a little as you look around
-    ctx.drawImage(bgCv, -40 + par, -20, W + 80, H + 40);
+    ctx.drawImage(bgCv, Math.round(-40 + par), -20);
     // clouds and dust drift with the wind: you can see it
     for (const c of ui.clouds) {
       c.x += G.wind * 2.2 * c.s * dt; if (c.x > W + 120) c.x = -120; if (c.x < -120) c.x = W + 120;
-      ctx.fillStyle = 'rgba(255,230,210,.18)'; for (const [dx, dy, r] of [[0, 0, 26], [24, 6, 20], [-24, 8, 18], [8, -10, 18]]) { ctx.beginPath(); ctx.arc(c.x + dx * c.s, c.y + dy * c.s, r * c.s, 0, 7); ctx.fill(); }
+      if (theme().bg === 'cave') continue; // flat-bottomed clouds in 2-pixel blocks (dark smoke over lava)
+      ctx.fillStyle = theme().embers ? 'rgba(40,20,20,.3)' : 'rgba(255,236,220,.2)';
+      for (const [dy, w] of [[0, 70], [-6, 50], [-12, 30], [6, 44]]) ctx.fillRect(Math.round((c.x - w * c.s / 2) / 2) * 2, Math.round((c.y + dy * c.s) / 2) * 2, Math.round(w * c.s / 2) * 2, 6);
     }
     for (const d of ui.dust) {
       d.x += (G.wind * 22 + 6) * d.z * dt; d.y += Math.sin(t + d.x / 90) * 6 * dt;
@@ -1295,7 +1257,8 @@
       ctx.fillStyle = `rgba(255,236,200,${0.15 + d.z * 0.25})`; ctx.fillRect(d.x, d.y, 2 + d.z * 6 * Math.min(1, Math.abs(G.wind) / 3), 2);
     }
     ctx.setTransform(cam.z, 0, 0, cam.z, -cam.x * cam.z + shx, -cam.y * cam.z + shy); // from here on: world pixels
-    ctx.drawImage(terrCv, 0, 0);
+    ctx.imageSmoothingEnabled = false; ctx.drawImage(terrCv, 0, 0, worldW(), worldH()); ctx.imageSmoothingEnabled = true; // world pixels at 2x, hard edges
+    drawGlows(t);
     for (const b of G.barrels) drawBarrel(b);
     for (const c of G.crates || []) drawCrate(c, t);
     for (const d of G.duds) drawDud(d, t, false);
@@ -1331,6 +1294,7 @@
       ctx.strokeText(p.text, p.x, p.y - k * 40); ctx.fillStyle = p.c; ctx.fillText(p.text, p.x, p.y - k * 40); ctx.globalAlpha = 1;
     }
     ctx.setTransform(1, 0, 0, 1, 0, 0); // back to the screen
+    ctx.drawImage(vigCv, 0, 0);
     drawOverlay();
     if (ui.slow > 0 && !reduced) { ctx.fillStyle = `rgba(30,26,43,${Math.min(0.25, ui.slow * 0.3)})`; ctx.fillRect(0, 0, 8 + W, 40); ctx.fillRect(0, H - 40, W + 8, 40); }
   }
