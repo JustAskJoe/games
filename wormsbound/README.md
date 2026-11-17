@@ -13,6 +13,7 @@ A turn-based artillery brawler for 2 to 4 friends on one screen: pick a characte
 ### Adding things
 - **Gear:** one entry in `GEAR` in `engine.js` (`cls` is a class or `'any'`); the sim prints a `gear` line for it. See [design/v2.md](design/v2.md) section 9.
 - **How the ground looks:** `prototype/look.js` (smooth edges, depth, grass, scorch, the drawn backdrop). It only paints; the rules grid in `engine.js` is untouched.
+- **Effects and sound:** in `prototype/ui.js`: `SFX` (sounds, all made in code), `onFx` (what each game event sets off), `pixelLayer` (the half-size canvas that barrels, shots, smoke and water are drawn on).
 - **A theme's background picture:** `art/backgrounds/<theme>.png`; see `art/tools/README.md`.
 - **A unit sprite:** a draw function in `art/tools/creatures.py` and its id in `ROWS`, in the same order as `CHARS`; run it, then `build.py`. How poses work is in `art/tools/README.md`.
 - **A character:** add it to `CHARS` in `engine.js` (health, armour, steps, climb, `shot1`, `shot2` and `ss`). Shots can use the existing fields (`wind`, `speed`, `knock`, `bounce`, `drill`, `strike`, `double`, and for an SS `rain`, `storm`, `quake`, `tornado`); anything new needs handling in `advance()` or `land()` and a line in the bots' `scoreLanding()`. Give it a look in `drawBody()` in `ui.js`, then run the full sim: it must win 40–60% of the round-robin.
