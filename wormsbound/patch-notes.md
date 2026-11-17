@@ -10,6 +10,11 @@ Newest on top. See the repo's CLAUDE.md for how patch notes work.
 A plan for v3 (rules unchanged, nothing of it built), and the first piece of it that is in the game: new character art. Write-up: [`design/v3.md`](design/v3.md). Sheet: [`art/concepts/v3-lineup.png`](art/concepts/v3-lineup.png).
 
 ### What's new
+- **Blasts have weight.** The ground a blast digs out is thrown up from the rim, bounces and lies where it lands. There's a fireball, a shock ring and solid smoke that blows away with the wind. The picture holds for a split second on a hit and the view nudges in towards it; a knock-out holds longer.
+- **You can see what a hit did.** The number comes off the creature ("-21"), it blinks white, and it squashes and kicks up dust when it lands. Walking kicks up dust too.
+- **You can see and hear the wind.** Streaks cross the sky, more and longer as it picks up, with a soft hiss that rises with it. Each kind of map has its own thing in the air: snow, embers, spores, sand.
+- **Everything shares the ground's pixel size now:** the water, barrels, crates, duds, shots, sparks, smoke and the aim arc.
+- **Sound is fuller.** Blasts have a crack, a thump that grows with the crater and bits pattering down. Footsteps, landings, hits and splashes have sounds, and each comes from the side of the screen it happened on.
 - **The ground is smooth.** Hills slope, cave mouths are rounded and craters come out round, with textured layers, grass or snow lying on top, a lit edge and a dark outline. The rules still use the same grid underneath, so nothing about play changed. Girders, trunks and other built things stay straight.
 - **Blasts leave scorch marks** with a few glowing embers, and caves show a dim back wall so they read as insides.
 - **Every theme has a painted background,** made with an open image model on Hunter's own PC and fitted to the game's pixel size and each theme's colours.
@@ -26,6 +31,13 @@ A plan for v3 (rules unchanged, nothing of it built), and the first piece of it 
 - [ ] Update `art/lead-plan.md` (pull request #108) to the creature direction once the lineup is approved.
 
 ### Watch out
+- [ ] **The online 1v1 test is flaky.** In about one run in five or six, a test browser page crashes ("Target crashed") or the match stalls in round 2 until the test gives up. It happens on the build before this one too (1 crash in 6 runs there, 1 in 5 here), so these changes didn't cause it, but nobody knows what does. Rerunning passes. Worth finding before more people play online.
+- [ ] **Nobody has listened to the new sound.** It was written and run with no errors, but the test browser has no speakers, so volume, balance and whether the wind hiss gets annoying are unchecked. Sound can be turned off in the pause menu.
+- [ ] **The hold on a hit and the nudge of the view are guesses** (about a twentieth of a second for a big blast, a tenth for a knock-out). Five darts in a row hold five times. Both are skipped for people whose device asks for reduced motion, and so is the brief pale flash on the biggest blasts.
+- [ ] **Bits of ground that land are looks only.** They rest on the ground the rules see, but the rules never see them; they fade after two or three seconds.
+- [ ] Things on the pixel layer have slightly soft edges (they're drawn small and blown up), and creatures and writing are still drawn at full sharpness, so the two don't match exactly.
+- [ ] Not measured on a phone or a slow laptop: the pixel layer is one more full-screen copy a frame.
+- [ ] Fixed along the way: fireballs, lightning and the tornado swirl were only ever on screen for a single frame. They now last as long as they were meant to, so Volt's bolt and Gale's tornado look different from before.
 - [ ] **The backgrounds are AI-generated** (Stable Diffusion XL 1.0, run locally; licence allows commercial use). They are the only generated art in the game and are listed in `design/ai-assets.md`. They are a first pass made before a lead art plan was adopted, so by the studio's art rules they count as concepts, not finals.
 - [ ] **Two backgrounds miss their theme a little:** Fungal Hollow reads as cliffs under an open sky more than a cavern, and Sky Isles has mountains but no floating islands. Scrap Yard and Shipwreck Cove have a tower and a palm tree near the front that could be mistaken for ground.
 - [ ] **Busy backgrounds can make the fight harder to read.** Frostbite Peaks is the one to check: pale mountains behind pale snow. Nobody has played on these yet.
