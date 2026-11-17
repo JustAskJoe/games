@@ -48,6 +48,9 @@
   const JUMP = { cost: 3, vx: 7, vy: 17 }; // a jump: costs 3 steps of movement; about 5 cells up and 8 along (× the character's jump stat for height)
   const RETREAT = 1 / 3;        // after firing you may still walk: what's left of your movement, up to this share of it
   const BURN = 6;               // Flint's burn: damage at the start of each of the target's next two turns
+  // The Relic (v3): one a round. It lands in the middle once everyone has had about three turns; it has health; whoever
+  // lands the last hit takes it for their side: a notch of SS for every unit, and more Power for the rest of the round.
+  const RELIC = { rounds: 3, hp: 70, r: 2, ss: 1, power: 1.1 };
   const DASH_DELAY = 150;       // turn delay a move ability adds unless it says otherwise
   const SUDDEN_ROUNDS = 12;     // after this many rounds (a round = one turn per side) the water rises
   const SUDDEN_RISE = 2;        // rows per turn
@@ -213,6 +216,7 @@
       v: 4, seed: seed >>> 0, _s: (seed >>> 0) || 1, _id: 0, cols: COLS, rows: ROWS, map: 'hills', mapName: '', theme: 'hills', windMul: 1, mirror: false,
       phase: 'aim', turn: 0, team: 0, teams, size, actor: 0, spent: 0, chars,
       wind: 0, water: WATER0, moves: 0, weapon: 'shot1', mid: false, fired: false, retreat: false, walked: 0, windFlip: false, zones: [],
+      relic: opts.relic === false ? null : { state: 'wait', at: 0, x: 0, y: 0, hp: RELIC.hp, maxHp: RELIC.hp, team: -1, air: false, vy: 0 }, // wait → live → taken (or lost to the water)
       T: null, units: [], proj: [], duds: [], barrels: [], crates: [], fx: [], crateOn: opts.crates !== false, shooter: 0, combo: false,
       fused: false, winner: null,
       stats: { crates: new Array(teams).fill(0), cratesLost: 0, combos: 0, shots: 0, shot2: 0, ss: 0, dash: 0, jumps: 0, retreats: 0, dudBlasts: 0, chains: 0, strikes: 0, drowned: 0, fallKOs: 0, selfDmg: new Array(teams).fill(0), dmg: new Array(teams).fill(0) },
@@ -251,6 +255,7 @@
       if (f.kind === 'barrel') G.barrels.push({ id: ++G._id, x: f.x + 0.5, y: f.y, air: false, vy: 0 });
       else G.duds.push({ id: ++G._id, x: f.x + 0.5, y: f.y, fuse: f.fuse, team: null, air: false, vy: 0, old: true });
     }
+    if (G.relic) G.relic.at = RELIC.rounds * G.units.length; // the turn it lands on: about three turns each
     // who shoots first (a best-of-3 alternates it, since going first is worth a few points);
     // starting delays alternate the teams: first team's unit 1, other team's unit 1, first team's unit 2, ...
     G.first = Number.isInteger(opts.first) && opts.first >= 0 && opts.first < teams ? opts.first : 0;
@@ -386,6 +391,7 @@
       else { u.vx += nx * KNOCK * k * km; u.vy += (ny - 0.6) * KNOCK * k * km; }
       u.air = true;
     }
+    if (G.relic && G.relic.state === 'live') { const q = G.relic, d = Math.hypot(q.x - x, q.y - RELIC.r - y); if (d <= reach + RELIC.r) hitRelic(G, dmg * Math.min(1, 1 - (d - RELIC.r) / reach), byTeam); }
     G.fx.push({ k: 'boom', x, y, r, kind });
     // live duds caught in a blast go off too: chain reactions
     for (const d of G.duds) if (!d.gone && Math.hypot(d.x - x, d.y - y) <= r + 1.5) d.chain = true;
@@ -430,7 +436,7 @@
     // the shooter's power and passive (only for hits on an enemy by the unit that fired this turn, and not for the arc itself)
     const by = byTeam != null && byTeam !== u.team && G.shooter && !G._arc ? G.units.find((v) => v.id === G.shooter && v.team === byTeam) : null;
     if (by) {
-      hit = Math.max(1, Math.round(hit * CHARS[by.char].power));
+      hit = Math.max(1, Math.round(hit * CHARS[by.char].power * (G.relic && G.relic.state === 'taken' && G.relic.team === byTeam ? RELIC.power : 1)));
       const pv = passiveOf(by);
       if (pv === 'burn') { u.burn = 2; u.burnBy = byTeam; }
       if (pv === 'drizzle') u.wet = true;
@@ -459,7 +465,17 @@
       if (!u.alive || Math.abs(u.x - x) > w) continue;
       hurt(G, u, Math.round(dmg * CHARS[u.char].armor), byTeam); hits.push(u.id);
     }
+    if (G.relic && G.relic.state === 'live' && Math.abs(G.relic.x - x) <= w + RELIC.r) hitRelic(G, dmg, byTeam);
     G.fx.push({ k: 'bolt', x, hits });
+  }
+  // Damage to the Relic. The hit that empties it takes it for that side. Barrels and old duds (no side) can wear it down but never take it.
+  function hitRelic(G, dmg, byTeam) {
+    const q = G.relic; dmg = Math.round(dmg); if (!q || q.state !== 'live' || dmg <= 0) return;
+    q.hp = byTeam == null ? Math.max(1, q.hp - dmg) : q.hp - dmg;
+    if (q.hp > 0) { G.fx.push({ k: 'relichit', x: q.x, y: q.y, hp: q.hp, team: byTeam == null ? -1 : byTeam }); return; }
+    q.hp = 0; q.state = 'taken'; q.team = byTeam; const ids = [];
+    for (const u of G.units) if (u.alive && u.team === byTeam) { u.ss = Math.min(SS_CHARGE, u.ss + RELIC.ss); ids.push(u.id); }
+    G.stats.relic = byTeam; G.fx.push({ k: 'relictake', x: q.x, y: q.y, team: byTeam, ids });
   }
   function ko(G, u, why) {
     if (!u.alive) return; u.alive = false; u.hp = 0; u.why = why;
@@ -511,8 +527,14 @@
       if (solidAt(G, c.x, c.y + 0.6)) { while (solidAt(G, c.x, c.y + 0.5) && c.y > 0) c.y -= 0.25; c.vy = 0; c.air = false; for (const u of G.units) if (u.alive) openCrates(G, u); }
     }
     G.crates = G.crates.filter((c) => !c.gone);
+    if (G.relic && G.relic.state === 'live') { // the Relic falls when the ground under it goes, and is lost if it reaches the water
+      const q = G.relic; if (!q.air && !solidAt(G, q.x, q.y + 1)) q.air = true; // a full cell down: where it comes to rest sits a little above the ground
+      if (q.air) { q.vy += GRAV * TICK; q.y += q.vy * TICK;
+        if (q.y >= G.water) { q.state = 'lost'; q.air = false; G.fx.push({ k: 'splash', x: q.x, y: G.water }); G.fx.push({ k: 'reliclost', x: q.x, y: G.water }); }
+        else if (solidAt(G, q.x, q.y + 0.6)) { while (solidAt(G, q.x, q.y + 0.5) && q.y > 0) q.y -= 0.25; q.vy = 0; q.air = false; } }
+    }
     for (const u of G.units) if (u.alive && u.air) unitPhysics(G, u);
-    if (!G.proj.length && !G.units.some((u) => u.alive && u.air) && !G.duds.some((d) => d.air || d.chain || d.fuseOut) && !G.barrels.some((b) => b.air || b.chain) && !G.crates.some((c) => c.air)) settle(G);
+    if (!G.proj.length && !G.units.some((u) => u.alive && u.air) && !G.duds.some((d) => d.air || d.chain || d.fuseOut) && !G.barrels.some((b) => b.air || b.chain) && !G.crates.some((c) => c.air) && !(G.relic && G.relic.state === 'live' && G.relic.air)) settle(G);
     return G.fx;
   }
   function land(G, p) {
@@ -613,6 +635,7 @@
       for (const d of G.duds) if (d.y >= G.water) d.gone = true;
       G.duds = G.duds.filter((d) => !d.gone);
       G.barrels = G.barrels.filter((b) => b.y < G.water); G.crates = G.crates.filter((c) => c.y < G.water);
+      if (G.relic && G.relic.state === 'live' && G.relic.y >= G.water) { G.relic.state = 'lost'; G.fx.push({ k: 'reliclost', x: G.relic.x, y: G.water }); }
       checkWin(G); if (G.phase === 'over') return;
     }
     if (G.turn >= maxTurns(G)) { // a stalemate nobody can break: the side with more health left (as a share) wins
@@ -631,6 +654,10 @@
     if (passiveOf(nx) === 'repairs') { // Patch: his crew close by, and a little for himself
       const got = []; for (const v of G.units) if (v.alive && v.team === nx.team && v.hp < v.maxHp && Math.hypot(v.x - nx.x, v.y - nx.y) <= 5) { v.hp = Math.min(v.maxHp, v.hp + (v === nx ? 3 : 6)); got.push(v.id); }
       if (got.length) G.fx.push({ k: 'mend', ids: got });
+    }
+    if (G.relic && G.relic.state === 'wait' && G.turn >= G.relic.at) { // the Relic lands: the middle of the map, on dry ground, clear of everyone (or it waits a turn)
+      const q = G.relic, x = dryLand(G, Math.floor(G.cols / 2), G.units.filter((u) => u.alive).map((u) => Math.floor(u.x)), 4);
+      if (surfaceY(G, x) < G.water - 3 && Math.abs(x - G.cols / 2) < G.cols * 0.3) { q.x = x + 0.5; q.y = surfaceY(G, x); q.state = 'live'; G.fx.push({ k: 'relic', x: q.x, y: q.y }); }
     }
     if (G.crateOn && G.turn >= crateFirst(G) && (G.turn - crateFirst(G)) % crateEvery(G) === 0 && G.crates.length < CRATE.max + (G.cols > COLS ? 1 : 0)) dropCrate(G);
     G.phase = 'aim'; G.moves = nx.wet ? Math.ceil(CHARS[nx.char].steps / 2) : CHARS[nx.char].steps; nx.wet = false; G.fused = false; G.weapon = 'shot1';
@@ -825,7 +852,7 @@
     basic:  { tries: 36, refine: 14, noiseA: 1.4, noiseP: 0.018, kit: 0, dodge: 1, crate: 1 },
     nocrate: { tries: 36, refine: 14, noiseA: 1.4, noiseP: 0.018, kit: 1, dodge: 1, crate: 0 },
     // the computer opponents in 1 Player mode
-    easy:   { tries: 8,  refine: 0,  noiseA: 7.5, noiseP: 0.10,  kit: 0.5, dodge: 0, ssSkip: 0.5, crate: 1 },
+    easy:   { tries: 8,  refine: 0,  noiseA: 7.5, noiseP: 0.10,  kit: 0.5, dodge: 0, ssSkip: 0.5, crate: 1, relic: 0 }, // doesn't go for the Relic (it may still take it by accident)
     medium: { tries: 18, refine: 6,  noiseA: 3.2, noiseP: 0.04,  kit: 1, dodge: 1, crate: 1 },
     hard:   { tries: 36, refine: 14, noiseA: 1.4, noiseP: 0.018, kit: 1, dodge: 1, crate: 1 },
   };
@@ -833,7 +860,7 @@
   const gauss = (r) => (r() + r() + r() - 1.5) * 1.15;
 
   // Score a landing spot for `team` with weapon w (from the bot's point of view).
-  function scoreLanding(G, land, w, team, fuse, char) { // char: the unit firing (or a character id)
+  function scoreLanding(G, land, w, team, fuse, char, relicW = 1) { // relicW: how much this bot cares about the Relic (Easy: not at all) // char: the unit firing (or a character id)
     if (land.hit === 'water' || land.hit === 'out' || land.hit === 'timeout') return -1;
     const S = shotSpec(G, char || team, w);
     const s = blastScore(G, land.x, land.y, S.r, S.dmg, team);
@@ -860,6 +887,10 @@
       const k = 1 - d / S.tornado.reach, risky = G.water - u.y < 16 || u.x < 14 || u.x > G.cols - 14;
       sc += (u.team === team ? -1.4 : 1) * (Math.min(u.hp, S.tornado.dmg * k) + (risky ? 0.7 * u.hp * k : 0));
     }
+    if (relicW > 0 && G.relic && G.relic.state === 'live' && S.r > 0) { // the Relic: chipping it is worth a little, taking it a lot
+      const q = G.relic, reach = S.r * DMG_SPREAD, d = Math.hypot(q.x - land.x, q.y - RELIC.r - land.y);
+      if (d <= reach + RELIC.r) { const dm = S.dmg * Math.min(1, 1 - (d - RELIC.r) / reach) * (S.rain ? S.rain.n * 0.6 : S.double ? 1.8 : 1); sc += dm >= q.hp ? 30 : Math.min(q.hp, dm) * 0.35; }
+    }
     if (land.unit && G.units.find((x) => x.id === land.unit).team !== team) sc += 4;
     return sc;
   }
@@ -869,7 +900,7 @@
     const tryOne = (angle, power) => {
       power = clamp(power, 0.1, 1) * powerCap;
       const land = predict(G, u, angle, power, w);
-      const sc = scoreLanding(G, land, w, u.team, fuse, u);
+      const sc = scoreLanding(G, land, w, u.team, fuse, u, st.relic == null ? 1 : st.relic);
       if (sc > best.score) best = { score: sc, angle, power: power / powerCap };
     };
     for (let i = 0; i < st.tries; i++) {
@@ -988,7 +1019,7 @@
   // ---------- checksum and replay ----------
   function hash(G) {
     const r = (v) => Math.round(v * 100);
-    const parts = [G.map, G.cols, G.turn, G.team, G.actor, G.spent, G.units.map((u) => u.delay).join(','), G.phase, r(G.wind), G.water, G.moves, G.winner, G.chars.join(','), G.retreat ? 1 : 0, G.fired ? 1 : 0, G.zones.map((z) => `${r(z.x)},${r(z.y)},${z.until}`).join(';'),
+    const parts = [G.map, G.cols, G.turn, G.team, G.actor, G.spent, G.units.map((u) => u.delay).join(','), G.phase, r(G.wind), G.water, G.moves, G.winner, G.chars.join(','), G.retreat ? 1 : 0, G.fired ? 1 : 0, G.relic ? `${G.relic.state},${r(G.relic.x)},${r(G.relic.y)},${G.relic.hp},${G.relic.team}` : '-', G.zones.map((z) => `${r(z.x)},${r(z.y)},${z.until}`).join(';'),
       G.units.map((u) => `${u.id}:${r(u.x)},${r(u.y)},${u.hp},${u.alive ? 1 : 0}`).join(';'),
       G.duds.map((d) => `${d.id}:${r(d.x)},${r(d.y)},${d.fuse}`).join(';'), G.barrels.map((b) => `${b.id}:${r(b.x)},${r(b.y)}`).join(';'), G.crates.map((c) => `${c.id}:${r(c.x)},${r(c.y)},${c.kind}`).join(';'),
       G.units.map((u) => `${u.char},${u.cd.shot2},${u.cd.dash},${u.ss},${u.burn},${u.wet ? 1 : 0},${u.hits}`).join(';'), G.T.join('')];
@@ -1004,7 +1035,7 @@
     return G;
   }
 
-  const WB = { TICK, COLS, ROWS, WATER0, GRAV, VMAX, WIND_MAX, UNIT_R, UNITS_PER_TEAM, HP, MOVE_STEPS, JUMP, RETREAT, BURN, SUDDEN_ROUNDS, MAX_ROUNDS, suddenTurn, maxTurns, DMG_SPREAD, SS_CHARGE, DELAY, HP_MUL, CREW_HP,
+  const WB = { TICK, COLS, ROWS, WATER0, GRAV, VMAX, WIND_MAX, UNIT_R, UNITS_PER_TEAM, HP, MOVE_STEPS, JUMP, RETREAT, BURN, RELIC, SUDDEN_ROUNDS, MAX_ROUNDS, suddenTurn, maxTurns, DMG_SPREAD, SS_CHARGE, DELAY, HP_MUL, CREW_HP,
     MAX_TEAMS, MAX_SIZE, MAX_UNITS, DUD, BARREL, CHARS, CHAR_IDS, CLASSES, CRATE, CRATE_KINDS, crateFirst, crateEvery, WEAPON_IDS, MAPS, MAP_IDS, pickMap, recipeFor, MapGen, STYLES, newGame, act, step, resolve, current, owner, teamUnits, charOf, shotSpec, ssReady, ssOf, cdOf, ready, passiveOf, safeStep, turnOrder, delayIf, solidAt, surfaceY, center, fits,
     predict, blastScore, botTurn, playOut, hash, replay };
   if (typeof module !== 'undefined' && module.exports) module.exports = WB; else root.WB = WB;
