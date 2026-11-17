@@ -10,6 +10,12 @@ Pixel art drawn in code, the method Rogue Shooter uses (`rogue-shooter/art/tools
 
 Run `python3 creatures.py` from this folder, then `python3 ../../prototype/build.py` (the build inlines the sheet).
 
+## Backgrounds (the one thing an image model makes)
+- `gen_backgrounds.py`: generates a raw picture per theme with an open model on your own graphics card (free, nothing uploaded). Needs PyTorch and `diffusers`; details and the licence are at the top of the file. Raw pictures are big and are **not** committed.
+- `backgrounds.py RAW_DIR`: fits them to the game: 680 × 380, pulled towards the theme's sky colours, dimmed, 40 colours. Writes `../backgrounds/<theme>.png` (the build inlines these) and `../concepts/backgrounds.png`.
+- A theme with no picture gets a drawn backdrop, so deleting one is safe.
+- The ground itself is not art from this folder: `prototype/look.js` paints it from the map's grid.
+
 ## How a creature is drawn and animated
 - Each draw function paints its parts in groups and calls `f.at('legs' | 'tail' | 'body' | 'head' | 'prop')` before each group.
 - A pose in `POSES` is an offset for each group plus a few flags (idle habit, eyes, muzzle flash, casting glow, lift, lying down). So one drawing gives all 16 frames.
