@@ -6,6 +6,21 @@ Newest on top. See the repo's CLAUDE.md for how patch notes work.
 
 ---
 
+## v3 preview build in Studio HQ · 2026-11-17 · Hunter (with Claude)
+A second entry in the Lab and Studio HQ, **Wormsbound v3 (preview)**, next to the current game. The current game is untouched.
+
+### What's new
+- **Wormsbound v3 (preview)** is playable from Studio HQ: creature art, smooth ground and painted backgrounds, motion and sound, kits with cooldowns, jumping, a retreat after your shot, and the Relic.
+
+### Next up
+- [ ] @Louiemark: review the six pull requests this build comes from (#95, #107, #110 to #115). When they merge, delete `builds/wormsbound-v3.html` and this entry in `games.json`: the main build will be the same thing.
+
+### Watch out
+- [ ] **This build has no source on main.** `builds/wormsbound-v3.html` was built from the branch `hunter/wormsbound-v3-relic` (pull request #115). It will not change when main changes, and `build-and-test.py` on main does not rebuild it.
+- [ ] **Do not use Online in the preview.** The live room server runs the current rules, so a v3 browser would drift out of step with it.
+- [ ] **Its rules were decided by Hunter, not by Louiemark,** and nobody has played it through. Its own open items are in the patch notes on pull request #115.
+- [ ] The backgrounds in it are AI-generated (Stable Diffusion XL, run locally). They are recorded in `design/ai-assets.md` on that branch, not yet on main.
+
 ## Map generator replaces the three maps · 2026-11-11 · Hunter (with Claude)
 Louiemark chose to replace his three maps with the map generator, and map making now lives inside the game.
 

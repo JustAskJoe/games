@@ -19,6 +19,8 @@
       "blurb": "Happy space Akihabara: a 10-day run growing a new card shop. Stock the floor and the back room, read cards with your eye and loupe, grade, haggle, rip sealed and vintage packs, and spot thieves and fake sellers to build your star rating. Desktop landscape." },
     { "slug": "lightkeeper", "name": "Lightkeeper", "kind": "Night sea puzzle", "build": "v1", "dir": "lightkeeper", "file": "lightkeeper.html",
       "blurb": "One-thumb lighthouse puzzle: sweep the beam and every boat in your light turns for home, every boat in the dark holds her course. Six nights: reefs, crossings, a current, fog and a storm." },
+    { "slug": "wormsbound-v3", "name": "Wormsbound v3 (preview)", "kind": "Artillery", "build": "v3 preview", "dir": "wormsbound", "file": "wormsbound-v3.html",
+      "blurb": "A preview of where Wormsbound is heading, not yet reviewed by its lead: ten creatures with kits (a passive, a basic shot, an ability and a move on cooldowns), jumping, a retreat after your shot, the Relic to fight over, smooth ground and painted backgrounds. Play 2 Players, 1 Player or Squads; online is not connected in this build. Desktop first." },
     { "slug": "wormsbound", "name": "Wormsbound", "kind": "Artillery", "build": "P1", "dir": "wormsbound", "file": "wormsbound.html",
       "blurb": "Turn-based artillery with five characters and GunBound-style turn delay: 1 Player vs 3 computers (Easy/Medium/Hard) or a 1v1 on one keyboard. Desktop first." },
     { "slug": "moonwort-co", "name": "Moonwort & Co.", "kind": "Cozy apothecary sim", "build": "P1", "dir": "moonwort-co", "file": "moonwort-co.html",
