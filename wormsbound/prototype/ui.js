@@ -28,7 +28,7 @@
   ];
   const LEVELS = {
     easy: { name: 'Easy', blurb: 'Shaky aim, few tricks. Good for learning the ropes.' },
-    medium: { name: 'Medium', blurb: 'Decent aim. Uses duds, lobs them back and saves its SS.' },
+    medium: { name: 'Medium', blurb: 'Decent aim. Uses its whole kit and saves its SS.' },
     hard: { name: 'Hard', blurb: 'Sharp aim and every trick. Beating three of them is a real win.' },
   };
   // Online 1v1: the live room server (Louiemark's Cloudflare, deployed 2026-11-02). ?server=wss://… overrides it; on your own machine
@@ -42,9 +42,9 @@
   const bgCv = document.createElement('canvas'); bgCv.width = W + 80; bgCv.height = H + 40; const bctx = bgCv.getContext('2d'); // a little bigger than the screen: it slides as you look around
 
   const ui = {
-    screen: 'title', G: null, matchSeed: 0, round: 1, wins: [0, 0], aim: {}, weapon: 'shot1', lob: false, picks: [null, null], pickTeam: 0, cursor: 2,
+    screen: 'title', G: null, matchSeed: 0, round: 1, wins: [0, 0], aim: {}, weapon: 'shot1', auto: -1, picks: [null, null], pickTeam: 0, cursor: 2,
     mode: 'duel', level: 'medium', cpu: null, mapPick: startMap(), net: null, you: 0, remoteAim: null,
-    gear: [], pendingChar: null, crateAt: {},
+    crateAt: {},
     sq: { size: clamp(+lsGet('wb-crew') || 3, 2, 5), vs: lsGet('wb-crewvs') === 'p2' ? 'p2' : 'cpu' },
     cam: { on: false, x: 0, y: 0, z: 1, cx: 0, cy: 0, tx: 0, ty: 0, zoom: 1, manual: false, over: false },
     drag: null, acc: 0, last: 0, slow: 0, shake: 0, freeze: 0, punch: { x: 0, y: 0, k: 0 }, flash: 0, gusts: [], parts: [], trails: {}, scorch: [], clouds: [], dust: [], pops: [],
@@ -188,6 +188,9 @@
     splash: (pan) => { noise(0.45, 3200, 400, 0.2, pan); noise(0.12, 5000, 2000, 0.12, pan, 'highpass'); tone(300, 120, 0.16, 0.1, 'sine', pan); },
     step: (pan) => noise(0.04, 800 + Math.random() * 500, 250, 0.07, pan),
     land: (pan) => { tone(130, 55, 0.1, 0.22, 'sine', pan); noise(0.09, 700, 180, 0.14, pan); },
+    jump: (pan) => { tone(260, 520, 0.12, 0.14, 'triangle', pan); noise(0.06, 900, 300, 0.06, pan); },
+    dash: (pan) => { noise(0.22, 600, 3200, 0.2, pan, 'bandpass'); tone(180, 420, 0.18, 0.14, 'sawtooth', pan); },
+    build: (pan) => { noise(0.3, 400, 120, 0.2, pan); tone(110, 80, 0.2, 0.2, 'square', pan); },
     hit: (pan) => { tone(320, 130, 0.09, 0.16, 'square', pan); noise(0.06, 1800, 500, 0.12, pan); },
     click: () => tone(900, 700, 0.04, 0.08, 'square'),
     tick: () => tone(1400, 1300, 0.05, 0.08, 'square'),
@@ -283,7 +286,7 @@
   // ---------- engine events → effects ----------
   function onFx(fx) {
     for (const e of fx) {
-      if (e.k === 'fill') { ui.terrainDirty = true; burst(e.x * CELL, e.y * CELL, 14, 'chunk'); noise(0.25, 300, 120, 0.1); }
+      if (e.k === 'fill') { ui.terrainDirty = true; burst(e.x * CELL, e.y * CELL, 14, 'chunk'); SFX.build(panOf(e.x * CELL)); }
       if (e.k === 'slow') for (const id of e.hits) { const hu = ui.G.units.find((v) => v.id === id); if (hu) ui.pops.push({ x: hu.x * CELL, y: hu.y * CELL - 44, t: 0, text: 'SLOWED', c: '#8FD8FF' }); }
       if (e.k === 'boom') {
         const x = e.x * CELL, y = e.y * CELL, r = e.r * CELL;
@@ -317,9 +320,18 @@
         noise(1.0, 2500, 300, 0.3); if (!reduced) ui.shake = Math.min(26, ui.shake + 10);
         ui.pops.push({ x: e.x * CELL, y: e.y * CELL - 60, t: 0, text: 'TORNADO!', c: '#7BE07A' });
       }
-      else if (e.k === 'dud') { SFX.thunk(panOf(e.x * CELL)); ui.pops.push({ x: e.x * CELL, y: e.y * CELL - 22, t: 0, text: 'LIVE DUD!', c: '#FFD34D' }); }
-      else if (e.k === 'crate') { ui.crateAt[e.id] = performance.now() / 1000; banner('Supply drop', (CRATE_LOOK[e.kind] || CRATE_LOOK.gear)[1] + ' · walk onto it, or blow it up', '#FFD34D'); tone(520, 780, 0.2, 0.1, 'triangle'); }
-      else if (e.k === 'open') { const X = e.kind === 'gear' ? WB.GEAR[e.got] : null; ui.pops.push({ x: e.x * CELL, y: e.y * CELL - 30, t: 0, text: X ? X.name + '!' : e.kind === 'ss' ? '+2 SS' : '+HEALTH', c: (CRATE_LOOK[e.kind] || CRATE_LOOK.gear)[0] }); burst(e.x * CELL, e.y * CELL - 8, 12, 'spark'); tone(660, 1320, 0.18, 0.12, 'triangle'); renderCtl(); }
+      else if (e.k === 'resume') { renderCtl(); coachLine(); } // a jump or a move ability has landed: the turn carries on
+      else if (e.k === 'retreat') { ui.tLeft = Math.min(ui.tLeft, 6); ui.weapon = 'shot1'; renderCtl(); coachLine(); }
+      else if (e.k === 'zone') { burst(e.x * CELL, e.y * CELL, 16, 'spark'); noise(0.5, 1800, 500, 0.16, panOf(e.x * CELL)); }
+      else if (e.k === 'scorch') { burst(e.x * CELL, e.y * CELL - 14, 8, 'spark'); ui.pops.push({ x: e.x * CELL, y: e.y * CELL - 76, t: 0, text: 'BURN', c: '#FF8A3D', small: true }); }
+      else if (e.k === 'mend') { for (const id of e.ids) { const hu = ui.G.units.find((v) => v.id === id); if (hu) ui.pops.push({ x: hu.x * CELL, y: hu.y * CELL - 58, t: 0, text: '+', c: '#7BE07A' }); } tone(520, 780, 0.14, 0.08, 'triangle'); }
+      else if (e.k === 'arc') { ui.pops.push({ x: e.x * CELL, y: e.y * CELL - 76, t: 0, text: 'CHARGED!', c: '#8FD8FF', small: true }); const to = ui.G.units.find((v) => v.id === e.to); if (to) ui.parts.push({ x: e.x * CELL, y: e.y * CELL - 12, x2: to.x * CELL, y2: to.y * CELL - 12, t: 0, life: 0.3, kind: 'line', c: '143,216,255' }); tone(1800, 300, 0.16, 0.1, 'sawtooth', panOf(e.x * CELL)); }
+      else if (e.k === 'hook') { const fu = ui.G.units.find((v) => v.id === e.from); if (fu) ui.parts.push({ x: fu.x * CELL, y: fu.y * CELL - 12, x2: e.x * CELL, y2: e.y * CELL, t: 0, life: 0.35, kind: 'line', c: '255,243,224' }); if (e.hit) { ui.pops.push({ x: e.x * CELL, y: e.y * CELL - 50, t: 0, text: 'HOOKED!', c: '#FFF3E0' }); SFX.thunk(panOf(e.x * CELL)); } }
+      else if (e.k === 'blink') { burst(e.x0 * CELL, e.y0 * CELL - 12, 12, 'spark'); burst(e.x * CELL, e.y * CELL - 12, 12, 'spark'); ui.parts.push({ x: e.x0 * CELL, y: e.y0 * CELL - 12, x2: e.x * CELL, y2: e.y * CELL - 12, t: 0, life: 0.25, kind: 'line', c: '143,216,255' }); }
+      else if (e.k === 'bash') { burst(e.x * CELL, e.y * CELL - 12, 12, 'spark'); if (!reduced) ui.shake = Math.min(26, ui.shake + 8); SFX.thunk(panOf(e.x * CELL)); }
+      else if (e.k === 'dug') { ui.terrainDirty = true; burst(e.x * CELL, e.y * CELL - 8, 16, 'chunk'); noise(0.3, 500, 120, 0.16, panOf(e.x * CELL)); }
+      else if (e.k === 'crate') { ui.crateAt[e.id] = performance.now() / 1000; banner('Supply drop', (CRATE_LOOK[e.kind] || CRATE_LOOK.cool)[1] + ' · walk onto it, or blow it up', '#FFD34D'); tone(520, 780, 0.2, 0.1, 'triangle'); }
+      else if (e.k === 'open') { ui.pops.push({ x: e.x * CELL, y: e.y * CELL - 30, t: 0, text: e.kind === 'cool' ? 'RECHARGED!' : e.kind === 'ss' ? '+2 SS' : '+HEALTH', c: (CRATE_LOOK[e.kind] || CRATE_LOOK.cool)[0] }); burst(e.x * CELL, e.y * CELL - 8, 12, 'spark'); tone(660, 1320, 0.18, 0.12, 'triangle'); renderCtl(); }
       else if (e.k === 'cratepop') { burst(e.x * CELL, e.y * CELL - 8, 10, 'chunk'); ui.pops.push({ x: e.x * CELL, y: e.y * CELL - 30, t: 0, text: 'CRATE LOST', c: '#9C8AA8' }); }
       else if (e.k === 'combo') { ui.pops.push({ x: e.x * CELL, y: e.y * CELL - 64, t: 0, text: 'COMBO! +SS', c: '#FFD34D' }); tone(880, 1320, 0.16, 0.1, 'square'); }
       else if (e.k === 'ko') {
@@ -333,7 +345,7 @@
   function onTurn() {
     const G = ui.G, u = WB.current(G); if (!u) return;
     const ss = WB.ssReady(G);
-    ui.tLeft = TURN_SECONDS; ui.lob = false; ui.weapon = ss ? 'ss' : 'shot1'; ui.cpu = null;
+    ui.tLeft = TURN_SECONDS; ui.weapon = ss ? 'ss' : 'shot1'; ui.cpu = null;
     if (!isCPU(G.team)) ui.turnsSeen++;
     banner(teamRoom() ? ownerName(u) : sideLabel(G.team), `${curName()}${ss ? ' · SS READY!' : ''}${isCPU(G.team) ? '' : vsCPU() || (online() && myTurn()) ? ' · your turn' : ''}`, TEAMS[G.team].c);
     ui.cam.manual = false;
@@ -358,7 +370,7 @@
   // Every move goes through here. Offline it changes the game at once; online it goes to the server, and the game
   // changes when the server sends it back (net.onApplied), on both screens the same way.
   function play(it) {
-    if (!online()) return WB.act(ui.G, it);
+    if (!online()) { const G = ui.G, ok = WB.act(G, it); if (G.phase === 'aim' && G.fxAct) { const fx = G.fx; G.fx = []; G.fxAct = false; onFx(fx); } return ok; } // effects of something that doesn't fly (a crate opened on foot)
     ui.net.send({ t: 'act', it });
     if (it.k !== 'move' && it.k !== 'weapon') ui.net.waiting = true; // don't let a double-click send a second shot
     return true;
@@ -367,38 +379,42 @@
   // ---------- computer turns (1 Player) ----------
   // The bot decides on a copy of the game (same seed and state, so the same choice), then the moves are played on
   // the real game one by one, with pauses so you can watch it walk, aim and fire.
+  // A turn can have several flights now (a move ability, the shot, the retreat). Each time it comes back to the computer
+  // it plans again from where things stand, so the plan never runs ahead of what's on screen.
+  const autoTurn = () => !!ui.G && ui.auto === ui.G.turn && !online(); // the tester's "play this turn for me"
   function cpuStart() {
-    const plan = WB.botTurn(JSON.parse(JSON.stringify(ui.G)), ui.level);
-    ui.cpu = { plan, i: 0, t: 0.8, aimed: false };
+    const G = ui.G, plan = WB.botTurn(JSON.parse(JSON.stringify(G)), isCPU(G.team) ? ui.level : 'smart');
+    ui.cpu = { plan, i: 0, t: G.retreat || G.spent > 0 ? 0.3 : 0.8, aimed: false };
   }
   function cpuStep(dt) {
     const c = ui.cpu, G = ui.G; c.t -= dt * (ui.fast ? 8 : 1); if (c.t > 0) return;
     const it = c.plan[c.i++], u = WB.current(G);
     if (!it || !u) { if (G.phase === 'aim') WB.act(G, { k: 'pass' }); ui.cpu = null; renderCtl(); return; }
-    if (it.k === 'move') { WB.act(G, it); c.t = 0.09; renderCtl(); return; }
-    if (it.k === 'weapon') { WB.act(G, it); ui.weapon = it.w; c.t = 0.3; renderCtl(); coachLine(); return; }
-    if ((it.k === 'fire' || it.k === 'lob') && !c.aimed) { const a = aimOf(u); a.angle = it.angle; a.power = it.power; ui.lob = it.k === 'lob'; c.aimed = true; c.i--; c.t = 0.75; return; }
-    if (WB.act(G, it) && (it.k === 'fire' || it.k === 'lob')) { SFX.fire(panOf(u.x * CELL)); burst(...muzzle(u, aimOf(u)), 8, 'spark'); }
-    if (G.phase !== 'aim') { ui.cpu = null; renderCtl(); coachLine(); }
+    if (it.k === 'move') { WB.act(G, it); c.t = 0.09; renderCtl(); }
+    else if (it.k === 'weapon') { WB.act(G, it); ui.weapon = it.w; c.t = 0.3; renderCtl(); coachLine(); }
+    else if (it.k === 'fire' && !c.aimed) { const a = aimOf(u); a.angle = it.angle; a.power = it.power; c.aimed = true; c.i--; c.t = 0.75; return; }
+    else if (it.k === 'fire') { const w = G.weapon; c.aimed = false; if (WB.act(G, it)) fireFx(u, w); }
+    else if (it.k === 'jump') { if (WB.act(G, it)) SFX.jump(panOf(u.x * CELL)); }
+    else { WB.act(G, it); renderHUD(); }
+    if (G.phase !== 'aim') { ui.cpu = null; ui.weapon = 'shot1'; renderCtl(); coachLine(); }
   }
+  function fireFx(u, w) { const pan = panOf(u.x * CELL); if (w === 'dash') { SFX.dash(pan); puff(u.x * CELL, u.y * CELL, 8); } else { SFX.fire(pan); burst(...muzzle(u, aimOf(u)), 8, 'spark'); } }
   function doFire() {
     if (!canAct()) return false;
     const G = ui.G, u = WB.current(G), a = aimOf(u);
-    let ok;
-    if (ui.lob) {
-      const ds = WB.lobbable(G); if (!ds.length) { ui.lob = false; renderCtl(); return false; }
-      const [cx, cy] = WB.center(u); ds.sort((p, q) => Math.hypot(p.x - cx, p.y - cy) - Math.hypot(q.x - cx, q.y - cy));
-      ok = play({ k: 'lob', dud: ds[0].id, angle: a.angle, power: a.power });
-    } else {
-      if (G.weapon !== ui.weapon) play({ k: 'weapon', w: ui.weapon });
-      ok = play({ k: 'fire', angle: a.angle, power: a.power });
-    }
+    if (G.retreat) { pass(); return true; } // nothing to fire in the retreat: Fire ends the turn
+    const w = ui.weapon; if (!WB.ready(G, w)) { ui.weapon = 'shot1'; renderCtl(); return false; }
+    if (G.weapon !== w) play({ k: 'weapon', w });
+    const ok = play({ k: 'fire', angle: a.angle, power: a.power });
     if (ok) { ui.cam.manual = false; ui.cam.over = false; }
-    if (ok && !online()) { SFX.fire(panOf(u.x * CELL)); burst(...muzzle(u, a), 8, 'spark'); renderCtl(); coachLine(); }
+    if (ok && w === 'dash') ui.weapon = 'shot1';
+    if (ok && !online()) { fireFx(u, w); renderCtl(); coachLine(); }
     return ok;
   }
   function muzzle(u, a) { const [cx, cy] = WB.center(u), r = a.angle * Math.PI / 180; return [(cx + Math.cos(r) * 2.2) * CELL, (cy - Math.sin(r) * 2.2) * CELL]; }
   function walk(dir) { if (!canAct()) return; if (play({ k: 'move', dir }) && !online()) { renderCtl(); coachLine(); } }
+  function jump(dir) { if (!canAct()) return; const u = WB.current(ui.G); if (play({ k: 'jump', dir }) && !online()) { SFX.jump(panOf(u.x * CELL)); puff(u.x * CELL, u.y * CELL, 4); renderCtl(); } }
+  function flipWind() { if (!canAct()) return; if (play({ k: 'wind' }) && !online()) { SFX.click(); renderHUD(); renderCtl(); } }
   function pass() { if (canAct()) { play({ k: 'pass' }); renderCtl(); } }
 
   function stagePoint(e) { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) * W / r.width, (e.clientY - r.top) * H / r.height]; }
@@ -459,19 +475,14 @@
       else if (/^[0-9]$/.test(k)) choose(WB.CHAR_IDS[(+k + 9) % 10]);
       return;
     }
-    if (ui.screen === 'gear') {
-      const gs = WB.gearFor(ui.pendingChar);
-      if (k === 'Enter' || k === ' ') { e.preventDefault(); chooseGear(WB.CHARS[ui.pendingChar].gear); }
-      else if (/^[1-6]$/.test(k) && gs[+k - 1]) chooseGear(gs[+k - 1]);
-      else if (k === 'Escape') selectScreen(ui.pickTeam);
-      return;
-    }
     if (k === 'Escape' || k === 'p' || k === 'P') { if (ui.screen === 'game') { e.preventDefault(); toggleMenu(); } return; }
     if (ui.screen === 'game' && camAct(k === 'm' || k === 'M' ? 'over' : k === 'c' || k === 'C' ? 'home' : k === '=' || k === '+' ? 'in' : k === '-' ? 'out' : '')) return;
     if (!canAct()) return;
     const a = aimOf(WB.current(ui.G)), fine = e.shiftKey ? 0.5 : 2;
-    if (k === 'ArrowLeft' || k === 'a' || k === 'A') { e.preventDefault(); walk(-1); }
-    else if (k === 'ArrowRight' || k === 'd' || k === 'D') { e.preventDefault(); walk(1); }
+    if (k === 'ArrowLeft' || k === 'a' || k === 'A') { e.preventDefault(); if (e.shiftKey) jump(-1); else walk(-1); }
+    else if (k === 'ArrowRight' || k === 'd' || k === 'D') { e.preventDefault(); if (e.shiftKey) jump(1); else walk(1); }
+    else if (k === 'j' || k === 'J') jump(WB.current(ui.G).face || 1)
+    else if (k === 'g' || k === 'G') flipWind();
     else if (k === 'ArrowUp' || k === 'w' || k === 'W') { e.preventDefault(); a.angle = clamp(a.angle + (a.angle <= 90 ? fine : -fine), 0, 180); }
     else if (k === 'ArrowDown' || k === 's' || k === 'S') { e.preventDefault(); a.angle = clamp(a.angle + (a.angle <= 90 ? -fine : fine), 0, 180); }
     else if (k === 'q' || k === 'Q') a.power = clamp(Math.round((a.power - 0.02) * 100) / 100, 0.05, 1);
@@ -479,14 +490,11 @@
     else if (k === 'f' || k === 'F') { a.angle = 180 - a.angle; }
     else if (k === '1') pickWeapon(WB.ssReady(ui.G) ? 'ss' : 'shot1');
     else if (k === '2' || k === '3') pickWeapon(WB.WEAPON_IDS[+k - 1]);
-    else if (k === '4') pickWeapon('gear');
-    else if (k === 'l' || k === 'L') toggleLob();
     else if (k === ' ' || k === 'Enter') { e.preventDefault(); doFire(); }
     if (/^(Arrow(Up|Down)|[wWsSqQeEfF])$/.test(k)) shareAim(a);
     else if (k === 'x' || k === 'X') pass();
   });
-  function pickWeapon(w) { if (!canAct() || (w === 'ss' ? !WB.ssReady(ui.G) : w === 'gear' ? !WB.current(ui.G).gear || WB.ammoOf(ui.G).gear === 0 : WB.ammoOf(ui.G)[w] === 0)) return; ui.weapon = w; ui.lob = false; SFX.click(); renderCtl(); coachLine(); }
-  function toggleLob() { if (!canAct() || !WB.lobbable(ui.G).length) return; ui.lob = !ui.lob; SFX.click(); renderCtl(); coachLine(); }
+  function pickWeapon(w) { if (!canAct() || ui.G.retreat || !WB.ready(ui.G, w)) return; ui.weapon = w; SFX.click(); renderCtl(); coachLine(); }
 
   // ---------- HUD and controls (DOM) ----------
   function renderHUD() {
@@ -508,7 +516,7 @@
   // turn delay means right now. Light shot: you may go again before them; heavy shot: they may go twice.
   function orderHTML() {
     const G = ui.G; if (!G || G.phase !== 'aim') return '<div class="order"></div>';
-    const w = ui.lob ? 'lob' : ui.weapon, d = G.units.filter((u) => u.alive).map((u) => ({ u, d: u.id === G.actor ? WB.delayIf(G, w) : u.delay }));
+    const w = G.retreat ? 'pass' : ui.weapon === 'dash' ? 'shot1' : ui.weapon, d = G.units.filter((u) => u.alive).map((u) => ({ u, d: u.id === G.actor ? WB.delayIf(G, w) : u.delay }));
     const seq = [];
     for (let i = 0; i < 6 && d.length; i++) { d.sort((a, b) => a.d - b.d || a.u.id - b.u.id); const x = d[0]; seq.push(x.u); x.d += WB.shotSpec(G, x.u, 'shot1').delay; }
     return `<div class="order" title="Who plays next, if everyone fires their Shot 1 after this">NEXT ${seq.map((su) => { const t = su.team; return `<b style="background:${TEAMS[t].c}">${esc(teamRoom() ? ownerName(su).slice(0, 6) : G.size > 1 ? WB.CHARS[su.char].name : sideLabel(t) === 'You' ? 'You' : ui.mode === 'solo' ? TEAMS[t].name[0] : online() ? sideLabel(t).slice(0, 6) : isCPU(t) ? 'CPU' : 'P' + (t + 1))}</b>`; }).join('')}</div>`;
@@ -519,16 +527,25 @@
     const o = $('.order'); if (o) o.outerHTML = orderHTML();
     if (isCPU(G.team) && G.phase === 'aim') { $('#ctl').innerHTML = `<span class="cputag" style="--tc:${TEAMS[G.team].c}">${esc(sideLabel(G.team))} (${esc(curName())}) is taking its turn…</span>`; return; }
     if (online() && !myTurn() && G.phase === 'aim') { const cu = WB.current(G), s = teamRoom() ? (cu && ui.net.room.seats[cu.own]) || { connected: true } : roomSeat(G.team); $('#ctl').innerHTML = `<span class="cputag" style="--tc:${TEAMS[G.team].c}">${esc(teamRoom() && cu ? ownerName(cu) : sideLabel(G.team))} (${esc(curName())}) is aiming…${s && !s.connected ? (teamRoom() ? ' (disconnected: a computer is playing for them)' : ' (disconnected: their turn passes soon)') : ''}</span>`; return; }
-    const aim = G.phase === 'aim', am = WB.ammoOf(G), lob = WB.lobbable(G).length > 0;
-    const wb = (w, key) => { const S = WB.shotSpec(G, WB.current(G), w);
-      return `<button class="btn wpn${ui.weapon === w && !ui.lob ? '' : ' ghost'}" type="button" data-w="${w}" aria-pressed="${ui.weapon === w && !ui.lob}" title="${esc(S.desc)} Turn delay +${S.delay}." ${!aim || am[w] === 0 ? 'disabled' : ''}>${esc(S.name)}<small>${key} · ${am[w] < 0 ? '∞' : am[w] + ' left'} · ⏱${S.delay}</small></button>`; };
-    $('#ctl').classList.toggle('four', !!(WB.current(G) && WB.current(G).gear));
-    $('#ctl').innerHTML = `<button class="btn ghost" type="button" data-walk="-1" aria-label="Walk left" ${aim && G.moves ? '' : 'disabled'}>◀</button>
+    const aim = G.phase === 'aim', u = WB.current(G), cd = WB.cdOf(G), JC = WB.JUMP.cost;
+    if (!u) { $('#ctl').innerHTML = ''; return; } // whoever's turn it was is gone (walked or leapt into the water): nothing to press until the next turn
+    const moveBtns = `<button class="btn ghost" type="button" data-walk="-1" aria-label="Walk left" ${aim && G.moves ? '' : 'disabled'}>◀</button>
+      <button class="btn ghost sm" type="button" data-jump="-1" aria-label="Jump left" title="Jump left (Shift+◀): costs ${JC} steps" ${aim && G.moves >= JC ? '' : 'disabled'}>⤴</button>
       <span class="steps">${G.moves} steps</span>
-      <button class="btn ghost" type="button" data-walk="1" aria-label="Walk right" ${aim && G.moves ? '' : 'disabled'}>▶</button>
-      ${WB.ssReady(G) ? `<button class="btn wpn ss${ui.weapon === 'ss' && !ui.lob ? '' : ' dim'}" type="button" data-w="ss" aria-pressed="${ui.weapon === 'ss' && !ui.lob}" title="${esc(WB.shotSpec(G, WB.current(G), 'ss').desc)}" ${aim ? '' : 'disabled'}>SS · ${esc(WB.shotSpec(G, WB.current(G), 'ss').name)}<small>1 · ready · ⏱${WB.shotSpec(G, WB.current(G), 'ss').delay}</small></button>` : wb('shot1', '1')}${wb('shot2', '2')}${wb('dud', '3')}${WB.current(G) && WB.current(G).gear ? wb('gear', '4') : ''}
-      <button class="btn teal" type="button" data-act="lob" aria-pressed="${ui.lob}" ${aim && lob ? '' : 'disabled'} title="Pick up a live dud in reach (L)">LOB</button>
-      <button class="btn fire" type="button" data-act="fire" ${aim ? '' : 'disabled'}>FIRE</button>
+      <button class="btn ghost sm" type="button" data-jump="1" aria-label="Jump right" title="Jump right (Shift+▶): costs ${JC} steps" ${aim && G.moves >= JC ? '' : 'disabled'}>⤵</button>
+      <button class="btn ghost" type="button" data-walk="1" aria-label="Walk right" ${aim && G.moves ? '' : 'disabled'}>▶</button>`;
+    $('#ctl').classList.add('four');
+    if (G.retreat) { // the shot has landed: walk with what's left, then end the turn
+      $('#ctl').innerHTML = `${moveBtns}<span class="cputag" style="--tc:${TEAMS[G.team].c}">Retreat: get to cover</span><button class="btn fire" type="button" data-act="pass" ${aim ? '' : 'disabled'} title="End your turn (Space or X)">END TURN</button>`;
+      return;
+    }
+    const wb = (w, key, label) => { const S = WB.shotSpec(G, u, w), left = w === 'shot1' ? 0 : cd[w], on = ui.weapon === w;
+      return `<button class="btn wpn${on ? '' : ' ghost'}" type="button" data-w="${w}" aria-pressed="${on}" title="${label}: ${esc(S.desc)}${w === 'dash' ? ' You can still shoot afterwards.' : ''} Turn delay +${S.delay}." ${!aim || left > 0 ? 'disabled' : ''}>${esc(S.name)}<small>${key} · ${left > 0 ? `ready in ${left}` : w === 'shot1' ? 'basic' : label.toLowerCase()} · ⏱${S.delay}</small></button>`; };
+    const SS = WB.shotSpec(G, u, 'ss');
+    $('#ctl').innerHTML = `${moveBtns}
+      ${WB.ssReady(G) ? `<button class="btn wpn ss${ui.weapon === 'ss' ? '' : ' dim'}" type="button" data-w="ss" aria-pressed="${ui.weapon === 'ss'}" title="${esc(SS.desc)}" ${aim ? '' : 'disabled'}>SS · ${esc(SS.name)}<small>1 · ready · ⏱${SS.delay}</small></button>` : wb('shot1', '1', 'Basic shot')}${wb('shot2', '2', 'Ability')}${wb('dash', '3', 'Move')}
+      ${u && WB.passiveOf(u) === 'tailwind' ? `<button class="btn teal sm" type="button" data-act="wind" ${aim && !G.windFlip ? '' : 'disabled'} title="Tailwind (G): turn the wind round, once a turn">WIND ⇄</button>` : ''}
+      <button class="btn fire" type="button" data-act="fire" ${aim ? '' : 'disabled'}>${ui.weapon === 'dash' ? 'GO' : 'FIRE'}</button>
       <button class="btn ghost sm" type="button" data-act="pass" ${aim ? '' : 'disabled'} title="End your turn (X)">Skip</button>`;
   }
   function coachLine() {
@@ -536,19 +553,19 @@
     const G = ui.G, u = WB.current(G); if (!u || G.phase !== 'aim') { el.innerHTML = ''; return; }
     if (isCPU(G.team) || (online() && !myTurn())) { el.innerHTML = ''; return; }
     const danger = G.duds.find((d) => d.fuse <= 1 && Math.hypot(d.x - u.x, d.y - u.y) < WB.DUD.r * WB.DMG_SPREAD);
+    const S = (w) => WB.shotSpec(G, u, w);
     let t;
-    if (danger && WB.lobbable(G).includes(danger)) t = '<b>That dud blows at the end of this turn!</b> Tap LOB (L), then drag to throw it away.';
-    else if (danger) t = '<b>That dud blows at the end of this turn!</b> Walk away with ◀ ▶, or lob it if you can reach it.';
-    else if (ui.lob) t = 'Lob armed: drag back from your unit and let go to throw the dud. It keeps its countdown.';
+    if (danger) t = '<b>That old dud blows at the end of this turn!</b> Walk or jump away from it.';
+    else if (G.retreat) t = `<b>Retreat:</b> you have <b>${G.moves} steps</b> left to get to cover (◀ ▶, or jump). Press <b>End turn</b> (Space) when you're set.`;
     else if ((G.crates || []).some((c) => Math.abs(c.x - u.x) <= G.moves + 2 && Math.abs(c.y - u.y) < 10)) t = 'A <b>supply crate</b> is in reach: walk onto it with ◀ ▶ before you fire. The mark shows what is inside.';
-    else if (WB.lobbable(G).length) t = 'A <b>live dud</b> is in reach. Tap <b>LOB</b> (L) to throw it at them instead of firing.';
+    else if (ui.weapon === 'dash') t = `<b>${esc(S('dash').name)}:</b> ${esc(S('dash').desc)} Drag to aim it. <b>You can still shoot afterwards.</b>`;
+    else if (ui.weapon === 'shot2') t = `<b>${esc(S('shot2').name)}:</b> ${esc(S('shot2').desc)} Ready again in ${S('shot2').cd} of your turns.`;
+    else if (ui.weapon === 'ss') t = `<b>SS ready: ${esc(S('ss').name)}!</b> ${esc(S('ss').desc)} It replaces your basic shot until you use it.`;
     else if (ui.turnsSeen <= 2) t = '<b>Drag back</b> from your glowing unit and <b>let go</b> to fire. Further back = more power. Watch the wind.';
-    else if (ui.turnsSeen === 3) t = '<b>Turn delay:</b> every shot has a cost (⏱ on the buttons). Light shots bring your next turn sooner. The NEXT strip up top shows who plays next.';
-    else if (ui.turnsSeen <= 5) t = 'Keys: <b>◀ ▶</b> walk · <b>▲ ▼</b> angle · <b>Q/E</b> power · <b>1 2 3</b> shots · <b>Space</b> fire.';
-    else if (ui.weapon === 'ss') t = `<b>SS ready: ${esc(WB.shotSpec(G, WB.current(G), 'ss').name)}!</b> ${esc(WB.shotSpec(G, WB.current(G), 'ss').desc)} It replaces Shot 1 until you use it.`;
-    else if (ui.weapon === 'shot2') t = `<b>${esc(WB.shotSpec(G, WB.current(G), 'shot2').name)}:</b> ${esc(WB.shotSpec(G, WB.current(G), 'shot2').desc)} (${WB.ammoOf(G).shot2} left this match)`;
-    else if (ui.weapon === 'gear') t = `<b>${esc(WB.shotSpec(G, WB.current(G), 'gear').name)}:</b> ${esc(WB.shotSpec(G, WB.current(G), 'gear').desc)} (${WB.ammoOf(G).gear} left this match)`;
-    else if (ui.weapon === 'dud') t = 'A live dud lands and ticks for <b>3 turns</b>. Anyone close can lob it back, so drop it where they can\'t reach.';
+    else if (ui.turnsSeen === 3) t = `<b>Your kit:</b> <b>1</b> is your basic shot, <b>2</b> your ability (${esc(S('shot2').name)}) and <b>3</b> your move (${esc(S('dash').name)}). Nothing runs out: 2 and 3 just take a few turns to be ready again.`;
+    else if (ui.turnsSeen === 4) t = '<b>Moving:</b> ◀ ▶ walk, ⤴ jumps (3 steps). After your shot lands you get a short <b>retreat</b> with some of the steps you didn\'t use.';
+    else if (ui.turnsSeen === 5) t = '<b>Turn delay:</b> every shot has a cost (⏱ on the buttons). Light shots bring your next turn sooner. The NEXT strip up top shows who plays next.';
+    else if (ui.turnsSeen <= 7) t = `<b>${esc(WB.CHARS[u.char].passive.name)}:</b> ${esc(WB.CHARS[u.char].passive.desc)}`;
     else t = '';
     el.innerHTML = t;
   }
@@ -560,15 +577,15 @@
     <div><b>1 · Aim</b>Drag back from your glowing unit and let go. Further back is more power.</div>
     <div><b>2 · Wind</b>The arrow up top pushes every shot. It changes each turn.</div>
     <div><b>3 · Ground</b>Blasts carve the map. Knock them into the water or off a cliff.</div>
-    <div><b>4 · Live duds</b>A dud ticks for 3 turns. Walk up to one and LOB it back.</div>
-    <div style="grid-column:1/-1"><b>5 · Supply crates</b>They land mid-match near whoever is behind: new gear, SS charge or health. Walk onto one to open it, or blast it so nobody gets it.</div>
-    <div style="grid-column:1/-1"><b>6 · SS (Special Shot)</b>Your character's ultimate. It charges one notch a turn (the SS meter up top) and takes over Shot 1 when it's full. Using it starts the charge again.</div></div>
-    <p class="keys">Keys: ◀ ▶ / A D walk · ▲ ▼ / W S angle (Shift = fine) · Q E power · F flip · 1 2 3 shots · 4 gear · L lob · Space fire · X skip · Esc menu</p>`;
+    <div><b>4 · Your kit</b>1 basic shot · 2 ability · 3 move. Nothing runs out; 2 and 3 take a few turns to be ready again.</div>
+    <div style="grid-column:1/-1"><b>5 · Moving</b>Walk, jump (3 steps), or use your move and still shoot. After your shot lands you get a short retreat with some of the steps you didn't use.</div>
+    <div style="grid-column:1/-1"><b>6 · SS and crates</b>Your ultimate charges one notch a turn and takes over your basic shot when it's full. Crates land mid-match near whoever is behind: a recharge, SS charge or health.</div></div>
+    <p class="keys">Keys: ◀ ▶ / A D walk · Shift+◀ ▶ or J jump · ▲ ▼ / W S angle (Shift = fine) · Q E power · F flip · 1 2 3 kit · Space fire or end turn · X skip · Esc menu</p>`;
   function titleScreen() {
     ui.screen = 'title'; renderCtl(); coachLine();
     const wide = () => { const c = $('#screen .card'); if (c) c.classList.add('title'); };
     show(`<div class="tag">JustAskJoe · Prototype 1</div><h1>WORMSBOUND</h1>
-      <p>Pick a character, read the wind, blast the ground, and throw their own duds back at them. Best of three.</p>${HOW}
+      <p>Pick a character, read the wind, blast the ground, and use your kit to get the angle on them. Best of three.</p>${HOW}
       <div class="row"><button class="btn fire" type="button" data-act="mode" data-mode="solo">1 PLAYER<small style="display:block;font-family:var(--body);font-size:12px">you vs 3 computers</small></button>
       <button class="btn teal" type="button" data-act="mode" data-mode="duel">2 PLAYERS<small style="display:block;font-family:var(--body);font-size:12px">1v1 on one keyboard</small></button>
       <button class="btn plum" type="button" data-act="squads">SQUADS<small style="display:block;font-family:var(--body);font-size:12px">crews of 2 to 5, big maps</small></button>
@@ -686,7 +703,7 @@
     ui.screen = 'squad'; ui.mode = 'squads'; ui.G = null; renderHUD(); renderCtl(); coachLine();
     const Z = WB.MapGen.SIZES[WB.MapGen.sizeFor(ui.sq.size * 2)], vs = ui.sq.vs;
     show(`<div class="tag">Squads · step 1 of 2</div><h2>Build a crew</h2>
-      <p>Each side fields a crew. Every unit has its own shots, ammo and SS, and takes its own turns. The map grows with the crews, and the camera follows the action.</p>
+      <p>Each side fields a crew. Every unit has its own kit, cooldowns and SS, and takes its own turns. The map grows with the crews, and the camera follows the action.</p>
       <div class="sqrow"><span>Units a side</span>${[2, 3, 4, 5].map((n) => `<button class="btn sm ${n === ui.sq.size ? 'gold' : 'ghost'}" type="button" data-act="sqsize" data-n="${n}" aria-pressed="${n === ui.sq.size}">${n} v ${n}</button>`).join('')}</div>
       <div class="sqrow"><span>Against</span><button class="btn sm ${vs === 'p2' ? 'gold' : 'ghost'}" type="button" data-act="sqvs" data-vs="p2" aria-pressed="${vs === 'p2'}">Player 2, same keyboard</button>
         ${Object.entries(LEVELS).map(([k, L]) => `<button class="btn sm ${vs === 'cpu' && ui.level === k ? 'gold' : 'ghost'}" type="button" data-act="sqvs" data-vs="cpu" data-level="${k}" aria-pressed="${vs === 'cpu' && ui.level === k}">${L.name} computer</button>`).join('')}</div>
@@ -706,11 +723,12 @@
   function charDetail(id, team, mul) {
     const C = WB.CHARS[id], T = TEAMS[team];
     return `<div class="cdl"><img src="${portrait(id, team)}" alt="" width="150" height="110"><div><b class="cn" style="color:${T.c}">${esc(C.name)}</b><span class="role">${esc(C.role)} · ${esc(WB.CLASSES[C.cls])}</span><span class="bl">${esc(C.blurb)}</span></div></div>
-      <div class="cdm">${statBar('Health', C.hp / 118, Math.round(C.hp * mul))}${statBar('Armour', (1 - C.armor) / 0.15 + 0.06, C.armor < 1 ? `−${Math.round((1 - C.armor) * 100)}%` : '–')}${statBar('Move', C.steps / 22, C.steps + ' steps')}${statBar('Wind grip', (2 - (C.shot1.wind || 1)) / 1.55, (C.shot1.wind || 1) < 1 ? 'steady' : (C.shot1.wind || 1) > 1 ? 'curvy' : 'normal')}</div>
-      <div class="cdr"><span class="sh"><b>1 · ${esc(C.shot1.name)}</b> ${esc(C.shot1.desc)}</span>
-        <span class="sh two"><b>2 · ${esc(C.shot2.name)}</b> ${esc(C.shot2.desc)} <em>2 a match</em></span>
-        <span class="sh ss"><b>SS · ${esc(C.ss.name)}</b> ${esc(C.ss.desc)} <em>every ${WB.SS_CHARGE} turns</em></span>
-        <span class="sh"><b>4 · Gear</b> picks one of ${WB.gearFor(id).length} next. Usually ${esc(WB.GEAR[C.gear].name)}.</span></div>`;
+      <div class="cdm">${statBar('Health', C.hp / 118, Math.round(C.hp * mul))}${statBar('Armour', (1 - C.armor) / 0.15 + 0.06, C.armor < 1 ? `−${Math.round((1 - C.armor) * 100)}%` : '–')}${statBar('Power', C.power / 1.2, C.power === 1 ? 'normal' : `×${C.power}`)}${statBar('Move', C.steps / 22, C.steps + ' steps')}${statBar('Jump', C.jump / 2, C.jump >= 1.5 ? 'high' : C.jump < 1 ? 'low' : 'normal')}${statBar('Weight', C.weight / 2, C.weight >= 1.5 ? 'heavy' : C.weight < 1 ? 'light' : 'normal')}</div>
+      <div class="cdr"><span class="sh two"><b>${esc(C.passive.name)}</b> ${esc(C.passive.desc)} <em>always on</em></span>
+        <span class="sh"><b>1 · ${esc(C.shot1.name)}</b> ${esc(C.shot1.desc)}</span>
+        <span class="sh two"><b>2 · ${esc(C.shot2.name)}</b> ${esc(C.shot2.desc)} <em>every ${C.shot2.cd} turns</em></span>
+        <span class="sh two"><b>3 · ${esc(C.dash.name)}</b> ${esc(C.dash.desc)} <em>every ${C.dash.cd} turns</em></span>
+        <span class="sh ss"><b>SS · ${esc(C.ss.name)}</b> ${esc(C.ss.desc)} <em>every ${WB.SS_CHARGE} turns</em></span></div>`;
   }
   function selectScreen(team) {
     ui.screen = 'select'; ui.pickTeam = team; ui.G = null; ui.paused = false;
@@ -727,7 +745,7 @@
         <b class="cn">${esc(C.name)}</b><span class="role">${esc(WB.CLASSES[C.cls])}</span></button>`;
     }).join('');
     $('#screen').innerHTML = `<div class="screen"><div class="pick" role="dialog" aria-modal="true">
-      <div class="tag">${sq ? `Squads · ${ui.sq.size} v ${ui.sq.size} · step 2 of 2` : ui.mode === 'solo' ? `1 Player · ${LEVELS[ui.level].name} · step 2 of 2` : `2 Players · step ${team + 1} of 2`} · everyone also carries 2 Live duds</div>
+      <div class="tag">${sq ? `Squads · ${ui.sq.size} v ${ui.sq.size} · step 2 of 2` : ui.mode === 'solo' ? `1 Player · ${LEVELS[ui.level].name} · step 2 of 2` : `2 Players · step ${team + 1} of 2`}</div>
       <h2 style="color:${T.c}">${sq ? `${who}: pick unit ${mine.length + 1} of ${ui.sq.size}` : ui.mode === 'solo' ? 'Pick your character' : `Player ${team + 1}, pick your character`}</h2>
       <p class="sub">${sq ? `<span class="crewslots">${Array.from({ length: ui.sq.size }, (_, i) => `<b style="--tc:${T.c}" class="${mine[i] ? 'on' : ''}">${mine[i] ? esc(WB.CHARS[mine[i]].name) : i + 1}</b>`).join('')}</span> The same character twice is fine. ${ui.sq.vs === 'cpu' ? 'The computer picks its own crew.' : ''}` : other + (ui.mode === 'solo' ? 'The three computers get random characters.' : 'Same pick as the other player is fine.')}</p>
       <div class="chars ten">${cards}</div>
@@ -743,36 +761,21 @@
   }
   document.addEventListener('pointerover', (e) => { const b = e.target.closest && e.target.closest('.char.mini'); if (b) selLook(+b.dataset.i); });
   document.addEventListener('focusin', (e) => { const b = e.target.closest && e.target.closest('.char.mini'); if (b) selLook(+b.dataset.i); });
-  // Gear: after a character, one of the six items it can carry (four anyone can, two for its class)
-  function gearScreen(id) {
-    ui.screen = 'gear'; ui.pendingChar = id;
-    const T = TEAMS[ui.pickTeam], C = WB.CHARS[id];
-    const items = WB.gearFor(id).map((g, i) => { const X = WB.GEAR[g];
-      return `<button class="gearb${g === C.gear ? ' cur' : ''}" type="button" data-act="gear" data-gear="${g}" style="--tc:${T.c}"><span class="num">${i + 1}</span><b>${esc(X.name)}</b><em>${X.cls === 'any' ? 'Anyone' : esc(WB.CLASSES[X.cls]) + ' only'} · ${X.ammo} a match · ⏱${X.delay}</em><span>${esc(X.desc)}</span></button>`; }).join('');
-    $('#screen').innerHTML = `<div class="screen"><div class="pick" role="dialog" aria-modal="true" style="width:980px">
-      <div class="tag">Gear · a 4th shot, yours for the whole match</div>
-      <h2 style="color:${T.c}">${esc(C.name)}'s gear</h2>
-      <p class="sub">${esc(WB.CLASSES[C.cls])}s can carry these six. The highlighted one is ${esc(C.name)}'s usual pick: press Enter to take it.</p>
-      <div class="gears">${items}</div>
-      <div class="row"><button class="btn ghost sm" type="button" data-act="gearback">Back</button><span class="keys">1–6 to pick · Enter for the usual</span></div></div></div>`;
-  }
-  function choose(id) { if (WB.CHARS[id] && ui.screen === 'select') { SFX.click(); gearScreen(id); } }
-  const randomGear = (c) => (Math.random() < 0.5 ? WB.CHARS[c].gear : WB.gearFor(c)[Math.floor(Math.random() * WB.gearFor(c).length)]);
-  function chooseGear(g) {
-    const id = ui.pendingChar; if (ui.screen !== 'gear' || !WB.CHARS[id]) return;
-    if (!WB.gearFor(id).includes(g)) g = WB.CHARS[id].gear;
-    SFX.click(); ui.screen = 'select';
+  // Picking a character is the whole choice now: its kit comes with it.
+  function choose(id) {
+    if (!WB.CHARS[id] || ui.screen !== 'select') return;
+    SFX.click();
     if (ui.mode === 'squads') { // a crew fills up one unit at a time; then the other side picks (the computer picks its own)
-      const mine = ui.picks[ui.pickTeam] || (ui.picks[ui.pickTeam] = []), gear = ui.gear[ui.pickTeam] || (ui.gear[ui.pickTeam] = []); mine.push(id); gear.push(g);
+      const mine = ui.picks[ui.pickTeam] || (ui.picks[ui.pickTeam] = []); mine.push(id);
       if (mine.length < ui.sq.size) { selectScreen(ui.pickTeam); return; }
       if (ui.pickTeam === 0 && ui.sq.vs === 'p2') { ui.cursor = 2; selectScreen(1); return; }
-      if (ui.sq.vs === 'cpu') { ui.picks[1] = randomCrew(ui.sq.size); ui.gear[1] = ui.picks[1].map(randomGear); }
+      if (ui.sq.vs === 'cpu') ui.picks[1] = randomCrew(ui.sq.size);
       startMatch(); return;
     }
-    ui.picks[ui.pickTeam] = id; ui.gear[ui.pickTeam] = g;
+    ui.picks[ui.pickTeam] = id;
     if (ui.mode === 'solo') { // the computers take random characters, different from each other where possible
       const rest = WB.CHAR_IDS.filter((c) => c !== id).sort(() => Math.random() - 0.5);
-      ui.picks = [id, rest[0], rest[1], rest[2]]; ui.gear = [g].concat(ui.picks.slice(1).map(randomGear)); startMatch();
+      ui.picks = [id, rest[0], rest[1], rest[2]]; startMatch();
     } else if (ui.pickTeam === 0) { ui.cursor = 2; selectScreen(1); } else startMatch();
   }
 
@@ -803,7 +806,7 @@
     ui.endHTML = `<div class="tag">${teamRoom() ? `${G.size} v ${G.size} team battle` : ffa ? `${G.teams}-player free-for-all` : done ? 'Match over' : `Round ${ui.round} of ${BEST_OF}`}${ui.tester ? ' · TESTER' : ''}</div><h2 style="color:${col}">${esc(head)}</h2>${ui.mode === 'solo' ? `<p style="margin:0">vs three ${LEVELS[ui.level].name} computers</p>` : ui.mode === 'squads' ? `<p style="margin:0">${ui.sq.size} v ${ui.sq.size}${ui.sq.vs === 'cpu' ? ` against the ${LEVELS[ui.level].name} computer` : ''}</p>` : ''}
       ${ffa ? '' : `<div class="score">`}${ffa ? '' : ui.wins.map((x, t) => `<span style="color:${TEAMS[t].c}" title="${esc(sideLabel(t))} · ${esc(charName(t))}">${x}</span>`).join(' – ')}${ffa ? '' : '</div>'}
       <p style="margin:0;font-size:15px">${ui.wins.map((x, t) => `<b style="color:${TEAMS[t].c}${ffa && t !== w ? ';opacity:.6' : ''}">${esc(sideLabel(t))}</b> ${esc(charName(t))}`).join(' · ')}</p>
-      <p>${done && !ffa ? 'Last round: ' : ''}${G.turn} turns · ${st.shots} shots · ${st.lobs} lobs · ${st.dudBlasts} dud blasts${st.chains ? ` · ${st.chains} chain reaction${st.chains > 1 ? 's' : ''}` : ''}${st.drowned ? ` · ${st.drowned} splashed out` : ''}</p>
+      <p>${done && !ffa ? 'Last round: ' : ''}${G.turn} turns · ${st.shots} shots · ${st.dash || 0} moves used · ${st.jumps || 0} jumps${st.chains ? ` · ${st.chains} chain reaction${st.chains > 1 ? 's' : ''}` : ''}${st.drowned ? ` · ${st.drowned} splashed out` : ''}</p>
       <div class="row">${done
         ? ffa ? `<button class="btn fire" type="button" data-act="olobby">BACK TO THE ROOM (R)</button><button class="btn teal" type="button" data-act="feedback">Give feedback</button><button class="btn ghost" type="button" data-act="leave">Leave</button>`
         : online() ? `<button class="btn fire" type="button" data-act="rematch">${ui.net && ui.net.rematchAsked ? 'WAITING FOR THEM…' : 'REMATCH'}</button><button class="btn teal" type="button" data-act="feedback">Give feedback</button><button class="btn ghost" type="button" data-act="leave">Leave</button>`
@@ -819,7 +822,7 @@
     { id: 'delay', q: 'Turn delay (heavy shots make you wait longer): did it make sense?', opts: ['Yes, I used it', 'Sort of', "Didn't notice"] },
     { id: 'char', q: 'Which character was the most fun?', opts: WB.CHAR_IDS.map((c) => WB.CHARS[c].name) },
     { id: 'fair', q: 'Did any character feel too strong or too weak?', opts: ['All felt fair', 'One was too strong', 'One was too weak'] },
-    { id: 'duds', q: 'Live duds: how did they feel?', opts: ['Loved them', 'Fine', "Didn't notice", 'Annoying'] },
+    { id: 'kits', q: 'Abilities and moves (2 and 3): how did they feel?', opts: ['Loved them', 'Fine', "Didn't use them", 'Confusing'] },
     { id: 'aim', q: 'Aiming with drag-and-release?', opts: ['Precise', 'OK', 'Fiddly'] },
     { id: 'read', q: 'Could you always tell whose turn it was and what was happening?', opts: ['Always', 'Mostly', 'Got lost'] },
   ];
@@ -834,7 +837,7 @@
   function feedbackText() {
     const F = ui.fb, G = ui.G;
     return ['Wormsbound P1 feedback', ...FQ.map((f) => `${f.q} ${F.q[f.id] || '–'}`), `Notes: ${F.text || '–'}`,
-      `From: ${F.nm || 'anonymous'} · ${ui.mode === 'solo' ? '1 Player, ' + ui.level : '1v1'} · ${ui.picks.join(' vs ')} · score ${ui.wins.join('-')} · seed ${ui.matchSeed}${ui.tester ? ' · TESTER' : ''}${G ? ` · last round ${G.turn} turns, ${G.stats.lobs} lobs` : ''}`].join('\n');
+      `From: ${F.nm || 'anonymous'} · ${ui.mode === 'solo' ? '1 Player, ' + ui.level : '1v1'} · ${ui.picks.join(' vs ')} · score ${ui.wins.join('-')} · seed ${ui.matchSeed}${ui.tester ? ' · TESTER' : ''}${G ? ` · last round ${G.turn} turns, ${G.stats.dash || 0} moves used` : ''}`].join('\n');
   }
   async function sendFeedback() {
     const F = ui.fb; const t = $('#fbText'), n = $('#fbName'); if (t) F.text = t.value; if (n) F.nm = n.value;
@@ -901,7 +904,8 @@
         const m = net.queue.shift(), G = ui.G, u = WB.current(G), mine = teamRoom() ? !!u && u.own === ui.seat : m.by === ui.you; // was this move mine?
         if (!WB.act(G, m.it)) { net.send({ t: 'sync' }); net.queue = []; return; }
         if (m.it.k === 'weapon' && mine) ui.weapon = m.it.w;
-        if ((m.it.k === 'fire' || m.it.k === 'lob') && u) { SFX.fire(); burst(...muzzle(u, aimOf(u)), 8, 'spark'); ui.cam.manual = false; ui.cam.over = false; }
+        if (m.it.k === 'fire' && u) { SFX.fire(); burst(...muzzle(u, aimOf(u)), 8, 'spark'); ui.cam.manual = false; ui.cam.over = false; }
+        if (m.it.k === 'jump' && u) SFX.jump(panOf(u.x * CELL));
         if (m.it.k === 'move') SFX.click();
         if (mine && m.it.k !== 'move' && m.it.k !== 'weapon') net.waiting = false;
         net.expect = m.hash;
@@ -992,7 +996,7 @@
   function startRound() {
     const first = (ui.round - 1) % nSides();
     const sq = ui.mode === 'squads';
-    ui.G = WB.newGame((ui.matchSeed + ui.round * 7919 + (ui.draws || 0) * 104729) >>> 0, { teams: nSides(), size: crew(), first, chars: sq ? ui.picks[0].concat(ui.picks[1]) : ui.picks, gear: sq ? (ui.gear[0] || []).concat(ui.gear[1] || []) : ui.gear, map: mapFor(ui.round), recipe: ui.mode === 'solo' ? 'solo' : undefined });
+    ui.G = WB.newGame((ui.matchSeed + ui.round * 7919 + (ui.draws || 0) * 104729) >>> 0, { teams: nSides(), size: crew(), first, chars: sq ? ui.picks[0].concat(ui.picks[1]) : ui.picks, map: mapFor(ui.round), recipe: ui.mode === 'solo' ? 'solo' : undefined });
     ui.aim = {}; ui.cpu = null; ui.parts = []; ui.trails = {}; ui.scorch = []; ui.pops = []; ui.acc = 0; ui.slow = 0; ui.shake = 0; ui.freeze = 0; ui.punch.k = 0; ui.flash = 0; ui.overAt = 0; ui.paused = false;
     bakeBackground(ui.G.seed); renderTerrain(); camReset();
     ui.screen = 'game'; hide(); onTurn();
@@ -1005,7 +1009,8 @@
     ui.round = 1; ui.draws = 0; ui.wins = new Array(nSides()).fill(0); ui.tester = false; ui.fb = { q: {}, text: '', nm: '', saved: null };
     startRound();
   }
-  function botTurn() { if (online()) return; if (!canAct() && !(ui.paused && ui.G && ui.G.phase === 'aim')) return; ui.tester = true; ui.paused = false; hide(); WB.botTurn(ui.G, 'smart'); renderCtl(); }
+  function botTurn() { if (online()) return; const G = ui.G; if (!G || G.phase !== 'aim' || ui.screen !== 'game') return; ui.tester = true; ui.paused = false; hide(); ui.auto = G.turn; ui.cpu = null;
+    for (const it of WB.botTurn(JSON.parse(JSON.stringify(G)), 'smart')) { WB.act(G, it); if (G.phase !== 'aim') break; } renderCtl(); }
 
   document.addEventListener('click', (e) => {
     const b = e.target.closest('button'); if (!b) return; audio();
@@ -1022,19 +1027,17 @@
       case 'squads': squadScreen(); break;
       case 'sqsize': ui.sq.size = clamp(+b.dataset.n || 3, 2, 5); lsSet('wb-crew', ui.sq.size); squadScreen(); break;
       case 'sqvs': ui.sq.vs = b.dataset.vs === 'p2' ? 'p2' : 'cpu'; lsSet('wb-crewvs', ui.sq.vs); if (LEVELS[b.dataset.level]) { ui.level = b.dataset.level; lsSet('wb-level', ui.level); } squadScreen(); break;
-      case 'sqgo': ui.picks = [null, null]; ui.gear = [null, null]; ui.cursor = 2; selectScreen(0); break;
-      case 'crewfill': { const mine = ui.picks[ui.pickTeam] || (ui.picks[ui.pickTeam] = []), gear = ui.gear[ui.pickTeam] || (ui.gear[ui.pickTeam] = []); const left = WB.CHAR_IDS.filter((c) => !mine.includes(c)).sort(() => Math.random() - 0.5); const next = () => (left.length ? left.pop() : WB.CHAR_IDS[Math.floor(Math.random() * WB.CHAR_IDS.length)]);
-        while (mine.length < ui.sq.size - 1) { const c = next(); mine.push(c); gear.push(WB.CHARS[c].gear); } const last = next(); ui.pendingChar = last; ui.screen = 'gear'; chooseGear(WB.CHARS[last].gear); break; }
+      case 'sqgo': ui.picks = [null, null]; ui.cursor = 2; selectScreen(0); break;
+      case 'crewfill': { const mine = ui.picks[ui.pickTeam] || (ui.picks[ui.pickTeam] = []); const left = WB.CHAR_IDS.filter((c) => !mine.includes(c)).sort(() => Math.random() - 0.5); const next = () => (left.length ? left.pop() : WB.CHAR_IDS[Math.floor(Math.random() * WB.CHAR_IDS.length)]);
+        while (mine.length < ui.sq.size - 1) mine.push(next()); choose(next()); break; }
       case 'cam': camAct(b.dataset.cam); break;
-      case 'mode': ui.mode = b.dataset.mode === 'solo' ? 'solo' : 'duel'; ui.gear = []; ui.picks = new Array(nSides()).fill(null); if (ui.mode === 'solo') levelScreen(); else { ui.cursor = 2; selectScreen(0); } break;
+      case 'mode': ui.mode = b.dataset.mode === 'solo' ? 'solo' : 'duel'; ui.picks = new Array(nSides()).fill(null); if (ui.mode === 'solo') levelScreen(); else { ui.cursor = 2; selectScreen(0); } break;
       case 'level': ui.level = LEVELS[b.dataset.level] ? b.dataset.level : 'medium'; lsSet('wb-level', ui.level); ui.cursor = 2; selectScreen(0); break;
-      case 'start': case 'pickagain': ui.gear = []; ui.picks = new Array(nSides()).fill(null); ui.cursor = 2; selectScreen(0); break;
+      case 'start': case 'pickagain': ui.picks = new Array(nSides()).fill(null); ui.cursor = 2; selectScreen(0); break;
       case 'rematch': if (online()) { ui.net.send({ t: 'rematch' }); ui.net.rematchAsked = true; roundOverAgain(); } else startMatch(); break;
       case 'mapcode': { const inp = $('#mapCode'); if (!setMap(inp && inp.value)) { const a = $('#mapAbout'); if (a) a.textContent = "That code doesn't look right. Copy it again from the Map Lab."; } break; }
       case 'pick': choose(b.dataset.char); break;
-      case 'gear': chooseGear(b.dataset.gear); break;
-      case 'gearback': selectScreen(ui.pickTeam); break;
-      case 'pickback': if (ui.mode === 'squads') { const mine = ui.picks[ui.pickTeam] || []; if (mine.length) { mine.pop(); (ui.gear[ui.pickTeam] || []).pop(); selectScreen(ui.pickTeam); } else if (ui.pickTeam === 1) { ui.picks[0].pop(); (ui.gear[0] || []).pop(); selectScreen(0); } else squadScreen(); }
+      case 'pickback': if (ui.mode === 'squads') { const mine = ui.picks[ui.pickTeam] || []; if (mine.length) { mine.pop(); selectScreen(ui.pickTeam); } else if (ui.pickTeam === 1) { ui.picks[0].pop(); selectScreen(0); } else squadScreen(); }
         else if (ui.mode === 'duel' && ui.pickTeam === 1) { ui.picks[0] = null; selectScreen(0); } else if (ui.mode === 'solo') levelScreen(); else titleScreen(); break;
       case 'next': if (online()) { ui.net.send({ t: 'next' }); ui.net.nextAsked = true; roundOverAgain(); } else { if (ui.G.winner >= 0) ui.round++; else ui.draws = (ui.draws || 0) + 1; startRound(); } break; // a drawn round is played again on a new map
       case 'online': onlineScreen(); break;
@@ -1050,7 +1053,7 @@
       case 'oready': if (ui.net) { const R = ui.net.room, me = R && R.seats[ui.seat]; ui.net.send({ t: 'ready', on: !(me && me.ready) }); } break;
       case 'leave': netLeave(); titleScreen(); break;
       case 'fire': doFire(); break;
-      case 'lob': toggleLob(); break;
+      case 'wind': flipWind(); break;
       case 'pass': pass(); break;
       case 'menu': if (ui.screen === 'game') toggleMenu(); break;
       case 'resume': ui.paused = false; hide(); break;
@@ -1066,6 +1069,7 @@
   // walk buttons repeat while held
   let walkTimer = null;
   document.addEventListener('pointerdown', (e) => {
+    const j = e.target.closest && e.target.closest('[data-jump]'); if (j && !j.disabled) { jump(+j.dataset.jump); return; }
     const b = e.target.closest && e.target.closest('[data-walk]'); if (!b || b.disabled) return;
     const dir = +b.dataset.walk; walk(dir); clearInterval(walkTimer); walkTimer = setInterval(() => walk(dir), 140);
   });
@@ -1192,13 +1196,15 @@
     if (Math.abs(u.x - a.x) > 0.01 && !u.air) { a.walk = t; if (t - a.step > 0.17) { a.step = t; puff(x, y, 2); SFX.step(panOf(x)); } } a.x = u.x;
     if (a.air && !u.air) { a.land = t; puff(x, y, 7); SFX.land(panOf(x)); } a.air = !!u.air;
     const firing = G.shooter === u.id && G.phase !== 'aim'; if (firing && !a.on) a.fired = t; a.on = firing;
-    SPR.frame = u.air ? F.hurt : t - a.fired < 0.14 ? F.fire1 : t - a.fired < 0.36 ? F.fire2 : t - a.walk < 0.22 ? F.walk1 + Math.floor(t * 9) % 4 : isCur && G.phase === 'aim' ? F.aim : -1;
+    SPR.frame = u.air ? (u.leap || u.float || G.mid && u.id === G.actor ? F.jump2 : F.hurt) : t - a.fired < 0.14 ? F.fire1 : t - a.fired < 0.36 ? F.fire2 : t - a.walk < 0.22 ? F.walk1 + Math.floor(t * 9) % 4 : isCur && G.phase === 'aim' ? F.aim : -1;
     const sq = reduced ? 0 : Math.max(0, 1 - (t - a.land) / 0.16) * 0.22; // squash for a moment on landing
     if (sq > 0) { ctx.save(); ctx.translate(x, y); ctx.scale(1 + sq, 1 - sq); ctx.translate(-x, -y); }
     drawBody(ctx, x, y, R, u.team, u.char, u.face, t, SPR.img ? 0 : bob);
     if (t - a.hit < 0.1) { ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 0.7; drawBody(ctx, x, y, R, u.team, u.char, u.face, t, SPR.img ? 0 : bob); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; } // blink white when hurt
     if (sq > 0) ctx.restore();
     SPR.frame = -1;
+    if (u.burn > 0) { ctx.fillStyle = Math.floor(t * 10) % 2 ? '#FF8A3D' : '#FFD34D'; ctx.fillRect(Math.round(x / 2) * 2 - 12, Math.round((cy - R) / 2) * 2 - 6 - (Math.floor(t * 8) % 2) * 2, 4, 6); ctx.fillRect(Math.round(x / 2) * 2 + 8, Math.round((cy - R) / 2) * 2 - 4 - (Math.floor(t * 8 + 1) % 2) * 2, 4, 6); }
+    if (u.wet) { ctx.fillStyle = '#8FD8FF'; for (let i = 0; i < 3; i++) ctx.fillRect(Math.round(x / 2) * 2 - 10 + i * 8, Math.round((y - 4 - ((t * 30 + i * 9) % 22)) / 2) * 2, 2, 4); }
     if (u.hp < 35) { ctx.fillStyle = 'rgba(70,60,80,.55)'; ctx.beginPath(); ctx.arc(x + 6 * Math.sin(t * 2), cy - R - 6 - (t * 20 % 10), 4, 0, 7); ctx.fill(); }
     // name and hp
     const bw = 34, bx = x - bw / 2, by = cy - R - (SPR.img ? Math.round((SPR.foot[1] - (SPR.top[WB.CHAR_IDS.indexOf(u.char)] || 10)) * R / 12 * SPR.scale - 2 * R + 10) : u.char === 'volt' ? 30 : 18);
@@ -1222,12 +1228,12 @@
     ctx.font = FONT(18); ctx.textAlign = 'center'; ctx.lineWidth = 4; ctx.strokeStyle = '#1E1A2B'; ctx.strokeText(String(d.fuse), x, y - 20); ctx.fillStyle = d.fuse <= 1 ? '#FF4D5E' : '#FFD34D'; ctx.fillText(String(d.fuse), x, y - 20);
   }
   // a map hazard (oil drum, gas canister, spore pod...): a drum in the theme's hazard colour with a warning band
-  // Supply crates: a wooden box with a band and a mark that says what's inside (gold wrench: gear · blue star: SS · green cross: health).
+  // Supply crates: a wooden box with a band and a mark that says what's inside (gold: a recharge · blue star: SS · green cross: health).
   // A new one floats down under a little parachute for a moment (the engine has already put it on the ground).
-  const CRATE_LOOK = { gear: ['#FFD34D', 'GEAR'], ss: ['#8FD8FF', 'SS'], heal: ['#7BE07A', 'HEALTH'] };
+  const CRATE_LOOK = { cool: ['#FFD34D', 'RECHARGE'], ss: ['#8FD8FF', 'SS'], heal: ['#7BE07A', 'HEALTH'] };
   function drawCrate(c, t) {
     const born = ui.crateAt[c.id], age = born == null ? 9 : performance.now() / 1000 - born, drop = reduced ? 0 : Math.max(0, 1 - age / 0.9);
-    const x = Math.round(c.x * CELL / 2) * 2, y = Math.round((c.y * CELL - drop * 150) / 2) * 2, L = CRATE_LOOK[c.kind] || CRATE_LOOK.gear;
+    const x = Math.round(c.x * CELL / 2) * 2, y = Math.round((c.y * CELL - drop * 150) / 2) * 2, L = CRATE_LOOK[c.kind] || CRATE_LOOK.cool;
     if (drop > 0) { ctx.strokeStyle = 'rgba(255,243,224,.8)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(x - 9, y - 18); ctx.lineTo(x - 16, y - 40); ctx.moveTo(x + 9, y - 18); ctx.lineTo(x + 16, y - 40); ctx.stroke();
       ctx.fillStyle = L[0]; ctx.strokeStyle = '#1E1A2B'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(x, y - 40, 18, Math.PI, 0); ctx.closePath(); ctx.fill(); ctx.stroke(); }
     else { const g = ctx.createRadialGradient(x, y - 9, 2, x, y - 9, 30); g.addColorStop(0, L[0] + '66'); g.addColorStop(1, L[0] + '00'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y - 9, 30 + (reduced ? 0 : Math.sin(t * 4) * 3), 0, 7); ctx.fill(); }
@@ -1237,6 +1243,14 @@
     if (c.kind === 'heal') { ctx.fillRect(x - 1, y - 12, 2, 6); ctx.fillRect(x - 3, y - 10, 6, 2); }
     else if (c.kind === 'ss') { ctx.fillRect(x - 1, y - 12, 2, 6); ctx.fillRect(x - 3, y - 10, 6, 2); ctx.fillRect(x - 2, y - 11, 4, 4); }
     else { ctx.fillRect(x - 4, y - 10, 8, 2); ctx.fillRect(x - 5, y - 11, 2, 4); ctx.fillRect(x + 3, y - 11, 2, 4); }
+  }
+  // fire left on the ground (Fire Wall, Inferno): flames along the surface for as wide as it burns
+  function drawZones(t) {
+    for (const z of ui.G.zones || []) for (let i = 0; i < z.w * 2; i++) {
+      const cx = z.x - z.w / 2 + i * 0.5 + 0.25, gy = WB.surfaceY(ui.G, cx); if (Math.abs(gy - z.y) > 8) continue;
+      const h = 6 + Math.round((Math.sin(t * 9 + i * 1.7) + 1) * 5 + (i % 3) * 2), x = Math.round(cx * CELL / 2) * 2, y = gy * CELL;
+      ctx.fillStyle = '#FF7A30'; ctx.fillRect(x - 2, y - h, 4, h); ctx.fillStyle = '#FFD34D'; ctx.fillRect(x - 2, y - Math.round(h * 0.55), 4, Math.round(h * 0.55) - 2); ctx.fillStyle = '#FFF8E0'; ctx.fillRect(x, y - 4, 2, 2);
+    }
   }
   function drawBarrel(b) {
     const x = Math.round(b.x * CELL / 2) * 2, y = Math.round(b.y * CELL / 2) * 2;
@@ -1252,9 +1266,9 @@
     const tr = ui.trails[p.id] || (ui.trails[p.id] = []); tr.push([x, y]); if (tr.length > 26) tr.shift();
     for (let i = 1; i < tr.length; i++) { const k = i / tr.length, sz = k > 0.66 && p.w !== 'bomblet' ? 4 : 2; ctx.fillStyle = `rgba(255,243,224,${k * 0.6})`; ctx.fillRect(Math.round(tr[i][0] / 2) * 2 - sz / 2, Math.round(tr[i][1] / 2) * 2 - sz / 2, sz, sz); }
     if (!reduced && !ui.fast && (p.w === 'shot2' || p.w === 'ss') && Math.random() < 0.35) ui.parts.push({ x, y, vx: 0, vy: 0, t: 0, life: 0.5, kind: 'puff', c: 'rgba(70,58,84,.9)', size: 3 });
-    if (p.w === 'dud') { drawDud({ x: p.x, y: p.y + 5 / CELL, fuse: p.fuse }, t, true); return; }
+    if (p.ray) { const fu = ui.G.units.find((v) => v.id === p.from); if (fu) { ctx.strokeStyle = '#1E1A2B'; ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(fu.x * CELL, fu.y * CELL - 12); ctx.lineTo(x, y); ctx.stroke(); ctx.strokeStyle = '#C9B38A'; ctx.lineWidth = 2; ctx.stroke(); } ctx.fillStyle = '#E8E4F0'; ctx.fillRect(x - 5, y - 5, 10, 10); ctx.fillStyle = '#1E1A2B'; ctx.fillRect(x - 3, y - 3, 6, 6); return; } // Hook: a chain and its head
     const LOOK = { tusk: 'brick', hopper: 'zip', flint: 'volt', patch: 'digger', nimbus: 'gale' }, c0 = p.char || ui.G.chars[p.team];
-    const ch = p.w === 'gear' || p.w === 'frag' ? 'gear' : LOOK[c0] || c0, big = p.w === 'shot2' || p.w === 'ss', ang = Math.atan2(p.vy, p.vx);
+    const ch = LOOK[c0] || c0, big = p.w === 'shot2' || p.w === 'ss', ang = Math.atan2(p.vy, p.vx);
     if (p.w === 'ss') { const g = ctx.createRadialGradient(x, y, 2, x, y, 24); g.addColorStop(0, 'rgba(255,211,77,.8)'); g.addColorStop(1, 'rgba(255,138,61,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, 24, 0, 7); ctx.fill(); }
     ctx.strokeStyle = '#1E1A2B'; ctx.lineWidth = 2;
     if (ch === 'zip' || (ch === 'digger' && big)) { // darts and drills point where they fly
@@ -1273,20 +1287,26 @@
     const a = aimOf(u), [cx, cy] = WB.center(u), rad = a.angle * Math.PI / 180;
     const ox = cx * CELL, oy = cy * CELL, len = 26 + a.power * 46;
     // short preview of the first part of the arc (no wind: reading the wind is your job)
-    const s = (ui.lob ? a.power * WB.LOB_POWER : a.power * WB.shotSpec(ui.G, u.team, ui.weapon).speed) * WB.VMAX;
+    const S = WB.shotSpec(ui.G, u, ui.weapon), dash = ui.weapon === 'dash';
+    if (dash && S.kind !== 'leap' || S.ray) { // these go in a straight line: show how far
+      const far = (S.ray ? S.ray.range : S.range * Math.max(0.2, a.power)) * CELL, flat = S.kind === 'charge', ex = ox + (flat ? Math.sign(Math.cos(rad)) || 1 : Math.cos(rad)) * far, ey = flat ? oy + 12 : oy - Math.sin(rad) * far;
+      ctx.strokeStyle = 'rgba(30,26,43,.6)'; ctx.lineWidth = 8; ctx.setLineDash([8, 8]); ctx.beginPath(); ctx.moveTo(ox, flat ? oy + 12 : oy); ctx.lineTo(ex, ey); ctx.stroke(); ctx.strokeStyle = '#22C3B5'; ctx.lineWidth = 4; ctx.stroke(); ctx.setLineDash([]);
+      ctx.fillStyle = '#22C3B5'; ctx.fillRect(Math.round(ex / 2) * 2 - 5, Math.round(ey / 2) * 2 - 5, 10, 10); return;
+    }
+    const s = a.power * S.speed * WB.VMAX, gm = dash ? (S.grav || 1) : 1, dots = dash ? 40 : 16;
     let px = cx + Math.cos(rad) * (WB.UNIT_R + 0.6), py = cy - Math.sin(rad) * (WB.UNIT_R + 0.6), vx = Math.cos(rad) * s, vy = -Math.sin(rad) * s;
-    for (let i = 0; i < 16; i++) { for (let k = 0; k < 3; k++) { vy += WB.GRAV / 60; px += vx / 60; py += vy / 60; } const sz = i < 7 ? 6 : i < 12 ? 4 : 2, qx = Math.round(px * CELL / 2) * 2, qy = Math.round(py * CELL / 2) * 2;
-      ctx.fillStyle = 'rgba(30,26,43,.55)'; ctx.fillRect(qx - sz / 2 - 2, qy - sz / 2 - 2, sz + 4, sz + 4); ctx.fillStyle = `rgba(255,243,224,${1 - i * 0.03})`; ctx.fillRect(qx - sz / 2, qy - sz / 2, sz, sz); }
+    if (S.wall) { const d = Math.cos(rad) >= 0 ? 1 : -1, wx = (Math.floor(u.x) + d * 4 + (d < 0 ? -S.wall.w + 1 : 0)) * CELL; ctx.strokeStyle = '#7BE07A'; ctx.lineWidth = 3; ctx.setLineDash([6, 6]); ctx.strokeRect(wx, (u.y - S.wall.h) * CELL, S.wall.w * CELL, S.wall.h * CELL); ctx.setLineDash([]); return; } // Bulwark: where the wall will stand
+    for (let i = 0; i < dots; i++) { for (let k = 0; k < 3; k++) { vy += WB.GRAV * gm / 60; px += vx / 60; py += vy / 60; } if (dash && WB.solidAt(ui.G, px, py)) break; const sz = dash ? 4 : i < 7 ? 6 : i < 12 ? 4 : 2, qx = Math.round(px * CELL / 2) * 2, qy = Math.round(py * CELL / 2) * 2;
+      ctx.fillStyle = 'rgba(30,26,43,.55)'; ctx.fillRect(qx - sz / 2 - 2, qy - sz / 2 - 2, sz + 4, sz + 4); ctx.fillStyle = dash ? '#22C3B5' : `rgba(255,243,224,${1 - i * 0.03})`; ctx.fillRect(qx - sz / 2, qy - sz / 2, sz, sz); }
     // power arrow
     ctx.strokeStyle = '#1E1A2B'; ctx.lineWidth = 10; ctx.lineCap = 'butt'; ctx.beginPath(); ctx.moveTo(ox, oy); ctx.lineTo(ox + Math.cos(rad) * len, oy - Math.sin(rad) * len); ctx.stroke();
     const pc = a.power < 0.5 ? '#FFD34D' : a.power < 0.85 ? '#FF8A3D' : '#FF4D5E';
-    ctx.strokeStyle = ui.lob ? '#22C3B5' : pc; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(ox + Math.cos(rad) * 2, oy - Math.sin(rad) * 2); ctx.lineTo(ox + Math.cos(rad) * (len - 2), oy - Math.sin(rad) * (len - 2)); ctx.stroke();
-    if (ui.lob) { ctx.strokeStyle = 'rgba(34,195,181,.6)'; ctx.setLineDash([6, 6]); ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(ox, oy, WB.LOB_RANGE * CELL, 0, 7); ctx.stroke(); ctx.setLineDash([]); }
+    ctx.strokeStyle = dash ? '#22C3B5' : pc; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(ox + Math.cos(rad) * 2, oy - Math.sin(rad) * 2); ctx.lineTo(ox + Math.cos(rad) * (len - 2), oy - Math.sin(rad) * (len - 2)); ctx.stroke();
   }
   function aimLabel(u) {
     const a = aimOf(u), [cx, cy] = WB.center(u), rad = a.angle * Math.PI / 180, ox = cx * CELL, oy = cy * CELL, len = 26 + a.power * 46;
     ctx.font = FONT(15); ctx.textAlign = 'center'; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(30,26,43,.9)';
-    const lab = `${Math.round(a.angle > 90 ? 180 - a.angle : a.angle)}° · ${Math.round(a.power * 100)}%${ui.lob ? ' · LOB' : ''}`;
+    const lab = `${Math.round(a.angle > 90 ? 180 - a.angle : a.angle)}° · ${Math.round(a.power * 100)}%${ui.weapon === 'dash' ? ' · MOVE' : ''}`;
     const lx = ox + Math.cos(rad) * (len + 26), ly = oy - Math.sin(rad) * (len + 26) - 4;
     ctx.strokeText(lab, lx, ly); ctx.fillStyle = '#FFF3E0'; ctx.fillText(lab, lx, ly);
   }
@@ -1318,6 +1338,7 @@
     const G = ui.G;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     if (!G) { ctx.drawImage(bgCv, -40, -20); return; }
+    if (ui.tv !== G.tv) { ui.tv = G.tv; ui.terrainDirty = true; } // the rules changed the ground (a wall, a tunnel, a crater)
     if (ui.terrainDirty) renderTerrain();
     camStep(dt);
     const sh = ui.shake, shx = sh > 0.3 ? (Math.random() - 0.5) * sh : 0, shy = sh > 0.3 ? (Math.random() - 0.5) * sh : 0, cam = ui.cam;
@@ -1351,14 +1372,14 @@
     ctx.setTransform(cam.z * pz, 0, 0, cam.z * pz, -cam.x * cam.z * pz + ppx, -cam.y * cam.z * pz + ppy); // from here on: world pixels
     ctx.imageSmoothingEnabled = false; ctx.drawImage(terrCv, 0, 0, worldW(), worldH()); ctx.imageSmoothingEnabled = true; // world pixels at 2x, hard edges
     drawGlows(t);
-    pixelLayer(() => { for (const b of G.barrels) drawBarrel(b); for (const c of G.crates || []) drawCrate(c, t); for (const d of G.duds) drawDud(d, t, false); });
+    pixelLayer(() => { drawZones(t); for (const b of G.barrels) drawBarrel(b); for (const c of G.crates || []) drawCrate(c, t); for (const d of G.duds) drawDud(d, t, false); });
     for (const d of G.duds) dudLabel(d);
     const cur = WB.current(G);
     for (const u of G.units) if (!u.alive) drawUnit(u, false, t);
     for (const u of G.units) if (u.alive) drawUnit(u, u === cur && G.phase === 'aim', t);
     let aimU = null; // whose aim to show: yours, the computer's once it has settled, or the other player's as they move it
     if (online() && cur && G.phase === 'aim' && !myTurn()) { if (ui.remoteAim && performance.now() - ui.remoteAim.at < 4000) { const a = aimOf(cur); a.angle = ui.remoteAim.angle; a.power = ui.remoteAim.power; aimU = cur; } }
-    else if (cur && G.phase === 'aim' && ui.screen === 'game' && !ui.paused && (!isCPU(G.team) || (ui.cpu && ui.cpu.aimed))) aimU = cur;
+    else if (cur && G.phase === 'aim' && !G.retreat && ui.screen === 'game' && !ui.paused && (!isCPU(G.team) || (ui.cpu && ui.cpu.aimed))) aimU = cur;
     for (const id of Object.keys(ui.trails)) if (!G.proj.some((p) => String(p.id) === id)) delete ui.trails[id];
     pixelLayer(() => {
     if (aimU) drawAim(aimU, t);
@@ -1376,6 +1397,7 @@
           ctx.strokeStyle = `rgba(200,255,220,${k * (0.75 - i * 0.06)})`; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(p.x + Math.sin(a) * 6, yy, rr, rr * 0.28, 0, 0, 7); ctx.stroke(); }
         continue;
       }
+      if (p.kind === 'line') { ctx.strokeStyle = `rgba(${p.c},${k})`; ctx.lineWidth = 2 + 4 * k; ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x2, p.y2); ctx.stroke(); continue; }
       if (p.kind === 'ring') { const rr = p.size * (0.25 + 0.75 * (1 - k * k)); ctx.strokeStyle = `rgba(255,243,224,${k * 0.7})`; ctx.lineWidth = 2 + 6 * k; ctx.beginPath(); ctx.ellipse(p.x, p.y, rr, p.flat ? rr * 0.25 : rr, 0, 0, 7); ctx.stroke(); continue; }
       if (p.kind === 'flash') { // a fireball in three flat colours that swells a little and shrinks away
         const rr = p.size * (0.4 + 0.25 * (1 - k)) * (0.35 + 0.65 * k); ctx.globalAlpha = Math.min(1, k * 3);
@@ -1415,7 +1437,7 @@
         if (G.phase !== 'flight') { ui.acc = 0; if (online() && ui.net) ui.net.settled(); renderHUD(); renderCtl(); coachLine(); }
       } else if (online() && ui.net && ui.net.queue.length) {
         ui.net.drain();
-      } else if (G.phase === 'aim' && isCPU(G.team)) {
+      } else if (G.phase === 'aim' && (isCPU(G.team) || autoTurn())) {
         if (!ui.cpu) cpuStart();
         cpuStep(dt);
       } else if (G.phase === 'aim' && ui.timerOn && (!online() || myTurn())) {
@@ -1440,7 +1462,7 @@
 
   // ---------- boot ----------
   window.WBUI = {
-    get G() { return ui.G; }, ui, startMatch, levelScreen, squadScreen, chooseGear, gearScreen, camAct, camZoom, camPan, toWorld, onlineScreen, netStart, play, selectScreen, choose, startRound, roundOver, doFire, walk, pass, botTurn, renderAll: () => { renderHUD(); renderCtl(); coachLine(); },
+    get G() { return ui.G; }, ui, startMatch, levelScreen, squadScreen, camAct, camZoom, camPan, toWorld, onlineScreen, netStart, play, selectScreen, choose, startRound, roundOver, doFire, walk, jump, flipWind, pickWeapon, pass, botTurn, renderAll: () => { renderHUD(); renderCtl(); coachLine(); },
     aim: (angle, power) => { const u = WB.current(ui.G); const a = aimOf(u); a.angle = angle; a.power = power; },
   };
   fit(); addEventListener('resize', fit);

@@ -6,6 +6,42 @@ Newest on top. See the repo's CLAUDE.md for how patch notes work.
 
 ---
 
+## v3 phase 1: kits, jumps and a retreat (rules changed) · 2026-11-17 · Hunter (with Claude)
+The first playable slice of [`design/v3.md`](design/v3.md). **The rules changed.** Hunter answered the design's open questions so this could start; they're listed in the design under "Decisions so far". Louiemark hasn't weighed in yet, and any of it can be reversed.
+
+### What's new
+- **Every character has a kit, not a weapon list.** A passive that's always on, a basic shot (1), an ability (2), a move (3) and the SS. Nothing runs out: the ability and the move take 2 or 3 of your own turns to be ready again.
+- **Gear is gone, and so are live duds as a weapon.** No gear screen, no LOB button. Old duds on maps are still a hazard that ticks down and goes off.
+- **You can jump.** It costs 3 steps. Hopper jumps twice as high.
+- **Your move doesn't end your turn.** Leap, blink, charge, burrow, glide or float, then shoot.
+- **A retreat after your shot.** Once it lands you can still walk with what's left of a third of your steps (Zip keeps all of hers), then end the turn. Steps in the retreat cost no turn delay.
+- **Ten passives:** Brick is hard to shove, Tusk shoves harder the further he walked, Zip keeps her movement, Hopper takes no fall damage, Volt's third hit arcs, Flint's hits burn, Digger walks through thin walls, Patch mends his crew, Gale turns the wind round, Nimbus slows whoever she hits.
+- **New abilities:** Bulwark (a wall), Hook (drags someone to you), Skipping Stone (a blast at every skip), Fire Wall (fire that stays for 2 turns), Bridge (a span where it lands). Double Tap, Thunderstrike, Drill, Gust and Delay Ray carry over.
+- **Six stats** on the select screen: Health, Armour, Power, Move, Jump, Weight.
+- **Crates:** the gear crate is now a recharge (your ability and move are ready at once).
+
+### Next up
+- [ ] @Louiemark: play it and say whether kits, jumping and the retreat are the right direction. Everything here was decided by Hunter, not by you.
+- [ ] @Louiemark: agree (or change) the new test band: across the ten characters, a computer using its whole kit beats one firing only basic shots 50-75% of the time. It replaces the two live-dud bands and the 14 gear bands, which no longer have anything to measure.
+- [ ] @Louiemark: the room server needs redeploying before online play works with this build (`server/room.js` accepts `jump` and `wind` now).
+- [ ] The pieces of the ten kits that were simplified to get a first playable (all in Watch out).
+- [ ] Phase 2 of the design: shrines, the Relic, movers, items in crates. Levels are on hold (Hunter isn't sure they're needed).
+
+### Watch out
+- [ ] **Nobody has played this.** It passes the rule checks, the browser walkthrough and the online tests, and the computer plays it, but no person has held the controls for a whole match. Whether the retreat feels like a reward or a chore is unknown.
+- [ ] **Six abilities are simpler than the design says:** Burrow digs a passage and goes through it (the design has him hide underground until his next turn). Patch's move is a long jump called Spring Pad (the design has a pad anyone can use for 4 turns). Updraft only lifts Gale (not a crewmate). Hopper's SS is still Flurry (not three aimed pounces), Patch's is still Sinkhole (not Fortress), Nimbus's is still Thunderhead (not Downpour).
+- [ ] **Two passives were changed to work in a 1v1:** Volt's third hit does half as much again as well as arcing (with one enemy there's nobody to arc to), and Patch heals himself 3 as well as crewmates 6.
+- [ ] **Balance is a first pass.** See the numbers in the pull request. The v2 numbers were tuned over many runs; these were nudged twice.
+- [ ] **The computer rarely uses its move on a one-screen map.** It was dashing towards the enemy and losing for it, so now it only slams or charges when that lands a hit, and uses moves to cross big maps. It never builds (Bulwark, Bridge) unless every shot would hurt itself.
+- [ ] **The retreat ends by itself only if the turn timer is on** (it's cut to 6 seconds). With the timer off you press End turn every turn.
+- [ ] **Jump is Shift+arrow, J, or the two small arrows by the step count.** On a phone those buttons are small. Not tried on a touch screen.
+- [ ] **No new art for any of this.** Moves use the jump frame; the wall, bridge and fire are plain blocks and flames; there are no icons on the kit buttons.
+- [ ] **Online needs the server redeployed,** and an old tab against a new server (or the other way round) will drift and resync. The local server tests and the three online browser tests pass.
+- [ ] `design/weapons.md` (the 100-weapon list) and the gear section of `design/v2.md` describe things that are no longer in the game. Left as they are, as history.
+- [ ] `design/handoff.md` still describes v2 in places; the kit table there was not rewritten.
+
+---
+
 ## v3 design proposal, and new creature sprites · 2026-11-16 · Hunter (with Claude)
 A plan for v3 (rules unchanged, nothing of it built), and the first piece of it that is in the game: new character art. Write-up: [`design/v3.md`](design/v3.md). Sheet: [`art/concepts/v3-lineup.png`](art/concepts/v3-lineup.png).
 

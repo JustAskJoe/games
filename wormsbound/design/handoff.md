@@ -7,6 +7,8 @@ The one page to read before touching this game: what's decided, what's built, an
 **Team:** Louiemark (direction, design, art direction), with Claude (code). Hours a week: not set yet.
 **Status (Nov 2, 2026):** Prototype 1 playable in two modes: 1 Player (you vs 3 computers, Easy/Medium/Hard) and 2 Players (1v1 on one keyboard), with five characters, generated maps (10 themes, presets, custom settings, share codes and an in-game Custom Map screen, Nov 11) and GunBound-style turn delay. Bot-tested and checked in a headless browser; nobody has played it yet.
 
+> **Nov 17, 2026:** the rules moved to v3 phase 1 (kits, cooldowns, jumping, a retreat; gear and the dud weapon removed). Parts of this page still describe v2. The current rules are at the top of `prototype/engine.js` and in [v3.md](v3.md); the open decisions are in v3.md under "Decisions so far".
+
 ## The game in one line
 A turn-based artillery brawler for 2 to 4 friends on one screen: pick a character, aim, read the wind, and lob shells across ground that blows apart. The twist is **live duds**: shells that land without exploding keep ticking, and anyone close enough can lob them on.
 
