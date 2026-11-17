@@ -101,6 +101,12 @@ for (const c of WB.CHAR_IDS) {
   console.log(`kit ${c.padEnd(7)} wins ${pct(w, kitN)}%  draws ${pct(d, kitN)}%  abilities ${(a2 / kitN).toFixed(1)}  moves ${(mv / kitN).toFixed(1)} a match`);
 }
 console.log(`kit value        whole kit wins ${pct(kitW, kitM)}% of the ${kitM} matches that had a winner, across all ten characters`);
+// The Relic (v3): how often someone takes it, and how often the side that took it goes on to win (50% would mean it changes nothing).
+{
+  const N = Math.max(60, n); let taken = 0, won = 0, lost = 0;
+  for (let k = 0; k < N; k++) { const G = WB.playOut(WB.newGame(7700 + k * 7919, { chars: [WB.CHAR_IDS[k % 10], WB.CHAR_IDS[(k * 3 + 1) % 10]], first: (k >> 1) % 2 }), ['smart', 'smart']).G; if (G.relic.state === 'taken') { taken++; if (G.winner === G.relic.team) won++; } if (G.relic.state === 'lost') lost++; }
+  console.log(`relic            taken in ${pct(taken, N)}% of ${N} matches  the side that took it wins ${pct(won, Math.max(1, taken))}%  lost to the water ${pct(lost, N)}%`);
+}
 // Crates (v2): a smart bot that goes for crates against one that never does ("nocrate"), same character both sides.
 // Crates should be worth having without deciding the match: a little over 50% for the taker is right.
 {

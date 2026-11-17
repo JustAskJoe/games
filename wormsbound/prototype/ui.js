@@ -188,6 +188,10 @@
     splash: (pan) => { noise(0.45, 3200, 400, 0.2, pan); noise(0.12, 5000, 2000, 0.12, pan, 'highpass'); tone(300, 120, 0.16, 0.1, 'sine', pan); },
     step: (pan) => noise(0.04, 800 + Math.random() * 500, 250, 0.07, pan),
     land: (pan) => { tone(130, 55, 0.1, 0.22, 'sine', pan); noise(0.09, 700, 180, 0.14, pan); },
+    // the Relic: a hum that rises as it comes down and a deep landing; a glassy chime on every hit, higher as it weakens; a chord when it's taken
+    relicLand: (pan) => { tone(90, 720, 0.9, 0.16, 'sawtooth', pan); tone(180, 1440, 0.9, 0.08, 'sine', pan); setTimeout(() => { noise(0.8, 500, 50, 0.5, pan); tone(70, 28, 0.7, 0.5, 'sine', pan); [784, 1175, 1568].forEach((f, i) => setTimeout(() => tone(f, f, 0.7, 0.1, 'sine', pan), i * 70)); }, ui.fast ? 0 : 820); },
+    relicHit: (left, pan) => { const f = 1300 - 600 * left; tone(f, f * 0.98, 0.3, 0.16, 'sine', pan); tone(f * 1.5, f * 1.48, 0.22, 0.09, 'triangle', pan); noise(0.05, 7000, 3000, 0.1, pan, 'highpass'); },
+    relicTake: (pan) => { noise(0.5, 6000, 800, 0.3, pan, 'highpass'); noise(0.7, 600, 60, 0.4, pan); [523, 659, 784, 1046, 1318].forEach((f, i) => setTimeout(() => { tone(f, f, 0.9, 0.13, 'triangle', pan); tone(f * 2, f * 2, 0.6, 0.05, 'sine', pan); }, i * 90)); },
     jump: (pan) => { tone(260, 520, 0.12, 0.14, 'triangle', pan); noise(0.06, 900, 300, 0.06, pan); },
     dash: (pan) => { noise(0.22, 600, 3200, 0.2, pan, 'bandpass'); tone(180, 420, 0.18, 0.14, 'sawtooth', pan); },
     build: (pan) => { noise(0.3, 400, 120, 0.2, pan); tone(110, 80, 0.2, 0.2, 'square', pan); },
@@ -252,12 +256,12 @@
   { const g = vigCv.getContext('2d'), v = g.createRadialGradient(W / 2, H / 2, H * 0.45, W / 2, H / 2, H * 1.05); v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(10,6,20,.5)'); g.fillStyle = v; g.fillRect(0, 0, W, H); }
 
   // ---------- particles ----------
-  function burst(x, y, n, kind) {
+  function burst(x, y, n, kind, col) {
     const lim = reduced ? Math.ceil(n / 3) : n;
     for (let i = 0; i < lim; i++) {
       const a = Math.random() * Math.PI * 2, s = 60 + Math.random() * (kind === 'chunk' ? 360 : 160);
       ui.parts.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - (kind === 'chunk' ? 160 : 40), t: 0, life: kind === 'smoke' ? 1.4 + Math.random() : kind === 'chunk' ? 1.5 + Math.random() * 1.4 : 0.7 + Math.random() * 0.7, kind, b: 2,
-        c: kind === 'chunk' ? theme().shades[2 + (i % 3)][i & 1] : kind === 'spark' ? (i & 1 ? '#FFD34D' : '#FF8A3D') : kind === 'drop' ? theme().liquid.foam : (i & 1 ? '#4A3D5C' : '#5C4E70'), size: kind === 'smoke' ? 8 + Math.random() * 10 : kind === 'chunk' ? (Math.random() < 0.3 ? 6 : 4) : 2 + (Math.random() < 0.4 ? 2 : 0) });
+        c: col ? col : kind === 'chunk' ? theme().shades[2 + (i % 3)][i & 1] : kind === 'spark' ? (i & 1 ? '#FFD34D' : '#FF8A3D') : kind === 'drop' ? theme().liquid.foam : (i & 1 ? '#4A3D5C' : '#5C4E70'), size: kind === 'smoke' ? 8 + Math.random() * 10 : kind === 'chunk' ? (Math.random() < 0.3 ? 6 : 4) : 2 + (Math.random() < 0.4 ? 2 : 0) });
     }
   }
   const groundAt = (x, y) => { const G = ui.G, cx = Math.floor(x / CELL), cy = Math.floor(y / CELL); return cx >= 0 && cy >= 0 && cx < G.cols && cy < G.rows && G.T[cy * G.cols + cx] !== 0; };
@@ -280,7 +284,7 @@
       }
     }
     ui.parts = ui.parts.filter((p) => p.t < p.life && p.y < worldH() + 40);
-    for (const p of ui.pops) p.t += dt; ui.pops = ui.pops.filter((p) => p.t < 1.2);
+    for (const p of ui.pops) p.t += dt; ui.pops = ui.pops.filter((p) => p.t < 1.2); // a pop with a negative t waits that long before it shows
   }
 
   // ---------- engine events → effects ----------
@@ -320,6 +324,24 @@
         noise(1.0, 2500, 300, 0.3); if (!reduced) ui.shake = Math.min(26, ui.shake + 10);
         ui.pops.push({ x: e.x * CELL, y: e.y * CELL - 60, t: 0, text: 'TORNADO!', c: '#7BE07A' });
       }
+      else if (e.k === 'relic') { // it lands: a beam from the sky, a ring, a thump
+        const x = e.x * CELL, y = e.y * CELL, col = rgb(theme().accent[0]).join(','); ui.relicFx = { land: performance.now() / 1000, hit: -9 };
+        ui.parts.push({ x, y, t: 0, life: 1.5, kind: 'beam', c: col, size: 30 }); ui.parts.push({ x, y: y - 14, t: 0, life: 0.5, kind: 'ring', size: 120 }); ui.parts.push({ x, y: y - 14, t: 0, life: 0.8, kind: 'ring', size: 200 });
+        burst(x, y - 10, 30, 'spark', theme().accent[0]); burst(x, y, 16, 'chunk'); if (!reduced) { ui.shake = Math.min(34, ui.shake + 20); ui.flash = Math.max(ui.flash, 0.12); }
+        impact(x, y - 14, 0.09, 0.07); SFX.relicLand(panOf(x)); ui.cam.manual = false;
+        banner('The Relic has landed', 'last hit takes it · SS charge and +10% Power for your side', theme().accent[0]); renderHUD();
+      }
+      else if (e.k === 'relichit') { const x = e.x * CELL, y = e.y * CELL - 22, c = e.team >= 0 ? TEAMS[e.team].c : '#C9C2D6'; if (ui.relicFx) ui.relicFx.hit = performance.now() / 1000; burst(x, y, 16, 'spark', c); burst(x, y, 6, 'spark', '#FFFFFF'); SFX.relicHit(e.hp / WB.RELIC.hp, panOf(x)); renderHUD(); }
+      else if (e.k === 'relictake') { // the last hit: it shatters in the winner's colour and the light flies to every unit on that side
+        const x = e.x * CELL, y = e.y * CELL - 22, T = TEAMS[e.team], col = rgb(T.c).join(',');
+        burst(x, y, 46, 'spark', T.c); burst(x, y, 20, 'spark', '#FFFFFF'); burst(x, y, 18, 'chunk', theme().accent[0]);
+        ui.parts.push({ x, y, t: 0, life: 0.45, kind: 'nova', size: 150, c: col }); ui.parts.push({ x, y, t: 0, life: 0.5, kind: 'ring', size: 170, c: col }); ui.parts.push({ x, y, t: 0, life: 0.8, kind: 'ring', size: 300, c: col }); ui.parts.push({ x, y, t: 0, life: 1.1, kind: 'ring', size: 460 });
+        for (const id of e.ids) { const hu = ui.G.units.find((v) => v.id === id); if (hu) { ui.parts.push({ x, y, x2: hu.x * CELL, y2: hu.y * CELL - 14, t: 0, life: 0.9, kind: 'comet', c: col }); ui.pops.push({ x: hu.x * CELL, y: hu.y * CELL - 70, t: -0.7, text: '+SS · +10% POWER', c: T.c, small: true }); } }
+        ui.pops.push({ x, y: y - 30, t: 0, text: 'RELIC TAKEN!', c: T.c });
+        if (!reduced) { ui.shake = Math.min(34, ui.shake + 18); ui.flash = Math.max(ui.flash, 0.14); ui.slow = Math.max(ui.slow, 0.5); }
+        impact(x, y, 0.12, 0.1); SFX.relicTake(panOf(x)); banner(`${sideLabel(e.team)} took the Relic`, 'a notch of SS and +10% Power for the rest of the round', T.c); renderHUD();
+      }
+      else if (e.k === 'reliclost') { ui.pops.push({ x: e.x * CELL, y: e.y * CELL - 30, t: 0, text: 'RELIC LOST', c: '#9C8AA8' }); renderHUD(); }
       else if (e.k === 'resume') { renderCtl(); coachLine(); } // a jump or a move ability has landed: the turn carries on
       else if (e.k === 'retreat') { ui.tLeft = Math.min(ui.tLeft, 6); ui.weapon = 'shot1'; renderCtl(); coachLine(); }
       else if (e.k === 'zone') { burst(e.x * CELL, e.y * CELL, 16, 'spark'); noise(0.5, 1800, 500, 0.16, panOf(e.x * CELL)); }
@@ -497,6 +519,14 @@
   function pickWeapon(w) { if (!canAct() || ui.G.retreat || !WB.ready(ui.G, w)) return; ui.weapon = w; SFX.click(); renderCtl(); coachLine(); }
 
   // ---------- HUD and controls (DOM) ----------
+  // one line under the wind: when the Relic comes, how much is left of it, or who took it
+  function relicHTML() {
+    const G = ui.G, q = G && G.relic; if (!q) return '';
+    if (q.state === 'wait') { const n = Math.max(0, q.at - G.turn); return `<div class="wind" style="font-size:13px;color:${n <= 2 ? '#FFD34D' : '#CFC7DC'}">◆ RELIC ${n === 0 ? 'lands any moment' : `lands in ${n} turn${n === 1 ? '' : 's'}`}</div>`; }
+    if (q.state === 'live') return `<div class="wind" style="font-size:13px;color:#FFD34D">◆ RELIC <span style="display:inline-block;width:90px;height:8px;background:#1E1A2B;border-radius:99px;vertical-align:middle;overflow:hidden"><i style="display:block;height:100%;width:${Math.round(100 * q.hp / q.maxHp)}%;background:${theme().accent[0]}"></i></span> last hit takes it</div>`;
+    if (q.state === 'taken') return `<div class="wind" style="font-size:13px;color:${TEAMS[q.team].c}">◆ RELIC: ${esc(sideLabel(q.team))} · +10% Power</div>`;
+    return '<div class="wind" style="font-size:13px;opacity:.6">◆ Relic lost to the deep</div>';
+  }
   function renderHUD() {
     const G = ui.G; if (!G) { $('#hud').innerHTML = ''; return; }
     const n = G.teams, half = Math.ceil(n / 2);
@@ -510,7 +540,7 @@
     const w = G.wind, arrows = Math.round(Math.abs(w) / WB.WIND_MAX * 4);
     const windTxt = Math.abs(w) < 0.2 ? 'calm' : `${w < 0 ? '◀'.repeat(Math.max(1, arrows)) : ''} ${Math.abs(w).toFixed(1)} ${w > 0 ? '▶'.repeat(Math.max(1, arrows)) : ''}`;
     const left = Array.from({ length: half }, (_, t) => side(t)).join(''), right = Array.from({ length: n - half }, (_, i) => side(n - 1 - i)).join('');
-    $('#hud').innerHTML = `<div class="sidegrp">${left}</div>` + `<div class="mid"><div class="timer${ui.timerOn ? '' : ' off'}" id="timer">${ui.timerOn ? Math.ceil(ui.tLeft) : '∞'}</div><div class="wind" aria-label="wind">WIND ${windTxt}</div><div class="wind" style="font-size:12px;opacity:.8">Round ${ui.round}${G.mapName ? ' · ' + esc(G.mapName) : ''}${ui.mode === 'solo' ? ' · ' + LEVELS[ui.level].name : ''}${G.turn >= WB.suddenTurn(G) ? ' · <span style="color:#FF4D5E">SUDDEN DEATH: the water rises</span>' : ''}</div>${orderHTML()}</div><div class="sidegrp r">${right}</div>`;
+    $('#hud').innerHTML = `<div class="sidegrp">${left}</div>` + `<div class="mid"><div class="timer${ui.timerOn ? '' : ' off'}" id="timer">${ui.timerOn ? Math.ceil(ui.tLeft) : '∞'}</div><div class="wind" aria-label="wind">WIND ${windTxt}</div>${relicHTML()}<div class="wind" style="font-size:12px;opacity:.8">Round ${ui.round}${G.mapName ? ' · ' + esc(G.mapName) : ''}${ui.mode === 'solo' ? ' · ' + LEVELS[ui.level].name : ''}${G.turn >= WB.suddenTurn(G) ? ' · <span style="color:#FF4D5E">SUDDEN DEATH: the water rises</span>' : ''}</div>${orderHTML()}</div><div class="sidegrp r">${right}</div>`;
   }
   // The next turns if everyone keeps firing their Shot 1, counting the current side's chosen shot: what the
   // turn delay means right now. Light shot: you may go again before them; heavy shot: they may go twice.
@@ -556,6 +586,7 @@
     const S = (w) => WB.shotSpec(G, u, w);
     let t;
     if (danger) t = '<b>That old dud blows at the end of this turn!</b> Walk or jump away from it.';
+    else if (G.relic && G.relic.state === 'live' && !G.retreat && (ui.relicTips = (ui.relicTips || 0) + 1) <= 6) t = 'The <b>Relic</b> is down. Whoever lands the <b>last hit</b> on it takes it: a notch of SS for your whole side and +10% Power for the rest of the round.';
     else if (G.retreat) t = `<b>Retreat:</b> you have <b>${G.moves} steps</b> left to get to cover (◀ ▶, or jump). Press <b>End turn</b> (Space) when you're set.`;
     else if ((G.crates || []).some((c) => Math.abs(c.x - u.x) <= G.moves + 2 && Math.abs(c.y - u.y) < 10)) t = 'A <b>supply crate</b> is in reach: walk onto it with ◀ ▶ before you fire. The mark shows what is inside.';
     else if (ui.weapon === 'dash') t = `<b>${esc(S('dash').name)}:</b> ${esc(S('dash').desc)} Drag to aim it. <b>You can still shoot afterwards.</b>`;
@@ -1203,6 +1234,7 @@
     if (t - a.hit < 0.1) { ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 0.7; drawBody(ctx, x, y, R, u.team, u.char, u.face, t, SPR.img ? 0 : bob); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; } // blink white when hurt
     if (sq > 0) ctx.restore();
     SPR.frame = -1;
+    if (G.relic && G.relic.state === 'taken' && G.relic.team === u.team) { const A = theme().accent[0]; for (let i = 0; i < 3; i++) { const an = t * 2.4 + i * 2.094, back = Math.sin(an) < 0; ctx.fillStyle = back ? tint(A, -0.1) : tint(A, 0.6); ctx.fillRect(Math.round((x + Math.cos(an) * 20) / 2) * 2, Math.round((cy + 4 + Math.sin(an) * 6) / 2) * 2, back ? 2 : 4, back ? 2 : 4); } } // the Relic's light circles everyone on the side that took it
     if (u.burn > 0) { ctx.fillStyle = Math.floor(t * 10) % 2 ? '#FF8A3D' : '#FFD34D'; ctx.fillRect(Math.round(x / 2) * 2 - 12, Math.round((cy - R) / 2) * 2 - 6 - (Math.floor(t * 8) % 2) * 2, 4, 6); ctx.fillRect(Math.round(x / 2) * 2 + 8, Math.round((cy - R) / 2) * 2 - 4 - (Math.floor(t * 8 + 1) % 2) * 2, 4, 6); }
     if (u.wet) { ctx.fillStyle = '#8FD8FF'; for (let i = 0; i < 3; i++) ctx.fillRect(Math.round(x / 2) * 2 - 10 + i * 8, Math.round((y - 4 - ((t * 30 + i * 9) % 22)) / 2) * 2, 2, 4); }
     if (u.hp < 35) { ctx.fillStyle = 'rgba(70,60,80,.55)'; ctx.beginPath(); ctx.arc(x + 6 * Math.sin(t * 2), cy - R - 6 - (t * 20 % 10), 4, 0, 7); ctx.fill(); }
@@ -1244,6 +1276,36 @@
     else if (c.kind === 'ss') { ctx.fillRect(x - 1, y - 12, 2, 6); ctx.fillRect(x - 3, y - 10, 6, 2); ctx.fillRect(x - 2, y - 11, 4, 4); }
     else { ctx.fillRect(x - 4, y - 10, 8, 2); ctx.fillRect(x - 5, y - 11, 2, 4); ctx.fillRect(x + 3, y - 11, 2, 4); }
   }
+  // The Relic: a floating crystal in the map's accent colour. It bobs and turns, lights the ground, throws off motes,
+  // cracks as it loses health, blinks white when hit, and comes down the beam when it lands.
+  const tint = (hex, k) => { const c = rgb(hex); return `rgb(${c.map((v) => Math.round(k >= 0 ? v + (255 - v) * k : v * (1 + k))).join(',')})`; };
+  function drawRelic(t) {
+    const G = ui.G, q = G.relic; if (!q || q.state !== 'live') return;
+    const fx = ui.relicFx || { land: -9, hit: -9 }, since = t - fx.land, drop = reduced ? 0 : Math.max(0, 1 - since / 0.8), hitK = Math.max(0, 1 - (t - fx.hit) / 0.18);
+    const A = theme().accent[0], left = q.hp / q.maxHp, x = Math.round(q.x * CELL / 2) * 2 + (hitK > 0 && !reduced ? Math.round(Math.sin(t * 90) * 3 * hitK) : 0), gy = q.y * CELL;
+    const bob = reduced ? 0 : Math.sin(t * 2.2) * 4, cy = Math.round((gy - 46 + bob - drop * drop * 500) / 2) * 2, turn = reduced ? 0 : Math.sin(t * 1.3) * 5;
+    ctx.fillStyle = 'rgba(10,6,20,.35)'; ctx.beginPath(); ctx.ellipse(x, gy - 1, 14 - bob, 4, 0, 0, 7); ctx.fill(); // its shadow on the ground
+    ctx.globalCompositeOperation = 'lighter'; // its light
+    const pulse = 0.75 + 0.25 * Math.sin(t * 3), gl = ctx.createRadialGradient(x, cy, 4, x, cy, 130); const [r, g, b] = rgb(A);
+    gl.addColorStop(0, `rgba(${r},${g},${b},${0.5 * pulse})`); gl.addColorStop(0.45, `rgba(${r},${g},${b},${0.16 * pulse})`); gl.addColorStop(1, `rgba(${r},${g},${b},0)`); ctx.fillStyle = gl; ctx.fillRect(x - 130, cy - 130, 260, 260);
+    if (!reduced) for (let i = 0; i < 6; i++) { const a = t * 0.5 + i * Math.PI / 3, len = 70 + 26 * Math.sin(t * 1.7 + i * 2); ctx.strokeStyle = `rgba(${r},${g},${b},${0.2 * pulse})`; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(x + Math.cos(a) * 22, cy + Math.sin(a) * 22); ctx.lineTo(x + Math.cos(a) * len, cy + Math.sin(a) * len); ctx.stroke(); } // slow rays turning round it
+    const lg = ctx.createRadialGradient(x, gy, 2, x, gy, 70); lg.addColorStop(0, `rgba(${r},${g},${b},${0.35 * pulse})`); lg.addColorStop(1, `rgba(${r},${g},${b},0)`); ctx.fillStyle = lg; ctx.fillRect(x - 70, gy - 14, 140, 28); // its light pooled on the ground
+    ctx.fillStyle = `rgba(${r},${g},${b},${0.12 * pulse})`; ctx.fillRect(x - 3, cy - 150, 6, 150); // a thin thread of light going up
+    ctx.globalCompositeOperation = 'source-over';
+    // the crystal: a tall diamond, outlined, with a lit face and a dark face that trade places as it turns
+    const W = 18, H = 34, mid = turn * 1.4, P = (pts, col) => { ctx.fillStyle = col; ctx.beginPath(); pts.forEach(([a, c], i) => (i ? ctx.lineTo(x + a, cy + c) : ctx.moveTo(x + a, cy + c))); ctx.closePath(); ctx.fill(); };
+    P([[0, -H - 3], [W + 3, -2], [0, H + 3], [-W - 3, -2]], '#1E1A2B');
+    P([[0, -H], [mid, -4], [0, H], [-W, -2]], tint(A, 0.25)); P([[0, -H], [W, -2], [0, H], [mid, -4]], tint(A, -0.3));
+    P([[0, -H], [mid, -4], [-W, -2]], tint(A, 0.6)); P([[0, -H], [W, -2], [mid, -4]], tint(A, -0.05));
+    ctx.fillStyle = '#FFFFFF'; ctx.fillRect(x - 8 + Math.round(mid / 2), cy - 20, 2, 12); ctx.fillRect(x - 6 + Math.round(mid / 2), cy - 24, 2, 4); ctx.fillRect(x - 10 + Math.round(mid / 2), cy - 6, 2, 2); // a glint
+    if (left < 0.67) { ctx.strokeStyle = '#1E1A2B'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x - 3, cy - 24); ctx.lineTo(x + 4, cy - 10); ctx.lineTo(x - 2, cy + 2); if (left < 0.34) { ctx.lineTo(x + 6, cy + 16); ctx.moveTo(x + 4, cy - 10); ctx.lineTo(x + 13, cy - 5); ctx.moveTo(x - 2, cy + 2); ctx.lineTo(x - 12, cy + 8); } ctx.stroke(); } // cracks
+    if (hitK > 0) { ctx.globalAlpha = hitK; P([[0, -H], [W, -2], [0, H], [-W, -2]], '#FFFFFF'); ctx.globalAlpha = 1; }
+    if (!reduced) for (let i = 0; i < 5; i++) { const a = t * (1.4 + left) + i * 1.257, ox = Math.cos(a) * (32 + (i % 2) * 8), oy = Math.sin(a) * 12 + Math.sin(t * 2 + i) * 4, back = Math.sin(a) < 0; ctx.fillStyle = back ? tint(A, -0.2) : tint(A, 0.7); const sz = back ? 2 : 4; ctx.fillRect(Math.round((x + ox) / 2) * 2, Math.round((cy + oy) / 2) * 2, sz, sz); } // motes circling it
+    if (left < 0.34 && !reduced && Math.random() < 0.25) ui.parts.push({ x: x + (Math.random() - 0.5) * 14, y: cy + (Math.random() - 0.5) * 30, vx: (Math.random() - 0.5) * 60, vy: -40 - Math.random() * 60, t: 0, life: 0.5, kind: 'spark', b: 0, c: tint(A, 0.5), size: 2 });
+    // its health
+    ctx.fillStyle = '#1E1A2B'; ctx.fillRect(x - 26, cy - H - 18, 52, 10); ctx.fillStyle = left > 0.34 ? A : '#FF4D5E'; ctx.fillRect(x - 24, cy - H - 16, Math.round(48 * left / 2) * 2, 6);
+  }
+  function relicLabel() { const q = ui.G.relic; if (!q || q.state !== 'live') return; const x = q.x * CELL, y = q.y * CELL - 104; ctx.font = FONT(14); ctx.textAlign = 'center'; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(30,26,43,.9)'; ctx.strokeText('RELIC ' + q.hp, x, y); ctx.fillStyle = '#FFF3E0'; ctx.fillText('RELIC ' + q.hp, x, y); }
   // fire left on the ground (Fire Wall, Inferno): flames along the surface for as wide as it burns
   function drawZones(t) {
     for (const z of ui.G.zones || []) for (let i = 0; i < z.w * 2; i++) {
@@ -1372,8 +1434,8 @@
     ctx.setTransform(cam.z * pz, 0, 0, cam.z * pz, -cam.x * cam.z * pz + ppx, -cam.y * cam.z * pz + ppy); // from here on: world pixels
     ctx.imageSmoothingEnabled = false; ctx.drawImage(terrCv, 0, 0, worldW(), worldH()); ctx.imageSmoothingEnabled = true; // world pixels at 2x, hard edges
     drawGlows(t);
-    pixelLayer(() => { drawZones(t); for (const b of G.barrels) drawBarrel(b); for (const c of G.crates || []) drawCrate(c, t); for (const d of G.duds) drawDud(d, t, false); });
-    for (const d of G.duds) dudLabel(d);
+    pixelLayer(() => { drawZones(t); for (const b of G.barrels) drawBarrel(b); for (const c of G.crates || []) drawCrate(c, t); for (const d of G.duds) drawDud(d, t, false); drawRelic(t); });
+    for (const d of G.duds) dudLabel(d); relicLabel();
     const cur = WB.current(G);
     for (const u of G.units) if (!u.alive) drawUnit(u, false, t);
     for (const u of G.units) if (u.alive) drawUnit(u, u === cur && G.phase === 'aim', t);
@@ -1397,8 +1459,24 @@
           ctx.strokeStyle = `rgba(200,255,220,${k * (0.75 - i * 0.06)})`; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(p.x + Math.sin(a) * 6, yy, rr, rr * 0.28, 0, 0, 7); ctx.stroke(); }
         continue;
       }
+      if (p.kind === 'nova') { // the Relic breaking: a star of light in the colour of whoever took it
+        const rr = p.size * (0.3 + 0.7 * (1 - k)); ctx.globalCompositeOperation = 'lighter';
+        for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4 + 0.4, w = 10 * k + 2; ctx.strokeStyle = `rgba(${p.c},${k})`; ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x + Math.cos(a) * rr * (i % 2 ? 1 : 1.5), p.y + Math.sin(a) * rr * (i % 2 ? 1 : 1.5)); ctx.stroke(); }
+        ctx.fillStyle = `rgba(${p.c},${k * 0.8})`; ctx.beginPath(); ctx.arc(p.x, p.y, rr * 0.45, 0, 7); ctx.fill(); ctx.fillStyle = `rgba(255,255,255,${k})`; ctx.beginPath(); ctx.arc(p.x, p.y, rr * 0.22, 0, 7); ctx.fill();
+        ctx.globalCompositeOperation = 'source-over'; continue;
+      }
+      if (p.kind === 'beam') { // the Relic coming down: a column of light from the top of the map, narrowing as it fades
+        const w = (p.size || 26) * (0.3 + 0.7 * k); ctx.globalCompositeOperation = 'lighter';
+        ctx.fillStyle = `rgba(${p.c},${0.35 * k})`; ctx.fillRect(p.x - w * 1.6, 0, w * 3.2, p.y); ctx.fillStyle = `rgba(${p.c},${0.6 * k})`; ctx.fillRect(p.x - w * 0.7, 0, w * 1.4, p.y); ctx.fillStyle = `rgba(255,255,255,${0.9 * k})`; ctx.fillRect(p.x - w * 0.2, 0, w * 0.4, p.y);
+        ctx.globalCompositeOperation = 'source-over'; continue;
+      }
+      if (p.kind === 'comet') { // a streak of light from the Relic to someone it empowered
+        const e = 1 - k, m = e * e * (3 - 2 * e), arc = Math.sin(e * Math.PI) * -70;
+        for (let i = 0; i < 7; i++) { const q = Math.max(0, m - i * 0.035), x = p.x + (p.x2 - p.x) * q, y = p.y + (p.y2 - p.y) * q + Math.sin(q * Math.PI) * -70 + (i ? 0 : arc * 0), sz = i < 2 ? 6 : i < 4 ? 4 : 2; ctx.fillStyle = i ? `rgba(${p.c},${1 - i * 0.13})` : '#FFFFFF'; ctx.fillRect(Math.round(x / 2) * 2 - sz / 2, Math.round(y / 2) * 2 - sz / 2, sz, sz); }
+        continue;
+      }
       if (p.kind === 'line') { ctx.strokeStyle = `rgba(${p.c},${k})`; ctx.lineWidth = 2 + 4 * k; ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x2, p.y2); ctx.stroke(); continue; }
-      if (p.kind === 'ring') { const rr = p.size * (0.25 + 0.75 * (1 - k * k)); ctx.strokeStyle = `rgba(255,243,224,${k * 0.7})`; ctx.lineWidth = 2 + 6 * k; ctx.beginPath(); ctx.ellipse(p.x, p.y, rr, p.flat ? rr * 0.25 : rr, 0, 0, 7); ctx.stroke(); continue; }
+      if (p.kind === 'ring') { const rr = p.size * (0.25 + 0.75 * (1 - k * k)); ctx.strokeStyle = `rgba(${p.c || '255,243,224'},${k * (p.c ? 0.95 : 0.7)})`; ctx.lineWidth = (p.c ? 4 : 2) + 6 * k; ctx.beginPath(); ctx.ellipse(p.x, p.y, rr, p.flat ? rr * 0.25 : rr, 0, 0, 7); ctx.stroke(); continue; }
       if (p.kind === 'flash') { // a fireball in three flat colours that swells a little and shrinks away
         const rr = p.size * (0.4 + 0.25 * (1 - k)) * (0.35 + 0.65 * k); ctx.globalAlpha = Math.min(1, k * 3);
         for (const [f, col] of [[1, '#FF7A30'], [0.72, '#FFD34D'], [0.42, '#FFF8E0']]) { ctx.fillStyle = col; ctx.beginPath(); ctx.arc(p.x, p.y, rr * f, 0, 7); ctx.fill(); }
@@ -1414,7 +1492,7 @@
     });
     if (aimU) aimLabel(aimU);
     for (const p of ui.pops) {
-      const k = p.t / 1.2; ctx.globalAlpha = 1 - k * k; ctx.font = FONT((p.small ? 16 : 26) + (1 - k) * 8); ctx.textAlign = 'center'; ctx.lineWidth = 5; ctx.strokeStyle = '#1E1A2B';
+      if (p.t < 0) continue; const k = p.t / 1.2; ctx.globalAlpha = 1 - k * k; ctx.font = FONT((p.small ? 16 : 26) + (1 - k) * 8); ctx.textAlign = 'center'; ctx.lineWidth = 5; ctx.strokeStyle = '#1E1A2B';
       ctx.strokeText(p.text, p.x, p.y - k * 40); ctx.fillStyle = p.c; ctx.fillText(p.text, p.x, p.y - k * 40); ctx.globalAlpha = 1;
     }
     ctx.setTransform(1, 0, 0, 1, 0, 0); // back to the screen

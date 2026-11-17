@@ -6,7 +6,7 @@ const ok = (cond, msg) => { if (cond) passes++; else { fails++; console.log('FAI
 // Let the shot land, then end the retreat that follows it (v3): the turn has passed when this returns.
 const endTurn = (G) => { WB.resolve(G); if (G.phase === 'aim' && G.retreat) { WB.act(G, { k: 'pass' }); WB.resolve(G); } };
 // A dead-flat map with the floor at row 60 and the units spread along it: abilities can be checked without the terrain getting in the way.
-const flatGame = (o = {}, xs) => { const G = WB.newGame(11, Object.assign({ map: { preset: 'hills', hazards: 0, caves: 0, props: 0 }, crates: false }, o)); for (let x = 0; x < G.cols; x++) for (let y = 0; y < G.rows; y++) G.T[y * G.cols + x] = y >= 60 ? 1 : 0; G.units.forEach((u, i) => { u.y = 60; u.air = false; u.x = xs ? xs[i] : 40.5 + i * (70 / Math.max(1, G.units.length - 1)); }); G.wind = 0; return G; };
+const flatGame = (o = {}, xs) => { const G = WB.newGame(11, Object.assign({ map: { preset: 'hills', hazards: 0, caves: 0, props: 0 }, crates: false, relic: false }, o)); for (let x = 0; x < G.cols; x++) for (let y = 0; y < G.rows; y++) G.T[y * G.cols + x] = y >= 60 ? 1 : 0; G.units.forEach((u, i) => { u.y = 60; u.air = false; u.x = xs ? xs[i] : 40.5 + i * (70 / Math.max(1, G.units.length - 1)); }); G.wind = 0; return G; };
 const cells = (G) => G.T.filter((v) => v).length;
 
 // 1. Same seed, same map.
@@ -421,6 +421,30 @@ for (const m of WB.MAP_IDS) {
   ok(used.shot2 > 60 && used.retreats > 300, `the computer uses abilities and retreats (in 45 one-screen matches: ${used.shot2} abilities, ${used.dash} moves, ${used.retreats} retreats)`);
   { let mv = 0; for (let s2 = 1; s2 <= 4; s2++) mv += WB.playOut(WB.newGame(s2 * 31337, { size: 5, recipe: 'teams' }), ['smart', 'smart']).G.stats.dash; ok(mv >= 4, `and its move abilities to cross big maps (${mv} in four 5v5 matches)`); }
   const { G: K } = WB.playOut(WB.newGame(4242, { chars: ['zip', 'flint'] }), ['basic', 'basic']); ok(K.stats.shot2 === 0 && K.stats.dash === 0, "the 'basic' bot style never touches its kit");
+}
+
+// 8c2. The Relic: lands in the middle after about three turns each; the last hit takes it for that side.
+{
+  const pass = (G) => { WB.act(G, { k: 'pass' }); WB.resolve(G); };
+  const shell = (G, by, x, y, w = 'shot1') => { G.actor = by.id; G.team = by.team; G.shooter = by.id; G.phase = 'flight'; G.proj.push({ id: ++G._id, w, team: by.team, char: by.char, from: -1, age: 9, x, y, vx: 0, vy: 3, wm: 1 }); let t = 0; while (G.proj.length && t++ < 4000) WB.step(G); };
+  const G = flatGame({ relic: true, chars: ['volt', 'brick'] }), q = G.relic;
+  ok(q.state === 'wait' && q.at === 6, 'the Relic is due on turn 6 of a 1v1 (three turns each)');
+  let landed = null; for (let i = 0; i < 6; i++) { WB.act(G, { k: 'pass' }); let t = 0; while (G.phase === 'flight' && t++ < 4000) for (const e of WB.step(G)) if (e.k === 'relic') landed = e; }
+  ok(q.state === 'live' && landed && G.turn === 6 && Math.abs(q.x - G.cols / 2) < 6 && q.y === 60 && q.hp === WB.RELIC.hp, `it lands on turn ${G.turn} in the middle (x ${q.x}) with ${q.hp} health`);
+  const a = G.units[0], b = G.units[1], ss0 = [a.ss, b.ss];
+  shell(G, a, q.x + 1, 56); ok(q.state === 'live' && q.hp < WB.RELIC.hp && q.hp > 0, `a shell beside it wears it down (${WB.RELIC.hp} → ${q.hp})`);
+  G.barrels.push({ id: 970, x: q.x + 2, y: 60, air: false, vy: 0, chain: true }); G.phase = 'flight'; q.hp = 5; WB.resolve(G);
+  ok(q.state === 'live' && q.hp === 1, 'a barrel can wear it down but never take it');
+  shell(G, b, q.x, 56);
+  ok(q.state === 'taken' && q.team === 1 && G.stats.relic === 1 && b.ss === Math.min(WB.SS_CHARGE, ss0[1] + 1) && a.ss === ss0[0], 'the last hit takes it: a notch of SS for that side only');
+  const dmgTo = (taken) => { const H = flatGame({ relic: true, chars: ['volt', 'volt'] }), foe = H.units[0], sh = H.units[1]; foe.hp = foe.maxHp = 9999; if (taken) { H.relic.state = 'taken'; H.relic.team = 1; } shell(H, sh, foe.x + 2, 57); return 9999 - foe.hp; };
+  ok(dmgTo(true) === Math.round(dmgTo(false) * WB.RELIC.power), `and +10% Power: the same shell does ${dmgTo(true)} instead of ${dmgTo(false)}`);
+  { const H = flatGame({ relic: true }); H.relic.state = 'live'; H.relic.x = 80.5; H.relic.y = 60; for (let x = 76; x < 86; x++) for (let y = 60; y < H.rows; y++) H.T[y * H.cols + x] = 0; H.phase = 'flight'; H.mid = true; WB.resolve(H);
+    ok(H.relic.state === 'lost', 'with the ground gone from under it, it falls into the water and nobody gets it'); }
+  ok(WB.newGame(5, { relic: false }).relic === null, 'opts.relic: false turns it off');
+  let took = 0, n = 0, bad = 0;
+  for (let s = 1; s <= 30; s++) { const o = { chars: [WB.CHAR_IDS[s % 10], WB.CHAR_IDS[(s * 7 + 3) % 10]] }, { G: F, log } = WB.playOut(WB.newGame(s * 6007, o), ['smart', 'smart']); n++; if (F.relic.state === 'taken') took++; if (F.phase !== 'over' || WB.hash(WB.replay(s * 6007, log, o)) !== WB.hash(F)) bad++; }
+  ok(bad === 0 && took >= 5, `30 matches with the Relic finish and replay exactly; the computer took it in ${took}`);
 }
 
 // 8d. v2 mid-match: supply crates and crew combos.

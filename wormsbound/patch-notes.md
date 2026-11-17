@@ -6,7 +6,7 @@ Newest on top. See the repo's CLAUDE.md for how patch notes work.
 
 ---
 
-## v3 phase 1: kits, jumps and a retreat (rules changed) · 2026-11-17 · Hunter (with Claude)
+## v3 phase 1 and the Relic: kits, jumps, a retreat, one thing to fight over (rules changed) · 2026-11-17 · Hunter (with Claude)
 The first playable slice of [`design/v3.md`](design/v3.md). **The rules changed.** Hunter answered the design's open questions so this could start; they're listed in the design under "Decisions so far". Louiemark hasn't weighed in yet, and any of it can be reversed.
 
 ### What's new
@@ -19,6 +19,7 @@ The first playable slice of [`design/v3.md`](design/v3.md). **The rules changed.
 - **New abilities:** Bulwark (a wall), Hook (drags someone to you), Skipping Stone (a blast at every skip), Fire Wall (fire that stays for 2 turns), Bridge (a span where it lands). Double Tap, Thunderstrike, Drill, Gust and Delay Ray carry over.
 - **Six stats** on the select screen: Health, Armour, Power, Move, Jump, Weight.
 - **Crates:** the gear crate is now a recharge (your ability and move are ready at once).
+- **The Relic.** A countdown under the wind from the first turn. After about three turns each, a beam comes down in the middle of the map and a crystal lands. It has health. Whoever lands the **last hit** takes it: every unit on that side gets a notch of SS and +10% Power for the rest of the round, and carries its light. It glows in the map's colour, cracks as it weakens, and can be lost to the water if the ground under it goes.
 
 ### Next up
 - [ ] @Louiemark: play it and say whether kits, jumping and the retreat are the right direction. Everything here was decided by Hunter, not by you.
@@ -28,6 +29,11 @@ The first playable slice of [`design/v3.md`](design/v3.md). **The rules changed.
 - [ ] Phase 2 of the design: shrines, the Relic, movers, items in crates. Levels are on hold (Hunter isn't sure they're needed).
 
 ### Watch out
+- [ ] **The Relic's numbers are guesses:** 70 health, lands on turn 3 × the number of units, +1 SS notch, +10% Power. Whether it decides matches is printed by the sim (the `relic` line) but there is no pass band for it yet.
+- [ ] **Easy computers don't aim for the Relic.** With it in, a new player against three Easy computers won 26% (the band says 28% or more), so Easy was changed rather than the band; it now measures 32%.
+- [ ] **The Relic is in every mode, 1v1 included** (Hunter's call). The design asked whether it's too much for a 1v1; nobody has played it to say.
+- [ ] **The Relic can land somewhere awkward** (on top of a girder or a prop, in a dip). It picks dry ground nearest the middle and doesn't check that both sides can reach it. It waits a turn if the middle is water.
+- [ ] **Anyone's last hit counts, including by accident,** and shots pass through it: only blasts and lightning hurt it. Barrels and old duds can wear it down but not take it.
 - [ ] **Nobody has played this.** It passes the rule checks, the browser walkthrough and the online tests, and the computer plays it, but no person has held the controls for a whole match. Whether the retreat feels like a reward or a chore is unknown.
 - [ ] **Six abilities are simpler than the design says:** Burrow digs a passage and goes through it (the design has him hide underground until his next turn). Patch's move is a long jump called Spring Pad (the design has a pad anyone can use for 4 turns). Updraft only lifts Gale (not a crewmate). Hopper's SS is still Flurry (not three aimed pounces), Patch's is still Sinkhole (not Fortress), Nimbus's is still Thunderhead (not Downpour).
 - [ ] **Two passives were changed to work in a 1v1:** Volt's third hit does half as much again as well as arcing (with one enemy there's nobody to arc to), and Patch heals himself 3 as well as crewmates 6.
