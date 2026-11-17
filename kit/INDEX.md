@@ -18,6 +18,7 @@ This is everything reusable from past builds, so each new game or app prototype 
 | `cardgen/` | **Card universes** for any game with collectible cards: a seeded generator (factions, eras, sets, printings, pack odds, sealed, prices over a run, repacks, reprint twists) driven by a JSON profile, plus an offline Workshop tool page | `cardgen/PROFILE.md`, then `cardgen/tool.html` |
 | `prototype-kit/art/` | **AI mood art**: Canva prompt recipe, full-resolution fetch, contact-sheet review, art reuse list | `art/README.md` |
 | `prototype-kit/snippets/` | Pieces pulled from other projects (see below) | each file's header comment |
+| `hf-scout.md` | **Open AI models from Hugging Face** for every discipline (art, 3D rigs, audio, in-browser voices and NPCs, playtest bots, localization, courses), each license-checked, plus the license gate to run before using any model | `hf-scout.md` |
 
 The source of record for Tower Defense now lives in the public GitHub repo `JustAskJoe/games` (`tower-defense/`); the kit copy is for starting the next game.
 

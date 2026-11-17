@@ -209,7 +209,7 @@ The collective's 3D work so far is the Gate Runner (`zach/gate-runner-3d`) and T
 | | |
 | --- | --- |
 | **Final means** | Clean low-poly mesh with sensible polygon count, good UVs, correct scale and pivot, LODs for big scenes, exported as glTF/GLB. |
-| **AI today** | Image-to-3D (Tripo, Meshy, Rodin/Hyper3D) makes usable **props** in a minute or two. Plans around $20 to $30 a month for about 1,000 to 3,000 credits (unverified, see [section 5](#5-tool-map)). Tripo has an MCP and an API. Claude can also write simple models as code (three.js, procedural meshes). |
+| **AI today** | Image-to-3D (Tripo, Meshy, Rodin/Hyper3D) makes usable **props** in a minute or two. Plans around $20 to $30 a month for about 1,000 to 3,000 credits (unverified, see [section 5](#5-tool-map)). Tripo has an MCP and an API. Claude can also write simple models as code (three.js, procedural meshes). **Free and open (Nov 2026):** `microsoft/TRELLIS.2-4B` (MIT) and `TencentARC/Pixal3D` (MIT) turn one image into a textured GLB, and both have free Hugging Face demo pages. See `kit/hf-scout.md`. |
 | **Falls short** | Hero characters (bad edge flow for animation), hard-surface accuracy, triangle soup that needs retopology. A person in Blender for anything the camera looks at closely. Free tiers are often non-commercial. |
 | **Access** | Tripo 🔌 🧩, Meshy 🔌, Rodin 🔌, Blender 🖱️ (and Python scripting, so Claude can write Blender scripts). |
 
@@ -225,9 +225,9 @@ The collective's 3D work so far is the Gate Runner (`zach/gate-runner-3d`) and T
 | | |
 | --- | --- |
 | **Final means** | A skeleton with good weights so joints bend cleanly; humanoid rigs compatible with animation libraries. |
-| **AI today** | **Mixamo** auto-rigs humanoids and gives free animations, royalty-free for games, but it looks unmaintained and is humanoid T-pose only. Some 3D AI tools auto-rig too (unverified). |
-| **Falls short** | Non-humanoids, faces, cloth. A person in Blender. |
-| **Access** | Mixamo 🖱️, Blender 🖱️ / Python. |
+| **AI today** | **Mixamo** auto-rigs humanoids and gives free animations, royalty-free for games, but it looks unmaintained and is humanoid T-pose only. **Open auto-riggers on Hugging Face (checked Nov 9, 2026):** `jasongzy/Make-It-Animatable` (Apache-2.0) rigs a humanoid to a Mixamo-compatible skeleton in seconds, so Mixamo's animation library still works; `VAST-AI/UniRig` (MIT) rigs any mesh, including non-humanoids; `Seed3D/Puppeteer` (Apache-2.0) rigs and animates. **TailorRig** (Tencent, Nov 2026) is the first that adds garment bones (skirt, cape, hair, sleeves) from labels you choose, but its license is **academic research only**: we can't use it on game art. Watch it for a commercial release. Details in `kit/hf-scout.md`. |
+| **Falls short** | Faces, and cloth with an open tool (capes and skirts still need bones placed by hand in Blender). A person in Blender for hero characters. |
+| **Access** | Mixamo 🖱️, Blender 🖱️ / Python, Make-It-Animatable and UniRig (free Hugging Face demo pages, or a local NVIDIA GPU). |
 
 ### 4.3 Animation
 
@@ -297,6 +297,7 @@ Prices are what we found on Oct 31, 2026. **"Checked"** means we read it on the 
 | **Cloudflare: Flux Schnell** (what `roughs.py` calls today) | Roughs | 🔌 | Free tier | — | No reference images |
 | **OpenAI gpt-image-2** | Stills, edits, good text | 🔌 | Token-billed; about $0.05 to $0.21 per 1024 image depending on quality | Third-party only | Needs an OpenAI key (spend) |
 | **Scenario** | Custom style/character models, game assets | 🔌 and 🖱️ | Help center: free Starter, Creator $15/mo, Pro $45/mo; others quote $20 to $200 | Partly (help center) | Train on 15 to 50 of our images |
+| **Hugging Face open models** (added Nov 9, 2026) | Image-to-3D, auto-rigs, background removal, layer splits, consistent-character edits, music, SFX, voices | Free demo pages ("Spaces") in a browser; or a local NVIDIA GPU | Free (Spaces have daily GPU limits) | Licenses read Nov 9 | Shortlist, licenses and rejects in `kit/hf-scout.md`. Only MIT/Apache picks are cleared for a sold game |
 | **PixelLab** | Pixel art: characters, 8-direction, animation, tiles, UI, VFX, fonts | 🧩 MCP (connected); API exists | About $10 to $60/mo (third-party) | No (pricing page 404'd) | Pixel only; TD dropped pixel on Oct 28 |
 | **Tripo** | Image-to-3D, texture | 🔌 🧩 | Pro about $19.90/mo for 3,000 credits | No | Free tier reported as CC BY |
 | **Meshy** | Text/image-to-3D | 🔌 | Pro about $20/mo for 1,000 credits | No | Free tier non-commercial |
@@ -377,6 +378,8 @@ For one kept 1K image at 4 tries:
 | **PixelLab** | Reportedly cleared for commercial games | Yes (reported) | Can't use outputs to train other AI | 🟡 not read |
 | **Tripo / Meshy / Rodin** | Paid plans | Paid plans only, free tiers are non-commercial or CC BY | Pick a paid plan before shipping | 🟡 not read |
 | **Mixamo** | Adobe keeps the files | Royalty-free in games | Can't redistribute raw files; no ML training | 🟢 per Adobe FAQ |
+| **Hugging Face open models** (TRELLIS.2, UniRig, Make-It-Animatable, BiRefNet, Qwen-Image-Edit/Layered…) | Per each model's license | MIT / Apache-2.0 ones: yes | Read the license *file*, not just the tag. Tencent Hunyuan licenses (Hunyuan3D, HY-Motion) **don't apply in the EU, UK or South Korea**, so skip them for a Steam game. Lists and rejects in `kit/hf-scout.md` | 🟢 MIT/Apache, 🔴 the rest until checked |
+| **TailorRig** (Tencent) | — | **No.** Academic research only, "commercial or production" use banned; bundles OPT-350m (non-commercial) | Don't rig game characters with it, even prototypes | 🔴 |
 | **Google Fonts** | — | SIL OFL allows embedding | Keep the license file | 🟢 |
 | **Claude** (SVG, code) | Ours | Yes | Treat as AI-made in the disclosure only if it ships as content | 🟢 |
 
